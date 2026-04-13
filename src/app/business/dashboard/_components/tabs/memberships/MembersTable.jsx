@@ -6,6 +6,7 @@ import { Grid, Avatar, Button, Table, Tag, Space, Popconfirm, Typography, Pagina
 import { Plus, Search, User } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
+import { useUrlState } from "@/hooks/useUrlState";
 import MemberDrawer from "./MemberDrawer";
 import AddMemberDrawer from "./AddMemberDrawer";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
@@ -93,6 +94,7 @@ function formatMemberBillingPeriod(r) {
 }
 
 export default function MembersTable({ noWrapperPadding, productId: propProductId }) {
+  const [memberIdRaw, setMemberIdParam] = useUrlState("memberId");
   const [members, setMembers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,6 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
   const [productFilter, setProductFilter] = useState(propProductId || "");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [drawerMemberId, setDrawerMemberId] = useState(null);
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
 
   const screens = useBreakpoint();
@@ -141,8 +142,16 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
     load();
   }, [load]);
 
-  const openDrawer = (record) => setDrawerMemberId(record.id);
-  const closeDrawer = () => setDrawerMemberId(null);
+  useEffect(() => {
+    if (!memberIdRaw || loading) return;
+    const found = members.find((m) => String(m.id) === String(memberIdRaw));
+    if (!found && members.length > 0) {
+      setMemberIdParam(null);
+    }
+  }, [memberIdRaw, members, loading, setMemberIdParam]);
+
+  const openDrawer = (record) => setMemberIdParam(record.id);
+  const closeDrawer = () => setMemberIdParam(null);
 
   const handleAddSaved = () => {
     setAddDrawerOpen(false);
@@ -437,8 +446,8 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
       </MembershipTableSection>
 
       <MemberDrawer
-        memberId={drawerMemberId}
-        open={!!drawerMemberId}
+        memberId={memberIdRaw}
+        open={!!memberIdRaw}
         onClose={closeDrawer}
         onUpdated={load}
         products={products}

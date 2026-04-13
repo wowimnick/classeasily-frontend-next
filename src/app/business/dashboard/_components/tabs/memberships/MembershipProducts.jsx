@@ -6,6 +6,7 @@ import { Grid, Button, Table, Tag, Space, Popconfirm, Switch } from "antd";
 import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
+import { useUrlState } from "@/hooks/useUrlState";
 import ProductDrawer from "./ProductDrawer";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { formatPlanAccess } from "./membershipFormatters";
@@ -62,6 +63,7 @@ const PlanCardActions = styled.div`
 `;
 
 export default function MembershipProducts({ noWrapperPadding }) {
+  const [productIdRaw, setProductIdParam] = useUrlState("membershipProductId");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -82,24 +84,37 @@ export default function MembershipProducts({ noWrapperPadding }) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!productIdRaw || loading) return;
+    const found = products.find((p) => String(p.id) === String(productIdRaw));
+    if (found) {
+      setEditingId(found.id);
+      setDrawerOpen(true);
+    } else if (products.length > 0) {
+      setProductIdParam(null);
+    }
+  }, [productIdRaw, products, loading, setProductIdParam]);
+
   const closeDrawerOnly = () => {
     setDrawerOpen(false);
     setEditingId(null);
+    setProductIdParam(null);
   };
 
   const handleProductSaved = () => {
     load();
     setDrawerOpen(false);
     setEditingId(null);
+    setProductIdParam(null);
   };
 
   const handleCreate = () => {
+    setProductIdParam(null);
     setEditingId(null);
     setDrawerOpen(true);
   };
   const handleEdit = (record) => {
-    setEditingId(record.id);
-    setDrawerOpen(true);
+    setProductIdParam(record.id);
   };
   const handleDelete = async (id) => {
     const res = await businessMembershipService.deleteProduct(id);

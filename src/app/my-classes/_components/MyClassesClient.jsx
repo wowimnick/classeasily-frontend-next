@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Typography, ConfigProvider, Alert } from "antd";
 import message from "@/lib/message";
 import { CheckCircle, Calendar, X, Frown } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
 
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -207,6 +207,7 @@ const ErrorContainer = styled(motion.div)`
 const MyScheduleAndBookings = () => {
   const { user: currentUser } = useAuthUser();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   // Initialize tab from URL or default to 'upcoming'
@@ -268,6 +269,13 @@ const MyScheduleAndBookings = () => {
       }
     }
   }, [searchParams, loading, activeTab, bookingsData]);
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "upcoming" || t === "completed" || t === "cancelled") {
+      setActiveTab((prev) => (prev !== t ? t : prev));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -485,10 +493,9 @@ const MyScheduleAndBookings = () => {
 
   const handleTabChange = (tabKey) => {
     setActiveTab(tabKey);
-    // Update URL without full reload
-    const newParams = new URLSearchParams(searchParams);
+    const newParams = new URLSearchParams(searchParams.toString());
     newParams.set("tab", tabKey);
-    router.replace(`?${newParams.toString()}`, { scroll: false });
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
   };
 
   const handleMessageInstructor = (booking) => {

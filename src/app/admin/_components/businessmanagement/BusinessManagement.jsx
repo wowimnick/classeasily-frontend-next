@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useUrlState } from "@/hooks/useUrlState";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -1112,6 +1113,7 @@ const BusinessDetailDrawer = ({
       titleIcon={<Briefcase size={20} style={{ color: colors.primary }} />}
       isMobile={isMobile}
       width="min(920px, 96vw)"
+      showCopyLink
     >
       {detailsLoading || !business ? (
         <div style={{ padding: 24 }}>
@@ -1134,8 +1136,7 @@ const BusinessDetailDrawer = ({
 // --- MAIN COMPONENT ---
 const BusinessManagement = () => {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [businessIdRaw, setBusinessIdParam] = useUrlState("businessId");
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(true);
@@ -1143,11 +1144,15 @@ const BusinessManagement = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [growthTrendLoading, setGrowthTrendLoading] = useState(true);
 
-  const handleViewOwnerProfile = useCallback((ownerEmail) => {
-    if (!ownerEmail) return;
-    setDetailDrawerOpen(false);
-    router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
-  }, [router]);
+  const handleViewOwnerProfile = useCallback(
+    (ownerEmail) => {
+      if (!ownerEmail) return;
+      setDetailDrawerOpen(false);
+      setBusinessIdParam(null);
+      router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
+    },
+    [router, setBusinessIdParam]
+  );
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [categoriesList, setCategoriesList] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -1179,6 +1184,11 @@ const BusinessManagement = () => {
   const [timeframe, setTimeframe] = useState("month");
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+
+  const closeBusinessDetailDrawer = useCallback(() => {
+    setDetailDrawerOpen(false);
+    setBusinessIdParam(null);
+  }, [setBusinessIdParam]);
   const [verifDrawerOpen, setVerifDrawerOpen] = useState(false);
   const [verifRequest, setVerifRequest] = useState(null);
   const [verifLoading, setVerifLoading] = useState(false);
@@ -1341,7 +1351,7 @@ const BusinessManagement = () => {
       if (response.success) {
         message.success(successMessage);
         if (actionType === "delete") {
-          setDetailDrawerOpen(false);
+          closeBusinessDetailDrawer();
         }
         refreshAllData(); // Refresh all data to ensure consistency
       } else {
@@ -1464,23 +1474,29 @@ const BusinessManagement = () => {
     }
   };
 
-  const showBusinessDetails = useCallback(async (business) => {
-    if (!business?.businessId) return;
-    setDetailDrawerOpen(true);
-    setDetailsLoading(true);
-    setSelectedBusiness(null);
-    try {
-      const response = await businessManagementService.getBusinessDetails(
-        business.businessId
-      );
-      if (response.success) setSelectedBusiness(response.data);
-      else message.error(response.error || "Failed to fetch details");
-    } catch (e) {
-      message.error("Error fetching details");
-    } finally {
-      setDetailsLoading(false);
-    }
-  }, []);
+  const showBusinessDetails = useCallback(
+    async (business) => {
+      if (!business?.businessId) return;
+      setBusinessIdParam(business.businessId);
+      setDetailDrawerOpen(true);
+      setDetailsLoading(true);
+      setSelectedBusiness(null);
+      try {
+        const response = await businessManagementService.getBusinessDetails(
+          business.businessId
+        );
+        if (response.success && response.data) {
+          setSelectedBusiness(response.data);
+          setBusinessIdParam(response.data.businessId);
+        } else message.error(response.error || "Failed to fetch details");
+      } catch (e) {
+        message.error("Error fetching details");
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [setBusinessIdParam]
+  );
 
   const handleImpersonateOwner = useCallback(
     async (userId) => {
@@ -1511,16 +1527,12 @@ const BusinessManagement = () => {
   );
 
   useEffect(() => {
-    const raw = searchParams.get("businessId");
-    if (!raw) return;
-    const id = Number(raw);
+    if (!businessIdRaw) return;
+    const id = Number(businessIdRaw);
     if (!Number.isFinite(id)) return;
+    if (selectedBusiness?.businessId === id && detailDrawerOpen) return;
     void showBusinessDetails({ businessId: id });
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("businessId");
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [searchParams, pathname, router, showBusinessDetails]);
+  }, [businessIdRaw, selectedBusiness?.businessId, detailDrawerOpen, showBusinessDetails]);
 
   const renderVerifDrawerBody = () => {
     if (verifLoading) {
@@ -2304,7 +2316,7 @@ const BusinessManagement = () => {
 
         <BusinessDetailDrawer
           open={detailDrawerOpen}
-          onClose={() => setDetailDrawerOpen(false)}
+          onClose={closeBusinessDetailDrawer}
           business={detailsLoading ? null : selectedBusiness}
           detailsLoading={detailsLoading}
           onAction={handleAction}

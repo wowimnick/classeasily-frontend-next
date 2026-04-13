@@ -9,10 +9,12 @@ import React, {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useReplaceSearchParams } from "@/hooks/useUrlState";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import ExploreHeader from "../../../components/explore/ExploreHeader";
 import { classService } from "@/services/apiService";
+import message from "@/lib/message";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext"; // IMPORT SEARCH CONTEXT
@@ -74,6 +76,7 @@ function ExploreClientContent({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const replaceExploreParams = useReplaceSearchParams();
 
   // Use Global Search Context for loading state and to preserve header location when switching category/collection
   const { isSearching, setIsSearching, selectedLocation, searchTerm } = useSearch();
@@ -171,6 +174,11 @@ function ExploreClientContent({
           setTotalClassesCount(response.count || 0);
         }
         setNextPageUrl(response.next);
+        if (!isLoadMoreRequest) {
+          replaceExploreParams({ explore_page: null });
+        } else if (pageToFetch) {
+          replaceExploreParams({ explore_page: pageToFetch });
+        }
         if (!isLoadMoreRequest) setFetchError(null);
       } catch (error) {
         if (error.name !== "AbortError" && error.name !== "CanceledError") {
@@ -189,7 +197,7 @@ function ExploreClientContent({
         setIsSearching(false);
       }
     },
-    [setIsSearching]
+    [setIsSearching, replaceExploreParams]
   );
 
   useEffect(() => {
@@ -452,12 +460,45 @@ function ExploreClientContent({
     ]
   );
 
+  const copyExploreLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      message.success("Link copied to clipboard");
+    } catch {
+      message.error("Could not copy link");
+    }
+  }, []);
+
   return (
     <PageLayout>
       <ExploreHeader showOptionsWrapper={true} />
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>
+      <div
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          justifyContent: "flex-end",
+          padding: "4px 16px 0",
+        }}
+      >
+        <button
+          type="button"
+          onClick={copyExploreLink}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--ant-color-primary, #ff385c)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            textDecoration: "underline",
+          }}
+        >
+          Copy link to these results
+        </button>
+      </div>
       <ContentArea>
         {fetchError && !showSkeleton && (
           <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>

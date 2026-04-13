@@ -31,14 +31,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
-import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useUrlState, useReplaceSearchParams } from "@/hooks/useUrlState";
 import { bookingService } from "@/services/apiService";
 import DesktopActiveBookings from "./DesktopActiveBookings";
 import MobileActiveBookings from "./MobileActiveBookings";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import { LordIcon } from "@/services/ReactUtils";
-import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
   MetricPeriodBadge,
   formatDayjsRangeBadge,
@@ -378,17 +379,35 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
+function parsePositiveIntParam(raw) {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 const ActiveBookings = ({
   noWrapperPadding,
   openBookingIdFromQuery = false,
 } = {}) => {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+  const replaceListParams = useReplaceSearchParams();
+  const [urlBookingIdRaw, setUrlBookingId] = useUrlState("bookingId", {
+    enabled: openBookingIdFromQuery,
+  });
+  const [listFiltersHydrated, setListFiltersHydrated] = useState(false);
+  const bookingIdFromUrl = parsePositiveIntParam(urlBookingIdRaw);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
-  const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState(null);
+  const [isViewDrawerVisibleLocal, setIsViewDrawerVisibleLocal] =
+    useState(false);
+  const [selectedBookingIdLocal, setSelectedBookingIdLocal] = useState(null);
+
+  const selectedBookingId = openBookingIdFromQuery
+    ? bookingIdFromUrl
+    : selectedBookingIdLocal;
+  const isViewDrawerVisible = openBookingIdFromQuery
+    ? bookingIdFromUrl != null
+    : isViewDrawerVisibleLocal;
   const [isMobile, setIsMobile] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [dateRange, setDateRange] = useState([dayjs(), null]);
@@ -416,6 +435,73 @@ const ActiveBookings = ({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (listFiltersHydrated) return;
+    setListFiltersHydrated(true);
+    const s = searchParams.get("search") || "";
+    const p = parsePositiveIntParam(searchParams.get("page"));
+    const ps = parsePositiveIntParam(searchParams.get("pageSize"));
+    const sf = searchParams.get("sortField");
+    const so = searchParams.get("sortOrder");
+    const df = searchParams.get("dateFrom");
+    const dt = searchParams.get("dateTo");
+    if (s) setSearchText(s);
+    setTableParams((prev) => ({
+      ...prev,
+      pagination: {
+        current: p ?? prev.pagination.current,
+        pageSize: ps ?? prev.pagination.pageSize,
+      },
+      ...(sf && /^[\w.]+$/.test(sf) && sf.length < 120 ? { sortField: sf } : {}),
+      ...(so === "ascend" || so === "descend" ? { sortOrder: so } : {}),
+    }));
+    if (df && dayjs(df, "YYYY-MM-DD", true).isValid()) {
+      setDateRange((prev) => [
+        dayjs(df, "YYYY-MM-DD"),
+        dt && dayjs(dt, "YYYY-MM-DD", true).isValid()
+          ? dayjs(dt, "YYYY-MM-DD")
+          : prev[1],
+      ]);
+    } else if (dt && dayjs(dt, "YYYY-MM-DD", true).isValid()) {
+      setDateRange((prev) => [prev[0], dayjs(dt, "YYYY-MM-DD")]);
+    }
+  }, [listFiltersHydrated, searchParams]);
+
+  useEffect(() => {
+    if (!listFiltersHydrated) return;
+    const t = setTimeout(() => {
+      const start = dateRange?.[0]?.format("YYYY-MM-DD");
+      const end = dateRange?.[1]?.format("YYYY-MM-DD");
+      const today = dayjs().format("YYYY-MM-DD");
+      replaceListParams({
+        search: searchText.trim() || null,
+        page: tableParams.pagination.current > 1 ? tableParams.pagination.current : null,
+        pageSize:
+          tableParams.pagination.pageSize !== 10
+            ? tableParams.pagination.pageSize
+            : null,
+        sortField:
+          tableParams.sortField !== "schedule_instance__date"
+            ? tableParams.sortField
+            : null,
+        sortOrder:
+          tableParams.sortOrder !== "ascend" ? tableParams.sortOrder : null,
+        dateFrom: start && start !== today ? start : null,
+        dateTo: end || null,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    listFiltersHydrated,
+    searchText,
+    tableParams.pagination.current,
+    tableParams.pagination.pageSize,
+    tableParams.sortField,
+    tableParams.sortOrder,
+    dateRange,
+    replaceListParams,
+  ]);
 
   const debouncedFetch = useCallback(
     debounce(async () => {
@@ -488,20 +574,6 @@ const ActiveBookings = ({
     return () => debouncedFetch.cancel();
   }, [debouncedFetch]);
 
-  useEffect(() => {
-    if (!openBookingIdFromQuery) return;
-    const raw = searchParams.get("bookingId");
-    if (!raw) return;
-    const numericId = Number(raw);
-    if (!Number.isInteger(numericId) || numericId <= 0) return;
-    setSelectedBookingId(numericId);
-    setIsViewDrawerVisible(true);
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("bookingId");
-    const qs = next.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`);
-  }, [openBookingIdFromQuery, searchParams, pathname, router]);
-
   const handleTableChange = (pagination, filters, sorter) => {
     const resetPage =
       sorter.field !== tableParams.sortField ||
@@ -517,15 +589,26 @@ const ActiveBookings = ({
     }));
   };
 
-  const showViewDrawer = useCallback((record) => {
-    setSelectedBookingId(record.id);
-    setIsViewDrawerVisible(true);
-  }, []);
+  const showViewDrawer = useCallback(
+    (record) => {
+      if (openBookingIdFromQuery) {
+        setUrlBookingId(record.id);
+      } else {
+        setSelectedBookingIdLocal(record.id);
+        setIsViewDrawerVisibleLocal(true);
+      }
+    },
+    [openBookingIdFromQuery, setUrlBookingId]
+  );
 
   const handleCloseDrawer = useCallback(() => {
-    setIsViewDrawerVisible(false);
-    setTimeout(() => setSelectedBookingId(null), 300);
-  }, []);
+    if (openBookingIdFromQuery) {
+      setUrlBookingId(null);
+    } else {
+      setIsViewDrawerVisibleLocal(false);
+      setTimeout(() => setSelectedBookingIdLocal(null), 300);
+    }
+  }, [openBookingIdFromQuery, setUrlBookingId]);
 
   const clearFiltersAndRefresh = () => {
     setDateRange([dayjs(), null]);
@@ -687,22 +770,21 @@ const ActiveBookings = ({
             allowClear
           />
           <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap" }}>
-            {!screens.lg ? (
-              <MobileDateRangePicker
-                format="MMM D, YYYY"
-                onChange={setDateRange}
-                value={dateRange}
-                placeholder="Start Date – End Date"
-              />
-            ) : (
-              <StyledRangePicker
-                format="MMM D, YYYY"
-                onChange={setDateRange}
-                value={dateRange}
-                allowClear
-                placeholder={["Start Date", "End Date"]}
-              />
-            )}
+            <ResponsiveDateRangePicker
+              isMobile={!screens.lg}
+              format="MMM D, YYYY"
+              onChange={setDateRange}
+              value={dateRange}
+              placeholder="Start Date – End Date"
+              renderDesktop={(rp) => (
+                <StyledRangePicker
+                  {...rp}
+                  format="MMM D, YYYY"
+                  allowClear
+                  placeholder={["Start Date", "End Date"]}
+                />
+              )}
+            />
             <ActionButton
               ref={refreshButtonRef}
               onMouseEnter={() => handleButtonHover(true)}

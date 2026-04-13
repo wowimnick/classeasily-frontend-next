@@ -60,7 +60,7 @@ import { LordIcon } from "@/services/ReactUtils";
 
 import {
   MobileTimePicker,
-  MobileRangePicker,
+  MobileDateRangePicker,
 } from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(isBetween);
@@ -1163,7 +1163,11 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 <Label>Date Range</Label>
                 <CompactFormItem name="dateRange" rules={[{ required: true }]}>
                   {isMobile ? (
-                    <MobileRangePicker error={false} />
+                    <MobileDateRangePicker
+                      disabled={isLocked}
+                      error={false}
+                      format="MMM D, YYYY"
+                    />
                   ) : (
                     <StyledRangePicker disabled={isLocked} />
                   )}

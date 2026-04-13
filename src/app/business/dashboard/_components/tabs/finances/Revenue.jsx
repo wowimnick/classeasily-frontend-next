@@ -23,6 +23,7 @@ import {
   Lock,
   Globe,
   LayoutGrid,
+  Receipt,
 } from "lucide-react";
 import {
   DatePicker,
@@ -61,7 +62,7 @@ import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
-import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import {
   MetricPeriodBadge,
@@ -606,6 +607,8 @@ const Revenue = forwardRef((props, ref) => {
     metrics: {
       total_gross_revenue: 0,
       estimated_platform_fees: 0,
+      platform_commission: 0,
+      stripe_processing_fees: 0,
       estimated_net_revenue: 0,
       average_order_value: 0,
       revenue_per_booker: 0,
@@ -790,14 +793,26 @@ const Revenue = forwardRef((props, ref) => {
       footer: "vs. previous period",
     },
     {
-      key: "estimated_platform_fees",
-      title: "Est. Platform Fees",
-      value: analytics.metrics.estimated_platform_fees,
+      key: "platform_commission",
+      title: "Platform Commission",
+      value:
+        analytics.metrics.platform_commission ??
+        analytics.metrics.estimated_platform_fees,
       prefix: "$",
       icon: <TrendingDown size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
-      footer: "Total estimated platform fees",
+      footer: "ClassEasily fee (% of subtotal; tier / widget plan)",
+    },
+    {
+      key: "stripe_processing_fees",
+      title: "Card Processing",
+      value: analytics.metrics.stripe_processing_fees ?? 0,
+      prefix: "$",
+      icon: <Receipt size={20} />,
+      color: colors.textSecondary,
+      background: `rgba(100, 116, 139, 0.12)`,
+      footer: "Stripe est. 2.9% + 30¢ (deducted from your payout)",
     },
     {
       key: "estimated_net_revenue",
@@ -807,7 +822,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <TrendingUp size={20} />,
       color: colors.chart.blue,
       background: `rgba(59, 130, 246, 0.1)`,
-      footer: "Gross revenue minus platform fees",
+      footer: "After commission and card processing",
     },
     {
       key: "average_order_value",
@@ -912,20 +927,16 @@ const Revenue = forwardRef((props, ref) => {
                 ]}
               />
             </SourceSegmentedWrapper>
-            {isMobile ? (
-              <MobileDateRangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={handleDateChange}
-                format="MMM D, YYYY"
-              />
-            ) : (
-              <StyledRangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={handleDateChange}
-                format="MMM D, YYYY"
-                allowClear={false}
-              />
-            )}
+            <ResponsiveDateRangePicker
+              isMobile={isMobile}
+              value={[filterParams.startDate, filterParams.endDate]}
+              onChange={handleDateChange}
+              format="MMM D, YYYY"
+              allowClear={false}
+              renderDesktop={(rp) => (
+                <StyledRangePicker {...rp} format="MMM D, YYYY" allowClear={false} />
+              )}
+            />
             <ExperienceFilterSelect
               placeholder="Filter by Experience"
               value={filterParams.classId}
@@ -1123,11 +1134,19 @@ const Revenue = forwardRef((props, ref) => {
                   />
                   <Line
                     type="monotone"
-                    dataKey="platform_fees"
-                    name="Fees"
+                    dataKey="platform_commission"
+                    name="Platform commission"
                     stroke={colors.chart.red}
                     strokeWidth={2}
                     strokeDasharray="3 3"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="stripe_processing_fees"
+                    name="Card processing"
+                    stroke={colors.chart.orange}
+                    strokeWidth={2}
                     dot={false}
                   />
                 </ComposedChart>

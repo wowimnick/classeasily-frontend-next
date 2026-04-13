@@ -57,7 +57,7 @@ import {
 } from "@/services/apiService";
 import { useSubscription } from "@/context/SubscriptionContext";
 import debounce from "lodash/debounce";
-import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -1076,18 +1076,19 @@ const RulesStep = ({ isMobile }) => (
         <Info size={14} /> Leave blank if this discount has no expiration.
       </HelpText>
       <Form.Item name="valid_dates">
-        {isMobile ? (
-          <MobileDateRangePicker
-            format="YYYY-MM-DD"
-            placeholder="Select valid date range (optional)"
-          />
-        ) : (
-          <StyledRangePicker
-            format="YYYY-MM-DD"
-            size="middle"
-            style={{ width: "100%" }}
-          />
-        )}
+        <ResponsiveDateRangePicker
+          isMobile={isMobile}
+          format="YYYY-MM-DD"
+          placeholder="Select valid date range (optional)"
+          renderDesktop={(rp) => (
+            <StyledRangePicker
+              {...rp}
+              format="YYYY-MM-DD"
+              size="middle"
+              style={{ width: "100%" }}
+            />
+          )}
+        />
       </Form.Item>
     </FormGroup>
     <FormGrid>

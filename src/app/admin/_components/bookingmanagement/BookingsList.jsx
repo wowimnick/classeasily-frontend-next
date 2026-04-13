@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useReplaceSearchParams } from "@/hooks/useUrlState";
 import styled from "styled-components";
 
 import dayjs from "dayjs";
@@ -69,6 +70,7 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
   AdminTableSkeleton,
   AdminMetricCardsSkeleton,
@@ -611,6 +613,23 @@ const DetailDrawerContent = ({
 
   const { payment } = booking;
 
+  const stripeProcessingResolved = payment
+    ? (() => {
+        const raw = payment.stripe_processing_fee;
+        if (raw != null && raw !== "") {
+          const n = Number(raw);
+          if (!Number.isNaN(n)) {
+            return { amount: Math.max(0, n), estimated: false };
+          }
+        }
+        const gross = Number(payment.amount || 0);
+        return {
+          amount: Math.max(0, gross * 0.029 + 0.3),
+          estimated: true,
+        };
+      })()
+    : { amount: 0, estimated: true };
+
   const bookerCard = (
     <BookerViewCard>
       <StudentAvatar src={booking.user_details?.avatar_medium_url}>
@@ -818,15 +837,13 @@ const DetailDrawerContent = ({
                       <CreditCard />
                     </InfoIcon>
                     <InfoContent>
-                      <InfoLabel>Stripe processing fee (est.)</InfoLabel>
+                      <InfoLabel>
+                        Stripe processing fee
+                        {stripeProcessingResolved.estimated ? " (est.)" : ""}
+                      </InfoLabel>
                       <InfoValue>
                         −
-                        {formatCurrency(
-                          Math.max(
-                            0,
-                            Number(payment.amount || 0) * 0.029 + 0.3
-                          )
-                        )}
+                        {formatCurrency(stripeProcessingResolved.amount)}
                       </InfoValue>
                     </InfoContent>
                   </InfoItem>
@@ -846,7 +863,7 @@ const DetailDrawerContent = ({
                       {(() => {
                         const gross = Number(payment.amount || 0);
                         const plat = Number(payment.platform_fee_amount || 0);
-                        const stripeEst = Math.max(0, gross * 0.029 + 0.3);
+                        const stripeAmt = stripeProcessingResolved.amount;
                         const net = Number(payment.net_payout_amount || 0);
                         const line = (label, val, neg) => (
                           <div
@@ -879,7 +896,13 @@ const DetailDrawerContent = ({
                           >
                             {line("Gross amount", gross, false)}
                             {line("Platform fee", plat, true)}
-                            {line("Stripe fee (est.)", stripeEst, true)}
+                            {line(
+                              stripeProcessingResolved.estimated
+                                ? "Stripe fee (est.)"
+                                : "Stripe fee",
+                              stripeAmt,
+                              true
+                            )}
                             <div
                               style={{
                                 borderTop: `1px solid ${colors.border}`,
@@ -1112,6 +1135,7 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
       isMobile={isMobile}
       width="860px"
       footer={drawerFooter}
+      showCopyLink
     >
       <DrawerScrollContent>
         <DetailDrawerContent
@@ -1245,8 +1269,8 @@ const MobileBookingItem = ({ booking, onViewDetails }) => (
 );
 
 const BookingsList = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const replaceParams = useReplaceSearchParams();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1439,25 +1463,36 @@ const BookingsList = () => {
     setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBooking(booking);
+    replaceParams({
+      bookingId: String(booking.id),
+      id: null,
+    });
 
     try {
       const response = await adminBookingService.getBookingDetails(booking.id);
       if (response.success) {
         setSelectedBooking(response.data);
+        replaceParams({
+          bookingId: String(response.data.id),
+          id: null,
+        });
       } else {
         message.error(response.error || "Failed to load booking details");
         setDetailDrawerOpen(false);
+        replaceParams({ bookingId: null, id: null });
       }
     } catch (e) {
       message.error("Error fetching details");
       setDetailDrawerOpen(false);
+      replaceParams({ bookingId: null, id: null });
     } finally {
       setDetailsLoading(false);
     }
   };
 
   useEffect(() => {
-    const rawId = searchParams.get("id");
+    const rawId =
+      searchParams.get("bookingId") || searchParams.get("id");
     if (!rawId) {
       bookingDeepLinkLastIdRef.current = "";
       return;
@@ -1467,8 +1502,8 @@ const BookingsList = () => {
     if (Number.isNaN(bookingId)) return;
     bookingDeepLinkLastIdRef.current = rawId;
     showBookingDetails({ id: bookingId });
-    router.replace("/admin/all-bookings", { scroll: false });
-  }, [searchParams, router]);
+    replaceParams({ bookingId: String(bookingId), id: null });
+  }, [searchParams, replaceParams]);
 
   const handleOpenCancelModal = () => setIsCancelModalVisible(true);
 
@@ -1579,7 +1614,7 @@ const BookingsList = () => {
 
   const totalRevenue = dashboardStats.total_confirmed_revenue ?? dashboardStats.confirmed_bookings * Number(dashboardStats.average_booking_value);
   const platformFees = dashboardStats.total_platform_fees ?? totalRevenue * 0.08;
-  const stripeFees = dashboardStats.total_stripe_fees ?? totalRevenue * 0.029;
+  const stripeFees = dashboardStats.total_stripe_fees ?? 0;
   const statsRangeLabel =
     filterParams.startDate && filterParams.endDate
       ? `${filterParams.startDate.format("MMM D, YYYY")} – ${filterParams.endDate.format("MMM D, YYYY")}`
@@ -1649,7 +1684,7 @@ const BookingsList = () => {
       title: "Stripe Fees",
       icon: CreditCard,
       value: stripeFees,
-      footer: "Payment processing (est.)",
+      footer: "Recorded on payments (passthrough to hosts)",
       color: colors.textSecondary,
       isCurrency: true,
       periodBadge: metricsPeriodBadge,
@@ -1888,16 +1923,34 @@ const BookingsList = () => {
                 <Option value="cancelled">Cancelled</Option>
                 <Option value="pending">Pending</Option>
               </Select>
-              <RangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={(dates) =>
-                  handleFilterChange({
-                    startDate: dates?.[0],
-                    endDate: dates?.[1],
-                  })
-                }
-                style={{ width: isMobile ? "100%" : "auto" }}
-              />
+              {isMobile ? (
+                <MobileDateRangePicker
+                  allowClear
+                  value={
+                    filterParams.startDate && filterParams.endDate
+                      ? [filterParams.startDate, filterParams.endDate]
+                      : null
+                  }
+                  onChange={(dates) =>
+                    handleFilterChange({
+                      startDate: dates?.[0] ?? null,
+                      endDate: dates?.[1] ?? null,
+                    })
+                  }
+                  format="MMM D, YYYY"
+                />
+              ) : (
+                <RangePicker
+                  value={[filterParams.startDate, filterParams.endDate]}
+                  onChange={(dates) =>
+                    handleFilterChange({
+                      startDate: dates?.[0],
+                      endDate: dates?.[1],
+                    })
+                  }
+                  style={{ width: "auto" }}
+                />
+              )}
             </SearchFilterContainer>
           </FilterBar>
 
@@ -1964,7 +2017,11 @@ const BookingsList = () => {
 
         <DetailDrawerModal
           open={detailDrawerOpen}
-          onClose={() => setDetailDrawerOpen(false)}
+          onClose={() => {
+            setDetailDrawerOpen(false);
+            replaceParams({ bookingId: null, id: null });
+            bookingDeepLinkLastIdRef.current = "";
+          }}
           booking={selectedBooking}
           isLoading={detailsLoading}
           isMobile={isMobile}

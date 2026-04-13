@@ -50,6 +50,8 @@ import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import dayjs from "dayjs";
 import { formatPhoneNumber } from "@/services/utils";
 import { useAuth } from "@/lib/auth-client";
+import { useSearchParams } from "next/navigation";
+import { useUrlState, useReplaceSearchParams } from "@/hooks/useUrlState";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -471,10 +473,20 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
+function parsePositiveIntGuests(raw) {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 const Guests = forwardRef((props, ref) => {
+  const searchParams = useSearchParams();
+  const replaceListParams = useReplaceSearchParams();
   const [guests, setGuests] = useState([]);
   const [searchText, setSearchText] = useState("");
   const { user: currentUser } = useAuth();
+  const [guestIdRaw, setGuestId] = useUrlState("guestId");
+  const [listFiltersHydrated, setListFiltersHydrated] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState(null);
   const [isProfileVisible, setIsProfileVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -581,16 +593,60 @@ const Guests = forwardRef((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (listFiltersHydrated) return;
+    setListFiltersHydrated(true);
+    const s = searchParams.get("search") || "";
+    const p = parsePositiveIntGuests(searchParams.get("page"));
+    const st = searchParams.get("status");
+    const seg = searchParams.get("segment") || "";
+    if (s) setSearchText(s);
+    if (p) setPagination((prev) => ({ ...prev, current: p }));
+    if (st === "all" || st === "active" || st === "inactive") setStatusFilter(st);
+    if (seg !== undefined && seg !== null) setSegmentFilter(seg);
+  }, [listFiltersHydrated, searchParams]);
+
+  useEffect(() => {
+    if (!listFiltersHydrated) return;
+    const t = setTimeout(() => {
+      replaceListParams({
+        search: searchText.trim() || null,
+        page: pagination.current > 1 ? pagination.current : null,
+        status: statusFilter !== "all" ? statusFilter : null,
+        segment: segmentFilter || null,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    listFiltersHydrated,
+    searchText,
+    pagination.current,
+    statusFilter,
+    segmentFilter,
+    replaceListParams,
+  ]);
+
+  useEffect(() => {
+    if (!guestIdRaw) {
+      setIsProfileVisible(false);
+      setSelectedGuest(null);
+      return;
+    }
+    const found = guests.find((g) => String(g.id) === String(guestIdRaw));
+    setSelectedGuest(found || { id: guestIdRaw });
+    setIsProfileVisible(true);
+  }, [guestIdRaw, guests]);
+
   const handlePageChange = (page) => {
     fetchGuestsData(page, searchText, statusFilter, segmentFilter);
   };
 
   const handleGuestClick = (guest) => {
-    setSelectedGuest(guest);
-    setIsProfileVisible(true);
+    setGuestId(String(guest.id));
   };
 
   const handleCloseProfile = () => {
+    setGuestId(null);
     setIsProfileVisible(false);
     setTimeout(() => setSelectedGuest(null), 300); // Wait for animation
   };

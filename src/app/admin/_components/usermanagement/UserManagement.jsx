@@ -24,7 +24,6 @@ import {
   Empty,
   List,
   Divider,
-  DatePicker,
   Typography,
   Radio,
   Popconfirm,
@@ -58,6 +57,7 @@ import {
   Send,
   BookOpen,
   Search,
+  Link2,
 } from "lucide-react";
 import {
   AreaChart,
@@ -78,14 +78,15 @@ import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { useAuthStore } from "@/lib/auth-client";
+import { useUrlState, useReplaceSearchParams } from "@/hooks/useUrlState";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import ShadowUserModal from "./ShadowUserModal";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
 import { AdminAreaChartSkeleton, AdminPieChartSkeleton, AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 
-const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -812,6 +813,8 @@ const PIE_COLORS = Object.values(colors).filter(
 const UserManagementDashboard = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [userIdRaw, setUserIdParam] = useUrlState("userId");
+  const replaceParams = useReplaceSearchParams();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1050,6 +1053,11 @@ const UserManagementDashboard = () => {
     }
   };
 
+  const closeDetailsDrawer = useCallback(() => {
+    setIsDetailsDrawerOpen(false);
+    setUserIdParam(null);
+  }, [setUserIdParam]);
+
   const showUserDetails = async (user) => {
     setIsDetailsDrawerOpen(true);
     setDetailLoading(true);
@@ -1060,6 +1068,7 @@ const UserManagementDashboard = () => {
       if (response.success && response.data) {
         const fullUser = response.data;
         setSelectedUser(fullUser);
+        setUserIdParam(fullUser.userId);
 
         // Initial Fetch for Tabs
         fetchUserBookings(fullUser.userId, 1, 5);
@@ -1069,11 +1078,11 @@ const UserManagementDashboard = () => {
         message.error(
           response.error?.detail || "Failed to fetch user details."
         );
-        setIsDetailsDrawerOpen(false);
+        closeDetailsDrawer();
       }
     } catch (error) {
       message.error("An error occurred while fetching user details.");
-      setIsDetailsDrawerOpen(false);
+      closeDetailsDrawer();
     } finally {
       setDetailLoading(false);
     }
@@ -1091,7 +1100,7 @@ const UserManagementDashboard = () => {
           page: 1,
           page_size: 5,
         });
-        router.replace("/admin/users", { scroll: false });
+        replaceParams({ openUserByEmail: null });
         if (res.success && res.data?.results?.length > 0) {
           const first = res.data.results[0];
           await showUserDetails(first);
@@ -1099,12 +1108,21 @@ const UserManagementDashboard = () => {
           message.warning("No user found with that email. Try searching in the table.");
         }
       } catch {
-        router.replace("/admin/users", { scroll: false });
+        replaceParams({ openUserByEmail: null });
         message.error("Could not look up owner profile.");
       }
     };
     openByEmail();
-  }, [searchParams]);
+  }, [searchParams, replaceParams]);
+
+  useEffect(() => {
+    if (!userIdRaw) return;
+    const uid = parseInt(String(userIdRaw), 10);
+    if (Number.isNaN(uid)) return;
+    if (selectedUser?.userId === uid && isDetailsDrawerOpen) return;
+    void showUserDetails({ userId: uid });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open drawer from URL only when userId param changes
+  }, [userIdRaw]);
 
   const handleBookingTableChange = (pagination) => {
     if (selectedUser)
@@ -1213,7 +1231,7 @@ const UserManagementDashboard = () => {
         if (action === userAdminService.deleteUser)
           fetchMetrics(getMetricsDateRange());
         if (isDetailsDrawerOpen) {
-          setIsDetailsDrawerOpen(false);
+          closeDetailsDrawer();
         }
       } else {
         message.error(`Failed: ${response.error?.detail || "Unknown error"}`);
@@ -2439,12 +2457,13 @@ const UserManagementDashboard = () => {
         {/* User Details Drawer - single merged header, Vaul on mobile via AdminResponsiveDrawer */}
         <AdminResponsiveDrawer
           open={isDetailsDrawerOpen}
-          onClose={() => setIsDetailsDrawerOpen(false)}
+          onClose={closeDetailsDrawer}
           title="User Details"
           titleIcon={<FileText size={18} />}
           isMobile={isMobile}
           width="860px"
           hideHeader={!!selectedUser && !detailLoading}
+          showCopyLink={!selectedUser || detailLoading}
         >
           {detailLoading || !selectedUser ? (
             renderUserDetailsContent()
@@ -2475,6 +2494,7 @@ const UserManagementDashboard = () => {
                   </div>
                 </UserInfo>
                 <Space size="small" wrap>
+                  <CopyPageLinkButton icon={Link2} label="Copy link to this user" size={18} />
                   <Button size="small" icon={<LogIn size={14} />} onClick={() => handleImpersonateUser(selectedUser.userId)}>
                     Impersonate
                   </Button>
@@ -2487,7 +2507,7 @@ const UserManagementDashboard = () => {
                       Unlock
                     </Button>
                   )}
-                  <CloseButton icon={<X size={20} />} onClick={() => setIsDetailsDrawerOpen(false)} />
+                  <CloseButton icon={<X size={20} />} onClick={closeDetailsDrawer} />
                 </Space>
               </MergedUserDrawerHeader>
               {renderUserDetailsContent()}

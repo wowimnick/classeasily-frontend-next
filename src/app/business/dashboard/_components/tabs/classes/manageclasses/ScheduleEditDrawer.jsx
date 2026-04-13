@@ -61,7 +61,7 @@ import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
   MobileDatePicker,
   MobileTimePicker,
-  MobileRangePicker,
+  MobileDateRangePicker,
 } from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(isBetween);
@@ -1771,7 +1771,7 @@ const ScheduleEditDrawer = ({
                       <Label>Date Range</Label>
                       <CompactFormItem name="date_range" rules={RULES.date_range}>
                         {isMobile ? (
-                          <MobileRangePicker />
+                          <MobileDateRangePicker format="MMM D, YYYY" />
                         ) : (
                           <FullWidthRangePicker inputReadOnly />
                         )}

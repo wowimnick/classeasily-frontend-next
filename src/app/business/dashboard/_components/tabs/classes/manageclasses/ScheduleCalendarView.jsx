@@ -22,6 +22,7 @@ import {
   Modal,
   Button,
   Dropdown,
+  Grid,
 } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -55,6 +56,7 @@ import {
 } from "lucide-react";
 import { businessClassService, businessService, scheduleService } from "@/services/apiService";
 import message from "@/lib/message";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isBetween);
@@ -1668,6 +1670,8 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
   const [duration, setDuration] = useState(60);
   const [selectedDays, setSelectedDays] = useState([]);
   const [times, setTimes] = useState([dayjs("09:00", "HH:mm")]);
+  const screens = Grid.useBreakpoint();
+  const isScheduleFormMobile = !screens.lg;
 
   const isEdit = !!schedule;
 
@@ -1896,7 +1900,18 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
           <FieldGroup>
             <FieldLabel>Date Range</FieldLabel>
             <Form.Item name="date_range" noStyle rules={[{ required: true, message: "Required" }]}>
-              <DatePicker.RangePicker style={{ width: "100%" }} inputReadOnly disabledDate={d => d && d < dayjs().startOf("day")} />
+              {isScheduleFormMobile ? (
+                <MobileDateRangePicker
+                  disabledDate={(d) => d && d < dayjs().startOf("day")}
+                  format="MMM D, YYYY"
+                />
+              ) : (
+                <DatePicker.RangePicker
+                  style={{ width: "100%" }}
+                  inputReadOnly
+                  disabledDate={(d) => d && d < dayjs().startOf("day")}
+                />
+              )}
             </Form.Item>
           </FieldGroup>
           <FieldGroup>
@@ -2251,7 +2266,18 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
             <FieldGroup>
               <FieldLabel>Date Range</FieldLabel>
               <Form.Item name="date_range" noStyle rules={[{ required: true, message: "Required" }]}>
-                <DatePicker.RangePicker style={{ width: "100%" }} inputReadOnly disabledDate={d => d && d < dayjs().startOf("day")} />
+                {isScheduleFormMobile ? (
+                  <MobileDateRangePicker
+                    disabledDate={(d) => d && d < dayjs().startOf("day")}
+                    format="MMM D, YYYY"
+                  />
+                ) : (
+                  <DatePicker.RangePicker
+                    style={{ width: "100%" }}
+                    inputReadOnly
+                    disabledDate={(d) => d && d < dayjs().startOf("day")}
+                  />
+                )}
               </Form.Item>
             </FieldGroup>
             <FieldGroup>

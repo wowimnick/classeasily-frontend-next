@@ -1148,6 +1148,8 @@ export default function ClassPageClient({
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedOptionIdForModal, setSelectedOptionIdForModal] =
     useState(null);
+  const [bookingModalInitialDate, setBookingModalInitialDate] =
+    useState(null);
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
   const [isFavorite, setIsFavorite] = useState(classData.is_favorited);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
@@ -1167,6 +1169,29 @@ export default function ClassPageClient({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Deep links: ?optionId=&date=YYYY-MM-DD&book=true
+  useEffect(() => {
+    if (!mounted || !classData?.options?.length) return;
+    const oidRaw = searchParams.get("optionId");
+    const dateRaw = searchParams.get("date");
+    const bookRaw = searchParams.get("book");
+    const isoOk =
+      typeof dateRaw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateRaw);
+    if (isoOk) setBookingModalInitialDate(dateRaw);
+    if (oidRaw) {
+      const n = parseInt(oidRaw, 10);
+      if (
+        !Number.isNaN(n) &&
+        classData.options.some((o) => Number(o.optionId) === n || String(o.optionId) === String(oidRaw))
+      ) {
+        setSelectedOptionIdForModal(n);
+      }
+    }
+    if (bookRaw === "true" || bookRaw === "1") {
+      setIsBookingModalOpen(true);
+    }
+  }, [mounted, classData, searchParams]);
 
   // Scroll to top when opening the class page (e.g. from a scrolled list)
   useEffect(() => {
@@ -1317,6 +1342,42 @@ export default function ClassPageClient({
 
   const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
 
+  /** Deep-link query string for share / copy link (selected option + date when known). */
+  const classPageShareQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    let optionId = null;
+    let dateStr = null;
+
+    if (mobileReserve.isMobileView && optionToDisplayOnCard?.optionId != null) {
+      optionId = String(optionToDisplayOnCard.optionId);
+      if (mobileReserve.mobileSelectedSlot?.date) {
+        dateStr = mobileReserve.mobileSelectedSlot.date;
+      } else if (mobileReserve.mobileSelectedDate) {
+        dateStr = getLocalYYYYMMDD(mobileReserve.mobileSelectedDate);
+      }
+    }
+    if (selectedOptionIdForModal != null) {
+      optionId = String(selectedOptionIdForModal);
+    }
+    if (
+      bookingModalInitialDate &&
+      /^\d{4}-\d{2}-\d{2}$/.test(bookingModalInitialDate)
+    ) {
+      dateStr = bookingModalInitialDate;
+    }
+
+    if (optionId) params.set("optionId", optionId);
+    if (dateStr) params.set("date", dateStr);
+    return params.toString();
+  }, [
+    mobileReserve.isMobileView,
+    optionToDisplayOnCard?.optionId,
+    mobileReserve.mobileSelectedSlot?.date,
+    mobileReserve.mobileSelectedDate,
+    selectedOptionIdForModal,
+    bookingModalInitialDate,
+  ]);
+
   /* Preload review drawer chunk on mobile so Reserve button open works when tapped quickly after load */
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
@@ -1365,6 +1426,7 @@ export default function ClassPageClient({
           isTogglingFavorite={isTogglingFavorite}
           onFavoriteClick={handleFavoriteClick}
           onShareClick={handleOpenShareModal}
+          shareUrlQueryString={classPageShareQuery}
         />
 
         <MainContentLayout>
@@ -1740,10 +1802,14 @@ export default function ClassPageClient({
           {isBookingModalOpen && (
             <BookingModal
               isOpen={isBookingModalOpen}
-              onClose={() => setIsBookingModalOpen(false)}
+              onClose={() => {
+                setIsBookingModalOpen(false);
+                setBookingModalInitialDate(null);
+              }}
               classData={classData}
               optionId={selectedOptionIdForModal}
               initialParticipantCount={1}
+              initialScheduleDate={bookingModalInitialDate}
             />
           )}
         </>

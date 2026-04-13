@@ -1,6 +1,13 @@
 "use client";
-import Overview from "./_components/tabs/overview/Overview";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+/** Canonical dashboard entry: `/business/dashboard` → `/business/dashboard/overview` */
 export default function DashboardRootPage() {
-  return <Overview />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/business/dashboard/overview");
+  }, [router]);
+  return null;
 }

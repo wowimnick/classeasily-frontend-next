@@ -39,6 +39,7 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -1062,11 +1063,24 @@ const UserAuditLog = () => {
                     </Option>
                   ))}
               </Select>
-              <RangePicker
-                value={filters.dateRange}
-                onChange={(dates) => handleFilterChange({ dateRange: dates })}
-                style={{ width: isMobile ? "100%" : 280 }}
-              />
+              {isMobile ? (
+                <MobileDateRangePicker
+                  allowClear
+                  value={filters.dateRange}
+                  onChange={(dates) =>
+                    handleFilterChange({ dateRange: dates ?? null })
+                  }
+                  format="MMM D, YYYY"
+                />
+              ) : (
+                <RangePicker
+                  value={filters.dateRange}
+                  onChange={(dates) =>
+                    handleFilterChange({ dateRange: dates })
+                  }
+                  style={{ width: 280 }}
+                />
+              )}
             </SearchFilterContainer>
           </FilterBar>
 

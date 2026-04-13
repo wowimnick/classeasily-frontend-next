@@ -23,6 +23,10 @@ import {
   Lock,
   Globe,
   LayoutGrid,
+  ChevronDown,
+  Mail,
+  Phone,
+  X,
 } from "lucide-react";
 import {
   DatePicker,
@@ -36,6 +40,7 @@ import {
   Grid,
   Tooltip as AntTooltip,
   Segmented,
+  Tag,
 } from "antd";
 import message from "@/lib/message";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -61,7 +66,7 @@ import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import { bookingAnalyticsService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
-import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import {
   AdminMetricCardsSkeleton,
@@ -73,6 +78,8 @@ import {
   MetricPeriodBadge,
   formatDayjsRangeBadge,
 } from "../../shared/MetricPeriodBadge";
+import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -499,6 +506,321 @@ const EmptyStateSubtext = styled.div`
   max-width: 300px;
 `;
 
+const FunnelWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 4px;
+`;
+
+const FunnelEmptyNotice = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  line-height: 1.45;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: ${colors.lightBg};
+  border-radius: 8px;
+  border: 1px solid ${colors.border};
+`;
+
+const FunnelSummaryRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  @media (max-width: 400px) {
+    flex-direction: column;
+  }
+`;
+
+const FunnelSummaryPill = styled.div`
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: ${(props) => props.$bg || colors.lightBg};
+  border: 1px solid ${colors.border};
+`;
+
+const FunnelSummaryLabel = styled.div`
+  font-size: 11px;
+  color: ${colors.textSecondary};
+  font-weight: 600;
+  margin-bottom: 2px;
+`;
+
+const FunnelSummaryValue = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+`;
+
+const FunnelStepsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  padding: 2px 0 6px;
+  gap: 0;
+`;
+
+const FunnelStepBlock = styled.div`
+  width: 100%;
+`;
+
+const FunnelStepLabel = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  line-height: 1.35;
+  margin-bottom: 5px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const FunnelBarLine = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+`;
+
+const FunnelBarTrack = styled.div`
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const FunnelBarFill = styled.div`
+  height: 100%;
+  width: ${(props) => props.$widthPct}%;
+  min-width: ${(props) => (props.$hasSessions ? "6px" : "0")};
+  background: ${(props) => props.$color};
+  border-radius: 8px;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const FunnelBarCountLabel = styled.div`
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5rem;
+  text-align: right;
+  line-height: 1;
+`;
+
+const FunnelDropOffIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 4px;
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+`;
+
+const GuestDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
+`;
+
+const GuestDrawerMobile = styled(Drawer.Content)`
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 88%;
+  max-height: 92vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+
+const GuestDrawerDesktop = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: min(92vw, 440px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const GuestDrawerHandle = styled(Drawer.Handle)`
+  width: 40px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  margin: 12px auto 6px;
+  flex-shrink: 0;
+`;
+
+const GuestDrawerHeader = styled.div`
+  flex-shrink: 0;
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const GuestDrawerTitleBlock = styled.div`
+  min-width: 0;
+`;
+
+const GuestDrawerTitle = styled.h2`
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
+const GuestDrawerSubtitle = styled.p`
+  margin: 0;
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  line-height: 1.45;
+`;
+
+const GuestDrawerClose = styled.button`
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: ${colors.lightBg};
+  color: ${colors.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  &:hover {
+    background: #eef2f7;
+    color: ${colors.textPrimary};
+  }
+`;
+
+const GuestDrawerSegmentRow = styled.div`
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 12px;
+  flex-shrink: 0;
+`;
+
+const GuestSegmentBtn = styled.button`
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid ${colors.border};
+  background: ${(p) => (p.$active ? "rgba(255, 56, 92, 0.08)" : "#fff")};
+  color: ${(p) => (p.$active ? colors.primary : colors.textSecondary)};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  ${(p) =>
+    p.$active &&
+    `
+    border-color: rgba(255, 56, 92, 0.35);
+  `}
+`;
+
+const GuestDrawerBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 20px;
+  background: ${colors.lightBg};
+  -webkit-overflow-scrolling: touch;
+`;
+
+const GuestCard = styled.div`
+  background: #fff;
+  border: 1px solid ${colors.border};
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+`;
+
+const GuestCardName = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin-bottom: 8px;
+  word-break: break-word;
+`;
+
+const GuestCardMeta = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const GuestCardRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+`;
+
+const GuestCardIcon = styled.span`
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #94a3b8;
+  display: flex;
+`;
+
+const FunnelDeviceRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+`;
+
+const FunnelDevicePill = styled.div`
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: ${colors.lightBg};
+  border: 1px solid ${colors.border};
+  font-size: 11px;
+  color: ${colors.textSecondary};
+  line-height: 1.5;
+
+  strong {
+    color: ${colors.textPrimary};
+  }
+`;
+
 const CustomTooltip = ({ active, payload, label, type }) => {
   if (active && payload && payload.length) {
     return (
@@ -590,8 +912,13 @@ const BookingTrends = () => {
     class_insights: { popular_classes: [] },
     booking_patterns: { time_distribution: [], booking_types: [] },
     widget_funnel: null,
+    guest_type_bookings: { new: [], returning: [], max_per_segment: 300 },
   });
-  const [businessClasses, setBusinessClasses] = useState([]);
+  const [guestTypeDrawerOpen, setGuestTypeDrawerOpen] = useState(false);
+  const [guestTypeDrawerSegment, setGuestTypeDrawerSegment] = useState("new");
+  const [businessClasses, setBusinessClasses] = useState([
+    { value: "all", label: "All Experiences" },
+  ]);
   const abortControllerRef = useRef(null);
   const screens = useBreakpoint();
   const isMobile = !screens.lg;
@@ -603,11 +930,20 @@ const BookingTrends = () => {
         {},
       );
       if (result.success && result.data?.class_insights?.popular_classes) {
-        const uniqueClasses = result.data.class_insights.popular_classes.map(
-          (c) => ({ value: c.class_id, label: c.class_name }),
-        );
+        const seen = new Set();
+        const uniqueClasses = result.data.class_insights.popular_classes
+          .map((c) => ({
+            value: c.class_id ?? c.classId,
+            label: c.class_name,
+          }))
+          .filter((row) => {
+            if (row.value == null || row.label == null) return false;
+            if (seen.has(row.value)) return false;
+            seen.add(row.value);
+            return true;
+          });
         setBusinessClasses([
-          { value: undefined, label: "All Experiences" },
+          { value: "all", label: "All Experiences" },
           ...uniqueClasses,
         ]);
       }
@@ -675,7 +1011,10 @@ const BookingTrends = () => {
   const handleClassFilterChange = (value) => {
     setFilterParams((p) => ({
       ...p,
-      classId: value === undefined ? null : value,
+      classId:
+        value === undefined || value === null || value === "all"
+          ? null
+          : value,
     }));
   };
 
@@ -815,22 +1154,173 @@ const BookingTrends = () => {
     },
   ];
 
-  const guestTypeData = [
-    {
-      type: "New Guests",
-      value: analytics.summary.new_student_bookings || 0,
-      color: colors.chart.teal,
+  const guestTypeData = useMemo(
+    () => [
+      {
+        type: "New Guests",
+        segment: "new",
+        value: analytics.summary.new_student_bookings || 0,
+        color: colors.chart.teal,
+      },
+      {
+        type: "Returning",
+        segment: "returning",
+        value: analytics.summary.returning_student_bookings || 0,
+        color: colors.chart.blue,
+      },
+    ],
+    [
+      analytics.summary.new_student_bookings,
+      analytics.summary.returning_student_bookings,
+    ],
+  );
+
+  const guestTypeDrawerList = useMemo(() => {
+    const raw = analytics.guest_type_bookings;
+    if (!raw) return [];
+    return guestTypeDrawerSegment === "new"
+      ? raw.new || []
+      : raw.returning || [];
+  }, [analytics.guest_type_bookings, guestTypeDrawerSegment]);
+
+  const guestTypeMaxCap =
+    analytics.guest_type_bookings?.max_per_segment ?? 300;
+
+  const openGuestTypeDrawer = useCallback((segment) => {
+    setGuestTypeDrawerSegment(segment);
+    setGuestTypeDrawerOpen(true);
+  }, []);
+
+  const handleGuestDrawerOpenChange = useCallback((open) => {
+    if (!open) setGuestTypeDrawerOpen(false);
+  }, []);
+
+  const handlePieSectorClick = useCallback(
+    (data) => {
+      if (!data || !(data.value > 0)) return;
+      let seg = data.segment;
+      if (seg !== "new" && seg !== "returning") {
+        if (data.type === "New Guests") seg = "new";
+        else if (data.type === "Returning") seg = "returning";
+      }
+      if (seg === "new" || seg === "returning") openGuestTypeDrawer(seg);
     },
-    {
-      type: "Returning",
-      value: analytics.summary.returning_student_bookings || 0,
-      color: colors.chart.blue,
-    },
-  ];
+    [openGuestTypeDrawer],
+  );
 
   const metricsPeriodLabel = useMemo(
     () => formatDayjsRangeBadge(filterParams.startDate, filterParams.endDate),
     [filterParams.startDate, filterParams.endDate],
+  );
+
+  const guestTypeDrawerInner = (
+    <>
+      <GuestDrawerHeader style={isMobile ? undefined : { paddingTop: 20 }}>
+        <GuestDrawerTitleBlock>
+          <GuestDrawerTitle>Guest details</GuestDrawerTitle>
+          <GuestDrawerSubtitle>
+            Bookings in this period (cancelled excluded). Use for follow-ups and
+            campaigns.
+          </GuestDrawerSubtitle>
+        </GuestDrawerTitleBlock>
+        <GuestDrawerClose
+          type="button"
+          aria-label="Close"
+          onClick={() => setGuestTypeDrawerOpen(false)}
+        >
+          <X size={18} />
+        </GuestDrawerClose>
+      </GuestDrawerHeader>
+      <GuestDrawerSegmentRow style={isMobile ? undefined : { paddingTop: 0 }}>
+        <GuestSegmentBtn
+          type="button"
+          $active={guestTypeDrawerSegment === "new"}
+          onClick={() => setGuestTypeDrawerSegment("new")}
+        >
+          New guests
+        </GuestSegmentBtn>
+        <GuestSegmentBtn
+          type="button"
+          $active={guestTypeDrawerSegment === "returning"}
+          onClick={() => setGuestTypeDrawerSegment("returning")}
+        >
+          Returning
+        </GuestSegmentBtn>
+      </GuestDrawerSegmentRow>
+      <GuestDrawerBody>
+        {guestTypeDrawerList.length === 0 ? (
+          <Text type="secondary" style={{ display: "block", padding: 8 }}>
+            No matching bookings in this segment for the selected filters.
+          </Text>
+        ) : (
+          <>
+            {guestTypeDrawerList.length >= guestTypeMaxCap && (
+              <Text
+                type="secondary"
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  marginBottom: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                Showing the {guestTypeMaxCap} most recent bookings in this
+                segment.
+              </Text>
+            )}
+            {guestTypeDrawerList.map((row) => (
+              <GuestCard key={row.booking_id}>
+                <GuestCardName>{row.guest_name || "Guest"}</GuestCardName>
+                <GuestCardMeta>
+                  {row.email ? (
+                    <GuestCardRow>
+                      <GuestCardIcon>
+                        <Mail size={14} />
+                      </GuestCardIcon>
+                      <span>{row.email}</span>
+                    </GuestCardRow>
+                  ) : null}
+                  {row.phone ? (
+                    <GuestCardRow>
+                      <GuestCardIcon>
+                        <Phone size={14} />
+                      </GuestCardIcon>
+                      <span>{row.phone}</span>
+                    </GuestCardRow>
+                  ) : null}
+                  <div>
+                    <Text strong style={{ fontSize: 12 }}>
+                      {row.class_name || "Experience"}
+                    </Text>
+                  </div>
+                  <div>
+                    Spots: {row.participants} · Paid: $
+                    {Number(row.amount_paid || 0).toFixed(2)}
+                  </div>
+                  {row.booking_date ? (
+                    <div>
+                      Booked{" "}
+                      {dayjs(row.booking_date).format("MMM D, YYYY h:mm A")}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: "flex",
+                      gap: 6,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Tag>{row.status}</Tag>
+                    <Tag color="blue">{row.payment_status}</Tag>
+                  </div>
+                </GuestCardMeta>
+              </GuestCard>
+            ))}
+          </>
+        )}
+      </GuestDrawerBody>
+    </>
   );
 
   return (
@@ -883,25 +1373,23 @@ const BookingTrends = () => {
                 ]}
               />
             )}
-            {isMobile ? (
-              <MobileDateRangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={handleDateChange}
-                format="MMM D, YYYY"
-              />
-            ) : (
-              <StyledRangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={handleDateChange}
-              />
-            )}
+            <ResponsiveDateRangePicker
+              isMobile={isMobile}
+              value={[filterParams.startDate, filterParams.endDate]}
+              onChange={handleDateChange}
+              format="MMM D, YYYY"
+              renderDesktop={(rp) => <StyledRangePicker {...rp} />}
+            />
             <ClassFilterSelect
               placeholder="Filter by Experience"
-              value={filterParams.classId}
+              value={
+                filterParams.classId == null ? "all" : filterParams.classId
+              }
               onChange={handleClassFilterChange}
               options={businessClasses}
               allowClear
               showSearch
+              optionFilterProp="label"
             />
           </Controls>
         </DashboardHeader>
@@ -1095,9 +1583,13 @@ const BookingTrends = () => {
 
         <ResponsiveDivider />
 
-        <Row gutter={[24, 24]}>
-          {/* BAR CHART - WIDER (66%) */}
-          <Col xs={24} lg={16}>
+        <Row gutter={[24, 24]} align="top">
+          {/* Left: Popular times + Top experiences stacked (fills space beside tall funnel) */}
+          <Col
+            xs={24}
+            lg={16}
+            style={{ display: "flex", flexDirection: "column", gap: 24 }}
+          >
             <ChartCard>
               <ChartHeader>
                 <ChartTitleRow>
@@ -1196,88 +1688,7 @@ const BookingTrends = () => {
                 )}
               </ChartContainer>
             </ChartCard>
-          </Col>
 
-          {/* PIE CHART - NARROWER (33%) */}
-          <Col xs={24} lg={8}>
-            <ChartCard>
-              <ChartHeader>
-                <ChartTitleRow>
-                  <ChartTitle>
-                    <LordIcon
-                      src="https://cdn.lordicon.com/meaqueth.json"
-                      trigger="in"
-                      delay="500"
-                      state="in-compare"
-                      colors="primary:#94a3b8"
-                      size="15px"
-                    />
-                    Guest Type
-                  </ChartTitle>
-                  {!loading && (
-                    <AntTooltip title="Percent of returning guests">
-                      <InsightBadge>
-                        Return Rate: <strong>{guestRetentionInsight}%</strong>
-                      </InsightBadge>
-                    </AntTooltip>
-                  )}
-                </ChartTitleRow>
-                <ChartDescription>
-                  New vs returning.
-                </ChartDescription>
-              </ChartHeader>
-              <ChartContainer>
-                {loading ? (
-                  <div style={{ width: "100%", height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <AdminPieChartSkeleton size={168} />
-                  </div>
-                ) : !guestTypeData.some((d) => d.value > 0) ? (
-                  <EmptyStateContainer $padding="20px">
-                    <EmptyStateText>No Data</EmptyStateText>
-                  </EmptyStateContainer>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={guestTypeData}
-                        dataKey="value"
-                        nameKey="type"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="60%"
-                        outerRadius="85%"
-                        paddingAngle={5}
-                        cornerRadius={5}
-                        stroke="none"
-                      >
-                        {guestTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                        <Label
-                          value={getChartTotal(guestTypeData)}
-                          position="center"
-                          fill={colors.textPrimary}
-                          style={{ fontSize: "24px", fontWeight: "bold" }}
-                        />
-                      </Pie>
-                      <Legend
-                        wrapperStyle={{ fontSize: "12px" }}
-                        iconType="circle"
-                      />
-                      <RechartsTooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartContainer>
-            </ChartCard>
-          </Col>
-        </Row>
-
-        <ResponsiveDivider />
-
-        <Row gutter={[24, 24]}>
-          {/* TABLE - WIDER (66%) */}
-          <Col xs={24} lg={16}>
             <TableWrapper>
               <TableHeader>
                 <ChartTitleRow>
@@ -1364,9 +1775,13 @@ const BookingTrends = () => {
             </TableWrapper>
           </Col>
 
-          {/* Widget funnel (Growth/Advanced) or weekday volume fallback */}
-          <Col xs={24} lg={8}>
-            <ChartCard>
+          {/* Right: Widget funnel + Guest type stacked */}
+          <Col
+            xs={24}
+            lg={8}
+            style={{ display: "flex", flexDirection: "column", gap: 24 }}
+          >
+            <ChartCard style={{ height: "auto", minHeight: 440 }}>
               <ChartHeader>
                 <ChartTitleRow>
                   <ChartTitle>
@@ -1376,8 +1791,8 @@ const BookingTrends = () => {
                       <BarChart2 size={15} color="#d1d5db" />
                     )}
                     {showWidgetFunnelPanel
-                      ? "Widget booking funnel"
-                      : "Bookings by weekday"}
+                      ? "Widget Booking Funnel"
+                      : "Bookings by Weekday"}
                   </ChartTitle>
                   {showWidgetFunnelPanel && hasWidgetFunnelActivity && (
                     <InsightBadge>
@@ -1390,7 +1805,7 @@ const BookingTrends = () => {
                 </ChartTitleRow>
                 <ChartDescription>
                   {showWidgetFunnelPanel ? (
-                    "Unique sessions at each step (embed)."
+                    "Sessions at each step of your embedded widget."
                   ) : (
                     <>
                       Guest spots by weekday when bookings were made.
@@ -1425,168 +1840,93 @@ const BookingTrends = () => {
                     <AdminAreaChartSkeleton height={280} />
                   </div>
                 ) : showWidgetFunnelPanel ? (
-                  <>
-                    {!hasWidgetFunnelActivity && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                          lineHeight: 1.45,
-                          marginBottom: 12,
-                          padding: "10px 12px",
-                          background: colors.lightBg,
-                          borderRadius: 8,
-                          border: `1px solid ${colors.border}`,
-                        }}
-                      >
-                        No widget sessions in this date range yet. Traffic
-                        appears here after visitors use your embedded booking
-                        widget (deploy the latest widget script for step
-                        tracking).
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr",
-                        gap: 10,
-                        marginBottom: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          background: "rgba(59, 130, 246, 0.08)",
-                          border: `1px solid ${colors.border}`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: colors.textSecondary,
-                            fontWeight: 600,
-                            marginBottom: 2,
-                          }}
-                        >
-                          Checkout abandon
-                        </div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+                  <FunnelWrapper>
+                    <FunnelSummaryRow>
+                      <FunnelSummaryPill $bg="rgba(59, 130, 246, 0.06)">
+                        <FunnelSummaryLabel>Checkout abandon</FunnelSummaryLabel>
+                        <FunnelSummaryValue>
                           {analytics.widget_funnel?.summary
                             ?.checkout_abandonment_pct ?? 0}
                           %
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          background: "rgba(16, 185, 129, 0.08)",
-                          border: `1px solid ${colors.border}`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: colors.textSecondary,
-                            fontWeight: 600,
-                            marginBottom: 2,
-                          }}
-                        >
+                        </FunnelSummaryValue>
+                      </FunnelSummaryPill>
+                      <FunnelSummaryPill $bg="rgba(16, 185, 129, 0.06)">
+                        <FunnelSummaryLabel>
                           Avg. time to book
-                        </div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+                        </FunnelSummaryLabel>
+                        <FunnelSummaryValue>
                           {formatDurationSeconds(
                             analytics.widget_funnel?.summary
                               ?.avg_time_to_book_seconds,
                           )}
-                        </div>
-                      </div>
-                      {(analytics.widget_funnel?.device_breakdown || []).map(
-                        (row) => (
-                          <div
-                            key={row.device_type}
-                            style={{
-                              padding: "10px 12px",
-                              borderRadius: 10,
-                              background: colors.lightBg,
-                              border: `1px solid ${colors.border}`,
-                              gridColumn: isMobile ? "span 1" : "span 1",
-                            }}
-                          >
+                        </FunnelSummaryValue>
+                      </FunnelSummaryPill>
+                    </FunnelSummaryRow>
+                    <FunnelStepsContainer>
+                      {widgetFunnelStepsForChart.map((step, i) => {
+                        const widthPct =
+                          funnelChartMaxSessions > 0
+                            ? (step.session_count / funnelChartMaxSessions) * 100
+                            : 0;
+                        const nextDrop =
+                          widgetFunnelStepsForChart[i + 1]
+                            ?.drop_off_from_prev_pct;
+                        return (
+                          <FunnelStepBlock key={step.event}>
+                            <AntTooltip title={step.label}>
+                              <FunnelStepLabel>{step.label}</FunnelStepLabel>
+                            </AntTooltip>
+                            <FunnelBarLine>
+                              <FunnelBarTrack>
+                                <FunnelBarFill
+                                  $widthPct={widthPct}
+                                  $hasSessions={(step.session_count || 0) > 0}
+                                  $color={step.fill}
+                                />
+                              </FunnelBarTrack>
+                              <FunnelBarCountLabel>
+                                {step.session_count}
+                              </FunnelBarCountLabel>
+                            </FunnelBarLine>
+                            {i < widgetFunnelStepsForChart.length - 1 && (
+                              <FunnelDropOffIndicator>
+                                <ChevronDown
+                                  size={22}
+                                  strokeWidth={2.5}
+                                  aria-hidden
+                                />
+                                <span>
+                                  {nextDrop != null
+                                    ? `${nextDrop}% drop-off`
+                                    : "Next step"}
+                                </span>
+                              </FunnelDropOffIndicator>
+                            )}
+                          </FunnelStepBlock>
+                        );
+                      })}
+                    </FunnelStepsContainer>
+                    {(analytics.widget_funnel?.device_breakdown || []).length >
+                      0 && (
+                      <FunnelDeviceRow>
+                        {analytics.widget_funnel.device_breakdown.map((row) => (
+                          <FunnelDevicePill key={row.device_type}>
                             <div
                               style={{
-                                fontSize: 11,
-                                color: colors.textSecondary,
-                                fontWeight: 600,
-                                marginBottom: 2,
                                 textTransform: "capitalize",
+                                fontWeight: 600,
+                                marginBottom: 1,
                               }}
                             >
                               {row.device_type || "unknown"}
                             </div>
-                            <div
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 600,
-                                color: colors.textPrimary,
-                              }}
-                            >
-                              {row.sessions_opened} opened ·{" "}
-                              {row.conversion_pct ?? 0}% booked
-                            </div>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart
-                        layout="vertical"
-                        data={widgetFunnelStepsForChart}
-                        margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          horizontal={false}
-                          stroke={colors.border}
-                        />
-                        <XAxis
-                          type="number"
-                          allowDecimals={false}
-                          domain={[0, funnelChartMaxSessions]}
-                          tick={{ fontSize: 11, fill: colors.textSecondary }}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="label"
-                          width={118}
-                          tick={{ fontSize: 11, fill: colors.textSecondary }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Bar
-                          dataKey="session_count"
-                          radius={[0, 4, 4, 0]}
-                          maxBarSize={24}
-                          name="Sessions"
-                        >
-                          {widgetFunnelStepsForChart.map((entry) => (
-                            <Cell key={entry.event} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                        <RechartsTooltip
-                          formatter={(value, _n, item) => {
-                            const drop = item?.payload?.drop_off_from_prev_pct;
-                            const extra =
-                              drop != null
-                                ? ` · drop from prev ${drop}%`
-                                : "";
-                            return [`${value} sessions${extra}`, "Funnel"];
-                          }}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </>
+                            <strong>{row.sessions_opened}</strong> opened ·{" "}
+                            <strong>{row.conversion_pct ?? 0}%</strong> conv.
+                          </FunnelDevicePill>
+                        ))}
+                      </FunnelDeviceRow>
+                    )}
+                  </FunnelWrapper>
                 ) : !bookingsByWeekday.some((d) => d.spots > 0) ? (
                   <EmptyStateContainer $padding="20px">
                     <EmptyStateText>No Data</EmptyStateText>
@@ -1627,8 +1967,128 @@ const BookingTrends = () => {
                 )}
               </ChartContainer>
             </ChartCard>
+
+            <ChartCard>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/meaqueth.json"
+                      trigger="in"
+                      delay="500"
+                      state="in-compare"
+                      colors="primary:#94a3b8"
+                      size="15px"
+                    />
+                    Guest Type
+                  </ChartTitle>
+                  {!loading && (
+                    <AntTooltip title="Percent of returning guests">
+                      <InsightBadge>
+                        Return Rate: <strong>{guestRetentionInsight}%</strong>
+                      </InsightBadge>
+                    </AntTooltip>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>
+                  New vs returning. Tap a slice to open guest details.
+                </ChartDescription>
+              </ChartHeader>
+              <ChartContainer
+                style={{
+                  cursor: guestTypeData.some((d) => d.value > 0)
+                    ? "pointer"
+                    : undefined,
+                }}
+              >
+                {loading ? (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 280,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <AdminPieChartSkeleton size={168} />
+                  </div>
+                ) : !guestTypeData.some((d) => d.value > 0) ? (
+                  <EmptyStateContainer $padding="20px">
+                    <EmptyStateText>No Data</EmptyStateText>
+                  </EmptyStateContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={guestTypeData}
+                        dataKey="value"
+                        nameKey="type"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={5}
+                        cornerRadius={5}
+                        stroke="none"
+                        onClick={handlePieSectorClick}
+                        style={{ outline: "none" }}
+                      >
+                        {guestTypeData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            style={{
+                              cursor: entry.value > 0 ? "pointer" : "default",
+                            }}
+                          />
+                        ))}
+                        <Label
+                          value={getChartTotal(guestTypeData)}
+                          position="center"
+                          fill={colors.textPrimary}
+                          style={{ fontSize: "24px", fontWeight: "bold" }}
+                        />
+                      </Pie>
+                      <Legend
+                        wrapperStyle={{ fontSize: "12px", cursor: "pointer" }}
+                        onClick={(legendItem) => {
+                          const row =
+                            legendItem?.payload ??
+                            guestTypeData.find(
+                              (d) => d.type === legendItem?.value,
+                            );
+                          if (row?.value > 0) handlePieSectorClick(row);
+                        }}
+                      />
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartContainer>
+            </ChartCard>
           </Col>
         </Row>
+
+        <Drawer.Root
+          open={guestTypeDrawerOpen}
+          onOpenChange={handleGuestDrawerOpenChange}
+          direction={isMobile ? "bottom" : "right"}
+          dismissible
+          handleOnly={!isMobile}
+        >
+          <Drawer.Portal>
+            <GuestDrawerOverlay />
+            {isMobile ? (
+              <GuestDrawerMobile>
+                <GuestDrawerHandle />
+                {guestTypeDrawerInner}
+              </GuestDrawerMobile>
+            ) : (
+              <GuestDrawerDesktop>{guestTypeDrawerInner}</GuestDrawerDesktop>
+            )}
+          </Drawer.Portal>
+        </Drawer.Root>
       </DashboardWrapper>
   );
 };

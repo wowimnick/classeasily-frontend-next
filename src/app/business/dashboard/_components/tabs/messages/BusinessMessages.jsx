@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { useReplaceSearchParams } from "@/hooks/useUrlState";
 import styled, { keyframes } from "styled-components";
 import { Drawer } from "vaul";
 import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
@@ -667,8 +668,10 @@ const BubbleSkeleton = styled(SkeletonBase)`
 
 export default function BusinessMessages() {
   const searchParams = useSearchParams();
+  const replaceParams = useReplaceSearchParams();
   const openBookingId = searchParams.get("booking_id");
-  const openConversationId = searchParams.get("conversation_id");
+  const openConversationId =
+    searchParams.get("conversationId") || searchParams.get("conversation_id");
 
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -683,7 +686,7 @@ export default function BusinessMessages() {
   const [newMessageModalOpen, setNewMessageModalOpen] = useState(false);
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const messagesEndRef = useRef(null);
-  const hasAutoOpenedRef = useRef(false);
+  const bookingBootstrapKeyRef = useRef(null);
 
   const ws = useConversationWebSocket({
     conversationId: selected?.id ?? null,
@@ -730,11 +733,29 @@ export default function BusinessMessages() {
     fetchList();
   }, [fetchList]);
 
-  // When we land with ?booking_id= or ?conversation_id=, open that thread once list is loaded
+  // Deep link: ?conversationId= / legacy ?conversation_id= — keep param in URL while thread is open
   useEffect(() => {
-    if (loading || hasAutoOpenedRef.current) return;
+    if (loading || !openConversationId) return;
+    const conv = list.find((c) => String(c.id) === String(openConversationId));
+    if (!conv) return;
+    if (String(selected?.id) === String(conv.id)) return;
+    setSelected(conv);
+    setReplyText("");
+    fetchDetail(conv.id, true);
+    if (isMobile) setOpen(true);
+  }, [loading, openConversationId, list, selected?.id, fetchDetail, isMobile]);
 
-    const bid = openBookingId ? Number(openBookingId) : null;
+  // When we land with ?booking_id=, open or create thread (once per booking id)
+  useEffect(() => {
+    if (loading || openConversationId) return;
+    if (!openBookingId) {
+      bookingBootstrapKeyRef.current = null;
+      return;
+    }
+
+    const bid = Number(openBookingId);
+    if (!bid) return;
+
     const matchByBooking = (c) => {
       const b = c.booking;
       if (b == null) return false;
@@ -742,33 +763,54 @@ export default function BusinessMessages() {
       return Number(bId) === Number(openBookingId) || String(bId) === String(openBookingId);
     };
 
-    if (openConversationId) {
-      const conv = list.find((c) => String(c.id) === openConversationId);
-      hasAutoOpenedRef.current = true;
-      if (conv) openConversation(conv);
-    } else if (openBookingId && bid) {
-      const conv = list.find(matchByBooking);
-      hasAutoOpenedRef.current = true;
-      if (conv) {
-        openConversation(conv);
-      } else {
-        // Business initiates: get or create conversation for this booking
-        setDetailLoading(true);
-        businessConversationService.startByBooking(bid).then((result) => {
-          setDetailLoading(false);
-          if (result.success && result.data) {
-            setSelected(result.data);
-            setReplyText("");
-            fetchList();
-            if (isMobile) setOpen(true);
-          } else {
-            message.error(result.error || "Could not start conversation");
-          }
+    const conv = list.find(matchByBooking);
+    if (conv) {
+      if (String(selected?.id) !== String(conv.id)) {
+        setSelected(conv);
+        setReplyText("");
+        fetchDetail(conv.id, true);
+        if (isMobile) setOpen(true);
+        replaceParams({
+          conversationId: String(conv.id),
+          booking_id: null,
+          conversation_id: null,
         });
       }
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, openBookingId, openConversationId, list]);
+
+    const key = String(bid);
+    if (bookingBootstrapKeyRef.current === key) return;
+    bookingBootstrapKeyRef.current = key;
+
+    setDetailLoading(true);
+    businessConversationService.startByBooking(bid).then((result) => {
+      setDetailLoading(false);
+      if (result.success && result.data) {
+        setSelected(result.data);
+        setReplyText("");
+        fetchList();
+        if (isMobile) setOpen(true);
+        replaceParams({
+          conversationId: String(result.data.id),
+          booking_id: null,
+          conversation_id: null,
+        });
+      } else {
+        message.error(result.error || "Could not start conversation");
+      }
+    });
+  }, [
+    loading,
+    openBookingId,
+    openConversationId,
+    list,
+    selected?.id,
+    fetchDetail,
+    fetchList,
+    isMobile,
+    replaceParams,
+  ]);
 
   useEffect(() => {
     if (!selected?.id) return;
@@ -786,6 +828,11 @@ export default function BusinessMessages() {
     setReplyText("");
     fetchDetail(conv.id, true);
     if (isMobile) setOpen(true);
+    replaceParams({
+      conversationId: String(conv.id),
+      booking_id: null,
+      conversation_id: null,
+    });
   };
 
   useEffect(() => {
@@ -793,7 +840,14 @@ export default function BusinessMessages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id, open]);
 
-  const closeConversation = () => setOpen(false);
+  const closeConversation = () => {
+    setOpen(false);
+    replaceParams({
+      conversationId: null,
+      booking_id: null,
+      conversation_id: null,
+    });
+  };
 
   const isUnread = useCallback((c) => {
     const lastMsgAt = c.last_message_at ? new Date(c.last_message_at).getTime() : 0;

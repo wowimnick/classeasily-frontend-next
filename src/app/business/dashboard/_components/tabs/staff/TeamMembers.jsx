@@ -34,6 +34,7 @@ import {
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { useAuth } from "@/lib/auth-client";
+import { useUrlState } from "@/hooks/useUrlState";
 import {
   businessStaffService,
   businessRoleService,
@@ -733,6 +734,7 @@ const MobileStaffItem = ({
 
 const TeamMembers = () => {
   const { user: currentUser } = useAuth();
+  const [staffIdRaw, setStaffId] = useUrlState("staffId");
   const [staff, setStaff] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -778,19 +780,33 @@ const TeamMembers = () => {
     fetchStaffAndRoles();
   }, [fetchStaffAndRoles]);
 
-  const showModal = (staffMember = null) => {
-    setEditingStaff(staffMember);
-    if (staffMember) {
-      form.setFieldsValue({ role: staffMember.role });
-    } else {
-      form.resetFields();
+  useEffect(() => {
+    if (!staffIdRaw || loading) return;
+    const member = staff.find((s) => String(s.id) === String(staffIdRaw));
+    if (member) {
+      setEditingStaff(member);
+      form.setFieldsValue({ role: member.role });
+      setIsModalVisible(true);
+    } else if (staff.length > 0) {
+      setStaffId(null);
     }
+  }, [staffIdRaw, staff, loading, form, setStaffId]);
+
+  const showModal = (staffMember = null) => {
+    if (staffMember) {
+      setStaffId(String(staffMember.id));
+      return;
+    }
+    setStaffId(null);
+    setEditingStaff(null);
+    form.resetFields();
     setIsModalVisible(true);
   };
 
   const onModalClose = () => {
     setIsModalVisible(false);
     setEditingStaff(null);
+    setStaffId(null);
     form.resetFields();
   };
 

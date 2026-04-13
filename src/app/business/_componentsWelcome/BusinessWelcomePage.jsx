@@ -1824,7 +1824,7 @@ const BusinessWelcomePage = () => {
           {
             feature: "Commission Rate",
             others: "20-30% + Fees",
-            classEasily: "15% All-Inclusive",
+            classEasily: "13% + card processing (2.9% + 30¢)",
             highlight: true,
           },
           {
@@ -1856,7 +1856,7 @@ const BusinessWelcomePage = () => {
           {
             eyebrow: "MARKETPLACE",
             title: "Get discovered, hands-free",
-            commission: "15% commission per booking",
+            commission: "13% platform fee + card processing per booking",
             commissionColor: "#1a1a1a",
             commissionBg: "rgba(0, 0, 0, 0.06)",
             description:

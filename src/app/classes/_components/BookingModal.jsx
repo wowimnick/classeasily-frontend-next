@@ -241,6 +241,8 @@ const BookingModal = ({
   classData,
   optionId: initialOptionId,
   initialParticipantCount = 1,
+  /** YYYY-MM-DD — pre-select calendar when schedules include this date */
+  initialScheduleDate = null,
 }) => {
   const router = useRouter();
   const { user: currentUserFromRedux } = useAuthUser();
@@ -333,8 +335,16 @@ const BookingModal = ({
         return dateTimeA.valueOf() - dateTimeB.valueOf();
       });
 
+    if (
+      initialScheduleDate &&
+      dayjs(initialScheduleDate, "YYYY-MM-DD", true).isValid() &&
+      upcomingSchedules.some((s) => s.date === initialScheduleDate)
+    ) {
+      return initialScheduleDate;
+    }
+
     return upcomingSchedules.length > 0 ? upcomingSchedules[0].date : null;
-  }, [selectedOption]);
+  }, [selectedOption, initialScheduleDate]);
 
   const isCourseBooking = selectedOption?.booking_type === "Full Course";
 

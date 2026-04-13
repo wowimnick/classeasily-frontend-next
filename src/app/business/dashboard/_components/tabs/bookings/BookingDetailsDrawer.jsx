@@ -21,6 +21,7 @@ import {
   Building,
   FileText,
   X,
+  Link2,
   CheckCircle,
   ChevronDown,
   ChevronUp,
@@ -33,6 +34,7 @@ import {
 } from "@/services/utils";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
+import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -155,6 +157,11 @@ const CloseBtn = styled.button`
   color: ${C.textSecondary}; border-radius: 6px; display: flex; align-items: center;
   &:hover { background: ${C.border}; }
 `;
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
 
 // ─── Booker card ─────────────────────────────────────────────────────────────
 const BookerCard = styled.div`
@@ -236,6 +243,33 @@ const FieldValue = styled.div`
 `;
 const NoData = styled.span`
   font-style: italic; color: #9ca3af; font-size: 13px;
+`;
+
+const FeeBreakdownPanel = styled.div`
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.75;
+  background: ${C.inputBg};
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid ${C.border};
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+`;
+const FeeRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: ${C.textPrimary};
+`;
+const FeeRowMuted = styled(FeeRow)`
+  color: ${C.textSecondary};
+`;
+const FeeRowTotal = styled(FeeRow)`
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid ${C.border};
+  font-weight: 600;
+  color: ${C.textPrimary};
 `;
 
 // Cancellation block
@@ -327,6 +361,59 @@ function formatDuration(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m ? `${h} hr ${m} min` : `${h} hr`;
+}
+
+/** Per-booking slice when one Stripe charge covers multiple bookings (e.g. course). */
+function buildHostFeeBreakdown(booking, pay) {
+  if (!pay || String(pay.status || "").toLowerCase() !== "succeeded") return null;
+  const grossPayment = Number(pay.amount || 0);
+  const amountPaid = Number(booking?.amount_paid || 0);
+  if (grossPayment <= 0 && amountPaid <= 0) return null;
+
+  const share =
+    grossPayment > 0 && amountPaid > 0
+      ? Math.min(1, amountPaid / grossPayment)
+      : 1;
+
+  const guestPaid =
+    amountPaid > 0 ? amountPaid : Math.round(grossPayment * share * 100) / 100;
+
+  const platformFee =
+    Math.round(Number(pay.platform_fee_amount || 0) * share * 100) / 100;
+
+  const rawStripe = pay.stripe_processing_fee;
+  let stripeFee;
+  let stripeEstimated = false;
+  if (rawStripe != null && rawStripe !== "") {
+    const n = Number(rawStripe);
+    if (!Number.isNaN(n)) {
+      stripeFee = Math.round(n * share * 100) / 100;
+    }
+  }
+  if (stripeFee == null || Number.isNaN(stripeFee)) {
+    stripeEstimated = true;
+    const g = grossPayment * share;
+    stripeFee = Math.round(Math.max(0, g * 0.029 + 0.3) * 100) / 100;
+  }
+
+  const netToYou =
+    booking?.allocated_net_payout != null && booking.allocated_net_payout !== ""
+      ? Math.round(Number(booking.allocated_net_payout) * 100) / 100
+      : Math.round(Number(pay.net_payout_amount || 0) * share * 100) / 100;
+
+  const multiSessionNote =
+    grossPayment > 0 &&
+    amountPaid > 0 &&
+    Math.abs(amountPaid - grossPayment) > 0.009;
+
+  return {
+    guestPaid,
+    platformFee,
+    stripeFee,
+    stripeEstimated,
+    netToYou,
+    multiSessionNote,
+  };
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -535,7 +622,10 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
         <RightColInner>
           <RightHeader>
             <RightTitle>Booking Details</RightTitle>
-            <CloseBtn onClick={onClose} aria-label="Close"><X size={16} /></CloseBtn>
+            <HeaderActions>
+              <CopyPageLinkButton icon={Link2} label="Copy link to this booking" />
+              <CloseBtn onClick={onClose} aria-label="Close"><X size={16} /></CloseBtn>
+            </HeaderActions>
           </RightHeader>
           {bodyContent}
         </RightColInner>
@@ -600,6 +690,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
     const bizTz = biz.business_timezone || "UTC";
     const userTz = bd.user_timezone || bizTz;
     const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(bd.phone_number);
+    const feeBreakdown = buildHostFeeBreakdown(booking, pay);
 
     return (
       <LeftCol>
@@ -717,6 +808,50 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
               <div>
                 <FieldLabel>Total paid</FieldLabel>
                 <FieldValue>${parseFloat(booking.amount_paid).toFixed(2)}</FieldValue>
+              </div>
+            )}
+            {feeBreakdown && feeBreakdown.guestPaid > 0 && (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <FieldLabel>Your earnings breakdown</FieldLabel>
+                <FeeBreakdownPanel>
+                  <FeeRowMuted>
+                    <span>Guest paid (this booking)</span>
+                    <span>${feeBreakdown.guestPaid.toFixed(2)}</span>
+                  </FeeRowMuted>
+                  <FeeRowMuted>
+                    <span>ClassEasily commission</span>
+                    <span>−${feeBreakdown.platformFee.toFixed(2)}</span>
+                  </FeeRowMuted>
+                  <FeeRowMuted>
+                    <span>
+                      Card processing (Stripe)
+                      {feeBreakdown.stripeEstimated ? " (est.)" : ""}
+                    </span>
+                    <span>−${feeBreakdown.stripeFee.toFixed(2)}</span>
+                  </FeeRowMuted>
+                  <FeeRowTotal>
+                    <span>Net to you</span>
+                    <span style={{ color: C.success }}>
+                      ${feeBreakdown.netToYou.toFixed(2)}
+                    </span>
+                  </FeeRowTotal>
+                </FeeBreakdownPanel>
+                {feeBreakdown.multiSessionNote && (
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 11, marginTop: 8, display: "block", lineHeight: 1.5 }}
+                  >
+                    One charge covered multiple bookings; amounts above are your share of
+                    that payment (same logic as payouts).
+                  </Text>
+                )}
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 11, marginTop: 6, display: "block", lineHeight: 1.5 }}
+                >
+                  Card processing (~2.9% + 30¢) comes out of your net, not from the platform
+                  commission.
+                </Text>
               </div>
             )}
             {(pay?.metadata?.booking_source || pay?.metadata?.original_stripe_metadata?.booking_source) && (
@@ -850,6 +985,13 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
               <StatusBadge status={booking.status} paymentStatus={booking.payment_status} />
             </div>
             {mobileDetailsExpanded ? <ChevronUp size={20} style={{ color: C.textSecondary, flexShrink: 0 }} /> : <ChevronDown size={20} style={{ color: C.textSecondary, flexShrink: 0 }} />}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ display: "flex", alignItems: "center", marginLeft: 4 }}
+              role="presentation"
+            >
+              <CopyPageLinkButton icon={Link2} label="Copy link to this booking" size={18} />
+            </div>
             <CloseBtn
               onClick={(e) => { e.stopPropagation(); onClose(); }}
               style={{ marginLeft: 4 }}

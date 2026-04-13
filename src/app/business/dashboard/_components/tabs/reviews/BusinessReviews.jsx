@@ -72,13 +72,14 @@ import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 import { reviewService } from "@/services/apiService";
+import { useUrlState } from "@/hooks/useUrlState";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import {
   MetricPeriodBadge,
   formatDayjsRangeBadge,
 } from "../../shared/MetricPeriodBadge";
 import { LordIcon } from "@/services/ReactUtils";
-import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(relativeTime);
 
@@ -912,6 +913,7 @@ const BusinessReviews = () => {
     source: null,
   });
   const [selectedReview, setSelectedReview] = useState(null);
+  const [reviewIdFromUrl, setReviewIdParam] = useUrlState("reviewId");
   const [isRespondModalVisible, setIsRespondModalVisible] = useState(false);
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
   const [respondForm] = Form.useForm();
@@ -997,6 +999,25 @@ const BusinessReviews = () => {
     fetchAnalytics(analyticsDateRange);
   }, [analyticsDateRange, fetchAnalytics]);
 
+  const isGoogleReview = (review) => review.source === "google";
+  const isPlatformReview = (review) => review.source === "platform";
+
+  /* Deep link: /business/dashboard/reviews?reviewId= — scroll to review row/card */
+  useEffect(() => {
+    if (!reviewIdFromUrl || loadingReviews || reviews.length === 0) return;
+    const rid = String(reviewIdFromUrl);
+    const found = reviews.some(
+      (r) => isPlatformReview(r) && String(r.reviewId) === rid,
+    );
+    if (!found) return;
+    const t = window.setTimeout(() => {
+      document
+        .getElementById(`review-row-${rid}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [reviewIdFromUrl, reviews, loadingReviews]);
+
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
     setPagination((prev) => ({ ...prev, current: 1 }));
@@ -1021,12 +1042,28 @@ const BusinessReviews = () => {
     respondForm.setFieldsValue({
       business_response: review.business_response || "",
     });
+    if (isPlatformReview(review) && review.reviewId != null) {
+      setReviewIdParam(String(review.reviewId));
+    }
     setIsRespondModalVisible(true);
   };
 
   const openReportModal = (review) => {
     setSelectedReview(review);
+    if (isPlatformReview(review) && review.reviewId != null) {
+      setReviewIdParam(String(review.reviewId));
+    }
     setIsReportModalVisible(true);
+  };
+
+  const closeRespondModal = () => {
+    setIsRespondModalVisible(false);
+    setReviewIdParam(null);
+  };
+
+  const closeReportModal = () => {
+    setIsReportModalVisible(false);
+    setReviewIdParam(null);
   };
 
   const handleModalAction = async (serviceCall, successMessage, modalKey) => {
@@ -1065,7 +1102,7 @@ const BusinessReviews = () => {
         "respondReview",
       );
       if (success) {
-        setIsRespondModalVisible(false);
+        closeRespondModal();
         fetchReviews(pagination.current, pagination.pageSize);
       }
     } catch (e) {
@@ -1086,7 +1123,7 @@ const BusinessReviews = () => {
         "reportReview",
       );
       if (success) {
-        setIsReportModalVisible(false);
+        closeReportModal();
         fetchReviews(pagination.current, pagination.pageSize);
       }
     } catch (e) {
@@ -1215,9 +1252,6 @@ const BusinessReviews = () => {
       ),
     [analyticsDateRange],
   );
-
-  const isGoogleReview = (review) => review.source === "google";
-  const isPlatformReview = (review) => review.source === "platform";
 
   const tableColumns = [
     {
@@ -1463,7 +1497,14 @@ const BusinessReviews = () => {
         : [];
 
     return (
-      <MobileReviewCard key={isGoogle ? review.id : review.reviewId}>
+      <MobileReviewCard
+        key={isGoogle ? review.id : review.reviewId}
+        id={
+          !isGoogle && review.reviewId != null
+            ? `review-row-${review.reviewId}`
+            : undefined
+        }
+      >
         <MobileCardHeader>
           <ReviewerInfo>
             <Avatar src={userAvatar} size={40}>
@@ -1619,22 +1660,21 @@ const BusinessReviews = () => {
             </HeaderSubtitle>
           </div>
           <ControlsBar>
-            {isMobile ? (
-              <MobileDateRangePicker
-                value={analyticsDateRange}
-                onChange={handleAnalyticsDateChange}
-                placeholder="All Time (Start – End)"
-                format="MMM D, YYYY"
-                allowClear
-              />
-            ) : (
-              <StyledRangePicker
-                value={analyticsDateRange}
-                onChange={handleAnalyticsDateChange}
-                placeholder={["All Time (Start)", "All Time (End)"]}
-                allowClear
-              />
-            )}
+            <ResponsiveDateRangePicker
+              isMobile={isMobile}
+              value={analyticsDateRange}
+              onChange={handleAnalyticsDateChange}
+              placeholder="All Time (Start – End)"
+              format="MMM D, YYYY"
+              allowClear
+              renderDesktop={(rp) => (
+                <StyledRangePicker
+                  {...rp}
+                  placeholder={["All Time (Start)", "All Time (End)"]}
+                  allowClear
+                />
+              )}
+            />
           </ControlsBar>
         </DashboardHeader>
 
@@ -1965,6 +2005,11 @@ const BusinessReviews = () => {
               rowKey={(record) =>
                 isGoogleReview(record) ? record.id : record.reviewId
               }
+              onRow={(record) =>
+                isPlatformReview(record) && record.reviewId != null
+                  ? { id: `review-row-${record.reviewId}` }
+                  : {}
+              }
               pagination={false}
               scroll={{ x: 1600 }}
             />
@@ -1991,7 +2036,7 @@ const BusinessReviews = () => {
         {isMobile ? (
           <Drawer.Root
             open={isRespondModalVisible}
-            onOpenChange={(open) => !open && setIsRespondModalVisible(false)}
+            onOpenChange={(open) => !open && closeRespondModal()}
             repositionInputs={false}
           >
             <Drawer.Portal>
@@ -2003,7 +2048,7 @@ const BusinessReviews = () => {
                 </DrawerHeader>
                 <DrawerBody>{renderRespondContent()}</DrawerBody>
                 <DrawerFooter>
-                  <Button onClick={() => setIsRespondModalVisible(false)}>
+                  <Button onClick={closeRespondModal}>
                     Cancel
                   </Button>
                   <Button
@@ -2022,7 +2067,7 @@ const BusinessReviews = () => {
           <Modal
             title="Respond to Review"
             open={isRespondModalVisible}
-            onCancel={() => setIsRespondModalVisible(false)}
+            onCancel={closeRespondModal}
             onOk={handleRespondSubmit}
             confirmLoading={loadingReviews}
             destroyOnClose
@@ -2035,7 +2080,7 @@ const BusinessReviews = () => {
         {isMobile ? (
           <Drawer.Root
             open={isReportModalVisible}
-            onOpenChange={(open) => !open && setIsReportModalVisible(false)}
+            onOpenChange={(open) => !open && closeReportModal()}
             repositionInputs={false}
           >
             <Drawer.Portal>
@@ -2047,7 +2092,7 @@ const BusinessReviews = () => {
                 </DrawerHeader>
                 <DrawerBody>{renderReportContent()}</DrawerBody>
                 <DrawerFooter>
-                  <Button onClick={() => setIsReportModalVisible(false)}>
+                  <Button onClick={closeReportModal}>
                     Cancel
                   </Button>
                   <Button
@@ -2067,7 +2112,7 @@ const BusinessReviews = () => {
           <Modal
             title="Report Review"
             open={isReportModalVisible}
-            onCancel={() => setIsReportModalVisible(false)}
+            onCancel={closeReportModal}
             onOk={handleReportSubmit}
             confirmLoading={loadingReviews}
             destroyOnClose

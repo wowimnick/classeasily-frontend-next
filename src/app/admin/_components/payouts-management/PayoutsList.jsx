@@ -51,6 +51,7 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
   AdminTableSkeleton,
   AdminDrawerContentSkeleton,
@@ -467,7 +468,7 @@ const PayoutDetailContent = ({ payout, isMobile }) => {
         <Button
           type="link"
           size="small"
-          href={`/admin/all-bookings?id=${row.id}`}
+          href={`/admin/all-bookings?bookingId=${row.id}`}
           style={{ padding: 0 }}
         >
           View booking
@@ -1184,16 +1185,34 @@ const PayoutsList = () => {
                 <Option value="in_transit">In Transit</Option>
                 <Option value="failed">Failed</Option>
               </Select>
-              <RangePicker
-                value={[filterParams.startDate, filterParams.endDate]}
-                onChange={(dates) =>
-                  handleFilterChange({
-                    startDate: dates?.[0],
-                    endDate: dates?.[1],
-                  })
-                }
-                style={{ width: isMobile ? "100%" : "auto" }}
-              />
+              {isMobile ? (
+                <MobileDateRangePicker
+                  allowClear
+                  value={
+                    filterParams.startDate && filterParams.endDate
+                      ? [filterParams.startDate, filterParams.endDate]
+                      : null
+                  }
+                  onChange={(dates) =>
+                    handleFilterChange({
+                      startDate: dates?.[0] ?? null,
+                      endDate: dates?.[1] ?? null,
+                    })
+                  }
+                  format="MMM D, YYYY"
+                />
+              ) : (
+                <RangePicker
+                  value={[filterParams.startDate, filterParams.endDate]}
+                  onChange={(dates) =>
+                    handleFilterChange({
+                      startDate: dates?.[0],
+                      endDate: dates?.[1],
+                    })
+                  }
+                  style={{ width: "auto" }}
+                />
+              )}
             </SearchFilterContainer>
           </FilterBar>
 

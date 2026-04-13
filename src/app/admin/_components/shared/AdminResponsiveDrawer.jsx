@@ -5,7 +5,8 @@ import styled from "styled-components";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { Button } from "antd";
-import { X } from "lucide-react";
+import { X, Link2 } from "lucide-react";
+import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
 
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -80,6 +81,12 @@ const HeaderTitle = styled.div`
   color: #334155;
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
 const CloseButton = styled(Button)`
   border: none;
   box-shadow: none;
@@ -112,6 +119,7 @@ const AdminResponsiveDrawer = ({
   children,
   width,
   hideHeader = false,
+  showCopyLink = false,
 }) => {
   const renderHeader = () =>
     !hideHeader && (
@@ -120,7 +128,12 @@ const AdminResponsiveDrawer = ({
           {titleIcon}
           <span>{title}</span>
         </HeaderTitle>
-        <CloseButton icon={<X size={18} />} onClick={onClose} />
+        <HeaderActions>
+          {showCopyLink ? (
+            <CopyPageLinkButton icon={Link2} label="Copy link to this page" size={18} />
+          ) : null}
+          <CloseButton icon={<X size={18} />} onClick={onClose} />
+        </HeaderActions>
       </DrawerHeader>
     );
 

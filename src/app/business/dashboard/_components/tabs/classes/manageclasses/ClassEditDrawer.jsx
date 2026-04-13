@@ -23,8 +23,10 @@ import {
   Tag,
 } from "antd";
 import message from "@/lib/message";
+import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
 import {
   X,
+  Link2,
   Save,
   ImagePlus,
   Phone,
@@ -199,6 +201,12 @@ const DrawerHeader = styled.div`
   @media (max-width: 768px) {
     padding: 12px 16px;
   }
+`;
+
+const DrawerHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 const DrawerContentWrapper = styled.div`
@@ -2719,11 +2727,14 @@ const ClassEditDrawer = ({
     <>
       <DrawerHeader>
         <DrawerTitle level={4}>Edit Experience</DrawerTitle>
-        <CloseButton
-          icon={<X size={20} />}
-          onClick={onClose}
-          disabled={loading || dataLoading}
-        />
+        <DrawerHeaderActions>
+          <CopyPageLinkButton icon={Link2} label="Copy link to this experience" size={20} />
+          <CloseButton
+            icon={<X size={20} />}
+            onClick={onClose}
+            disabled={loading || dataLoading}
+          />
+        </DrawerHeaderActions>
       </DrawerHeader>
       <DrawerContentWrapper>
         {dataLoading ? (

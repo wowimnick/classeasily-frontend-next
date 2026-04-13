@@ -154,6 +154,74 @@ const RangeCalendarGrid = styled(CalendarGrid)`
   }
 `;
 
+// Range picker: tight grid + no column gap so in-range reads as one connected bar
+const MobileRangeCalendarGrid = styled(RangeCalendarGrid)`
+  /* Bump specificity so we always override CalendarGrid gap: 8px */
+  && {
+    gap: 0;
+    column-gap: 0;
+    row-gap: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+  }
+  margin-top: 8px;
+
+  .day-header {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+    min-width: 0;
+    padding: 0 1px;
+  }
+
+  button {
+    height: 36px;
+    min-height: 36px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    border-radius: 0;
+    width: 100%;
+    max-width: 100%;
+
+    &.in-range {
+      border-radius: 0;
+    }
+
+    &.range-start {
+      border-radius: 8px 0 0 8px;
+    }
+
+    &.range-end {
+      border-radius: 0 8px 8px 0;
+    }
+
+    &.range-start.range-end {
+      border-radius: 8px;
+    }
+
+    /* Today pill only when not part of the range strip */
+    &.today:not(.in-range):not(.range-start):not(.range-end) {
+      border-radius: 8px;
+    }
+
+    &:active:not(.disabled):not(.in-range):not(.range-start):not(.range-end) {
+      background: #f1f5f9;
+    }
+  }
+`;
+
+// Keeps the range calendar from stretching full drawer width (more compact, easier to scan)
+const RangePickerCalendarWrap = styled.div`
+  width: 100%;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
 export const MobileDatePicker = ({
   value,
   onChange,
@@ -560,6 +628,7 @@ export const MobileDateRangePicker = ({
   disabledDate,
   format = "MMM D, YYYY",
   allowClear = false,
+  disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(
@@ -661,6 +730,19 @@ export const MobileDateRangePicker = ({
     return days;
   };
 
+  if (disabled) {
+    return (
+      <MobileInputTrigger
+        $hasValue={!!hasValue}
+        $error={error}
+        style={{ opacity: 0.65, pointerEvents: "none", cursor: "not-allowed" }}
+      >
+        {displayText}
+        <Calendar size={18} color={hasValue ? "#1e293b" : "#94a3b8"} />
+      </MobileInputTrigger>
+    );
+  }
+
   return (
     <Drawer.NestedRoot open={open} onOpenChange={setOpen}>
       <Drawer.Trigger asChild>
@@ -673,40 +755,46 @@ export const MobileDateRangePicker = ({
         <StyledDrawerOverlay />
         <StyledDrawerContent>
           <DrawerHandle />
-          <PickerContainer>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <Button
-                icon={<ChevronLeft size={20} />}
-                onClick={() =>
-                  setCurrentMonth(currentMonth.subtract(1, "month"))
-                }
-                type="text"
-              />
-              <span style={{ fontSize: 18, fontWeight: 600, color: "#0f172a" }}>
-                {currentMonth.format("MMMM YYYY")}
-              </span>
-              <Button
-                icon={<ChevronRight size={20} />}
-                onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
-                type="text"
-              />
-            </div>
-            <RangeCalendarGrid>
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d} className="day-header">
-                  {d}
-                </div>
-              ))}
-              {generateRangeDays()}
-            </RangeCalendarGrid>
-            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          <PickerContainer style={{ padding: "12px 20px 24px", gap: 12 }}>
+            <RangePickerCalendarWrap>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 4,
+                }}
+              >
+                <Button
+                  icon={<ChevronLeft size={20} />}
+                  onClick={() =>
+                    setCurrentMonth(currentMonth.subtract(1, "month"))
+                  }
+                  type="text"
+                />
+                <span
+                  style={{ fontSize: 17, fontWeight: 600, color: "#0f172a" }}
+                >
+                  {currentMonth.format("MMMM YYYY")}
+                </span>
+                <Button
+                  icon={<ChevronRight size={20} />}
+                  onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
+                  type="text"
+                />
+              </div>
+              <MobileRangeCalendarGrid>
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (d) => (
+                    <div key={d} className="day-header">
+                      {d}
+                    </div>
+                  )
+                )}
+                {generateRangeDays()}
+              </MobileRangeCalendarGrid>
+            </RangePickerCalendarWrap>
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
               {allowClear && hasValue && (
                 <Button
                   size="large"
@@ -744,6 +832,32 @@ export const MobileDateRangePicker = ({
       </Drawer.Portal>
     </Drawer.NestedRoot>
   );
+};
+
+/**
+ * Use with explicit value/onChange (filters) or inside Ant Design Form.Item (value/onChange injected).
+ * Desktop branch is customizable via renderDesktop so pages can keep styled RangePickers.
+ */
+export const ResponsiveDateRangePicker = ({
+  isMobile,
+  value,
+  onChange,
+  disabled,
+  renderDesktop,
+  ...mobileProps
+}) => {
+  if (isMobile) {
+    return (
+      <MobileDateRangePicker
+        {...mobileProps}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    );
+  }
+  if (!renderDesktop) return null;
+  return renderDesktop({ value, onChange, disabled });
 };
 
 export const MobileRangePicker = ({ value = [], onChange, error }) => {

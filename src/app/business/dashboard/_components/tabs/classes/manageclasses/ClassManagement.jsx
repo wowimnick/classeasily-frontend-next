@@ -15,7 +15,6 @@ import {
   Tag,
   Popconfirm,
   Spin,
-  DatePicker,
   Divider,
   Input,
   Checkbox,
@@ -72,7 +71,8 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import isToday from "dayjs/plugin/isToday";
 import weekOfYear from "dayjs/plugin/weekOfYear";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useUrlState } from "@/hooks/useUrlState";
 import {
   businessClassService,
   scheduleService,
@@ -92,7 +92,6 @@ dayjs.extend(weekOfYear);
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 import { LordIcon } from "@/services/ReactUtils";
@@ -1185,10 +1184,17 @@ const CloseButton = styled(Button)`
   }
 `;
 
+function parsePositiveIntParam(raw) {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 function ClassManagementContent(props) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [editClassIdRaw, setEditClassId] = useUrlState("editClassId");
+  const editClassIdNum = parsePositiveIntParam(editClassIdRaw);
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -1203,6 +1209,25 @@ function ClassManagementContent(props) {
   const screens = useBreakpoint();
   const isMobileView = !screens.md;
   const openClassId = searchParams.get("classId");
+
+  // Sync edit drawer with ?editClassId= (shareable deep link; distinct from ?classId= schedules redirect)
+  useEffect(() => {
+    if (!editClassIdNum) {
+      setEditDrawerVisible(false);
+      setSelectedClassForAction(null);
+      return;
+    }
+    if (!classes.length) return;
+    const found = classes.find((c) => c.classId === editClassIdNum);
+    if (found) {
+      setSelectedClassForAction(found);
+      setEditDrawerVisible(true);
+    } else {
+      setEditDrawerVisible(false);
+      setSelectedClassForAction(null);
+      setEditClassId(null);
+    }
+  }, [editClassIdNum, classes, setEditClassId]);
 
   // If listings URL has ?classId=xyz, redirect to Schedules tab with that class pre-selected
   useEffect(() => {
@@ -1253,12 +1278,11 @@ function ClassManagementContent(props) {
   };
 
   const handleEditClass = (classItem) => {
-    setSelectedClassForAction(classItem);
-    setEditDrawerVisible(true);
+    setEditClassId(classItem.classId);
   };
 
   const handleClassEditSuccess = () => {
-    setEditDrawerVisible(false);
+    setEditClassId(null);
     loadClasses();
     message.success("Experience updated successfully");
   };
@@ -1761,7 +1785,7 @@ function ClassManagementContent(props) {
 
         <ClassEditDrawer
           visible={editDrawerVisible}
-          onClose={() => setEditDrawerVisible(false)}
+          onClose={() => setEditClassId(null)}
           classData={selectedClassForAction}
           onSuccess={handleClassEditSuccess}
         />

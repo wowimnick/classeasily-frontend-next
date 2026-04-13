@@ -8,6 +8,7 @@ import {
   Phone,
   MessageSquare,
   X,
+  Link2,
   BookOpen,
   Lock,
   Users,
@@ -28,6 +29,7 @@ import NumberFlow from "@number-flow/react";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import CompactContactModal from "./CompactContactModal";
+import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
 
 const { Text } = Typography;
 
@@ -123,6 +125,12 @@ const GuestShellClose = styled.button`
   &:hover {
     background: #e5e7eb;
   }
+`;
+
+const GuestShellHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 const GuestShellScroll = styled.div`
@@ -975,9 +983,12 @@ const GuestProfile = ({
     <GuestDrawerInner>
       <GuestShellHeader>
         <GuestShellTitle>{getModalTitle()}</GuestShellTitle>
-        <GuestShellClose type="button" onClick={onClose} aria-label="Close">
-          <X size={20} />
-        </GuestShellClose>
+        <GuestShellHeaderActions>
+          <CopyPageLinkButton icon={Link2} label="Copy link to this guest" size={20} />
+          <GuestShellClose type="button" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </GuestShellClose>
+        </GuestShellHeaderActions>
       </GuestShellHeader>
       <GuestShellScroll>{renderContent()}</GuestShellScroll>
     </GuestDrawerInner>

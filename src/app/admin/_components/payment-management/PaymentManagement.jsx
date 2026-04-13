@@ -43,6 +43,7 @@ import { paymentService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
 const { Text, Title, Paragraph } = Typography;
@@ -309,6 +310,7 @@ export default function PaymentManagement() {
     successfulCount: 0,
     platformRevenue: 0,
     stripeFees: 0,
+    netPlatformProfit: 0,
   });
   const [payments, setPayments] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -346,6 +348,7 @@ export default function PaymentManagement() {
           successfulCount: d.successful_transactions ?? d.successful_count ?? 0,
           platformRevenue: d.platform_revenue ?? d.platform_fees ?? 0,
           stripeFees: d.stripe_fees ?? 0,
+          netPlatformProfit: d.net_platform_profit ?? d.platform_fees ?? 0,
         });
       }
     } finally {
@@ -464,8 +467,9 @@ export default function PaymentManagement() {
     { title: "Successful", value: stats.successfulCount, icon: CheckCircle, color: colors.success, isCurrency: false, footer: "Transactions" },
     { title: "Pending", value: stats.pendingCount, icon: Clock, color: colors.warning, isCurrency: false, footer: "Awaiting" },
     { title: "Refunded", value: stats.totalRefunded, icon: RotateCcw, color: colors.error, isCurrency: true, footer: "Total refunds" },
-    { title: "Platform Revenue", value: stats.platformRevenue, icon: TrendingUp, color: "#8b5cf6", isCurrency: true, footer: "Platform fees" },
-    { title: "Stripe Fees", value: stats.stripeFees, icon: CreditCard, color: colors.textSecondary, isCurrency: true, footer: "Processing costs" },
+    { title: "Platform Revenue", value: stats.platformRevenue, icon: TrendingUp, color: "#8b5cf6", isCurrency: true, footer: "ClassEasily commission (your revenue)" },
+    { title: "Stripe Fees", value: stats.stripeFees, icon: CreditCard, color: colors.textSecondary, isCurrency: true, footer: "Passthrough — deducted from host payout, not platform revenue" },
+    { title: "Net Platform Profit", value: stats.netPlatformProfit, icon: DollarSign, color: colors.success, isCurrency: true, footer: "Same as platform commission (Stripe is not our income)" },
   ];
 
   const columns = [
@@ -545,8 +549,27 @@ export default function PaymentManagement() {
 
     const gross = payment.amount ?? 0;
     const platformFee = payment.platform_fee_amount ?? 0;
-    const stripeFee = payment.stripe_fee_amount ?? (gross * 0.029 + 0.30);
-    const net = payment.net_payout_amount ?? (gross - platformFee - stripeFee);
+    const taxAmt = payment.tax_amount ?? 0;
+    const storedStripe =
+      payment.stripe_processing_fee != null && payment.stripe_processing_fee !== ""
+        ? Number(payment.stripe_processing_fee)
+        : null;
+    const stripeFee =
+      storedStripe != null && !Number.isNaN(storedStripe)
+        ? storedStripe
+        : Math.max(0, gross * 0.029 + 0.3);
+    const netRaw =
+      payment.net_payout_amount != null && payment.net_payout_amount !== ""
+        ? Number(payment.net_payout_amount)
+        : NaN;
+    const net = !Number.isNaN(netRaw)
+      ? netRaw
+      : Math.max(0, gross - platformFee - stripeFee);
+    const subtotalApprox = Math.max(0, gross - taxAmt);
+    const feePctLabel =
+      subtotalApprox > 0 && platformFee > 0
+        ? ((platformFee / subtotalApprox) * 100).toFixed(1)
+        : null;
 
     return (
       <>
@@ -580,6 +603,15 @@ export default function PaymentManagement() {
             </InfoCard>
 
             <InfoCard>
+              <InfoCardTitle>Payout model</InfoCardTitle>
+              <p style={{ margin: 0, fontSize: 12, color: colors.textSecondary, lineHeight: 1.5 }}>
+                Marketplace default: partner tier commission (e.g. 13%) is ClassEasily revenue.
+                Stripe card fees (~2.9% + 30¢ per charge) are estimated and deducted from the
+                host&apos;s net payout — they are not taken from the platform commission.
+              </p>
+            </InfoCard>
+
+            <InfoCard>
               <InfoCardTitle>Fee Breakdown</InfoCardTitle>
               {gross > 0 && (
                 <FeeBreakdownBar>
@@ -599,7 +631,9 @@ export default function PaymentManagement() {
                 <span style={{ fontWeight: 600 }}>{formatCurrency(gross)}</span>
               </FeeRow>
               <FeeRow>
-                <span style={{ color: colors.textSecondary }}>Platform Fee ({payment.platform_fee_percent ?? 8}%)</span>
+                <span style={{ color: colors.textSecondary }}>
+                  Platform commission{feePctLabel != null ? ` (~${feePctLabel}% of pre-tax)` : ""}
+                </span>
                 <span style={{ color: colors.error }}>- {formatCurrency(platformFee)}</span>
               </FeeRow>
               <FeeRow>
@@ -649,7 +683,7 @@ export default function PaymentManagement() {
                       type="link"
                       size="small"
                       icon={<ExternalLink size={13} />}
-                      onClick={() => router.push(`/admin/all-bookings?id=${payment.booking_id}`)}
+                      onClick={() => router.push(`/admin/all-bookings?bookingId=${payment.booking_id}`)}
                       style={{ padding: 0 }}
                     >
                       View linked booking
@@ -762,16 +796,48 @@ export default function PaymentManagement() {
                 <Select.Option value="failed">Failed</Select.Option>
                 <Select.Option value="refunded">Refunded</Select.Option>
               </Select>
-              <RangePicker
-                onChange={(dates) => {
-                  setFilters((f) => ({
-                    ...f,
-                    start_date: dates?.[0] ? dates[0].format("YYYY-MM-DD") : undefined,
-                    end_date: dates?.[1] ? dates[1].format("YYYY-MM-DD") : undefined,
-                  }));
-                }}
-                style={{ borderRadius: 8 }}
-              />
+              {isMobile ? (
+                <MobileDateRangePicker
+                  allowClear
+                  value={
+                    filters.start_date && filters.end_date
+                      ? [dayjs(filters.start_date), dayjs(filters.end_date)]
+                      : null
+                  }
+                  onChange={(dates) => {
+                    setFilters((f) => ({
+                      ...f,
+                      start_date: dates?.[0]
+                        ? dates[0].format("YYYY-MM-DD")
+                        : undefined,
+                      end_date: dates?.[1]
+                        ? dates[1].format("YYYY-MM-DD")
+                        : undefined,
+                    }));
+                  }}
+                  format="MMM D, YYYY"
+                />
+              ) : (
+                <RangePicker
+                  value={
+                    filters.start_date && filters.end_date
+                      ? [dayjs(filters.start_date), dayjs(filters.end_date)]
+                      : null
+                  }
+                  onChange={(dates) => {
+                    setFilters((f) => ({
+                      ...f,
+                      start_date: dates?.[0]
+                        ? dates[0].format("YYYY-MM-DD")
+                        : undefined,
+                      end_date: dates?.[1]
+                        ? dates[1].format("YYYY-MM-DD")
+                        : undefined,
+                    }));
+                  }}
+                  style={{ borderRadius: 8 }}
+                />
+              )}
               <Button
                 type="primary"
                 onClick={() => {

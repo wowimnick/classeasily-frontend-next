@@ -34,6 +34,7 @@ import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { businessDiscountService } from "@/services/apiService";
+import { useUrlState } from "@/hooks/useUrlState";
 import DiscountsDrawer from "./DiscountsDrawer";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { MetricPeriodBadge } from "../../shared/MetricPeriodBadge";
@@ -379,6 +380,7 @@ const MobileDiscountSkeleton = () => (
 
 // #region --- MAIN COMPONENT ---
 const Discounts = ({ businessId }) => {
+  const [discountIdRaw, setDiscountId] = useUrlState("discountId");
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -405,6 +407,23 @@ const Discounts = ({ businessId }) => {
   useEffect(() => {
     fetchDiscounts();
   }, [fetchDiscounts]);
+
+  useEffect(() => {
+    if (!discountIdRaw || loading) return;
+    const id = Number(discountIdRaw);
+    if (!Number.isInteger(id) || id <= 0) {
+      setDiscountId(null);
+      return;
+    }
+    const d = discounts.find((x) => x.id === id);
+    if (d) {
+      setEditingDiscount(d);
+      setDrawerVisible(true);
+    } else if (discounts.length > 0) {
+      setDiscountId(null);
+    }
+  }, [discountIdRaw, discounts, loading, setDiscountId]);
+
   useEffect(() => {
     if (!loading) {
       const timer = setTimeout(() => setIsReady(true), 100);
@@ -418,11 +437,17 @@ const Discounts = ({ businessId }) => {
   };
 
   const showDrawer = (discount = null) => {
-    setEditingDiscount(discount);
+    if (discount) {
+      setDiscountId(discount.id);
+      return;
+    }
+    setDiscountId(null);
+    setEditingDiscount(null);
     setDrawerVisible(true);
   };
 
   const onDrawerClose = () => {
+    setDiscountId(null);
     setDrawerVisible(false);
     setTimeout(() => {
       setEditingDiscount(null);

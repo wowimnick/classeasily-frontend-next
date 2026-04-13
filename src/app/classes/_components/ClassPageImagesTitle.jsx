@@ -737,6 +737,8 @@ const ClassPageImagesTitle = React.memo(
     isTogglingFavorite,
     onFavoriteClick,
     onShareClick,
+    /** If set, merged into the copied/shared URL (e.g. optionId & date deep links). */
+    shareUrlQueryString = "",
   }) => {
     const [isGalleryModalVisible, setIsGalleryModalVisible] = useState(false);
     const [isEmbedModalVisible, setIsEmbedModalVisible] = useState(false);
@@ -748,8 +750,18 @@ const ClassPageImagesTitle = React.memo(
     const [currentUrl, setCurrentUrl] = useState("");
 
     useEffect(() => {
-      setCurrentUrl(typeof window !== "undefined" ? window.location.href : "");
-    }, []);
+      if (typeof window === "undefined") return;
+      if (!shareUrlQueryString) {
+        setCurrentUrl(window.location.href);
+        return;
+      }
+      const u = new URL(window.location.href);
+      const extra = new URLSearchParams(shareUrlQueryString);
+      extra.forEach((v, k) => {
+        if (v) u.searchParams.set(k, v);
+      });
+      setCurrentUrl(u.toString());
+    }, [shareUrlQueryString]);
     useEffect(() => {
       const check = () => setIsMobile(window.innerWidth <= 768);
       check();

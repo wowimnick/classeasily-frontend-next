@@ -27,7 +27,6 @@ import {
   Skeleton,
   Divider,
   Pagination,
-  DatePicker,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -63,7 +62,6 @@ import {
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
 

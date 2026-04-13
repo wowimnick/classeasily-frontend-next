@@ -880,6 +880,7 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       class_name: <SkeletonLine width="150px" />,
       session_date: <SkeletonLine width="100px" />,
       net_amount_for_payout: <SkeletonLine width="60px" />,
+      stripe_processing_fee: <SkeletonLine width="50px" />,
     }));
   };
 
@@ -909,13 +910,30 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       dataIndex: "net_amount_for_payout",
       key: "net",
       align: "right",
-      width: 140,
+      width: 120,
       render: (val) => {
         const amount = Number(val).toFixed(2);
         return (
           <div style={{ textAlign: "right" }}>
             <Text strong style={{ color: colors.success }}>
               ${amount}
+            </Text>
+          </div>
+        );
+      },
+    },
+    {
+      title: "CARD PROCESSING",
+      dataIndex: "stripe_processing_fee",
+      key: "stripe_fee",
+      align: "right",
+      width: 130,
+      render: (val) => {
+        const n = Number(val || 0);
+        return (
+          <div style={{ textAlign: "right" }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              −${n.toFixed(2)}
             </Text>
           </div>
         );
@@ -997,6 +1015,10 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
                 }}
               >
                 ${Number(item.net_amount_for_payout).toFixed(2)}
+              </Text>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Stripe fee −$
+                {Number(item.stripe_processing_fee || 0).toFixed(2)}
               </Text>
             </div>
           </MobileBookingItem>
@@ -1433,7 +1455,8 @@ const Payouts = () => {
       color: colors.info,
       background: "rgba(59, 130, 246, 0.1)",
       suffix: summary?.currency,
-      footer: "Funds held for all future experiences.",
+      footer:
+        "Amounts are net after ClassEasily commission and Stripe card processing (2.9% + 30¢).",
       periodBadge: "Current",
     },
     {
