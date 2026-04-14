@@ -77,10 +77,22 @@ export default function DashboardPage() {
       break;
     case "schedules": {
       const classIdParam = searchParams.get("classId");
-      const initialClassId = classIdParam && !isNaN(Number(classIdParam)) ? Number(classIdParam) : classIdParam || undefined;
+      const instanceIdParam = searchParams.get("instanceId");
+      const initialClassId =
+        classIdParam && !isNaN(Number(classIdParam))
+          ? Number(classIdParam)
+          : classIdParam || undefined;
+      let initialInstanceId;
+      if (instanceIdParam != null && instanceIdParam !== "") {
+        const n = Number(instanceIdParam);
+        if (Number.isInteger(n) && n > 0) initialInstanceId = n;
+      }
       componentToRender = (
         <div style={{ height: "100%", minHeight: "calc(100vh - 60px)" }}>
-          <ScheduleCalendarView initialClassId={initialClassId} />
+          <ScheduleCalendarView
+            initialClassId={initialClassId}
+            initialInstanceId={initialInstanceId}
+          />
         </div>
       );
       break;

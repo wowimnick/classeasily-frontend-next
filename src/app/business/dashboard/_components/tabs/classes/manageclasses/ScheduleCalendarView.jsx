@@ -54,6 +54,7 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { businessClassService, businessService, scheduleService } from "@/services/apiService";
 import message from "@/lib/message";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
@@ -101,6 +102,13 @@ function getWeekStart(date) {
 
 function getWeekDays(weekStart) {
   return Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day"));
+}
+
+/** Compare schedule list rows to API instance dates (string or Date). */
+function normalizeScheduleInstanceDate(d) {
+  if (d == null) return "";
+  if (typeof d === "string") return d.split("T")[0].slice(0, 10);
+  return dayjs(d).format("YYYY-MM-DD");
 }
 
 function hourFloatFromHHMM(str) {
@@ -3022,7 +3030,8 @@ function MobileFiltersDrawer({ open, onClose, ...sidebarProps }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ScheduleCalendarView({ initialClassId }) {
+export default function ScheduleCalendarView({ initialClassId, initialInstanceId }) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState("month");
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [classes, setClasses] = useState([]);
@@ -3054,6 +3063,11 @@ export default function ScheduleCalendarView({ initialClassId }) {
   const [isMobile, setIsMobile] = useState(false);
 
   const [businessHours, setBusinessHours] = useState([]);
+
+  /** Resolve ?instanceId= deep link (overview → schedules tab). */
+  const instanceDeepLinkMetaRef = useRef(null);
+  const deepLinkDrawerOpenedForRef = useRef(null);
+  const deepLinkEffectGenerationRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -3155,6 +3169,109 @@ export default function ScheduleCalendarView({ initialClassId }) {
       loadSchedules(visible);
     }
   }, [classes, visibleClassIds, refreshKey, loadSchedules]);
+
+  const stripInstanceIdFromUrl = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (!sp.has("instanceId")) return;
+    sp.delete("instanceId");
+    const qs = sp.toString();
+    router.replace(`/business/dashboard/schedules${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [router]);
+
+  // Open schedule editor drawer from /schedules?instanceId= (e.g. overview "Edit" deep link)
+  useEffect(() => {
+    if (!initialInstanceId) {
+      instanceDeepLinkMetaRef.current = null;
+      deepLinkDrawerOpenedForRef.current = null;
+      return;
+    }
+
+    const gen = ++deepLinkEffectGenerationRef.current;
+    let cancelled = false;
+
+    const failAndStrip = (msg) => {
+      if (msg) message.error(msg);
+      stripInstanceIdFromUrl();
+      instanceDeepLinkMetaRef.current = null;
+    };
+
+    const run = async () => {
+      const isStale = () => cancelled || gen !== deepLinkEffectGenerationRef.current;
+
+      let meta = instanceDeepLinkMetaRef.current;
+      if (!meta || meta.forInstance !== initialInstanceId) {
+        const res = await scheduleService.fetchInstance(initialInstanceId);
+        if (isStale()) return;
+        if (!res.success || !res.data) {
+          failAndStrip(
+            typeof res.error === "string" ? res.error : "Could not load that session.",
+          );
+          return;
+        }
+        const d = res.data;
+        if (d.booking_type === "Full Course") {
+          message.info(
+            "Course schedules are edited from the calendar as a series, not individual sessions.",
+          );
+          failAndStrip();
+          return;
+        }
+        instanceDeepLinkMetaRef.current = {
+          forInstance: initialInstanceId,
+          scheduleId: d.schedule,
+          date: d.date,
+          classId: d.class_id,
+        };
+        if (d.class_id) {
+          setVisibleClassIds(new Set([d.class_id]));
+        }
+        meta = instanceDeepLinkMetaRef.current;
+      }
+
+      if (isStale()) return;
+      if (!meta || meta.forInstance !== initialInstanceId) return;
+
+      if (deepLinkDrawerOpenedForRef.current === initialInstanceId) return;
+
+      if (loading) return;
+
+      const targetDate = normalizeScheduleInstanceDate(meta.date);
+      const found = allSchedules.find(
+        (s) =>
+          Number(s.id) === Number(meta.scheduleId) &&
+          normalizeScheduleInstanceDate(s.date) === targetDate,
+      );
+
+      if (!found) {
+        failAndStrip("That session was not found in your schedules.");
+        return;
+      }
+
+      if (isStale()) return;
+
+      deepLinkDrawerOpenedForRef.current = initialInstanceId;
+      setCurrentDate(dayjs(targetDate));
+      setViewMode("week");
+      setFormState({
+        open: true,
+        schedule: found,
+        prefill: null,
+        isBulk: false,
+        moveOnly: false,
+      });
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    initialInstanceId,
+    allSchedules,
+    loading,
+    stripInstanceIdFromUrl,
+  ]);
 
   // ── All groups ────────────────────────────────────────────────────────────
   const allGroups = useMemo(() => {
@@ -3336,7 +3453,10 @@ export default function ScheduleCalendarView({ initialClassId }) {
     [handleEventClick, handleDuplicateSchedule, openMoveInDrawer, handleSuccess]
   );
 
-  const closeForm = () => setFormState(s => ({ ...s, open: false, moveOnly: false }));
+  const closeForm = useCallback(() => {
+    setFormState((s) => ({ ...s, open: false, moveOnly: false }));
+    stripInstanceIdFromUrl();
+  }, [stripInstanceIdFromUrl]);
 
   const sidebarProps = {
     classes, visibleClassIds,

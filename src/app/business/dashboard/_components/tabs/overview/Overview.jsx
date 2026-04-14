@@ -59,7 +59,6 @@ import {
   Divider,
   Button,
   message,
-  Form,
   Progress,
 } from "antd";
 import {
@@ -76,8 +75,7 @@ import Link from "next/link";
 
 import { formatUTCToUserDisplay, formatNaiveDate } from "@/services/utils";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
-import { businessService, scheduleService } from "@/services/apiService";
-import ScheduleEditDrawer from "../classes/manageclasses/ScheduleEditDrawer";
+import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
 
@@ -109,31 +107,6 @@ const hexToRgba = (hex, alpha = 1) => {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const getErrorMessage = (error) => {
-  if (error?.response?.data) {
-    const data = error.response.data;
-    if (typeof data.detail === "string") return data.detail;
-    if (typeof data.message === "string") return data.message;
-    if (typeof data.error === "string") return data.error;
-    if (typeof data === "object" && data !== null) {
-      const messages = Object.entries(data).map(([key, value]) => {
-        const formattedKey = key
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${
-          Array.isArray(value) ? value.join(", ") : value
-        }`;
-      });
-      if (messages.length > 0) return messages.join("; ");
-    }
-  }
-  if (typeof error?.error === "string") return error.error;
-  if (typeof error?.detail === "string") return error.detail;
-  if (error?.message) return error.message;
-  if (typeof error === "string") return error;
-  return "An unexpected error occurred. Please try again.";
 };
 
 /* --- Styled Components --- */
@@ -1304,16 +1277,6 @@ const Overview = forwardRef((props, ref) => {
     return () => clearTimeout(t);
   }, []);
 
-  const [scheduleForm] = Form.useForm();
-  const [editingScheduleId, setEditingScheduleId] = useState(null);
-  const [scheduleEditDrawer, setScheduleEditDrawer] = useState({
-    visible: false,
-    classData: null,
-    editingSchedule: null,
-    startInEditMode: false,
-    hideBackButton: false,
-  });
-
   const overviewTitleRef = useRef(null);
   useImperativeHandle(ref, () => ({
     getTargetElement: () => overviewTitleRef.current,
@@ -1336,67 +1299,14 @@ const Overview = forwardRef((props, ref) => {
     };
   }, [overviewData]);
 
-  const handleOpenEditDrawer = async (cls) => {
-    if (editingScheduleId) return;
-    setEditingScheduleId(cls.schedule_instance_id);
-    try {
-      const result = await scheduleService.fetchInstance(
-        cls.schedule_instance_id,
-      );
-      if (result.success && result.data) {
-        const apiData = result.data;
-        if (!apiData.booking_type) {
-          message.error("Cannot edit: schedule is missing key details.");
-          return;
-        }
-
-        const classDataForDrawer = {
-          title: cls.name,
-          option: {
-            optionId: apiData.option,
-            booking_type: apiData.booking_type,
-          },
-        };
-
-        const scheduleToEdit = {
-          id: apiData.schedule,
-          name: apiData.name,
-          price: apiData.price,
-          maxParticipants: apiData.max_participants,
-          minParticipants: apiData.min_participants || 1,
-          duration: apiData.duration,
-          time: apiData.time,
-          date: apiData.date,
-        };
-
-        setScheduleEditDrawer({
-          visible: true,
-          classData: classDataForDrawer,
-          editingSchedule: scheduleToEdit,
-          startInEditMode: true,
-          hideBackButton: true,
-        });
-      } else {
-        message.error(
-          getErrorMessage(result.error) || "Failed to load schedule details.",
-        );
-      }
-    } catch (err) {
-      message.error(getErrorMessage(err));
-    } finally {
-      setEditingScheduleId(null);
-    }
-  };
-
-  const handleCloseEditDrawer = () => {
-    setScheduleEditDrawer({
-      visible: false,
-      classData: null,
-      editingSchedule: null,
-      startInEditMode: false,
-      hideBackButton: false,
-    });
-  };
+  const goToSchedulesEditor = useCallback(
+    (cls) => {
+      const id = cls?.schedule_instance_id;
+      if (id == null) return;
+      router.push(`/business/dashboard/schedules?instanceId=${id}`);
+    },
+    [router],
+  );
 
   const revenueChartData = useMemo(() => {
     if (loading || error || !overviewData?.revenue_trend) return [];
@@ -1844,14 +1754,8 @@ const Overview = forwardRef((props, ref) => {
                             type="text"
                             shape="circle"
                             icon={<Edit3 size={16} />}
-                            onClick={() => handleOpenEditDrawer(cls)}
-                            loading={
-                              editingScheduleId === cls.schedule_instance_id
-                            }
+                            onClick={() => goToSchedulesEditor(cls)}
                             disabled={isCourseSession}
-                            key={`btn-${
-                              editingScheduleId === cls.schedule_instance_id
-                            }`}
                           />
                         );
                         if (isCourseSession) {
@@ -2155,17 +2059,6 @@ const Overview = forwardRef((props, ref) => {
         </GridSection>
 
         </OverviewContentLayer>
-
-        <ScheduleEditDrawer
-          open={scheduleEditDrawer.visible}
-          onClose={handleCloseEditDrawer}
-          onSchedulesUpdate={onDataRefresh}
-          classData={scheduleEditDrawer.classData}
-          editingSchedule={scheduleEditDrawer.editingSchedule}
-          startInEditMode={scheduleEditDrawer.startInEditMode}
-          hideBackButton={scheduleEditDrawer.hideBackButton}
-          form={scheduleForm}
-        />
     </DashboardWrapper>
   );
 });
