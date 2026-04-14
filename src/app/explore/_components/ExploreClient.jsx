@@ -14,7 +14,6 @@ import styled from "styled-components";
 import dynamic from "next/dynamic";
 import ExploreHeader from "../../../components/explore/ExploreHeader";
 import { classService } from "@/services/apiService";
-import message from "@/lib/message";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext"; // IMPORT SEARCH CONTEXT
@@ -460,45 +459,12 @@ function ExploreClientContent({
     ]
   );
 
-  const copyExploreLink = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      message.success("Link copied to clipboard");
-    } catch {
-      message.error("Could not copy link");
-    }
-  }, []);
-
   return (
     <PageLayout>
       <ExploreHeader showOptionsWrapper={true} />
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>
-      <div
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          justifyContent: "flex-end",
-          padding: "4px 16px 0",
-        }}
-      >
-        <button
-          type="button"
-          onClick={copyExploreLink}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--ant-color-primary, #ff385c)",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            textDecoration: "underline",
-          }}
-        >
-          Copy link to these results
-        </button>
-      </div>
       <ContentArea>
         {fetchError && !showSkeleton && (
           <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>
