@@ -64,6 +64,73 @@ const BreadcrumbContainer = styled.div`
   }
 `;
 
+/** Build `/classes/search/` params from explore query (must match client refetch effect). */
+function buildExploreClassSearchParamsFromSp(sp) {
+  const apiParams = {};
+  const defaultMaxPrice = 500;
+  const defaultMaxDistance = 50;
+
+  const lat = sp.get("lat");
+  const lng = sp.get("lng");
+  const location = sp.get("location");
+
+  if (lat && lng) {
+    apiParams.lat = parseFloat(lat);
+    apiParams.lng = parseFloat(lng);
+  }
+  if (location) apiParams.location_search = location;
+
+  const collection = sp.get("collection");
+  if (collection) apiParams.collection = collection;
+
+  const tag = sp.get("tag");
+  if (tag) apiParams.tag = tag;
+
+  const keyword = sp.get("keyword");
+  if (keyword) apiParams.keyword = keyword;
+
+  const priceMax = parseInt(
+    sp.get("price_max") || String(defaultMaxPrice),
+    10,
+  );
+  if (priceMax < defaultMaxPrice) apiParams.price_max = priceMax;
+
+  const radiusRaw =
+    sp.get("radius") || sp.get("distance_max") || String(defaultMaxDistance);
+  const radius = parseInt(radiusRaw, 10);
+  if (radius > 0) apiParams.radius = radius;
+
+  const startDate = sp.get("start_date") || "";
+  const endDate = sp.get("end_date") || "";
+  const date = sp.get("date") || "";
+  if (startDate && endDate) {
+    apiParams.start_date = startDate;
+    apiParams.end_date = endDate;
+  } else if (date) {
+    apiParams.date = date;
+  }
+
+  const participants = parseInt(sp.get("participants") || "1", 10);
+  if (participants > 0) apiParams.participants = participants;
+
+  const timePrefs = sp.getAll("time_preference");
+  if (timePrefs.length > 0) apiParams.time_preference = timePrefs;
+
+  const sortBy = sp.get("sort_by") || "relevance";
+  if (sortBy && sortBy !== "relevance") apiParams.sort_by = sortBy;
+
+  const days = sp.getAll("days");
+  if (days.length > 0) apiParams.days = days;
+
+  return apiParams;
+}
+
+function stripExplorePageQuery(queryString) {
+  const p = new URLSearchParams(queryString);
+  p.delete("explore_page");
+  return p.toString();
+}
+
 function ExploreClientContent({
   initialCategories,
   initialClasses,
@@ -94,9 +161,30 @@ function ExploreClientContent({
   const [fetchError, setFetchError] = useState(null);
 
   const observerTarget = useRef(null);
+  /** Scroll container for class list (set by ClassesDisplay). IO must use this root — not the viewport. */
+  const infiniteScrollRootRef = useRef(null);
   const apiParamsRef = useRef({});
   const isInitialMount = useRef(true);
   const previousSearchParamsRef = useRef(searchParams.toString());
+
+  /** `explore_page` is only for deep-linking; it must not trigger a full refetch (that breaks infinite scroll). */
+  const exploreQueryKeySansPage = useMemo(() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("explore_page");
+    return p.toString();
+  }, [searchParams]);
+
+  /** Keep pagination requests aligned with current filters (independent of `explore_page` in the URL). */
+  useEffect(() => {
+    const sp = new URLSearchParams(exploreQueryKeySansPage);
+    apiParamsRef.current = buildExploreClassSearchParamsFromSp(sp);
+  }, [exploreQueryKeySansPage]);
+
+  const [infiniteScrollRootVersion, setInfiniteScrollRootVersion] = useState(0);
+  const onClassListScrollRootReady = useCallback((el) => {
+    infiniteScrollRootRef.current = el;
+    if (el) setInfiniteScrollRootVersion((n) => n + 1);
+  }, []);
 
   // --- DERIVED DATA FROM URL ---
   const currentCollection = searchParams.get("collection") || "";
@@ -213,6 +301,15 @@ function ExploreClientContent({
     // Early return if params haven't changed
     if (currentParamsStr === prevParamsStr) return;
 
+    // Pagination-only URL updates must not reset results (causes flash / broken infinite scroll).
+    if (
+      stripExplorePageQuery(currentParamsStr) ===
+      stripExplorePageQuery(prevParamsStr)
+    ) {
+      previousSearchParamsRef.current = currentParamsStr;
+      return;
+    }
+
     const currentObj = Object.fromEntries(searchParams.entries());
     const prevObj = Object.fromEntries(
       new URLSearchParams(prevParamsStr).entries()
@@ -228,61 +325,18 @@ function ExploreClientContent({
     // Force explicit loading for client-side filter changes
     setLoading(true);
 
-    const apiParams = {};
-
-    const lat = searchParams.get("lat");
-    const lng = searchParams.get("lng");
-    const location = searchParams.get("location");
-
-    if (lat && lng) {
-      apiParams.lat = parseFloat(lat);
-      apiParams.lng = parseFloat(lng);
-    }
-    if (location) apiParams.location_search = location;
-
-    if (currentCollection) {
-      apiParams.collection = currentCollection;
-    }
-
-    if (tag) apiParams.tag = tag;
-    if (currentFilters.keyword) apiParams.keyword = currentFilters.keyword;
-    if (currentFilters.pricePerClass[1] < 500)
-      apiParams.price_max = currentFilters.pricePerClass[1];
-    if (currentFilters.distance[1] > 0)
-      apiParams.radius = currentFilters.distance[1];
-
-    // --- UPDATED: Add Date Ranges to Client API Params ---
-    if (currentFilters.startDate && currentFilters.endDate) {
-      apiParams.start_date = currentFilters.startDate;
-      apiParams.end_date = currentFilters.endDate;
-    } else if (currentFilters.date) {
-      apiParams.date = currentFilters.date;
-    }
-
-    if (currentFilters.participants > 0)
-      apiParams.participants = currentFilters.participants;
-    if (currentFilters.timePreference.length > 0)
-      apiParams.time_preference = currentFilters.timePreference;
-    if (currentSortBy && currentSortBy !== "relevance") {
-      apiParams.sort_by = currentSortBy;
-    }
-
+    const sp = new URLSearchParams(exploreQueryKeySansPage);
+    const apiParams = buildExploreClassSearchParamsFromSp(sp);
     apiParamsRef.current = apiParams;
     previousSearchParamsRef.current = currentParamsStr;
 
     fetchClassesApi(apiParams, 1, false, controller.signal);
 
     return () => controller.abort();
-  }, [
-    searchParams,
-    currentCollection,
-    tag,
-    currentSortBy,
-    currentFilters,
-    fetchClassesApi,
-  ]);
+  }, [searchParams, exploreQueryKeySansPage, fetchClassesApi]);
 
   useEffect(() => {
+    const root = infiniteScrollRootRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
@@ -294,7 +348,11 @@ function ExploreClientContent({
           }
         }
       },
-      { threshold: 0.1 }
+      {
+        root: root || null,
+        rootMargin: "400px",
+        threshold: 0,
+      },
     );
 
     const currentTarget = observerTarget.current;
@@ -302,8 +360,9 @@ function ExploreClientContent({
 
     return () => {
       if (currentTarget) observer.unobserve(currentTarget);
+      observer.disconnect();
     };
-  }, [nextPageUrl, loadingMore, fetchClassesApi]);
+  }, [nextPageUrl, loadingMore, fetchClassesApi, infiniteScrollRootVersion]);
 
   // Read current URL at call time to avoid stale closure when child calls this after location change
   const getCurrentSearchString = useCallback(() => {
@@ -431,6 +490,7 @@ function ExploreClientContent({
       currentSortBy,
       onApplyModalChanges: handleApplyModalChanges,
       observerTargetRef: observerTarget,
+      onClassListScrollRootReady,
       hasMorePages: !!nextPageUrl,
       isLoadingMore: loadingMore,
       province: routeParams.province,
@@ -450,6 +510,7 @@ function ExploreClientContent({
       currentSortBy,
       handleApplyModalChanges,
       observerTarget,
+      onClassListScrollRootReady,
       nextPageUrl,
       loadingMore,
       routeParams.province,

@@ -19,6 +19,10 @@ import ClientHeader from "@/components/layout/ClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 import ReviewsTab from "./ReviewsTab.jsx";
 import BusinessUpcomingClasses from "./BusinessUpcomingClasses.jsx";
+import {
+  formatBusinessLocationLine,
+  dedupeBusinessLocationsForDisplay,
+} from "@/lib/formatBusinessLocationLine";
 
 // --- GLOBAL STYLES ---
 const GlobalStyles = createGlobalStyle`
@@ -499,10 +503,15 @@ const BusinessPageClient = ({ initialData, slug }) => {
 
   const ratingAsNumber = average_rating ? parseFloat(average_rating) : 0;
 
+  const displayLocations = useMemo(
+    () => dedupeBusinessLocationsForDisplay(locations),
+    [locations],
+  );
+
   const primaryBusinessLocation = useMemo(() => {
-    if (!locations?.length) return null;
-    return locations.find((l) => l.is_primary) || locations[0];
-  }, [locations]);
+    if (!displayLocations?.length) return null;
+    return displayLocations.find((l) => l.is_primary) || displayLocations[0];
+  }, [displayLocations]);
 
   // Coordinates for map (prefer primary saved location, then first class)
   const mapCoordinates = useMemo(() => {
@@ -624,7 +633,18 @@ const BusinessPageClient = ({ initialData, slug }) => {
 
             <SectionDivider />
 
-            {locations.length > 0 && (
+            {/* UPCOMING CLASSES — above locations / about so visitors see schedules first */}
+            <div style={{ marginBottom: "32px" }}>
+              <BusinessUpcomingClasses
+                classes={classes}
+                businessName={businessName}
+                handleFavoriteChange={handleFavoriteChange}
+              />
+            </div>
+
+            <SectionDivider />
+
+            {displayLocations.length > 0 && (
               <div style={{ marginBottom: "32px" }}>
                 <h3
                   style={{
@@ -642,10 +662,8 @@ const BusinessPageClient = ({ initialData, slug }) => {
                     gap: 12,
                   }}
                 >
-                  {locations.map((loc) => {
-                    const line = [loc.address, loc.unit, loc.city, loc.state, loc.zip_code]
-                      .filter(Boolean)
-                      .join(", ");
+                  {displayLocations.map((loc) => {
+                    const line = formatBusinessLocationLine(loc);
                     const q = encodeURIComponent(line || loc.address || "");
                     return (
                       <div
@@ -698,7 +716,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
               </div>
             )}
 
-            {locations.length > 0 && <SectionDivider />}
+            {displayLocations.length > 0 && <SectionDivider />}
 
             <div style={{marginBottom: '32px'}}>
               <h3 style={{fontSize:'22px', fontWeight:600, marginBottom:'16px'}}>About this business</h3>
@@ -765,17 +783,6 @@ const BusinessPageClient = ({ initialData, slug }) => {
             )}
             <SectionDivider />
 
-            {/* UPCOMING CLASSES */}
-            <div style={{marginBottom: '32px'}}>
-               <BusinessUpcomingClasses
-                 classes={classes}
-                 businessName={businessName}
-                 handleFavoriteChange={handleFavoriteChange}
-               />
-            </div>
-
-            <SectionDivider />
-
             {/* REVIEWS */}
             <div id="reviews-section">
               <ReviewsTab
@@ -819,7 +826,11 @@ const BusinessPageClient = ({ initialData, slug }) => {
                     </MapContainer>
                   )}
                   <MobileMapLink 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessAddress || "")}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      (primaryBusinessLocation && formatBusinessLocationLine(primaryBusinessLocation)) ||
+                        businessAddress ||
+                        "",
+                    )}`}
                     target="_blank"
                   >
                     Open in Maps

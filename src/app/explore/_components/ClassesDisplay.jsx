@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import styled from "styled-components";
 import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -270,6 +277,7 @@ const ClassesDisplay = ({
   currentSortBy,
   onApplyModalChanges,
   observerTargetRef,
+  onClassListScrollRootReady,
   hasMorePages,
   isLoadingMore,
   province,
@@ -307,6 +315,11 @@ const ClassesDisplay = ({
     );
     return unregister;
   }, []);
+
+  useLayoutEffect(() => {
+    onClassListScrollRootReady?.(gridWrapperRef.current);
+    return () => onClassListScrollRootReady?.(null);
+  }, [onClassListScrollRootReady]);
 
   useEffect(() => {
     restoreScroll(pathnameWithSearch, gridWrapperRef);

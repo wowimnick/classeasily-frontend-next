@@ -17,6 +17,7 @@ import {
 import debounce from "lodash/debounce";
 import "leaflet/dist/leaflet.css";
 import { businessService } from "@/services/apiService";
+import { formatBusinessLocationLine } from "@/lib/formatBusinessLocationLine";
 
 const GEOCODE_URL = "https://geocoding.classeasily.com/address-autocomplete-proxy";
 const SEARCH_DEBOUNCE_MS = 300;
@@ -528,10 +529,6 @@ const ToggleRowLabel = styled.div`
   color: #344054;
 `;
 
-function formatAddressLine(row) {
-  return [row.address, row.unit, row.city, row.state, row.zip_code].filter(Boolean).join(", ");
-}
-
 /**
  * Manage multiple physical locations; primary syncs to legacy profile address fields.
  */
@@ -937,8 +934,8 @@ export default function LocationsSettingsTab({
             </ListToolbar>
             <LocationCardsStack>
             {locations.map((row) => {
-              const cardTitle = (row.name || "").trim() || formatAddressLine(row);
-              const cardAddress = formatAddressLine(row);
+              const cardTitle = (row.name || "").trim() || formatBusinessLocationLine(row);
+              const cardAddress = formatBusinessLocationLine(row);
               const showAddressLine =
                 cardAddress && cardAddress.trim().toLowerCase() !== cardTitle.trim().toLowerCase();
               return (
