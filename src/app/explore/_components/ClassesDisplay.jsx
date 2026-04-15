@@ -571,16 +571,18 @@ const ClassesDisplay = ({
         <ClassGridWrapper ref={gridWrapperRef}>
           {renderContent()}
 
-          {classesWithDistance.length > 0 && hasMorePages && !isLoadingMore && (
-            <div
-              ref={observerTargetRef}
-              style={{
-                height: "1px",
-                marginTop: "1px",
-                background: "transparent",
-              }}
-            />
-          )}
+          {/* Sentinel for IntersectionObserver — always in DOM so the
+              observer (created once) has a stable target. */}
+          <div
+            ref={observerTargetRef}
+            aria-hidden
+            style={{
+              height: "1px",
+              width: "100%",
+              background: "transparent",
+              pointerEvents: "none",
+            }}
+          />
         </ClassGridWrapper>
       </LeftContainer>
 

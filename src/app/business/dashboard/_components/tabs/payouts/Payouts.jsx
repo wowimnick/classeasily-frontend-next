@@ -1456,7 +1456,7 @@ const Payouts = () => {
       background: "rgba(59, 130, 246, 0.1)",
       suffix: summary?.currency,
       footer:
-        "Amounts are net after ClassEasily commission and Stripe card processing (2.9% + 30¢).",
+        "Amounts are net after commission and card processing (2.9% + 30¢).",
       periodBadge: "Current",
     },
     {

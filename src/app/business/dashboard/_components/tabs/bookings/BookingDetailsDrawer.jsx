@@ -845,13 +845,6 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
                     that payment (same logic as payouts).
                   </Text>
                 )}
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 11, marginTop: 6, display: "block", lineHeight: 1.5 }}
-                >
-                  Card processing (~2.9% + 30¢) comes out of your net, not from the platform
-                  commission.
-                </Text>
               </div>
             )}
             {(pay?.metadata?.booking_source || pay?.metadata?.original_stripe_metadata?.booking_source) && (

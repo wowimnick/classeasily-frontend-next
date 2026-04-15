@@ -802,7 +802,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <TrendingDown size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
-      footer: "ClassEasily fee (% of subtotal; tier / widget plan)",
+      footer: "ClassEasily fee",
     },
     {
       key: "stripe_processing_fees",
@@ -812,7 +812,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Receipt size={20} />,
       color: colors.textSecondary,
       background: `rgba(100, 116, 139, 0.12)`,
-      footer: "Stripe est. 2.9% + 30¢ (deducted from your payout)",
+      footer: "Processing est. 2.9% + 30¢",
     },
     {
       key: "estimated_net_revenue",
