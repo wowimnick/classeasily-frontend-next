@@ -726,6 +726,19 @@ const RegisterPageContent = () => {
     return () => window.removeEventListener("resize", debouncedResize);
   }, []);
 
+  useEffect(() => {
+    if (pageStatus !== "ready" || currentStep !== -1) return;
+    import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+      trackPixelEvent("ViewContent", {
+        content_name: "Business registration",
+        content_category: "signup",
+        content_ids: ["business_registration"],
+        content_type: "registration",
+        currency: "CAD",
+      });
+    });
+  }, [pageStatus, currentStep]);
+
   const {
     lottieRef,
     playbackState,
@@ -930,6 +943,17 @@ const RegisterPageContent = () => {
           business_name: dataToSubmit.business_name,
         });
 
+        import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+          trackPixelEvent("CompleteRegistration", {
+            content_name: "Business registration",
+            content_category: "signup",
+            content_ids: ["business_registration"],
+            content_type: "registration",
+            status: true,
+            currency: "CAD",
+          });
+        });
+
         setPageStatus("success");
         resetForm();
         message.success("Business registration submitted successfully!");
@@ -1073,6 +1097,16 @@ const RegisterPageContent = () => {
   // TRACKING: Start Form
   const startForm = () => {
     posthog.capture("business_registration_started");
+    import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+      trackPixelEvent("AddToCart", {
+        content_name: "Business registration",
+        content_category: "signup",
+        content_ids: ["business_registration"],
+        content_type: "registration",
+        value: 0,
+        currency: "CAD",
+      });
+    });
     setDirection(1);
     setCurrentStep(0);
   };

@@ -2037,6 +2037,8 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
   const [duration, setDuration] = useState(60);
   const [selectedDays, setSelectedDays] = useState([]);
   const [times, setTimes] = useState([dayjs("09:00", "HH:mm")]);
+  const screens = Grid.useBreakpoint();
+  const isScheduleFormMobile = !screens.lg;
 
   const isEdit = !!schedule;
 

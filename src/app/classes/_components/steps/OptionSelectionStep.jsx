@@ -327,6 +327,10 @@ const parseDescription = (desc) => {
   return {};
 };
 
+/** API may return optionId as number or string depending on source / legacy tiers. */
+const optionIdsMatch = (a, b) =>
+  a != null && b != null && String(a) === String(b);
+
 // --- Component ---
 
 const OptionSelectionStep = ({ options, selectedOptionId, onSelect }) => {
@@ -404,7 +408,7 @@ const OptionSelectionStep = ({ options, selectedOptionId, onSelect }) => {
             {/* Header Option Cells */}
             {sortedOptions.map((option, i) => {
               const price = getLowestPrice(option);
-              const isSelected = selectedOptionId === option.optionId;
+              const isSelected = optionIdsMatch(selectedOptionId, option.optionId);
               const isBaseTier = i === 0;
 
               return (
@@ -442,7 +446,10 @@ const OptionSelectionStep = ({ options, selectedOptionId, onSelect }) => {
 
                 {sortedOptions.map((option) => {
                   const features = parseDescription(option.description);
-                  const isSelected = selectedOptionId === option.optionId;
+                  const isSelected = optionIdsMatch(
+                    selectedOptionId,
+                    option.optionId,
+                  );
 
                   return (
                     <Cell
@@ -463,7 +470,10 @@ const OptionSelectionStep = ({ options, selectedOptionId, onSelect }) => {
             />
 
             {sortedOptions.map((option) => {
-              const isSelected = selectedOptionId === option.optionId;
+              const isSelected = optionIdsMatch(
+                selectedOptionId,
+                option.optionId,
+              );
               return (
                 <Cell
                   key={`btn-${option.optionId}`}

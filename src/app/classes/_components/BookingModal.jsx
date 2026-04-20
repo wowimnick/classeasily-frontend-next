@@ -314,10 +314,14 @@ const BookingModal = ({
   }, []);
 
   const selectedOption = useMemo(() => {
-    const idToFind = selectedOptionId || initialOptionId;
+    const idToFind = selectedOptionId ?? initialOptionId;
+    if (idToFind == null) {
+      return classData?.options?.[0];
+    }
     return (
-      classData?.options?.find((opt) => opt.optionId === idToFind) ||
-      classData?.options?.[0]
+      classData?.options?.find(
+        (opt) => String(opt.optionId) === String(idToFind),
+      ) || classData?.options?.[0]
     );
   }, [classData, selectedOptionId, initialOptionId]);
 
@@ -429,7 +433,7 @@ const BookingModal = ({
     }
   }, [initialOptionId, hasMultipleOptions]);
 
-  // --- FACEBOOK PIXEL - AddToCart (only on prod or staging with test code) ---
+  // --- Meta Pixel AddToCart (production hosts only; see @/lib/metaPixel) ---
   useEffect(() => {
     if (isOpen && selectedOption && classData) {
       import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
