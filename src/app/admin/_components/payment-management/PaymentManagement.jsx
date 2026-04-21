@@ -605,7 +605,7 @@ export default function PaymentManagement() {
             <InfoCard>
               <InfoCardTitle>Payout model</InfoCardTitle>
               <p style={{ margin: 0, fontSize: 12, color: colors.textSecondary, lineHeight: 1.5 }}>
-                Marketplace default: partner tier commission (e.g. 13%) is ClassEasily revenue.
+                Marketplace default: partner tier commission (e.g. 12%) is ClassEasily revenue.
                 Stripe card fees (~2.9% + 30¢ per charge) are estimated and deducted from the
                 host&apos;s net payout — they are not taken from the platform commission.
               </p>
