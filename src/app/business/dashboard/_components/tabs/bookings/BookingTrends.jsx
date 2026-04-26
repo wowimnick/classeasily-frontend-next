@@ -1333,7 +1333,7 @@ const BookingTrends = () => {
               {filterParams.source === "widget"
                 ? "Widget bookings only — from your embedded booking widget."
                 : filterParams.source === "marketplace"
-                ? "Marketplace bookings only — from Classeasily discovery."
+                ? "Marketplace bookings only — from ClassEasily discovery."
                 : "Analyze booking patterns and guest engagement across all sources."}
             </HeaderSubtitle>
           </div>

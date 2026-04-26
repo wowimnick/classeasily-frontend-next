@@ -7,49 +7,27 @@ import confetti from "canvas-confetti";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import {
-  ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Lock,
+  ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw,
   CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Check, Download, Trash2,
+  Check, Download,
   Calendar, LayoutGrid, TrendingUp, Zap, Shield, Package, Receipt, Mail,
-  AlertTriangle, Info, AlertCircle, Plus, X,
+  AlertTriangle, Info, AlertCircle, X,
 } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements, PaymentElement,
-  PaymentRequestButtonElement, useStripe, useElements,
-} from "@stripe/react-stripe-js";
 import styled, { createGlobalStyle, css } from "styled-components";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { getPlanById, PLANS, PLAN_IDS, isUpgrade, WIDGET_PLAN_COMPARISON_ROWS } from "@/lib/subscriptionPlans";
-import message from "@/lib/message";
-import { businessService, API_ENDPOINTS } from "@/services/apiService";
-import axiosInstance from "@/lib/axiosInstance";
-import { theme as appTheme } from "@/components/theme";
+import { businessService } from "@/services/apiService";
 import EmailMarketingTierModal from "./EmailMarketingTierModal";
 import {
   BRAND_PRIMARY,
   BRAND_PRIMARY_HOVER,
   shimmerMove,
   borderPulse,
-  btnShimmer,
 } from "./PlanBillingAnimations";
-
-// ─── stripe setup ─────────────────────────────────────────────────────────────
-const stripePromise =
-  typeof window !== "undefined"
-    ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "")
-    : null;
 
 const ADDON_PRICE = 7;
 const SEL_COLOR = "#111827";
 const INVOICES_PAGE_SIZE = 10;
-
-const paymentElementOptions = {
-  layout: "tabs",
-  wallets: { applePay: "never", googlePay: "never" },
-  defaultValues: { billingDetails: { address: { country: "CA" } } },
-  fields: { billingDetails: { address: { country: "never", postalCode: "never" } } },
-};
 
 // ─── global ───────────────────────────────────────────────────────────────────
 const GlobalStyle = createGlobalStyle`
@@ -872,6 +850,13 @@ const InvoicePaidPill = styled.span`
   color: #374151;
   font-size: 11px;
   font-weight: 600;
+  ${({ $variant }) =>
+    $variant === "open"
+      ? css`
+          background: #fef3c7;
+          color: #92400e;
+        `
+      : ""}
 `;
 
 const InvoiceRowActions = styled.div`
@@ -907,6 +892,23 @@ const InvoiceDownloadOutline = styled.a`
   &[data-disabled="true"] {
     opacity: 0.35;
     pointer-events: none;
+  }
+`;
+
+const InvoicePayLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid ${BRAND_PRIMARY};
+  color: ${BRAND_PRIMARY};
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  &:hover {
+    background: rgba(79, 70, 229, 0.06);
   }
 `;
 
@@ -1554,86 +1556,6 @@ const PmExpiredBadge = styled.span`
   letter-spacing: 0.02em;
 `;
 
-const PmSetDefaultBtn = styled.button`
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  transition: border-color 0.15s ease;
-
-  &:hover:not(:disabled) {
-    border-color: #9ca3af;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-`;
-
-const PmAddCardDashed = styled(motion.button)`
-  margin-top: 12px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 18px 16px;
-  border-radius: 12px;
-  border: 2px dashed #d1d5db;
-  background: #fafafa;
-  color: ${T.sub};
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease,
-    background 0.2s ease;
-
-  &:hover {
-    border-color: #9ca3af;
-    color: #111827;
-    background: #f9fafb;
-  }
-`;
-
-const PmActionsGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-`;
-
-const PmDeleteIconBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background: #f3f4f6;
-    color: #374151;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-`;
-
 // ─── add-ons ──────────────────────────────────────────────────────────────────
 const AddonsStack = styled.div`
   display: flex;
@@ -1880,13 +1802,6 @@ const CancellingNote = styled.span`
   text-align: right;
 `;
 
-const SmallLink = styled.button`
-  background: none; border: none; padding: 0;
-  font-size: 12px; color: ${T.sub};
-  text-decoration: underline; cursor: pointer;
-  &:hover { color: ${T.text}; }
-`;
-
 const ModalCloseFab = styled(motion.button)`
   position: absolute;
   top: 16px;
@@ -1972,49 +1887,6 @@ const ModalFooterStack = styled.div`
   gap: 10px;
   margin-top: 22px;
   padding: 0 24px 24px;
-`;
-
-const PaySectionLabel = styled.div`
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: ${T.faint};
-  text-transform: uppercase;
-  margin-bottom: 10px;
-`;
-
-const StripeSecureNote = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 12px;
-  font-size: 12px;
-  color: ${T.faint};
-`;
-
-const ShimmerPrimaryBtn = styled(Button)`
-  &.ant-btn-primary {
-    background: linear-gradient(90deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
-    background-size: 200% 100% !important;
-    border-color: #111827 !important;
-  }
-
-  &.ant-btn-loading.ant-btn-primary {
-    animation: ${btnShimmer} 1.2s linear infinite !important;
-  }
-`;
-
-const ShimmerBrandBtn = styled(Button)`
-  &.ant-btn-primary {
-    background: linear-gradient(90deg, ${BRAND_PRIMARY} 0%, #ff4d67 50%, ${BRAND_PRIMARY} 100%) !important;
-    background-size: 200% 100% !important;
-    border-color: ${BRAND_PRIMARY} !important;
-  }
-
-  &.ant-btn-loading.ant-btn-primary {
-    animation: ${btnShimmer} 1.2s linear infinite !important;
-  }
 `;
 
 const billingModalStyles = {
@@ -2109,356 +1981,6 @@ function EmailMarketingUsageBlock({ emUsage }) {
   );
 }
 
-// ─── payment form ─────────────────────────────────────────────────────────────
-const dividerStyle = {
-  display: "flex", alignItems: "center", gap: 12,
-  margin: "20px 0 16px", color: "#9ca3af", fontSize: 13, fontWeight: 500,
-};
-
-const cardRevealStyle = {
-  width: "100%", display: "flex", alignItems: "center",
-  justifyContent: "space-between", padding: 16,
-  background: "#f9fafb", border: "1px solid #e5e7eb",
-  borderRadius: 8, cursor: "pointer", marginTop: 16, transition: "background 0.2s",
-};
-
-function AddonExpressCheckoutButton({ clientSecret, onSuccess, onPaymentRequestReady }) {
-  const stripe = useStripe();
-  const [paymentRequest, setPaymentRequest] = useState(null);
-
-  useEffect(() => {
-    if (!stripe || !clientSecret) return;
-    const pr = stripe.paymentRequest({
-      country: "CA", currency: "cad",
-      total: { label: "Marketplace email branding", amount: Math.round(ADDON_PRICE * 100) },
-      requestPayerName: true, requestPayerEmail: true,
-    });
-    pr.canMakePayment().then((result) => {
-      if (result) { setPaymentRequest(pr); onPaymentRequestReady?.(); }
-    });
-    pr.on("paymentmethod", async (ev) => {
-      try {
-        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret,
-          { payment_method: ev.paymentMethod.id, receipt_email: ev.payerEmail || undefined },
-          { handleActions: false });
-        if (error) { ev.complete("fail"); message.error(error.message || "Payment didn't go through."); }
-        else { ev.complete("success"); if (paymentIntent?.status === "succeeded") onSuccess?.(); }
-      } catch (err) { ev.complete("fail"); message.error(err?.message || "Payment failed."); }
-    });
-  }, [stripe, clientSecret, onSuccess, onPaymentRequestReady]);
-
-  if (!paymentRequest) return null;
-  return <div style={{ marginBottom: 24 }}><PaymentRequestButtonElement options={{ paymentRequest }} /></div>;
-}
-
-function AddonPaymentForm({ clientSecret, onSuccess }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [ready, setReady] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState(null);
-  const [hasExpressPay, setHasExpressPay] = useState(false);
-  const [showCardFields, setShowCardFields] = useState(false);
-
-  useEffect(() => {
-    if (!hasExpressPay && !showCardFields && clientSecret) {
-      const t = setTimeout(() => setShowCardFields(true), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [hasExpressPay, showCardFields, clientSecret]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setErr(null); setSubmitting(true);
-    const { error } = await elements.submit();
-    if (error) { setErr(error.message || "Something went wrong."); setSubmitting(false); return; }
-    const { error: confirmError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: typeof window !== "undefined" ? window.location.href : "",
-        payment_method_data: {
-          billing_details: {
-            address: { country: "CA", postal_code: "K1A 0B1" },
-          },
-        },
-      },
-      redirect: "if_required",
-    });
-    if (confirmError) { setErr(confirmError.message || "Payment failed."); setSubmitting(false); return; }
-    setSubmitting(false); onSuccess?.();
-  };
-
-  const notReady = (!hasExpressPay && !showCardFields) || (showCardFields && !ready);
-
-  return (
-    <div style={{ position: "relative", minHeight: notReady ? 120 : undefined }}>
-      <div style={{ visibility: notReady ? "hidden" : "visible" }}>
-        <PaySectionLabel style={{ marginBottom: 10 }}>Pay with</PaySectionLabel>
-        <AddonExpressCheckoutButton clientSecret={clientSecret} onSuccess={onSuccess} onPaymentRequestReady={() => setHasExpressPay(true)} />
-        {hasExpressPay && (
-          <div style={dividerStyle}>
-            <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
-            <span
-              style={{
-                padding: "2px 12px",
-                background: "#ffffff",
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#9ca3af",
-              }}
-            >
-              or
-            </span>
-            <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
-          </div>
-        )}
-        {hasExpressPay && !showCardFields && (
-          <button type="button" onClick={() => setShowCardFields(true)} style={cardRevealStyle}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f4f6"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; }}>
-            <span style={{ fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
-              <CreditCard size={18} /> Pay with Credit or Debit card
-            </span>
-            <ChevronDown size={16} color="#6b7280" />
-          </button>
-        )}
-        <div style={{ display: showCardFields ? "block" : "none", marginTop: 24 }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16, minHeight: ready ? undefined : 120 }}>
-              <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
-            </div>
-            {err && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: "10px 12px",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  fontSize: 13,
-                  color: "#991b1b",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 8,
-                }}
-              >
-                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>{err}</span>
-              </div>
-            )}
-            <ShimmerPrimaryBtn
-              type="primary"
-              htmlType="submit"
-              disabled={!stripe || !elements || !ready || submitting}
-              loading={submitting}
-              block
-              size="large"
-              style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
-              icon={<Lock size={14} />}
-            >
-              {submitting ? "Processing…" : `Pay $${ADDON_PRICE}/month`}
-            </ShimmerPrimaryBtn>
-            <StripeSecureNote>
-              <Lock size={12} />
-              Secured by Stripe
-            </StripeSecureNote>
-          </form>
-        </div>
-      </div>
-      {notReady && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Loader2 size={16} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
-          <span style={{ fontSize: 13, color: "#9ca3af" }}>Loading payment…</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PlanSwitchPaymentForm({ clientSecret, onSuccess, onLoadError, planName }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [ready, setReady] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState(null);
-
-  const handleLoadError = useCallback(
-    (event) => {
-      const msg = event?.error?.message || "";
-      if (typeof onLoadError === "function") onLoadError(msg);
-    },
-    [onLoadError]
-  );
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setErr(null);
-    setSubmitting(true);
-    const { error } = await elements.submit();
-    if (error) {
-      setErr(error.message || "Something went wrong.");
-      setSubmitting(false);
-      return;
-    }
-    const { error: confirmError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: typeof window !== "undefined" ? window.location.href : "",
-        payment_method_data: {
-          billing_details: {
-            address: { country: "CA", postal_code: "K1A 0B1" },
-          },
-        },
-      },
-      redirect: "if_required",
-    });
-    if (confirmError) {
-      setErr(confirmError.message || "Payment failed.");
-      setSubmitting(false);
-      return;
-    }
-    setSubmitting(false);
-    onSuccess?.();
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ marginBottom: 16, minHeight: ready ? undefined : 120 }}>
-        <PaymentElement
-          options={paymentElementOptions}
-          onReady={() => setReady(true)}
-          onLoadError={handleLoadError}
-        />
-      </div>
-      {err && (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: "10px 12px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            fontSize: 13,
-            color: "#991b1b",
-            display: "flex",
-            gap: 8,
-            alignItems: "flex-start",
-          }}
-        >
-          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-          <span>{err}</span>
-        </div>
-      )}
-      <PaySectionLabel>Payment</PaySectionLabel>
-      <ShimmerPrimaryBtn
-        type="primary"
-        htmlType="submit"
-        disabled={!stripe || !elements || !ready || submitting}
-        loading={submitting}
-        block
-        size="large"
-        style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
-        icon={<Lock size={14} />}
-      >
-        {submitting ? "Processing…" : `Confirm and switch to ${planName || "new plan"}`}
-      </ShimmerPrimaryBtn>
-      <StripeSecureNote>
-        <Lock size={12} />
-        Secured by Stripe
-      </StripeSecureNote>
-    </form>
-  );
-}
-
-function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [ready, setReady] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState(null);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setErr(null);
-    setSubmitting(true);
-    const { error } = await elements.submit();
-    if (error) {
-      setErr(error.message || "Something went wrong.");
-      setSubmitting(false);
-      return;
-    }
-    const { error: confirmError, setupIntent } = await stripe.confirmSetup({
-      elements,
-      confirmParams: {
-        return_url: typeof window !== "undefined" ? window.location.href : "",
-        payment_method_data: {
-          billing_details: {
-            address: { country: "CA", postal_code: "K1A 0B1" },
-          },
-        },
-      },
-      redirect: "if_required",
-    });
-    if (confirmError) {
-      setErr(confirmError.message || "Setup failed.");
-      setSubmitting(false);
-      return;
-    }
-    const pm = setupIntent?.payment_method;
-    const pmId = typeof pm === "string" ? pm : (pm?.id ?? null);
-    setSubmitting(false);
-    if (pmId) onSuccess?.(pmId);
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ marginBottom: 16, minHeight: ready ? undefined : 120 }}>
-        <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
-      </div>
-      {err && (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: "10px 12px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            fontSize: 13,
-            color: "#991b1b",
-            display: "flex",
-            gap: 8,
-            alignItems: "flex-start",
-          }}
-        >
-          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-          <span>{err}</span>
-        </div>
-      )}
-      <PaySectionLabel>Card details</PaySectionLabel>
-      <ShimmerBrandBtn
-        type="primary"
-        htmlType="submit"
-        disabled={!stripe || !elements || !ready || submitting}
-        loading={submitting}
-        block
-        size="large"
-        style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
-        icon={<Lock size={14} />}
-      >
-        {submitting ? "Saving…" : "Save payment method"}
-      </ShimmerBrandBtn>
-      <StripeSecureNote>
-        <Lock size={12} />
-        Secured by Stripe
-      </StripeSecureNote>
-    </form>
-  );
-}
-
 function formatCardBrandLabel(brand) {
   if (!brand) return "Card";
   const b = String(brand).toLowerCase();
@@ -2537,11 +2059,10 @@ function renderWidgetPlanComparisonCell(row, pid) {
 
 // ─── main component ───────────────────────────────────────────────────────────
 export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchAddons } = {}) {
-  const { subscription, scheduledDowngrade, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
+  const { subscription, scheduledDowngrade, loading: subLoading, refetch: refetchSubscription, hasStripeSubscription } = useSubscription();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
-  const [addonClientSecret, setAddonClientSecret] = useState(null);
   const [addonIntentLoading, setAddonIntentLoading] = useState(false);
   const [addonIntentError, setAddonIntentError] = useState(null);
   const [addonSubscribing, setAddonSubscribing] = useState(false);
@@ -2555,71 +2076,21 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [expandedInvoiceId, setExpandedInvoiceId] = useState(null);
   const [switchPlanLoading, setSwitchPlanLoading] = useState(null);
-  const [switchPaymentSecret, setSwitchPaymentSecret] = useState(null);
-  const [switchPaymentTargetPlanId, setSwitchPaymentTargetPlanId] = useState(null);
-  const [emailMarketingTierPaymentSecret, setEmailMarketingTierPaymentSecret] = useState(null);
-  const [emailMarketingTierPaymentLabel, setEmailMarketingTierPaymentLabel] = useState(null);
-  const [updatePaymentModalOpen, setUpdatePaymentModalOpen] = useState(false);
-  const [updatePaymentClientSecret, setUpdatePaymentClientSecret] = useState(null);
-  const [updatePaymentIntentLoading, setUpdatePaymentIntentLoading] = useState(false);
-  const [updatePaymentIntentError, setUpdatePaymentIntentError] = useState(null);
   const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
   const [defaultPaymentMethodId, setDefaultPaymentMethodId] = useState(null);
   const [defaultPaymentMethodLoading, setDefaultPaymentMethodLoading] = useState(false);
-  const [settingDefaultPmId, setSettingDefaultPmId] = useState(null);
-  const [detachPmModalOpen, setDetachPmModalOpen] = useState(false);
-  const [detachPmId, setDetachPmId] = useState(null);
-  const [detachPmLabel, setDetachPmLabel] = useState("");
-  const [detachPmLoading, setDetachPmLoading] = useState(false);
   const [marketplacePulse, setMarketplacePulse] = useState(false);
   const prevAddonActiveRef = useRef(null);
 
   /** Avoid setState after unmount / tab switch during async plan or billing actions */
   const billingMountedRef = useRef(true);
+  const checkoutSuccessHandledRef = useRef(false);
   useEffect(() => {
     billingMountedRef.current = true;
     return () => {
       billingMountedRef.current = false;
     };
   }, []);
-
-  const [stripeFontSize, setStripeFontSize] = useState("14px");
-  useEffect(() => {
-    const update = () => setStripeFontSize(typeof window !== "undefined" && window.innerWidth < 969 ? "12px" : "14px");
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  const stripeFontCssUrl = typeof window !== "undefined" ? `${window.location.origin}/fonts/proxima-soft.css` : "";
-  const stripeFonts = useMemo(() => (stripeFontCssUrl ? [{ cssSrc: stripeFontCssUrl }] : []), [stripeFontCssUrl]);
-
-  const stripeAppearance = useMemo(() => {
-    const fontFamily = '"Proxima Soft", sans-serif';
-    return {
-      theme: "stripe",
-      variables: {
-        colorPrimary: appTheme.token.colorPrimary,
-        colorBackground: "#ffffff",
-        colorText: appTheme.token.colorText,
-        colorDanger: appTheme.token.colorError,
-        fontFamily, spacingUnit: "4px",
-        borderRadius: "10px",
-        fontSizeBase: stripeFontSize,
-      },
-      rules: {
-        ".Input": { paddingTop: "16px", paddingBottom: "16px", paddingLeft: "16px", paddingRight: "16px", borderColor: appTheme.token.colorBorder, boxShadow: "none", transition: "border-color 0.2s, box-shadow 0.2s", fontFamily, fontWeight: "500" },
-        ".Input:hover": { borderColor: appTheme.token.colorPrimary },
-        ".Input:focus": { borderColor: appTheme.token.colorPrimary, boxShadow: `0 0 0 2px ${appTheme.token.colorPrimary}20`, outline: "none" },
-        ".Input--invalid": { borderColor: appTheme.token.colorError, boxShadow: "none" },
-        ".Input--invalid:focus": { borderColor: appTheme.token.colorError, boxShadow: `0 0 0 2px ${appTheme.token.colorError}20` },
-        ".Label": { fontWeight: "600", color: "#000", marginBottom: "8px", fontFamily },
-        ".Input::placeholder": { color: "#c5c5c5", fontWeight: "600", fontFamily },
-        ".Tab": { borderColor: appTheme.token.colorBorder, borderRadius: "10px", fontFamily, fontWeight: "600" },
-        ".Tab:selected": { borderColor: appTheme.token.colorPrimary },
-      },
-    };
-  }, [stripeFontSize]);
 
   const currentPlan = subscription?.planId ? getPlanById(subscription.planId) : null;
   const nextBilling = subscription?.currentPeriodEnd
@@ -2659,11 +2130,13 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, [fetchInvoices]);
 
   const sortedInvoices = useMemo(() => {
-    const list = invoices.filter(
-      (inv) =>
-        String(inv?.status || "").toLowerCase() === "paid" &&
-        Number(inv?.amount_paid || 0) > 0,
-    );
+    const list = invoices.filter((inv) => {
+      const st = String(inv?.status || "").toLowerCase();
+      if (st === "draft") return false;
+      if (st === "paid") return Number(inv?.amount_paid || 0) > 0;
+      if (st === "open") return Number(inv?.amount_due || 0) > 0;
+      return Number(inv?.amount_paid || 0) > 0 || Number(inv?.amount_due || 0) > 0;
+    });
     const asc = invoiceSortOrder === "oldest";
     list.sort((a, b) => {
       const da = a.created || "";
@@ -2707,32 +2180,69 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     setTimeout(() => { refreshBillingViews(); }, 3000);
   }, [refreshBillingViews]);
 
+  const openStripeCustomerPortal = useCallback(async (opts) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const r = await businessService.createBillingPortalSession({
+      return_url: `${origin}/business/dashboard/settings?tab=billing`,
+      ...opts,
+    });
+    if (r.success && r.url) window.location.href = r.url;
+    else antMessage.error(r.error || "Could not open billing portal.");
+  }, []);
+
+  const startMarketplaceAddonCheckout = useCallback(async () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const res = await businessService.createMarketplaceEmailAddonCheckout({
+      success_url: `${origin}/business/dashboard/settings?tab=billing&checkout=success&addon=marketplace_email`,
+      cancel_url: `${origin}/business/dashboard/settings?tab=billing&checkout=cancel`,
+      billing_interval: "month",
+    });
+    if (res.success && res.url) window.location.href = res.url;
+    else antMessage.error(res.error || "Could not start checkout.");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("checkout") !== "success" || checkoutSuccessHandledRef.current) return undefined;
+    checkoutSuccessHandledRef.current = true;
+    refreshBillingViewsWithRetries();
+    const u = new URL(window.location.href);
+    u.searchParams.delete("checkout");
+    window.history.replaceState({}, "", `${u.pathname}${u.search}${u.hash}`);
+    return undefined;
+  }, [refreshBillingViewsWithRetries]);
+
   const handleSwitchPlan = async (planId) => {
     if (subscription?.planId === planId) return;
+    if (subscription?.planId || hasStripeSubscription) {
+      const sid = subscription?.stripeSubscriptionId;
+      if (sid) {
+        await openStripeCustomerPortal({
+          flow: "subscription_update",
+          subscription_id: sid,
+        });
+      } else {
+        await openStripeCustomerPortal();
+      }
+      return;
+    }
     setSwitchPlanLoading(planId);
     try {
-      const result = await subscribe(planId);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const checkoutRes = await businessService.createWidgetSubscriptionCheckout({
+        plan_id: planId,
+        billing_interval: "month",
+        success_url: `${origin}/business/dashboard/settings?tab=billing&checkout=success`,
+        cancel_url: `${origin}/business/dashboard/settings?tab=billing&checkout=cancel`,
+      });
       if (!billingMountedRef.current) return;
-      if (result.success) {
-        if (result.data?.requires_payment && result.data?.client_secret) {
-          setSwitchPaymentSecret(result.data.client_secret);
-          setSwitchPaymentTargetPlanId(result.data.target_plan_id ?? planId);
-          return;
-        }
-        await refreshBillingViews();
-        if (!billingMountedRef.current) return;
-        const planName = getPlanById(planId)?.name ?? planId;
-        if (result.data?.downgrade_scheduled_at_period_end && result.data?.scheduled_plan_id) {
-          message.success(`Downgrade to ${planName} scheduled for the end of your billing period. You'll keep your current plan until then.`, 6);
-        } else if (result.data?.stripe_updated) {
-          message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
-        } else {
-          message.success(`Switched to ${planName} plan.`, 4);
-        }
-      } else {
-        antMessage.error(result.error || "Failed to switch plan.");
+      if (checkoutRes.success && checkoutRes.url) {
+        window.location.href = checkoutRes.url;
+        return;
       }
-    } catch (e) {
+      antMessage.error(checkoutRes.error || "Could not start checkout.");
+    } catch {
       if (billingMountedRef.current) {
         antMessage.error("Something went wrong while switching plans. Please try again.");
       }
@@ -2743,44 +2253,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     }
   };
 
-  const handleSwitchPaymentSuccess = useCallback(async () => {
-    const planName = getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId;
-    setSwitchPaymentSecret(null);
-    setSwitchPaymentTargetPlanId(null);
-    await refreshBillingViewsWithRetries();
-    if (billingMountedRef.current) {
-      message.success(`Switched to ${planName} plan.`);
-    }
-  }, [switchPaymentTargetPlanId, refreshBillingViewsWithRetries]);
-
-  const handleSwitchPaymentLoadError = useCallback(() => {
-    setSwitchPaymentSecret(null);
-    setSwitchPaymentTargetPlanId(null);
-    if (billingMountedRef.current) {
-      antMessage.error(
-        "This payment link can't be used anymore (already used or expired). Please try switching plan again."
-      );
-    }
-  }, []);
-
   const handleCancelConfirm = async () => {
     setCancelling(true);
     try {
-      const result = await cancel();
-      if (!billingMountedRef.current) return;
       setCancelModalOpen(false);
-      if (result.success) {
-        await refreshBillingViews();
-        if (billingMountedRef.current) {
-          message.success("Subscription will cancel at the end of the billing period.");
-        }
-      } else {
-        antMessage.error(result.error || "Failed to cancel.");
-      }
-    } catch {
-      if (billingMountedRef.current) {
-        antMessage.error("Failed to cancel. Please try again.");
-      }
+      await openStripeCustomerPortal();
     } finally {
       if (billingMountedRef.current) {
         setCancelling(false);
@@ -2789,22 +2266,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   };
 
   const handleReactivate = async () => {
-    try {
-      const result = await reactivate();
-      if (!billingMountedRef.current) return;
-      if (result.success) {
-        await refreshBillingViews();
-        if (billingMountedRef.current) {
-          message.success("Subscription reactivated.");
-        }
-      } else {
-        antMessage.error(result.error || "Failed to reactivate.");
-      }
-    } catch {
-      if (billingMountedRef.current) {
-        antMessage.error("Failed to reactivate. Please try again.");
-      }
-    }
+    await openStripeCustomerPortal();
   };
 
   const marketplaceEmail = addons?.marketplace_email_branding;
@@ -2843,31 +2305,40 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     ? new Date(emailMkt.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
     : null;
 
-  const createAddonPaymentIntent = useCallback(async () => {
-    if (typeof businessService.createMarketplaceEmailAddonPaymentIntent === "function")
-      return businessService.createMarketplaceEmailAddonPaymentIntent();
-    try {
-      const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_PAYMENT_INTENT);
-      return { success: true, client_secret: response.data?.client_secret, subscription_id: response.data?.subscription_id };
-    } catch (err) {
-      return { success: false, error: err.response?.data?.error || err.response?.data?.detail || "Failed to start payment." };
-    }
-  }, []);
-
   useEffect(() => {
-    if (!subscribeModalOpen) { setAddonClientSecret(null); setAddonIntentError(null); return; }
+    if (!subscribeModalOpen) {
+      setAddonIntentError(null);
+      return undefined;
+    }
     let cancelled = false;
-    setAddonIntentLoading(true); setAddonIntentError(null);
-    createAddonPaymentIntent().then((res) => {
-      if (cancelled) return;
-      setAddonIntentLoading(false);
-      if (res.success && res.client_secret) setAddonClientSecret(res.client_secret);
-      else setAddonIntentError(res.error || "Could not load payment form.");
-    }).catch(() => {
-      if (!cancelled) { setAddonIntentLoading(false); setAddonIntentError("Could not load payment form."); }
-    });
-    return () => { cancelled = true; };
-  }, [subscribeModalOpen, createAddonPaymentIntent]);
+    setAddonIntentLoading(true);
+    setAddonIntentError(null);
+    (async () => {
+      try {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const res = await businessService.createMarketplaceEmailAddonCheckout({
+          success_url: `${origin}/business/dashboard/settings?tab=billing&checkout=success&addon=marketplace_email`,
+          cancel_url: `${origin}/business/dashboard/settings?tab=billing&checkout=cancel`,
+          billing_interval: "month",
+        });
+        if (cancelled) return;
+        if (res.success && res.url) {
+          window.location.href = res.url;
+          return;
+        }
+        setAddonIntentLoading(false);
+        setAddonIntentError(res.error || "Could not start checkout.");
+      } catch {
+        if (!cancelled) {
+          setAddonIntentLoading(false);
+          setAddonIntentError("Could not start checkout.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [subscribeModalOpen]);
 
   const showPaymentMethodSection = hasStripeSubscription || canInstantSubscribeAddon;
 
@@ -2905,102 +2376,32 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, [showPaymentMethodSection, fetchPaymentMethods]);
 
   useEffect(() => {
-    if (!updatePaymentModalOpen) { setUpdatePaymentClientSecret(null); setUpdatePaymentIntentError(null); return; }
-    let cancelled = false;
-    setUpdatePaymentIntentLoading(true); setUpdatePaymentIntentError(null);
-    businessService.createUpdatePaymentMethodSetupIntent().then((res) => {
-      if (cancelled) return;
-      setUpdatePaymentIntentLoading(false);
-      if (res.success && res.client_secret) setUpdatePaymentClientSecret(res.client_secret);
-      else setUpdatePaymentIntentError(res.error || "Could not load payment form.");
-    }).catch(() => {
-      if (!cancelled) { setUpdatePaymentIntentLoading(false); setUpdatePaymentIntentError("Could not load payment form."); }
-    });
-    return () => { cancelled = true; };
-  }, [updatePaymentModalOpen]);
-
-  const handleSetDefaultPaymentMethod = useCallback(async (pmId) => {
-    if (!pmId) return;
-    setSettingDefaultPmId(pmId);
-    try {
-      const result = await businessService.setDefaultPaymentMethod({ payment_method: pmId });
-      if (result.success) {
-        message.success("Default payment method updated.");
-        await fetchPaymentMethods();
-        refetchAddons?.();
-      } else {
-        antMessage.error(result.error || "Could not set default payment method.");
-      }
-    } finally {
-      setSettingDefaultPmId(null);
-    }
-  }, [fetchPaymentMethods, refetchAddons]);
-
-  const handleDetachPaymentMethodConfirm = useCallback(async () => {
-    if (!detachPmId) return;
-    setDetachPmLoading(true);
-    try {
-      const r = await businessService.detachPaymentMethod({ payment_method: detachPmId });
-      if (r.success) {
-        message.success("Payment method removed.");
-        setDetachPmModalOpen(false);
-        setDetachPmId(null);
-        setDetachPmLabel("");
-        await fetchPaymentMethods();
-        refetchAddons?.();
-      } else {
-        antMessage.error(r.error || "Could not remove card.");
-      }
-    } finally {
-      setDetachPmLoading(false);
-    }
-  }, [detachPmId, fetchPaymentMethods, refetchAddons]);
-
-  const handleUpdatePaymentMethodSuccess = useCallback(async (paymentMethodId) => {
-    const result = await businessService.setDefaultPaymentMethod({ payment_method: paymentMethodId });
-    if (result.success) {
-      setUpdatePaymentModalOpen(false);
-      setUpdatePaymentClientSecret(null);
-      message.success("Payment method updated. It will be used for future charges and renewals.");
-      await fetchPaymentMethods();
-      refetchAddons?.();
-    } else {
-      antMessage.error(result.error || "Failed to update payment method.");
-    }
-  }, [fetchPaymentMethods, refetchAddons]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     const q = new URLSearchParams(window.location.search);
     if (q.get("email_marketing_modal") === "1") setEmailMarketingTierModalOpen(true);
   }, []);
 
-  const handleAddonPaymentSuccess = useCallback(async () => {
-    setSubscribeModalOpen(false); setAddonClientSecret(null);
-    await refreshBillingViewsWithRetries();
-    message.success("Marketplace email branding add-on is now active.");
-  }, [refreshBillingViewsWithRetries]);
-
   const handleInstantSubscribeAddon = async () => {
     setAddonSubscribing(true);
-    const result = await businessService.subscribeMarketplaceEmailAddonInstant();
-    setAddonSubscribing(false);
-    if (result.success) { await refreshBillingViewsWithRetries(); message.success("Marketplace email branding add-on is now active."); }
-    else antMessage.error(result.error || "Failed to subscribe.");
+    try {
+      await startMarketplaceAddonCheckout();
+    } finally {
+      if (billingMountedRef.current) setAddonSubscribing(false);
+    }
   };
 
   const handleAddonCancelConfirm = async () => {
     setAddonCancelling(true);
-    const result = await businessService.cancelMarketplaceEmailAddon();
-    setAddonCancelling(false); setAddonCancelModalOpen(false);
-    if (result.success) { await refreshBillingViews(); message.success("Add-on will cancel at the end of the billing period."); }
-    else antMessage.error(result.error || "Failed to cancel.");
+    try {
+      setAddonCancelModalOpen(false);
+      await openStripeCustomerPortal();
+    } finally {
+      if (billingMountedRef.current) setAddonCancelling(false);
+    }
   };
 
   const handleAddonReactivate = async () => {
-    const result = await businessService.reactivateMarketplaceEmailAddon();
-    if (result.success) { await refreshBillingViews(); message.success("Add-on reactivated."); }
-    else antMessage.error(result.error || "Failed to reactivate.");
+    await openStripeCustomerPortal();
   };
 
   const startEmailMarketingCheckout = async (priceId) => {
@@ -3014,79 +2415,27 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     else antMessage.error(r.error || "Could not start checkout.");
   };
 
-  const handleEmailMarketingInstant = async (priceId) => {
+  const runEmailMarketingCheckout = async (priceId) => {
     setEmSubscribing(true);
-    const r = await businessService.subscribeEmailMarketingAddonInstant(priceId);
-    setEmSubscribing(false);
-    if (r.success) {
-      await refreshBillingViewsWithRetries();
-      refetchAddons?.();
-      message.success("Email marketing add-on is now active.");
-    } else antMessage.error(r.error || "Failed to subscribe.");
-    return r;
+    try {
+      await startEmailMarketingCheckout(priceId);
+    } finally {
+      if (billingMountedRef.current) setEmSubscribing(false);
+    }
   };
 
-  const handleEmailMarketingChangeTier = async (priceId) => {
-    setEmSubscribing(true);
-    const r = await businessService.changeEmailMarketingTier(priceId);
-    setEmSubscribing(false);
-    if (r.success) {
-      if (r.data?.requires_payment && r.data?.client_secret) {
-        const tier = emTiers.find((t) => t.price_id === priceId);
-        const label = tier?.plan_label || tier?.planLabel || "new plan";
-        setEmailMarketingTierPaymentSecret(r.data.client_secret);
-        setEmailMarketingTierPaymentLabel(label);
-        return { ...r, requires_payment: true };
-      }
-      await refreshBillingViews();
-      refetchAddons?.();
-      message.success("Email marketing plan updated.");
-    } else antMessage.error(r.error || "Could not change plan.");
-    return r;
+  const handleEmailMarketingChangeTier = async () => {
+    await openStripeCustomerPortal();
+    return { success: true };
   };
-
-  const handleEmailMarketingTierPaymentSuccess = useCallback(async () => {
-    const label = emailMarketingTierPaymentLabel;
-    setEmailMarketingTierPaymentSecret(null);
-    setEmailMarketingTierPaymentLabel(null);
-    await refreshBillingViewsWithRetries();
-    if (billingMountedRef.current) {
-      message.success(
-        label ? `Email marketing plan updated (${label}).` : "Email marketing plan updated.",
-      );
-    }
-    setEmailMarketingTierModalOpen(false);
-  }, [emailMarketingTierPaymentLabel, refreshBillingViewsWithRetries]);
-
-  const handleEmailMarketingTierPaymentLoadError = useCallback(() => {
-    setEmailMarketingTierPaymentSecret(null);
-    setEmailMarketingTierPaymentLabel(null);
-    if (billingMountedRef.current) {
-      antMessage.error(
-        "This payment link can't be used anymore (already used or expired). Please try changing plan again.",
-      );
-    }
-  }, []);
 
   const handleEmailMarketingCancel = async () => {
-    const r = await businessService.cancelEmailMarketingAddon();
-    if (r.success) {
-      await refreshBillingViews();
-      refetchAddons?.();
-      message.success("Email marketing will cancel at the end of the billing period.");
-    } else antMessage.error(r.error || "Failed to cancel.");
+    await openStripeCustomerPortal();
   };
 
   const handleEmailMarketingReactivate = async () => {
-    const r = await businessService.reactivateEmailMarketingAddon();
-    if (r.success) {
-      await refreshBillingViews();
-      refetchAddons?.();
-      message.success("Email marketing add-on reactivated.");
-    } else antMessage.error(r.error || "Failed to reactivate.");
+    await openStripeCustomerPortal();
   };
-
-  const detachPmPreview = savedPaymentMethods.find((p) => p.id === detachPmId);
 
   // ─── render ──────────────────────────────────────────────────────────────────
   return (
@@ -3487,7 +2836,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                                 const expStr = formatExpShort(pm.exp_month, pm.exp_year);
                                 const brandLabel = formatCardBrandLabel(pm.brand);
                                 const last4 = pm.last4 || "––––";
-                                const canDetach = savedPaymentMethods.length > 1 && Boolean(pm.id);
                                 return (
                                   <motion.div
                                     key={pm.id || `${pm.brand}-${last4}`}
@@ -3526,33 +2874,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                                               Default
                                             </PmDefaultBadge>
                                           )}
-                                          {!isDefault && !expired && pm.id && (
-                                            <PmSetDefaultBtn
-                                              type="button"
-                                              disabled={Boolean(settingDefaultPmId)}
-                                              onClick={() => handleSetDefaultPaymentMethod(pm.id)}
-                                            >
-                                              {settingDefaultPmId === pm.id ? "Updating…" : "Set as default"}
-                                            </PmSetDefaultBtn>
-                                          )}
                                         </PmStatusSlot>
-                                        {canDetach && (
-                                          <PmActionsGroup>
-                                            <PmDeleteIconBtn
-                                              type="button"
-                                              aria-label="Remove payment method"
-                                              title="Remove card"
-                                              disabled={Boolean(detachPmLoading || settingDefaultPmId)}
-                                              onClick={() => {
-                                                setDetachPmId(pm.id);
-                                                setDetachPmLabel(`${brandLabel} ending in ${last4}`);
-                                                setDetachPmModalOpen(true);
-                                              }}
-                                            >
-                                              <Trash2 size={16} strokeWidth={1.75} />
-                                            </PmDeleteIconBtn>
-                                          </PmActionsGroup>
-                                        )}
                                       </PmRowRight>
                                     </PmRow>
                                   </motion.div>
@@ -3566,10 +2888,14 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                           No payment method on file yet.
                         </PlanBillingPlanPrice>
                       )}
-                      <PmAddCardDashed type="button" whileTap={{ scale: 0.98 }} onClick={() => setUpdatePaymentModalOpen(true)}>
-                        <Plus size={22} strokeWidth={2} />
-                        Add payment method
-                      </PmAddCardDashed>
+                      <PlanActionOutline
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        onClick={openStripeCustomerPortal}
+                        style={{ marginTop: 8 }}
+                      >
+                        Manage cards &amp; subscriptions (Stripe)
+                      </PlanActionOutline>
                     </PlanBillingPaymentStack>
                   ) : (
                     <PlanBillingPlanPrice style={{ marginTop: 4 }}>
@@ -3662,20 +2988,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                           </AddonOutlineBtn>
                         )
                       ) : canInstantSubscribeAddon ? (
-                        <>
-                          <AddonPrimaryBtn
-                            type="button"
-                            $brand
-                            whileTap={{ scale: 0.97 }}
-                            onClick={handleInstantSubscribeAddon}
-                            disabled={addonSubscribing}
-                          >
-                            {addonSubscribing ? "Subscribing…" : "Add to plan"}
-                          </AddonPrimaryBtn>
-                          <SmallLink type="button" onClick={() => setSubscribeModalOpen(true)} style={{ textAlign: "right" }}>
-                            Use different card
-                          </SmallLink>
-                        </>
+                        <AddonPrimaryBtn
+                          type="button"
+                          $brand
+                          whileTap={{ scale: 0.97 }}
+                          onClick={handleInstantSubscribeAddon}
+                          disabled={addonSubscribing}
+                        >
+                          {addonSubscribing ? "Subscribing…" : "Add to plan"}
+                        </AddonPrimaryBtn>
                       ) : (
                         <AddonPrimaryBtn
                           type="button"
@@ -3805,11 +3126,16 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               </div>
             ) : sortedInvoices.length === 0 ? (
               <div style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, color: T.sub }}>
-                No paid invoices to show yet.
+                No invoices to show yet.
               </div>
             ) : (
               <InvoiceListWrap>
                 {paginatedInvoices.map((inv) => {
+                  const invStatus = String(inv?.status || "").toLowerCase();
+                  const isPaid = invStatus === "paid";
+                  const displayAmt = isPaid
+                    ? Number(inv?.amount_paid || 0)
+                    : Number(inv?.amount_due ?? inv?.amount_paid ?? 0);
                   const dateStr = inv.created
                     ? new Date(inv.created).toLocaleDateString(undefined, {
                         day: "numeric",
@@ -3821,9 +3147,12 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                   const isExpanded = expandedInvoiceId === inv.id;
                   const cur = inv.currency ? String(inv.currency).toUpperCase() : "";
                   const totalPaid =
-                    inv.currency && inv.amount_paid != null
-                      ? `${inv.currency} $${Number(inv.amount_paid).toFixed(2)}`
+                    inv.currency != null && displayAmt != null
+                      ? `${inv.currency} $${Number(displayAmt).toFixed(2)}`
                       : "—";
+                  const rawLabel = inv.status != null ? String(inv.status) : "";
+                  const statusPill =
+                    isPaid ? "Paid" : invStatus === "open" ? "Open" : rawLabel.replace(/^\w/, (c) => c.toUpperCase()) || "—";
                   return (
                     <React.Fragment key={inv.id}>
                       <InvoiceRowCard>
@@ -3834,7 +3163,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                         <InvoiceAmountCol>
                           {cur ? <InvoiceCurrencyTiny>{cur}</InvoiceCurrencyTiny> : null}
                           <InvoiceAmountStrong>
-                            {inv.amount_paid != null ? `$${Number(inv.amount_paid).toFixed(2)}` : "—"}
+                            {displayAmt != null ? `$${Number(displayAmt).toFixed(2)}` : "—"}
                           </InvoiceAmountStrong>
                         </InvoiceAmountCol>
                         <InvoicePmCol>
@@ -3849,7 +3178,9 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                               : "—"}
                           </span>
                         </InvoicePmCol>
-                        <InvoicePaidPill>Paid</InvoicePaidPill>
+                        <InvoicePaidPill $variant={isPaid ? undefined : invStatus === "open" ? "open" : undefined}>
+                          {statusPill}
+                        </InvoicePaidPill>
                         <InvoiceRowActions>
                           <InvoiceExpandBtn
                             type="button"
@@ -3867,6 +3198,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                               <ChevronDown size={16} />
                             </motion.span>
                           </InvoiceExpandBtn>
+                          {!isPaid && inv.hosted_invoice_url ? (
+                            <InvoicePayLink
+                              href={inv.hosted_invoice_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Pay
+                            </InvoicePayLink>
+                          ) : null}
                           <InvoiceDownloadOutline
                             href={inv.invoice_pdf || undefined}
                             target={inv.invoice_pdf ? "_blank" : undefined}
@@ -3921,7 +3261,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                                       </BreakdownTd>
                                     </BreakdownTr>
                                   ))}
-                                  <BreakdownTr $alt={false}>
+                                    <BreakdownTr $alt={false}>
                                     <BreakdownTd
                                       style={{
                                         paddingTop: 8,
@@ -3930,7 +3270,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                                         borderTop: `1px solid ${T.border}`,
                                       }}
                                     >
-                                      Total paid
+                                      {isPaid ? "Total paid" : "Total"}
                                     </BreakdownTd>
                                     <BreakdownTd
                                       style={{
@@ -4114,115 +3454,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       </Modal>
 
       <Modal
-        open={detachPmModalOpen}
-        onCancel={() => {
-          if (!detachPmLoading) {
-            setDetachPmModalOpen(false);
-            setDetachPmId(null);
-            setDetachPmLabel("");
-          }
-        }}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={billingModalStyles}
-        destroyOnClose
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: "relative" }}
-        >
-          <ModalCloseFab
-            type="button"
-            aria-label="Close"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              if (!detachPmLoading) {
-                setDetachPmModalOpen(false);
-                setDetachPmId(null);
-                setDetachPmLabel("");
-              }
-            }}
-          >
-            <X size={18} />
-          </ModalCloseFab>
-          <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                background: "#f3f4f6",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 12px",
-              }}
-            >
-              <CreditCard size={26} color="#6b7280" strokeWidth={2} />
-            </div>
-            <ModalSectionTitle>Remove card?</ModalSectionTitle>
-          </div>
-          <div style={{ padding: "12px 28px 0" }}>
-            {detachPmPreview ? (
-              <div style={{ marginBottom: 14 }}>
-                <PmRow style={{ border: `1px solid ${T.border}`, background: T.bg }}>
-                  <PmRowLeft>
-                    <PmBrandBox>
-                      <PaymentMethodBrandIcon brand={detachPmPreview.brand} />
-                    </PmBrandBox>
-                    <PmTextCol>
-                      <PmTitleLine>
-                        {formatCardBrandLabel(detachPmPreview.brand)} ending in {detachPmPreview.last4 || "—"}
-                      </PmTitleLine>
-                      <PmMetaLine>
-                        {formatExpShort(detachPmPreview.exp_month, detachPmPreview.exp_year)
-                          ? `Exp. ${formatExpShort(detachPmPreview.exp_month, detachPmPreview.exp_year)}`
-                          : ""}
-                      </PmMetaLine>
-                    </PmTextCol>
-                  </PmRowLeft>
-                </PmRow>
-              </div>
-            ) : null}
-            <ModalBodyText style={{ textAlign: "left" }}>
-              Remove {detachPmLabel ? <strong>{detachPmLabel}</strong> : "this card"} from your saved payment methods? You must keep at least one card on file for billing.
-            </ModalBodyText>
-          </div>
-          <ModalFooterStack>
-            <Button
-              type="primary"
-              block
-              size="large"
-              style={{ height: 48, borderRadius: 12, background: BRAND_PRIMARY, borderColor: BRAND_PRIMARY, fontWeight: 600 }}
-              onClick={() => {
-                if (!detachPmLoading) {
-                  setDetachPmModalOpen(false);
-                  setDetachPmId(null);
-                  setDetachPmLabel("");
-                }
-              }}
-            >
-              Keep card
-            </Button>
-            <Button
-              type="text"
-              danger
-              block
-              size="large"
-              loading={detachPmLoading}
-              onClick={handleDetachPaymentMethodConfirm}
-            >
-              {detachPmLoading ? "Removing…" : "Remove card"}
-            </Button>
-          </ModalFooterStack>
-        </motion.div>
-      </Modal>
-
-      <Modal
         open={subscribeModalOpen}
         onCancel={() => !addonIntentLoading && setSubscribeModalOpen(false)}
         footer={null}
@@ -4280,7 +3511,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           {[
             "Custom logo in marketplace booking emails",
             "Your brand colors & footer",
-            "Sent under your brand — not generic Classeasily",
+            "Sent under your brand — not generic ClassEasily",
           ].map((text, i) => (
             <motion.div
               key={text}
@@ -4295,11 +3526,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               {text}
             </motion.div>
           ))}
-          {addonIntentLoading && (
-            <SkeletonPmBlock style={{ marginTop: 16 }}>
-              <SkeletonLine style={{ height: 100, borderRadius: 10 }} />
-            </SkeletonPmBlock>
-          )}
           {addonIntentError && !addonIntentLoading && (
             <div
               style={{
@@ -4320,12 +3546,10 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <span>{addonIntentError}</span>
             </div>
           )}
-          {addonClientSecret && stripePromise && (
-            <div style={{ marginTop: 16 }}>
-              <Elements stripe={stripePromise} options={{ clientSecret: addonClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}>
-                <AddonPaymentForm clientSecret={addonClientSecret} onSuccess={handleAddonPaymentSuccess} />
-              </Elements>
-            </div>
+          {addonIntentLoading && !addonIntentError && (
+            <PlanBillingPlanPrice style={{ marginTop: 14, fontSize: 13, color: T.sub }}>
+              Taking you to Stripe Checkout…
+            </PlanBillingPlanPrice>
           )}
         </motion.div>
       </Modal>
@@ -4399,256 +3623,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         </motion.div>
       </Modal>
 
-      <Modal
-        open={updatePaymentModalOpen}
-        onCancel={() => !updatePaymentIntentLoading && setUpdatePaymentModalOpen(false)}
-        footer={null}
-        closable={false}
-        destroyOnClose
-        width={480}
-        styles={billingModalStyles}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: "relative", padding: "20px 24px 24px" }}
-        >
-          <ModalCloseFab
-            type="button"
-            aria-label="Close"
-            whileTap={{ scale: 0.95 }}
-            onClick={() => !updatePaymentIntentLoading && setUpdatePaymentModalOpen(false)}
-          >
-            <X size={18} />
-          </ModalCloseFab>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8, paddingRight: 40 }}>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>Add payment method</div>
-              <p style={{ fontSize: 13, color: T.sub, lineHeight: 1.5 }}>
-                This card will be saved for future charges. No charge is made now.
-              </p>
-            </div>
-          </div>
-          {savedPaymentMethods.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: T.faint, marginBottom: 8 }}>
-                EXISTING CARDS
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {savedPaymentMethods.slice(0, 3).map((pm) => (
-                  <PmRow key={pm.id || pm.last4} style={{ opacity: 0.85, pointerEvents: "none" }}>
-                    <PmRowLeft>
-                      <PmBrandBox>
-                        <PaymentMethodBrandIcon brand={pm.brand} />
-                      </PmBrandBox>
-                      <PmTextCol>
-                        <PmTitleLine>
-                          {formatCardBrandLabel(pm.brand)} ·••• {pm.last4}
-                        </PmTitleLine>
-                      </PmTextCol>
-                    </PmRowLeft>
-                  </PmRow>
-                ))}
-              </div>
-            </div>
-          )}
-          {updatePaymentIntentLoading && (
-            <SkeletonPmBlock>
-              <SkeletonLine style={{ height: 120, borderRadius: 10 }} />
-            </SkeletonPmBlock>
-          )}
-          {updatePaymentIntentError && !updatePaymentIntentLoading && (
-            <div
-              style={{
-                padding: "10px 12px",
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                marginBottom: 16,
-                fontSize: 13,
-                color: "#991b1b",
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-start",
-              }}
-            >
-              <AlertCircle size={16} style={{ flexShrink: 0 }} />
-              <span>{updatePaymentIntentError}</span>
-            </div>
-          )}
-          {updatePaymentClientSecret && stripePromise && (
-            <Elements
-              stripe={stripePromise}
-              options={{ clientSecret: updatePaymentClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}
-            >
-              <UpdatePaymentMethodForm
-                clientSecret={updatePaymentClientSecret}
-                onSuccess={handleUpdatePaymentMethodSuccess}
-              />
-            </Elements>
-          )}
-        </motion.div>
-      </Modal>
-
-      <Modal
-        open={Boolean(switchPaymentSecret)}
-        onCancel={() => {
-          setSwitchPaymentSecret(null);
-          setSwitchPaymentTargetPlanId(null);
-        }}
-        footer={null}
-        closable={false}
-        destroyOnClose
-        width={480}
-        styles={billingModalStyles}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: "relative", padding: "24px 24px 20px" }}
-        >
-          <ModalCloseFab
-            type="button"
-            aria-label="Close"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setSwitchPaymentSecret(null);
-              setSwitchPaymentTargetPlanId(null);
-            }}
-          >
-            <X size={18} />
-          </ModalCloseFab>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-              marginBottom: 16,
-              paddingRight: 32,
-            }}
-          >
-            <PlanEmblem
-              $grad={PLAN_EMBLEM_GRADIENTS[subscription?.planId] || PLAN_EMBLEM_GRADIENTS.basic}
-              style={{ width: 28, height: 28, borderRadius: 8, opacity: 0.75 }}
-            >
-              <span style={{ display: "flex", transform: "scale(0.82)" }}>
-                <PlanEmblemIcon planId={subscription?.planId || "basic"} />
-              </span>
-            </PlanEmblem>
-            <motion.div
-              animate={{ x: [0, 4, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-              style={{ color: T.sub }}
-            >
-              <ArrowRight size={22} />
-            </motion.div>
-            <PlanEmblem $grad={PLAN_EMBLEM_GRADIENTS[switchPaymentTargetPlanId] || PLAN_EMBLEM_GRADIENTS.growth}>
-              <PlanEmblemIcon planId={switchPaymentTargetPlanId || "growth"} />
-            </PlanEmblem>
-          </div>
-          <ModalSectionTitle style={{ marginBottom: 8 }}>
-            Switch to {getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId ?? "new plan"}
-          </ModalSectionTitle>
-          <ModalBodyText style={{ marginBottom: 16 }}>
-            You may see a prorated charge for the remainder of this billing period.
-          </ModalBodyText>
-          {switchPaymentSecret && stripePromise && (
-            <Elements
-              stripe={stripePromise}
-              options={{ clientSecret: switchPaymentSecret, appearance: stripeAppearance, fonts: stripeFonts }}
-            >
-              <PlanSwitchPaymentForm
-                clientSecret={switchPaymentSecret}
-                onSuccess={handleSwitchPaymentSuccess}
-                onLoadError={handleSwitchPaymentLoadError}
-                planName={getPlanById(switchPaymentTargetPlanId)?.name}
-              />
-            </Elements>
-          )}
-        </motion.div>
-      </Modal>
-
-      <Modal
-        open={Boolean(emailMarketingTierPaymentSecret)}
-        onCancel={() => {
-          setEmailMarketingTierPaymentSecret(null);
-          setEmailMarketingTierPaymentLabel(null);
-        }}
-        footer={null}
-        closable={false}
-        destroyOnClose
-        width={480}
-        styles={billingModalStyles}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: "relative", padding: "24px 24px 20px" }}
-        >
-          <ModalCloseFab
-            type="button"
-            aria-label="Close"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setEmailMarketingTierPaymentSecret(null);
-              setEmailMarketingTierPaymentLabel(null);
-            }}
-          >
-            <X size={18} />
-          </ModalCloseFab>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              marginBottom: 16,
-              paddingRight: 32,
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-              }}
-            >
-              <Mail size={22} strokeWidth={2} />
-            </div>
-          </div>
-          <ModalSectionTitle style={{ marginBottom: 8 }}>
-            Complete payment — {emailMarketingTierPaymentLabel || "Email marketing"}
-          </ModalSectionTitle>
-          <ModalBodyText style={{ marginBottom: 16 }}>
-            You may see a prorated charge for the remainder of this billing period.
-          </ModalBodyText>
-          {emailMarketingTierPaymentSecret && stripePromise && (
-            <Elements
-              stripe={stripePromise}
-              options={{ clientSecret: emailMarketingTierPaymentSecret, appearance: stripeAppearance, fonts: stripeFonts }}
-            >
-              <PlanSwitchPaymentForm
-                clientSecret={emailMarketingTierPaymentSecret}
-                onSuccess={handleEmailMarketingTierPaymentSuccess}
-                onLoadError={handleEmailMarketingTierPaymentLoadError}
-                planName={emailMarketingTierPaymentLabel || "Email marketing"}
-              />
-            </Elements>
-          )}
-        </motion.div>
-      </Modal>
-
       <EmailMarketingTierModal
         open={emailMarketingTierModalOpen}
         onClose={() => setEmailMarketingTierModalOpen(false)}
@@ -4657,10 +3631,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         currentTierKey={emCurrentTierKey}
         canInstantSubscribe={emCanInstant}
         subscribing={emSubscribing}
-        onCheckout={async (priceId) => {
-          await startEmailMarketingCheckout(priceId);
-        }}
-        onInstantSubscribe={handleEmailMarketingInstant}
+        onCheckout={runEmailMarketingCheckout}
+        onInstantSubscribe={runEmailMarketingCheckout}
         onChangeTier={handleEmailMarketingChangeTier}
       />
       </MainStack>

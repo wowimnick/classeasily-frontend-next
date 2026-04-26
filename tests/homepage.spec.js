@@ -52,13 +52,6 @@ test.describe('Homepage UI and public buttons', () => {
     await expect(page.locator('#for-hosts-title')).toBeVisible();
   });
 
-  test('How ClassEasily works button in banner scrolls to section', async ({ page }) => {
-    const howWorksBtn = page.getByRole('button', { name: /How ClassEasily works/i });
-    await expect(howWorksBtn).toBeVisible();
-    await howWorksBtn.click();
-    await expect(page.getByRole('heading', { name: /How does ClassEasily work/i })).toBeVisible();
-  });
-
   test('Guest menu shows Log in and Sign up when opened', async ({ page }) => {
     await openHeaderGuestMenu(page);
     await expect(page.getByText('Log in', { exact: true })).toBeVisible();

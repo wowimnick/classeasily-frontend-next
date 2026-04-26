@@ -6,18 +6,21 @@ import styled, { keyframes } from "styled-components";
 import {
   Search,
   MapPin,
-  Minus,
-  Plus,
   ChevronDown,
   ChevronLeft,
   X,
   Compass,
   Loader2,
 } from "lucide-react";
+import { collectionService } from "@/services/apiService";
 import dayjs from "dayjs";
 import posthog from "posthog-js";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { useSearch, GTA_PRESETS } from "@/context/SearchContext";
+import {
+  useSearch,
+  GTA_PRESETS,
+  formatCollectionDisplayName,
+} from "@/context/SearchContext";
 import CustomCalendar from "@/app/(homepage)/_components/CustomCalendarMobile";
 
 // --- Styled Components ---
@@ -268,7 +271,8 @@ const ClearLink = styled.button`
 
 const SearchBtn = styled.button`
   flex: 1;
-  max-width: 100px;
+  min-width: 0;
+  max-width: 220px;
   height: 52px;
   border: none;
   border-radius: 12px;
@@ -284,44 +288,6 @@ const SearchBtn = styled.button`
   box-shadow: 0 6px 16px rgba(236, 236, 236, 0.25);
   transition: transform 0.1s ease;
   &:active { transform: scale(0.98); }
-`;
-
-const ParticipantCard = styled.div`
-  padding: 0 24px;
-`;
-const ParticipantRow = styled.div`
-  background: #fff;
-  padding: 12px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const CountControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-const CountBtn = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #374151;
-  transition: all 0.2s;
-  &:hover:not(:disabled) { border-color: #222; color: #222; }
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
-`;
-const CountVal = styled.span`
-  width: 32px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 18px;
-  color: #222;
 `;
 
 // --- Animation Config ---
@@ -364,8 +330,8 @@ export default function SearchFullScreen() {
     searchTerm,
     datePickerValue,
     setDatePickerValue,
-    participantCount,
-    setParticipantCount,
+    selectedCollection,
+    setSelectedCollection,
     geocodedAddressResults,
     geocoding,
     handleLocationChange,
@@ -374,7 +340,8 @@ export default function SearchFullScreen() {
     performSearch,
   } = useSearch();
 
-  const [expandedSection, setExpandedSection] = useState(null); 
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [iWantCollections, setIWantCollections] = useState([]);
   const locationInputRef = useRef(null);
   const mainScrollRef = useRef(null);
 
@@ -397,6 +364,21 @@ export default function SearchFullScreen() {
       return () => clearTimeout(t);
     }
   }, [expandedSection]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await collectionService.listByPlacement("i_want");
+        if (!cancelled) setIWantCollections(rows);
+      } catch {
+        if (!cancelled) setIWantCollections([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getDateDisplay = () => {
     if (!datePickerValue) return "Whenever";
@@ -427,10 +409,14 @@ export default function SearchFullScreen() {
     posthog.capture("search_performed", {
       search_term: searchTerm || null,
       has_date_filter: !!datePickerValue,
-      participants: participantCount > 1 ? participantCount : null,
+      collection: selectedCollection?.slug || null,
     });
     performSearch();
     setIsDrawerOpen(false);
+  };
+
+  const handleClearAllClick = () => {
+    clearAll();
   };
 
   const renderLocationList = () => {
@@ -516,7 +502,9 @@ export default function SearchFullScreen() {
                     ? "Where to?"
                     : expandedSection === "date"
                       ? "When are you free?"
-                      : "Who's joining?"}
+                      : expandedSection === "iwant"
+                        ? "What experience?"
+                        : "Search experiences"}
               </TopBarCenter>
               
               <NavBtn onClick={() => setIsDrawerOpen(false)}>
@@ -525,11 +513,10 @@ export default function SearchFullScreen() {
             </TopBar>
 
             <LayoutGroup>
-              <MainScroll 
+              <MainScroll
                 ref={mainScrollRef}
                 $expanded={!!expandedSection}
               >
-                
                 {/* --- LOCATION CARD --- */}
                 <CardShell
                   layout="position"
@@ -656,66 +643,120 @@ export default function SearchFullScreen() {
                   </AnimatePresence>
                 </CardShell>
 
-                {/* --- WHO CARD --- */}
+                {/* --- I WANT CARD --- */}
                 <CardShell
                   layout="position"
-                  layoutId="card-who"
+                  layoutId="card-iwant"
                   transition={layoutTransition}
                   animate={{
-                    flexGrow: expandedSection === "who" ? 1 : 0,
+                    flexGrow: expandedSection === "iwant" ? 1 : 0,
                     flexBasis: "auto",
-                    height: expandedSection && expandedSection !== "who" ? 0 : "auto",
-                    opacity: expandedSection && expandedSection !== "who" ? 0 : 1,
-                    marginTop: expandedSection === "who" ? 20 : 0,
+                    height:
+                      expandedSection && expandedSection !== "iwant"
+                        ? 0
+                        : "auto",
+                    opacity:
+                      expandedSection && expandedSection !== "iwant" ? 0 : 1,
+                    marginTop: expandedSection === "iwant" ? 20 : 0,
                     marginBottom: expandedSection ? 0 : 16,
-                    borderRadius: expandedSection === "who" ? "24px 24px 0 0" : "24px",
-                    boxShadow: expandedSection === "who" ? "0 -4px 30px rgba(0,0,0,0.08)" : "0 4px 24px rgba(0, 0, 0, 0.04)",
+                    borderRadius:
+                      expandedSection === "iwant" ? "24px 24px 0 0" : "24px",
+                    boxShadow:
+                      expandedSection === "iwant"
+                        ? "0 -4px 30px rgba(0,0,0,0.08)"
+                        : "0 4px 24px rgba(0, 0, 0, 0.04)",
                   }}
                   style={{ flexShrink: 0 }}
                 >
-                  <CardHeader onClick={() => setExpandedSection("who")}>
+                  <CardHeader onClick={() => setExpandedSection("iwant")}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <RowLabel>Who</RowLabel>
-                      <RowValue $hasValue>
-                        {participantCount} guest{participantCount !== 1 ? "s" : ""}
+                      <RowLabel>I want…</RowLabel>
+                      <RowValue $hasValue={!!selectedCollection}>
+                        {selectedCollection
+                          ? formatCollectionDisplayName(
+                              selectedCollection.name ||
+                                selectedCollection.slug,
+                            )
+                          : "Anything"}
                       </RowValue>
                     </div>
                     {!expandedSection && <ChevronDown size={20} color="#717171" />}
                   </CardHeader>
-                  
+
                   <AnimatePresence>
-                    {expandedSection === "who" && (
+                    {expandedSection === "iwant" && (
                       <ExpandedBody
-                        key="who-body"
+                        key="iwant-body"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={contentTransition}
                       >
-                        <ScrollableContent>
-                          <ParticipantCard>
-                             <ParticipantRow onClick={(e) => e.stopPropagation()}>
-                                <div>
-                                  <div style={{ fontWeight: 600, fontSize: 16, color: "#222" }}>Guests</div>
-                                  <div style={{ fontSize: 13, color: "#717171", marginTop: 2 }}>Join the experience</div>
-                                </div>
-                                <CountControls>
-                                  <CountBtn 
-                                    onClick={() => setParticipantCount(Math.max(1, participantCount - 1))}
-                                    disabled={participantCount <= 1}
-                                  >
-                                    <Minus size={18} />
-                                  </CountBtn>
-                                  <CountVal>{participantCount}</CountVal>
-                                  <CountBtn 
-                                    onClick={() => setParticipantCount(participantCount + 1)}
-                                    disabled={participantCount >= 20}
-                                  >
-                                    <Plus size={18} />
-                                  </CountBtn>
-                                </CountControls>
-                             </ParticipantRow>
-                          </ParticipantCard>
+                        <ScrollableContent style={{ padding: "16px 18px 24px" }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCollection(null);
+                              setExpandedSection(null);
+                            }}
+                            style={{
+                              alignSelf: "flex-start",
+                              padding: "8px 14px",
+                              borderRadius: 999,
+                              border: "1px solid #e5e7eb",
+                              background: "#fff",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#374151",
+                              marginBottom: 12,
+                            }}
+                          >
+                            Any experience
+                          </button>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 8,
+                            }}
+                          >
+                            {iWantCollections.map((c) => {
+                              const active = selectedCollection?.slug === c.slug;
+                              const title = formatCollectionDisplayName(
+                                c.name || c.slug,
+                              );
+                              return (
+                                <button
+                                  key={c.id ?? c.slug}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCollection({
+                                      slug: c.slug,
+                                      name: c.name || title,
+                                    });
+                                    setExpandedSection(null);
+                                  }}
+                                  style={{
+                                    padding: "8px 14px",
+                                    borderRadius: 999,
+                                    border: active
+                                      ? "2px solid #f81e3e"
+                                      : "1px solid #e5e7eb",
+                                    background: active ? "#fff0f0" : "#fff",
+                                    cursor: "pointer",
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: "#111",
+                                  }}
+                                >
+                                  {title}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </ScrollableContent>
                       </ExpandedBody>
                     )}
@@ -726,7 +767,7 @@ export default function SearchFullScreen() {
             </LayoutGroup>
 
             <Footer>
-              <ClearLink onClick={clearAll}>Clear all</ClearLink>
+              <ClearLink onClick={handleClearAllClick}>Clear all</ClearLink>
               <SearchBtn onClick={handleSearchClick}>
                 <Search size={20} strokeWidth={2.5} /> Search
               </SearchBtn>

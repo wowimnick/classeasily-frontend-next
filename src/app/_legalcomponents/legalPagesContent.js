@@ -8,7 +8,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "Welcome to Classeasily! These Terms of Service ('Terms') constitute a legally binding agreement between you ('you', 'User') and Classeasily Inc. ('Classeasily', 'we', 'us', 'our') governing your access to and use of the Classeasily website (classeasily.com), mobile applications, and related services (collectively, the 'Platform').",
+          text: "Welcome to ClassEasily! These Terms of Service ('Terms') constitute a legally binding agreement between you ('you', 'User') and Classeasily Inc. ('ClassEasily', 'we', 'us', 'our') governing your access to and use of the ClassEasily website (classeasily.com), mobile applications, and related services (collectively, the 'Platform').",
         },
         {
           type: "p",
@@ -36,7 +36,7 @@ export const termsContent = {
             "<strong>User Content:</strong> Any text, images, videos, reviews, messages, or other materials uploaded, posted, or transmitted by Users on the Platform.",
             "<strong>Platform Content:</strong> All content on the Platform excluding User Content, including text, graphics, logos, icons, images, software, and underlying technology.",
             "<strong>Fees:</strong> Any charges applicable to Users, including Service Fees, Booking Fees, or Payment Processing Fees, as detailed on the Platform.",
-            "<strong>Gift Card:</strong> A prepaid balance issued by Classeasily that may be purchased on the Platform and redeemed toward Bookings or eligible purchases, subject to these Terms and any terms displayed at purchase or redemption.",
+            "<strong>Gift Card:</strong> A prepaid balance issued by ClassEasily that may be purchased on the Platform and redeemed toward Bookings or eligible purchases, subject to these Terms and any terms displayed at purchase or redemption.",
           ],
         },
       ],
@@ -63,11 +63,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "You are solely responsible for maintaining the confidentiality of your account password (if you create one) and for all activities that occur under your account. You agree to notify Classeasily immediately of any unauthorized use of your account. Classeasily will not be liable for any loss or damage arising from your failure to comply with this section.",
+          text: "You are solely responsible for maintaining the confidentiality of your account password (if you create one) and for all activities that occur under your account. You agree to notify ClassEasily immediately of any unauthorized use of your account. ClassEasily will not be liable for any loss or damage arising from your failure to comply with this section.",
         },
         {
           type: "p",
-          text: "Classeasily reserves the right to suspend or terminate your account, or cancel any bookings, if any information provided is inaccurate, not current, incomplete, or if you violate these Terms.",
+          text: "ClassEasily reserves the right to suspend or terminate your account, or cancel any bookings, if any information provided is inaccurate, not current, incomplete, or if you violate these Terms.",
         },
       ],
     },
@@ -77,15 +77,15 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily provides an online marketplace that enables Hosts to publish Listings for Experiences and communicate with Guests seeking such Experiences. Guests can search for, communicate with Hosts about, and book Experiences directly with Hosts through the Platform.",
+          text: "ClassEasily provides an online marketplace that enables Hosts to publish Listings for Experiences and communicate with Guests seeking such Experiences. Guests can search for, communicate with Hosts about, and book Experiences directly with Hosts through the Platform.",
         },
         {
           type: "p",
-          text: "Important Disclaimer: Classeasily acts solely as a facilitator and is not a party to any agreement entered into between Guests and Hosts. Classeasily does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Experiences or Listings. Hosts are solely responsible for their Listings and Experiences. When Guests make or accept a Booking, they are entering into a contract directly with the Host.",
+          text: "Important Disclaimer: ClassEasily acts solely as a facilitator and is not a party to any agreement entered into between Guests and Hosts. ClassEasily does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Experiences or Listings. Hosts are solely responsible for their Listings and Experiences. When Guests make or accept a Booking, they are entering into a contract directly with the Host.",
         },
         {
           type: "p",
-          text: "While Classeasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Listings or Experiences, (ii) the truth or accuracy of any Listing descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. Classeasily does not endorse any User, Listing, or Experience. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
+          text: "While ClassEasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Listings or Experiences, (ii) the truth or accuracy of any Listing descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. ClassEasily does not endorse any User, Listing, or Experience. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
         },
       ],
     },
@@ -108,7 +108,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Images and videos used in your Listings must accurately reflect the quality and condition of your Experiences. Classeasily reserves the right to require Listings to have a minimum number of images of a certain format, size, and resolution.",
+          text: "Images and videos used in your Listings must accurately reflect the quality and condition of your Experiences. ClassEasily reserves the right to require Listings to have a minimum number of images of a certain format, size, and resolution.",
         },
         { type: "h3", text: "5.2. Managing Bookings" },
         {
@@ -117,7 +117,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "You are responsible for setting your cancellation policy, which must be clearly stated in your Listing. You must adhere to your stated policy. Your chosen cancellation policy is binding; Classeasily will process refunds to Guests in accordance with that policy.",
+          text: "You are responsible for setting your cancellation policy, which must be clearly stated in your Listing. You must adhere to your stated policy. Your chosen cancellation policy is binding; ClassEasily will process refunds to Guests in accordance with that policy.",
         },
         {
           type: "p",
@@ -135,7 +135,7 @@ export const termsContent = {
         { type: "h3", text: "5.4. Host Subscriptions" },
         {
           type: "p",
-          text: "Classeasily may offer subscription plans (e.g. for the booking widget or premium features). Subscription fees are billed on a recurring basis. If payment fails (e.g. card declined), subscription features may be suspended or restricted until payment is updated. You are responsible for keeping your payment method valid. Classeasily may send payment-failure reminders but is not liable for missed payments or resulting service limits.",
+          text: "ClassEasily may offer subscription plans (e.g. for the booking widget or premium features). Subscription fees are billed on a recurring basis. If payment fails (e.g. card declined), subscription features may be suspended or restricted until payment is updated. You are responsible for keeping your payment method valid. ClassEasily may send payment-failure reminders but is not liable for missed payments or resulting service limits.",
         },
       ],
     },
@@ -150,11 +150,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Upon receipt of a booking confirmation from Classeasily, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified in the Listing.",
+          text: "Upon receipt of a booking confirmation from ClassEasily, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified in the Listing.",
         },
         {
           type: "p",
-          text: "Completion of payment does not guarantee a spot until the booking is confirmed. If the session is no longer available (e.g. the session is full), Classeasily will refund you in accordance with our refund policy. A selected spot may be held for a limited time (e.g. 15 minutes); you must complete payment within that time to confirm the booking. If the session fills or the hold expires, the spot may no longer be available.",
+          text: "Completion of payment does not guarantee a spot until the booking is confirmed. If the session is no longer available (e.g. the session is full), ClassEasily will refund you in accordance with our refund policy. A selected spot may be held for a limited time (e.g. 15 minutes); you must complete payment within that time to confirm the booking. If the session fills or the hold expires, the spot may no longer be available.",
         },
         { type: "h3", text: "6.2. Attending Experiences" },
         {
@@ -178,30 +178,30 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Any applicable Fees (including any applicable Taxes) will be displayed to a User prior to publishing a Listing or confirming a Booking. Classeasily reserves the right to change the Fees at any time, and will provide Users adequate notice of any fee changes before they become effective.",
+          text: "Any applicable Fees (including any applicable Taxes) will be displayed to a User prior to publishing a Listing or confirming a Booking. ClassEasily reserves the right to change the Fees at any time, and will provide Users adequate notice of any fee changes before they become effective.",
         },
         { type: "h3", text: "7.2. Payments" },
         {
           type: "p",
-          text: "Guests agree to pay the Total Fees for any Booking requested in connection with their Classeasily Account. Classeasily Payments (via Stripe) will collect the Total Fees at the time of the booking request or upon the Host’s confirmation.",
+          text: "Guests agree to pay the Total Fees for any Booking requested in connection with their ClassEasily Account. ClassEasily Payments (via Stripe) will collect the Total Fees at the time of the booking request or upon the Host’s confirmation.",
         },
         {
           type: "p",
-          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation. Hosts must complete Stripe Connect (or equivalent) setup to receive payouts; failure to do so may result in delayed or unavailable payouts until the account is linked and valid. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons; Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. Classeasily will retry or notify where feasible but is not liable for third-party processing delays or failures.",
+          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation. Hosts must complete Stripe Connect (or equivalent) setup to receive payouts; failure to do so may result in delayed or unavailable payouts until the account is linked and valid. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons; Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. ClassEasily will retry or notify where feasible but is not liable for third-party processing delays or failures.",
         },
         {
           type: "p",
-          text: "Classeasily utilizes Stripe, Inc. ('Stripe') for payment processing services. By using the payment features of the Platform, you agree to be bound by the Stripe Connected Account Agreement (available at https://stripe.com/en-ca/legal/connect-account) and the Stripe Services Agreement (available at https://stripe.com/en-ca/legal/ssa), which may be modified by Stripe from time to time. As a condition of Classeasily enabling payment processing services through Stripe, you agree to provide Classeasily accurate and complete information about you and your business, and you authorize Classeasily to share it and transaction information related to your use of the payment processing services provided by Stripe. Classeasily does not store your full credit card information.",
+          text: "ClassEasily utilizes Stripe, Inc. ('Stripe') for payment processing services. By using the payment features of the Platform, you agree to be bound by the Stripe Connected Account Agreement (available at https://stripe.com/en-ca/legal/connect-account) and the Stripe Services Agreement (available at https://stripe.com/en-ca/legal/ssa), which may be modified by Stripe from time to time. As a condition of ClassEasily enabling payment processing services through Stripe, you agree to provide ClassEasily accurate and complete information about you and your business, and you authorize ClassEasily to share it and transaction information related to your use of the payment processing services provided by Stripe. ClassEasily does not store your full credit card information.",
         },
         { type: "h3", text: "7.2.1. Gift Cards" },
         {
           type: "p",
-          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. If a gift card cannot be fully applied for technical or balance reasons, the remaining balance may remain on the card and the rest of the payment will have been charged to your payment method; Classeasily may contact you in such cases. Use of a Gift Card is subject to these Terms.",
+          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. If a gift card cannot be fully applied for technical or balance reasons, the remaining balance may remain on the card and the rest of the payment will have been charged to your payment method; ClassEasily may contact you in such cases. Use of a Gift Card is subject to these Terms.",
         },
         { type: "h3", text: "7.2.2. Promotional Gift Cards" },
         {
           type: "p",
-          text: "Classeasily may offer promotional gift cards (e.g. first-purchase rewards) from time to time. Eligibility, amounts, and conditions (such as minimum spend or one per customer per email) will be as stated in the offer. Promotional gift cards are typically for use on a future booking only. Delivery is by email on a best-effort basis. Classeasily may change, suspend, or end any promotion at any time without notice.",
+          text: "ClassEasily may offer promotional gift cards (e.g. first-purchase rewards) from time to time. Eligibility, amounts, and conditions (such as minimum spend or one per customer per email) will be as stated in the offer. Promotional gift cards are typically for use on a future booking only. Delivery is by email on a best-effort basis. ClassEasily may change, suspend, or end any promotion at any time without notice.",
         },
         { type: "h3", text: "7.3. Cancellations and Refunds" },
         {
@@ -210,15 +210,15 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. Classeasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Refunds are processed via the payment processor and may be delayed or require manual handling in exceptional cases. If you do not receive an expected refund within 10 business days, please contact support@classeasily.com. Applicable Booking Fees may be non-refundable.",
+          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. ClassEasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Refunds are processed via the payment processor and may be delayed or require manual handling in exceptional cases. If you do not receive an expected refund within 10 business days, please contact support@classeasily.com. Applicable Booking Fees may be non-refundable.",
         },
         {
           type: "p",
-          text: "If a booking cannot be fulfilled after payment (e.g. the session is no longer available, a system error), Classeasily will attempt to refund the payment. Refunds are subject to the payment processor (Stripe) and may take several business days. If a refund attempt fails, please contact support and Classeasily will work to resolve the matter (e.g. manual refund or alternative resolution).",
+          text: "If a booking cannot be fulfilled after payment (e.g. the session is no longer available, a system error), ClassEasily will attempt to refund the payment. Refunds are subject to the payment processor (Stripe) and may take several business days. If a refund attempt fails, please contact support and ClassEasily will work to resolve the matter (e.g. manual refund or alternative resolution).",
         },
         {
           type: "p",
-          text: "Hosts can cancel a confirmed Booking under certain extenuating circumstances. If a Host cancels, the Guest will receive a full refund of the Total Fees for such Booking. Classeasily may impose penalties on Hosts for cancellations without valid extenuating circumstances.",
+          text: "Hosts can cancel a confirmed Booking under certain extenuating circumstances. If a Host cancels, the Guest will receive a full refund of the Total Fees for such Booking. ClassEasily may impose penalties on Hosts for cancellations without valid extenuating circumstances.",
         },
       ],
     },
@@ -229,15 +229,15 @@ export const termsContent = {
         { type: "h3", text: "8.1. User Content" },
         {
           type: "p",
-          text: "You may be able to create, upload, post, send, receive, and store User Content on or through the Platform. By doing so, you grant Classeasily a non-exclusive, worldwide, royalty-free, irrevocable, perpetual, sub-licensable, and transferable license to use, store, display, reproduce, modify, create derivative works, distribute, publish, and publicly perform such User Content solely for the purposes of operating, providing, promoting, and improving the Platform.",
+          text: "You may be able to create, upload, post, send, receive, and store User Content on or through the Platform. By doing so, you grant ClassEasily a non-exclusive, worldwide, royalty-free, irrevocable, perpetual, sub-licensable, and transferable license to use, store, display, reproduce, modify, create derivative works, distribute, publish, and publicly perform such User Content solely for the purposes of operating, providing, promoting, and improving the Platform.",
         },
         {
           type: "p",
-          text: "You represent and warrant that you own or have all necessary rights to your User Content and that its use by Classeasily as contemplated herein will not infringe, misappropriate, or violate any third party's rights (including intellectual property or privacy rights).",
+          text: "You represent and warrant that you own or have all necessary rights to your User Content and that its use by ClassEasily as contemplated herein will not infringe, misappropriate, or violate any third party's rights (including intellectual property or privacy rights).",
         },
         {
           type: "p",
-          text: "You are solely responsible for your User Content. Classeasily may, but has no obligation to, monitor, review, or remove User Content at its sole discretion and without notice.",
+          text: "You are solely responsible for your User Content. ClassEasily may, but has no obligation to, monitor, review, or remove User Content at its sole discretion and without notice.",
         },
         { type: "h3", text: "8.2. Prohibited Conduct" },
         {
@@ -256,7 +256,7 @@ export const termsContent = {
             "Collecting or tracking the personal information of others without consent.",
             "Interfering with or circumventing the security features of the Platform or any related website.",
             "Using the Platform to offer services unrelated to Experiences listed.",
-            "Circumventing any Fees owed to Classeasily or Hosts.",
+            "Circumventing any Fees owed to ClassEasily or Hosts.",
             "Posting spam or unsolicited commercial messages.",
           ],
         },
@@ -276,7 +276,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Reviews reflect the opinions of individual Users and do not reflect the opinion of Classeasily. Classeasily does not verify reviews for accuracy but may remove reviews that violate these Terms or our <a href='/content-policy'>Content Policy</a>",
+          text: "Reviews reflect the opinions of individual Users and do not reflect the opinion of ClassEasily. ClassEasily does not verify reviews for accuracy but may remove reviews that violate these Terms or our <a href='/content-policy'>Content Policy</a>",
         },
         {
           type: "p",
@@ -290,11 +290,11 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "The Platform and Platform Content, including its features and functionality, are and will remain the exclusive property of Classeasily Inc. and its licensors. The Platform is protected by copyright, trademark, and other laws of Canada and foreign countries.",
+          text: "The Platform and Platform Content, including its features and functionality, are and will remain the exclusive property of ClassEasily Inc. and its licensors. The Platform is protected by copyright, trademark, and other laws of Canada and foreign countries.",
         },
         {
           type: "p",
-          text: "Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of Classeasily.",
+          text: "Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of ClassEasily.",
         },
         {
           type: "p",
@@ -308,7 +308,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "This Agreement shall be effective for a 30-day term, at the end of which it will automatically and continuously renew for subsequent 30-day terms until such time when you or Classeasily terminate the Agreement in accordance with this provision.",
+          text: "This Agreement shall be effective for a 30-day term, at the end of which it will automatically and continuously renew for subsequent 30-day terms until such time when you or ClassEasily terminate the Agreement in accordance with this provision.",
         },
         {
           type: "p",
@@ -316,11 +316,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Classeasily may terminate this Agreement and your account for any reason, or no reason, at our sole discretion, by giving you 30 days' notice via email to your registered email address.",
+          text: "ClassEasily may terminate this Agreement and your account for any reason, or no reason, at our sole discretion, by giving you 30 days' notice via email to your registered email address.",
         },
         {
           type: "p",
-          text: "Classeasily may immediately, without notice, terminate this Agreement and/or stop providing access to the Platform if (i) you have materially breached your obligations under these Terms, our Policies, or applicable laws, (ii) you have provided inaccurate, fraudulent, outdated, or incomplete information, (iii) Classeasily believes in good faith that such action is reasonably necessary to protect the safety or property of other Users, Classeasily, or third parties.",
+          text: "ClassEasily may immediately, without notice, terminate this Agreement and/or stop providing access to the Platform if (i) you have materially breached your obligations under these Terms, our Policies, or applicable laws, (ii) you have provided inaccurate, fraudulent, outdated, or incomplete information, (iii) ClassEasily believes in good faith that such action is reasonably necessary to protect the safety or property of other Users, ClassEasily, or third parties.",
         },
         {
           type: "p",
@@ -350,7 +350,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Classeasily is not liable for failures or delays of third-party payment processors (including Stripe), for failed or delayed refunds or payouts due to such failures, or for technical errors that result in a booking not being completed or a refund not being automatically processed, except where required by law. Our obligation in such cases is to use reasonable efforts to resolve the matter (e.g. manual refund or payout).",
+          text: "ClassEasily is not liable for failures or delays of third-party payment processors (including Stripe), for failed or delayed refunds or payouts due to such failures, or for technical errors that result in a booking not being completed or a refund not being automatically processed, except where required by law. Our obligation in such cases is to use reasonable efforts to resolve the matter (e.g. manual refund or payout).",
         },
       ],
     },
@@ -374,7 +374,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "You agree to release, defend, indemnify, and hold Classeasily and its affiliates and subsidiaries, and their officers, directors, employees, and agents, harmless from and against any claims, liabilities, damages, losses, and expenses, including, without limitation, reasonable legal and accounting fees, arising out of or in any way connected with (i) your breach of these Terms or our Policies, (ii) your improper use of the Platform, (iii) your interaction with any User, participation in an Experience, including without limitation any injuries, losses or damages (whether compensatory, direct, incidental, consequential or otherwise) of any kind arising in connection with or as a result of such interaction or participation, or (iv) your breach of any laws, regulations or third party rights.",
+          text: "You agree to release, defend, indemnify, and hold ClassEasily and its affiliates and subsidiaries, and their officers, directors, employees, and agents, harmless from and against any claims, liabilities, damages, losses, and expenses, including, without limitation, reasonable legal and accounting fees, arising out of or in any way connected with (i) your breach of these Terms or our Policies, (ii) your improper use of the Platform, (iii) your interaction with any User, participation in an Experience, including without limitation any injuries, losses or damages (whether compensatory, direct, incidental, consequential or otherwise) of any kind arising in connection with or as a result of such interaction or participation, or (iv) your breach of any laws, regulations or third party rights.",
         },
       ],
     },
@@ -394,15 +394,15 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "You and Classeasily agree that any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, or the use of the Platform (collectively, 'Disputes') will be settled by binding arbitration, except that each party retains the right to seek injunctive or other equitable relief in a court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of a party's copyrights, trademarks, trade secrets, patents, or other intellectual property rights.",
+          text: "You and ClassEasily agree that any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, or the use of the Platform (collectively, 'Disputes') will be settled by binding arbitration, except that each party retains the right to seek injunctive or other equitable relief in a court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of a party's copyrights, trademarks, trade secrets, patents, or other intellectual property rights.",
         },
         {
           type: "p",
-          text: "The arbitration will be administered by the ADR Institute of Canada, Inc. The arbitration will be conducted in Toronto, Ontario, Canada, unless you and Classeasily agree otherwise. Judgment on the arbitration award may be entered in any court having jurisdiction thereof.",
+          text: "The arbitration will be administered by the ADR Institute of Canada, Inc. The arbitration will be conducted in Toronto, Ontario, Canada, unless you and ClassEasily agree otherwise. Judgment on the arbitration award may be entered in any court having jurisdiction thereof.",
         },
         {
           type: "p",
-          text: "YOU AND CLASSEASILY AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY, AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE PROCEEDING. Unless both you and Classeasily agree otherwise, the arbitrator may not consolidate more than one person's claims, and may not otherwise preside over any form of a representative or class proceeding.",
+          text: "YOU AND CLASSEASILY AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY, AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE PROCEEDING. Unless both you and ClassEasily agree otherwise, the arbitrator may not consolidate more than one person's claims, and may not otherwise preside over any form of a representative or class proceeding.",
         },
       ],
     },
@@ -412,7 +412,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "These Terms constitute the entire agreement between Classeasily and you regarding the use of the Platform and supersede all prior agreements or understandings.",
+          text: "These Terms constitute the entire agreement between ClassEasily and you regarding the use of the Platform and supersede all prior agreements or understandings.",
         },
         {
           type: "p",
@@ -420,15 +420,15 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Classeasily's failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.",
+          text: "ClassEasily's failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.",
         },
         {
           type: "p",
-          text: "You may not assign or transfer these Terms, by operation of law or otherwise, without Classeasily's prior written consent. Classeasily may assign or transfer these Terms, at its sole discretion, without restriction.",
+          text: "You may not assign or transfer these Terms, by operation of law or otherwise, without ClassEasily's prior written consent. ClassEasily may assign or transfer these Terms, at its sole discretion, without restriction.",
         },
         {
           type: "p",
-          text: "Any notices or other communications permitted or required hereunder will be in writing and given by Classeasily via email, Platform notification, or posting to the Platform.",
+          text: "Any notices or other communications permitted or required hereunder will be in writing and given by ClassEasily via email, Platform notification, or posting to the Platform.",
         },
       ],
     },
@@ -442,7 +442,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Classeasily Inc.\n8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
+          text: "ClassEasily Inc.\n8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
         },
       ],
     },
@@ -459,7 +459,7 @@ export const privacyContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily Inc. ('Classeasily', 'we', 'us', 'our') is committed to protecting and respecting your privacy. This Privacy Policy explains how we collect, use, disclose, store, and protect your personal information when you access or use our Platform (classeasily.com, mobile applications, and related services).",
+          text: "Classeasily Inc. ('ClassEasily', 'we', 'us', 'our') is committed to protecting and respecting your privacy. This Privacy Policy explains how we collect, use, disclose, store, and protect your personal information when you access or use our Platform (classeasily.com, mobile applications, and related services).",
         },
         {
           type: "p",
@@ -690,7 +690,7 @@ export const privacyContent = {
         { type: "p", text: "Email: support@classeasily.com" },
         {
           type: "p",
-          text: "Mailing Address:\nClasseasily Inc.\n 8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
+          text: "Mailing Address:\nClassEasily Inc.\n 8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
         },
       ],
     },
@@ -801,7 +801,7 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "At Classeasily, we aim for a transparent and straightforward fee structure. We connect Guests seeking unique experiences with talented Hosts offering workshops and activities. Our fees help us operate the platform, provide support, and continuously improve our services.",
+          text: "At ClassEasily, we aim for a transparent and straightforward fee structure. We connect Guests seeking unique experiences with talented Hosts offering workshops and activities. Our fees help us operate the platform, provide support, and continuously improve our services.",
         },
         {
           type: "p",
@@ -827,10 +827,10 @@ export const feeContent = {
     {
       title: "Fees for Hosts (Instructors & Businesses)",
       content: [
-        { type: "h3", text: "Classeasily Service Fee" },
+        { type: "h3", text: "ClassEasily Service Fee" },
         {
           type: "p",
-          text: "For each completed booking, Classeasily deducts a Service Fee from the Host's payout. This fee is calculated as a percentage of the pre-tax Experience Price set by the Host.",
+          text: "For each completed booking, ClassEasily deducts a Service Fee from the Host's payout. This fee is calculated as a percentage of the pre-tax Experience Price set by the Host.",
         },
         {
           type: "ul",
@@ -840,20 +840,20 @@ export const feeContent = {
         },
         {
           type: "p",
-          text: "Example: A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The Classeasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
+          text: "Example: A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The ClassEasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
         },
         {
           type: "ul",
           items: [
             "Original Experience Price: $100.00",
-            "Less Classeasily Service Fee: -$20.00",
+            "Less ClassEasily Service Fee: -$20.00",
             "Plus HST collected on your portion (13% of $80): +$10.40",
             "<strong>Total Host Payout: $90.40</strong>",
           ],
         },
         {
           type: "p",
-          text: "In this scenario, Classeasily remits the HST on its $20 fee ($2.60), and the Host is responsible for remitting the $10.40 of HST they received in their payout.",
+          text: "In this scenario, ClassEasily remits the HST on its $20 fee ($2.60), and the Host is responsible for remitting the $10.40 of HST they received in their payout.",
         },
         { type: "h3", text: "Payouts" },
         {
@@ -863,11 +863,11 @@ export const feeContent = {
         { type: "h3", text: "Taxes (Host Responsibility)" },
         {
           type: "p",
-          text: "To simplify the process, Classeasily automatically calculates and collects the applicable HST from the Guest. We remit the portion of HST applicable to our Service Fee. The remaining portion of the HST, collected on the Host's share of the revenue, is included in the Host's payout.",
+          text: "To simplify the process, ClassEasily automatically calculates and collects the applicable HST from the Guest. We remit the portion of HST applicable to our Service Fee. The remaining portion of the HST, collected on the Host's share of the revenue, is included in the Host's payout.",
         },
         {
           type: "p",
-          text: "<strong>Hosts are solely responsible for remitting the HST they receive in their payout to the appropriate government authorities.</strong> Classeasily acts as a collection agent for the Host's portion of the tax but does not remit it on their behalf. Hosts are also responsible for all other tax obligations, such as income tax on their earnings. We recommend consulting with a tax professional to understand your specific obligations.",
+          text: "<strong>Hosts are solely responsible for remitting the HST they receive in their payout to the appropriate government authorities.</strong> ClassEasily acts as a collection agent for the Host's portion of the tax but does not remit it on their behalf. Hosts are also responsible for all other tax obligations, such as income tax on their earnings. We recommend consulting with a tax professional to understand your specific obligations.",
         },
       ],
     },
@@ -876,11 +876,11 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "We use Stripe, a secure third-party payment processor, to handle all transactions on the Platform. Stripe's standard processing fees are covered by Classeasily's Service Fee.",
+          text: "We use Stripe, a secure third-party payment processor, to handle all transactions on the Platform. Stripe's standard processing fees are covered by ClassEasily's Service Fee.",
         },
         {
           type: "p",
-          text: "You do not need a separate Stripe account as a Guest. Hosts will set up a Stripe Connect account through Classeasily during their onboarding process to receive payouts.",
+          text: "You do not need a separate Stripe account as a Guest. Hosts will set up a Stripe Connect account through ClassEasily during their onboarding process to receive payouts.",
         },
       ],
     },
@@ -898,7 +898,7 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily reserves the right to modify its fees at any time. We will provide Users with advance notice of any fee changes before they become effective. Continued use of the Platform after a fee change constitutes acceptance of the new fees.",
+          text: "ClassEasily reserves the right to modify its fees at any time. We will provide Users with advance notice of any fee changes before they become effective. Continued use of the Platform after a fee change constitutes acceptance of the new fees.",
         },
       ],
     },
@@ -928,7 +928,7 @@ export const contentPolicyContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily aims to foster a positive, respectful, and safe community environment. This Content Policy outlines the types of content and conduct that are permitted or prohibited on the Classeasily Platform. It applies to all User Content, including Listings (text, images, videos), reviews, ratings, messages, profile information, and any other materials shared by Users.",
+          text: "ClassEasily aims to foster a positive, respectful, and safe community environment. This Content Policy outlines the types of content and conduct that are permitted or prohibited on the ClassEasily Platform. It applies to all User Content, including Listings (text, images, videos), reviews, ratings, messages, profile information, and any other materials shared by Users.",
         },
         {
           type: "p",
@@ -941,7 +941,7 @@ export const contentPolicyContent = {
       content: [
         {
           type: "p",
-          text: "We expect all Users to interact with respect, honesty, and professionalism. Your content should be relevant to the Classeasily Platform and its purpose of connecting Guests and Hosts for unique experiences and workshops.",
+          text: "We expect all Users to interact with respect, honesty, and professionalism. Your content should be relevant to the ClassEasily Platform and its purpose of connecting Guests and Hosts for unique experiences and workshops.",
         },
         {
           type: "ul",
@@ -959,7 +959,7 @@ export const contentPolicyContent = {
       content: [
         {
           type: "p",
-          text: "The following types of content are strictly prohibited on the Classeasily Platform:",
+          text: "The following types of content are strictly prohibited on the ClassEasily Platform:",
         },
         { type: "h3", text: "3.1. Illegal Content" },
         {
@@ -1058,7 +1058,7 @@ export const contentPolicyContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily reserves the right, but does not have the obligation, to monitor User Content and enforce this Policy. Enforcement actions are taken at our sole discretion and may include:",
+          text: "ClassEasily reserves the right, but does not have the obligation, to monitor User Content and enforce this Policy. Enforcement actions are taken at our sole discretion and may include:",
         },
         {
           type: "ul",
@@ -1111,7 +1111,7 @@ export const copyrightPolicyContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily Inc. ('Classeasily', 'we', 'us') respects the intellectual property rights of others and expects its users to do the same. This Copyright Policy describes how we address claims of copyright infringement regarding content posted on the Classeasily Platform by our users.",
+          text: "ClassEasily Inc. ('ClassEasily', 'we', 'us') respects the intellectual property rights of others and expects its users to do the same. This Copyright Policy describes how we address claims of copyright infringement regarding content posted on the ClassEasily Platform by our users.",
         },
         {
           type: "p",
@@ -1124,15 +1124,15 @@ export const copyrightPolicyContent = {
       content: [
         {
           type: "p",
-          text: "If you are a copyright owner or an agent thereof and believe that any User Content or other material on the Classeasily Platform infringes upon your copyrights, you may submit a notification pursuant to the DMCA by providing our Designated Copyright Agent with the following information in writing (see 17 U.S.C 512(c)(3) for further detail):",
+          text: "If you are a copyright owner or an agent thereof and believe that any User Content or other material on the ClassEasily Platform infringes upon your copyrights, you may submit a notification pursuant to the DMCA by providing our Designated Copyright Agent with the following information in writing (see 17 U.S.C 512(c)(3) for further detail):",
         },
         {
           type: "ul",
           items: [
             "A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.",
             "Identification of the copyrighted work claimed to have been infringed, or, if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site.",
-            "Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit Classeasily to locate the material (e.g., the specific URL(s) on the Platform where the material is found).",
-            "Information reasonably sufficient to permit Classeasily to contact you, such as an address, telephone number, and, if available, an electronic mail address.",
+            "Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit ClassEasily to locate the material (e.g., the specific URL(s) on the Platform where the material is found).",
+            "Information reasonably sufficient to permit ClassEasily to contact you, such as an address, telephone number, and, if available, an electronic mail address.",
             "A statement that you have a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law.",
             "A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.",
           ],
@@ -1148,7 +1148,7 @@ export const copyrightPolicyContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily's Designated Copyright Agent to receive notifications of claimed infringement can be reached as follows:",
+          text: "ClassEasily's Designated Copyright Agent to receive notifications of claimed infringement can be reached as follows:",
         },
         {
           type: "p",
@@ -1156,11 +1156,11 @@ export const copyrightPolicyContent = {
         },
         {
           type: "p",
-          text: "<strong>By Mail:</strong>\nCopyright Agent\nClasseasily Inc.\n8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
+          text: "<strong>By Mail:</strong>\nCopyright Agent\nClassEasily Inc.\n8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
         },
         {
           type: "p",
-          text: "<strong>Note:</strong> Only DMCA notices and copyright infringement claims should be sent to the Copyright Agent. Any other feedback, comments, requests for technical support, and other communications should be directed to Classeasily customer service through support@classeasily.com.",
+          text: "<strong>Note:</strong> Only DMCA notices and copyright infringement claims should be sent to the Copyright Agent. Any other feedback, comments, requests for technical support, and other communications should be directed to ClassEasily customer service through support@classeasily.com.",
         },
       ],
     },
@@ -1169,7 +1169,7 @@ export const copyrightPolicyContent = {
       content: [
         {
           type: "p",
-          text: "Upon receipt of a valid DMCA infringement notification meeting the requirements outlined above, Classeasily will:",
+          text: "Upon receipt of a valid DMCA infringement notification meeting the requirements outlined above, ClassEasily will:",
         },
         {
           type: "ul",
@@ -1200,7 +1200,7 @@ export const copyrightPolicyContent = {
         },
         {
           type: "p",
-          text: "If a valid counter-notice is received by the Copyright Agent, Classeasily may send a copy of the counter-notice to the original complaining party informing them that we may replace the removed material or cease disabling it in 10 business days. Unless the copyright owner files an action seeking a court order against the Affected User, the removed material may be replaced, or access to it restored, in 10 to 14 business days or more after receipt of the counter-notice, at Classeasily's sole discretion.",
+          text: "If a valid counter-notice is received by the Copyright Agent, ClassEasily may send a copy of the counter-notice to the original complaining party informing them that we may replace the removed material or cease disabling it in 10 business days. Unless the copyright owner files an action seeking a court order against the Affected User, the removed material may be replaced, or access to it restored, in 10 to 14 business days or more after receipt of the counter-notice, at ClassEasily's sole discretion.",
         },
       ],
     },
@@ -1209,7 +1209,7 @@ export const copyrightPolicyContent = {
       content: [
         {
           type: "p",
-          text: "In accordance with the DMCA and other applicable law, Classeasily has adopted a policy of terminating, in appropriate circumstances and at Classeasily's sole discretion, Users who are deemed to be repeat infringers. Classeasily may also at its sole discretion limit access to the Platform and/or terminate the accounts of any Users who infringe any intellectual property rights of others, whether or not there is any repeat infringement.",
+          text: "In accordance with the DMCA and other applicable law, ClassEasily has adopted a policy of terminating, in appropriate circumstances and at ClassEasily's sole discretion, Users who are deemed to be repeat infringers. ClassEasily may also at its sole discretion limit access to the Platform and/or terminate the accounts of any Users who infringe any intellectual property rights of others, whether or not there is any repeat infringement.",
         },
       ],
     },

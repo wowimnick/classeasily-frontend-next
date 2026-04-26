@@ -15,11 +15,11 @@ test.describe('Public pages and navigation', () => {
 
   test('homepage loads with correct title and key elements', async ({ page }) => {
     await expect(page).toHaveTitle(/ClassEasily|Find Local Classes/);
-    await expect(page.getByRole('link', { name: /classeasily/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /ClassEasily/i }).first()).toBeVisible();
   });
 
   test('header: logo navigates to home', async ({ page }) => {
-    await page.getByRole('link', { name: /classeasily/i }).first().click();
+    await page.getByRole('link', { name: /ClassEasily/i }).first().click();
     await expect(page).toHaveURL('/');
   });
 

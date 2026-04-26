@@ -29,7 +29,7 @@ function generateStructuredData(routeParams, classes, locationName) {
         description: classItem.description || classItem.title,
         provider: {
           "@type": "Organization",
-          name: classItem.business_name || "Classeasily Host",
+          name: classItem.business_name || "ClassEasily Host",
         },
         url: `https://classeasily.com/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {
@@ -87,21 +87,21 @@ export async function generateMetadata({ params, searchParams }) {
     const tagText = unslugify(tag);
     const collectionText = unslugify(collectionSlug);
 
-    let title = "Explore Experiences Near You | Classeasily";
+    let title = "Explore Experiences Near You | ClassEasily";
     let description =
       "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
     if (tagText && locationText) {
-      title = `${tagText} Experiences in ${locationText} | Classeasily`;
-      description = `Discover the best ${tagText.toLowerCase()} experiences and activities in ${locationText}. Book your spot on Classeasily.`;
+      title = `${tagText} Experiences in ${locationText} | ClassEasily`;
+      description = `Discover the best ${tagText.toLowerCase()} experiences and activities in ${locationText}. Book your spot on ClassEasily.`;
     } else if (collectionText && locationText) {
-      title = `${collectionText} Experiences in ${locationText} | Classeasily`;
+      title = `${collectionText} Experiences in ${locationText} | ClassEasily`;
       description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in ${locationText}.`;
     } else if (locationText) {
-      title = `Experiences and Activities in ${locationText} | Classeasily`;
+      title = `Experiences and Activities in ${locationText} | ClassEasily`;
       description = `Explore a wide variety of experiences in ${locationText}. From art to cooking, find your next great memory.`;
     } else if (collectionText) {
-      title = `Explore ${collectionText} Experiences | Classeasily`;
+      title = `Explore ${collectionText} Experiences | ClassEasily`;
       description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in your area.`;
     }
 
@@ -128,7 +128,7 @@ export async function generateMetadata({ params, searchParams }) {
         title,
         description,
         url: fullUrl,
-        siteName: "Classeasily",
+        siteName: "ClassEasily",
         type: "website",
         locale: "en_US",
         images: [
@@ -136,7 +136,7 @@ export async function generateMetadata({ params, searchParams }) {
             url: defaultOgImage,
             width: 1200,
             height: 630,
-            alt: "Classeasily — local classes and experiences",
+            alt: "ClassEasily — local classes and experiences",
           },
         ],
       },
@@ -161,7 +161,7 @@ export async function generateMetadata({ params, searchParams }) {
   } catch (error) {
     console.error("Critical error in generateMetadata:", error);
     return {
-      title: "Explore Experiences Near You | Classeasily",
+      title: "Explore Experiences Near You | ClassEasily",
       description:
         "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!",
       robots: {

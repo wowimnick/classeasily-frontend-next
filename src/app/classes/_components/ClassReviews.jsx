@@ -718,7 +718,7 @@ const Reviews = ({
               ) : (
                 <Star size={12} />
               )}
-              {review.source === "google" ? "From Google" : "On Classeasily"}
+              {review.source === "google" ? "From Google" : "On ClassEasily"}
             </ReviewSourceTag>
           )}
 

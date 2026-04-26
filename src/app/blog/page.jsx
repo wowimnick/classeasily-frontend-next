@@ -10,30 +10,30 @@ import {
 } from "@/lib/server-data-fetchers";
 
 export const metadata = {
-  title: "The Classeasily Blog | Insights for Learners and Instructors",
+  title: "The ClassEasily Blog | Insights for Learners and Instructors",
   description:
     "Discover expert tips, learning strategies, and instructor insights. Your guide to making the most of online and in-person classes.",
   keywords:
     "online classes, learning tips, instructor insights, education blog, class finder",
   openGraph: {
-    title: "The Classeasily Blog | Expert Learning Insights",
+    title: "The ClassEasily Blog | Expert Learning Insights",
     description:
       "Inspiration and insights for our community of learners and instructors.",
     type: "website",
     url: "https://classeasily.com/blog",
-    siteName: "Classeasily",
+    siteName: "ClassEasily",
     images: [
       {
         url: "https://classeasily.com/images/blog-og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Classeasily Blog",
+        alt: "ClassEasily Blog",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Classeasily Blog",
+    title: "The ClassEasily Blog",
     description: "Expert insights for learners and instructors",
     images: ["https://classeasily.com/images/blog-og-image.jpg"],
   },

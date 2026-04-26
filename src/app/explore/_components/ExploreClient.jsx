@@ -471,7 +471,8 @@ function ExploreClientContent({
       ) {
         newParams.set("class_type", newFilters.classType);
       }
-      if (newFilters.keyword) newParams.set("keyword", newFilters.keyword);
+      const keywordTrim = (newFilters.keyword || "").trim();
+      if (keywordTrim) newParams.set("keyword", keywordTrim);
       if (newSort && newSort !== "relevance") {
         newParams.set("sort_by", newSort);
       }
@@ -483,7 +484,7 @@ function ExploreClientContent({
         newParams.set("date", newFilters.date);
       }
 
-      if (newFilters.participants > 0)
+      if (newFilters.participants > 1)
         newParams.set("participants", newFilters.participants.toString());
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });

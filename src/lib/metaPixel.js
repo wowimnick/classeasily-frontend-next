@@ -38,7 +38,7 @@ export function getMetaPixelParams() {
   return out;
 }
 
-export function isClasseasilyProduction() {
+export function isClassEasilyProduction() {
   if (typeof window === "undefined") return false;
   try {
     const host = window.location?.hostname?.toLowerCase?.() || "";

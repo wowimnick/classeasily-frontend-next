@@ -146,11 +146,11 @@ export async function generateMetadata({ params }) {
   const { classData, businessData } = await getClassData(resolvedParams.slug);
 
   const pageTitle = classData?.title
-    ? `${classData.title} | Classeasily`
-    : "Experience Details | Classeasily";
+    ? `${classData.title} | ClassEasily`
+    : "Experience Details | ClassEasily";
   const pageDescription = classData?.description
     ? classData.description.substring(0, 160) + "..."
-    : "View details and book this experience for your next date night or friend gathering on Classeasily.";
+    : "View details and book this experience for your next date night or friend gathering on ClassEasily.";
   const canonicalUrl = `https://classeasily.com/classes/${classData.slug}`;
   const imageUrl =
     classData.images?.length > 0
@@ -167,7 +167,7 @@ export async function generateMetadata({ params }) {
       title: pageTitle,
       description: pageDescription,
       url: canonicalUrl,
-      siteName: "Classeasily",
+      siteName: "ClassEasily",
       images: [
         { url: imageUrl, width: 1200, height: 630, alt: classData.title },
       ],
@@ -223,7 +223,7 @@ function buildCourseSchema(classData, businessData) {
     courseCode: `CLASS-${classData.classId}`,
     provider: {
       "@type": "Organization",
-      name: businessData?.businessName || "Classeasily Host",
+      name: businessData?.businessName || "ClassEasily Host",
       url: businessData?.website || "https://classeasily.com",
     },
     location: {

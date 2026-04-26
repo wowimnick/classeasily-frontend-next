@@ -554,7 +554,7 @@ export default function JobsPage() {
           .join("")}</ul>`,
         hiringOrganization: {
           "@type": "Organization",
-          name: "Classeasily",
+          name: "ClassEasily",
           sameAs: "https://classeasily.com", // Replace with your domain
           logo: "https://classeasily.com/logo.png", // Replace with your logo URL
         },
@@ -592,7 +592,7 @@ export default function JobsPage() {
         }),
         identifier: {
           "@type": "PropertyValue",
-          name: "Classeasily Job ID",
+          name: "ClassEasily Job ID",
           value:
             job.id || `JOB-${job.title.replace(/\s+/g, "-").toLowerCase()}`, // Use provided ID or generate one
         },
@@ -642,10 +642,10 @@ export default function JobsPage() {
 
   return (
     <>
-      <title>Open Positions | Careers at Classeasily</title>
+      <title>Open Positions | Careers at ClassEasily</title>
       <meta
         name="description"
-        content="Join our mission to transform education. Explore open roles in engineering, product, design, and more at Classeasily."
+        content="Join our mission to transform education. Explore open roles in engineering, product, design, and more at ClassEasily."
       />
       <link rel="canonical" href="https://classeasily.com/careers/positions" />{" "}
       {/* Replace domain */}

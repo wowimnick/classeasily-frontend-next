@@ -9,7 +9,7 @@ import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 function getExploreMeta(resolvedSearchParams) {
   const collection = resolvedSearchParams?.collection;
   const location = resolvedSearchParams?.location;
-  let title = "Explore Experiences Near You | Classeasily";
+  let title = "Explore Experiences Near You | ClassEasily";
   let description =
     "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
@@ -17,13 +17,13 @@ function getExploreMeta(resolvedSearchParams) {
     ? collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : "";
   if (collectionText && location) {
-    title = `${collectionText} Experiences in ${location} | Classeasily`;
+    title = `${collectionText} Experiences in ${location} | ClassEasily`;
     description = `Discover the best ${collectionText.toLowerCase()} experiences and activities in ${location}. Book your spot today!`;
   } else if (location) {
-    title = `Experiences and Activities in ${location} | Classeasily`;
+    title = `Experiences and Activities in ${location} | ClassEasily`;
     description = `Explore a wide variety of experiences in ${location}. From art to cooking, find your next great memory.`;
   } else if (collectionText) {
-    title = `Explore ${collectionText} Experiences | Classeasily`;
+    title = `Explore ${collectionText} Experiences | ClassEasily`;
     description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in your area.`;
   }
   return { title, description };
@@ -101,13 +101,13 @@ export async function generateMetadata({ searchParams }) {
       description,
       url: canonicalUrl,
       type: "website",
-      siteName: "Classeasily",
+      siteName: "ClassEasily",
       images: [
         {
           url: "https://i.imgur.com/biTTckW.png",
           width: 1200,
           height: 630,
-          alt: "Classeasily - Discover Local Experiences",
+          alt: "ClassEasily - Discover Local Experiences",
         },
       ],
     },
@@ -225,7 +225,7 @@ function generateStructuredData(classes, locationName) {
         description: classItem.description || classItem.title,
         provider: {
           "@type": "Organization",
-          name: classItem.business_name || "Classeasily Host",
+          name: classItem.business_name || "ClassEasily Host",
         },
         url: `https://classeasily.com/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {

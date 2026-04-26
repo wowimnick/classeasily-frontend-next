@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-04-26T03:05:01.463Z",
+  "count": 8,
+  "logos": [
+    {
+      "name": "Sample Business 55",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/a33afb91-1875-44a0-8cb2-29dd6f90b6bd-sig.webp",
+      "reviewCount": 1,
+      "slug": "sample-business-3"
+    },
+    {
+      "name": "Shaken & Stirred Cocktail Academy",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Cocktail_Making_Logo.webp",
+      "reviewCount": 1,
+      "slug": "shaken-stirred-cocktail-academy"
+    },
+    {
+      "name": "Frame & Form Studio",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Frame_Form_Logo.webp",
+      "reviewCount": 0,
+      "slug": "frame-form-studio"
+    },
+    {
+      "name": "Glow & Glass Studio",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Facebook_Header.webp",
+      "reviewCount": 0,
+      "slug": "glow-glass-studio"
+    },
+    {
+      "name": "Mud & Muse Pottery",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Pottery_Mock_B_Logo.webp",
+      "reviewCount": 0,
+      "slug": "mud-muse-pottery"
+    },
+    {
+      "name": "Palette & Pour Studio",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Annies_painting_school_logo.webp",
+      "reviewCount": 0,
+      "slug": "palette-pour-studio"
+    },
+    {
+      "name": "Wax & Wane Studio",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/WaxWane_Logo.webp",
+      "reviewCount": 0,
+      "slug": "wax-wane-studio"
+    },
+    {
+      "name": "Yummy Food Studio",
+      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Delicious-food-yummy-logo-by-yahyaanasatokillah.webp",
+      "reviewCount": 0,
+      "slug": "yummy-food-studio"
+    }
+  ],
+  "source": "api",
+  "apiBaseUrl": "http://localhost:8000/api",
+  "fetchedBusinesses": 11,
+  "limit": 120
+}

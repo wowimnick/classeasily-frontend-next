@@ -41,20 +41,20 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { tag: tagSlug } = await params;
   const tagName = tagSlugToName(tagSlug);
-  const title = `${tagName} | Classeasily Blog`;
+  const title = `${tagName} | ClassEasily Blog`;
   const description = `Blog posts tagged with ${tagName}. Tips and insights for learners and instructors.`;
   const url = `${BASE}/blog/tag/${tagSlug}`;
 
   return {
     title,
     description,
-    keywords: ["blog", "tag", tagName, "Classeasily"].join(", "),
+    keywords: ["blog", "tag", tagName, "ClassEasily"].join(", "),
     openGraph: {
       title,
       description,
       type: "website",
       url,
-      siteName: "Classeasily",
+      siteName: "ClassEasily",
     },
     twitter: {
       card: "summary_large_image",
@@ -92,7 +92,7 @@ export default async function BlogTagPage({ params }) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${BASE}/blog/tag/${tagSlug}`,
-    name: `${tagName} | Classeasily Blog`,
+    name: `${tagName} | ClassEasily Blog`,
     description: subtitle,
     url: `${BASE}/blog/tag/${tagSlug}`,
     isPartOf: { "@id": `${BASE}/blog` },

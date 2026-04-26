@@ -110,6 +110,19 @@ export const ICON_PALETTE = [
   { bg: "#faf5ff", icon: "#9333ea" }, // Purple
 ];
 
+/** Title-style label from API name or slug (never show raw slug casing in UI). */
+export function formatCollectionDisplayName(raw) {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  return s
+    .replace(/[-_]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 // Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner).
 // Keep displayName values in sync with backend quickstart/constants/search_location_presets.py (admin search analytics).
 export const GTA_PRESETS = [
@@ -188,6 +201,16 @@ export const SearchProvider = ({ children }) => {
       return Math.min(20, stored.participantCount);
     }
     return 1;
+  });
+  const [selectedCollection, setSelectedCollection] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored?.selectedCollection?.slug) {
+      return {
+        slug: stored.selectedCollection.slug,
+        name: stored.selectedCollection.name || stored.selectedCollection.slug,
+      };
+    }
+    return null;
   });
 
   // Geocoding State
@@ -285,6 +308,7 @@ export const SearchProvider = ({ children }) => {
     });
     setDatePickerValue(null);
     setParticipantCount(1);
+    setSelectedCollection(null);
     setGeocodedAddressResults([]);
     try {
       if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
@@ -298,8 +322,9 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
+      selectedCollection,
     });
-  }, [searchTerm, selectedLocation, datePickerValue, participantCount]);
+  }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollection]);
 
   const performSearch = useCallback(() => {
     const { displayName, coordinates } = selectedLocation;
@@ -327,6 +352,7 @@ export const SearchProvider = ({ children }) => {
         "date",
         "start_date",
         "end_date",
+        "participants",
       ];
       preserveKeys.forEach((key) => {
         const value = current.get(key);
@@ -334,6 +360,12 @@ export const SearchProvider = ({ children }) => {
       });
       current.getAll("time_preference").forEach((v) => params.append("time_preference", v));
       current.getAll("days").forEach((v) => params.append("days", v));
+    }
+
+    if (selectedCollection?.slug) {
+      params.set("collection", selectedCollection.slug);
+    } else {
+      params.delete("collection");
     }
 
     // HANDLE DATE (Range or Single)
@@ -348,8 +380,6 @@ export const SearchProvider = ({ children }) => {
         params.set("date", datePickerValue);
       }
     }
-
-    params.set("participants", participantCount.toString());
 
     // Default fallback logic if everything is empty
     if (!searchTerm.trim() && !displayName) {
@@ -387,13 +417,7 @@ export const SearchProvider = ({ children }) => {
     router.push(newUrl);
 
     setIsDrawerOpen(false);
-  }, [
-    selectedLocation,
-    searchTerm,
-    datePickerValue,
-    participantCount,
-    router,
-  ]);
+  }, [selectedLocation, searchTerm, datePickerValue, selectedCollection, router]);
 
   const debouncedPrefetchExplore = useMemo(
     () =>
@@ -420,7 +444,6 @@ export const SearchProvider = ({ children }) => {
     );
     params.set("lat", coordinates.lat.toString());
     params.set("lng", coordinates.lng.toString());
-    params.set("participants", participantCount.toString());
     if (datePickerValue) {
       if (datePickerValue.start && datePickerValue.end) {
         params.set("start_date", datePickerValue.start);
@@ -431,13 +454,16 @@ export const SearchProvider = ({ children }) => {
         params.set("date", datePickerValue);
       }
     }
+    if (selectedCollection?.slug) {
+      params.set("collection", selectedCollection.slug);
+    }
     const exploreUrl = `/explore?${params.toString()}`;
     debouncedPrefetchExplore(exploreUrl);
   }, [
     selectedLocation,
     searchTerm,
-    participantCount,
     datePickerValue,
+    selectedCollection,
     debouncedPrefetchExplore,
   ]);
 
@@ -455,6 +481,8 @@ export const SearchProvider = ({ children }) => {
       setDatePickerValue,
       participantCount,
       setParticipantCount,
+      selectedCollection,
+      setSelectedCollection,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,
@@ -469,6 +497,7 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
+      selectedCollection,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,

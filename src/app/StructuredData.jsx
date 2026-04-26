@@ -3,11 +3,11 @@ export function OrganizationSchema() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Classeasily",
+    name: "ClassEasily",
     url: "https://classeasily.com",
     logo: "https://i.imgur.com/biTTckW.png",
     description:
-      "Classeasily is a platform designed to help find the best experiences and activities in the area. We offer a wide range of options, from workshops to fun and engaging events, all tailored to make your time enjoyable and memorable. Whether you're looking for a fun activity to do with friends or family, or just want to explore new experiences, Classeasily has got you covered.",
+      "ClassEasily is a platform designed to help find the best experiences and activities in the area. We offer a wide range of options, from workshops to fun and engaging events, all tailored to make your time enjoyable and memorable. Whether you're looking for a fun activity to do with friends or family, or just want to explore new experiences, ClassEasily has got you covered.",
     sameAs: [
       "https://www.facebook.com/p/ClassEasily-61577902526917/",
       "https://twitter.com/classeasily",
@@ -31,7 +31,7 @@ export function WebsiteSchema() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Classeasily",
+    name: "ClassEasily",
     url: "https://classeasily.com",
     potentialAction: {
       "@type": "SearchAction",

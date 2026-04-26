@@ -1866,9 +1866,9 @@ const BusinessManagement = () => {
   const totalRevenue = metrics.total_revenue ?? metrics.gross_sales ?? 0;
   const totalBiz = metrics.total_businesses ?? 0;
   const activeBiz =
+    metrics.active_businesses ??
     metrics.active_businesses_in_period ??
     metrics.active_businesses_30d ??
-    metrics.active_businesses ??
     0;
   const statCardsData = [
     {
@@ -1884,7 +1884,9 @@ const BusinessManagement = () => {
       title: "Active (30d)",
       icon: Activity,
       value: activeBiz,
-      footer: "Owner or staff logged in (period)",
+      tooltip:
+        "Logged in within the last 30 days as owner or accepted staff, and has ever received at least one booking.",
+      footer: "Logged in last 30d AND ever booked",
       color: colors.success,
       periodBadge: "30d",
     },

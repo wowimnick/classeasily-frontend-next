@@ -12,6 +12,10 @@ import {
   Sunrise,
   Sun,
   Moon,
+  Users,
+  Minus,
+  Plus,
+  Search,
 } from "lucide-react";
 import { ConfigProvider, Modal } from "antd";
 import Slider from "@/components/explore/Slider";
@@ -351,7 +355,7 @@ export default function FilterModal({
       date: "",
       startDate: "",
       endDate: "",
-      participants: filters.participants ?? 1,
+      participants: 1,
     });
     setTempSortBy("relevance");
   };
@@ -397,6 +401,43 @@ export default function FilterModal({
       </Section>
 
       <Section>
+        <SectionTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Search size={20} aria-hidden />
+          Keyword
+        </SectionTitle>
+        <p
+          style={{
+            fontSize: 14,
+            color: "#717171",
+            marginTop: -8,
+            marginBottom: 16,
+            lineHeight: 1.45,
+          }}
+        >
+          Match class titles, topics, or tags. Clear the field and apply to
+          remove this filter.
+        </p>
+        <input
+          type="search"
+          enterKeyHint="search"
+          value={tempFilters.keyword || ""}
+          onChange={(e) =>
+            setTempFilters((prev) => ({ ...prev, keyword: e.target.value }))
+          }
+          placeholder="e.g. Pottery, Spanish, date night…"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "12px 14px",
+            fontSize: 15,
+            borderRadius: 12,
+            border: `1px solid ${themeToken.borderDefault}`,
+            outline: "none",
+          }}
+        />
+      </Section>
+
+      <Section>
         <Slider
           label="Price Range"
           min={0}
@@ -426,6 +467,98 @@ export default function FilterModal({
           }
           suffix=" km"
         />
+      </Section>
+
+      <Section>
+        <SectionTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Users size={20} aria-hidden />
+          Group size
+        </SectionTitle>
+        <p
+          style={{
+            fontSize: 14,
+            color: "#717171",
+            marginTop: -8,
+            marginBottom: 16,
+            lineHeight: 1.45,
+          }}
+        >
+          How many spots do you need? This narrows classes when you also pick a
+          date or time of day.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 24,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Decrease group size"
+            onClick={() =>
+              setTempFilters((prev) => ({
+                ...prev,
+                participants: Math.max(
+                  1,
+                  (prev.participants ?? 1) - 1,
+                ),
+              }))
+            }
+            disabled={(tempFilters.participants ?? 1) <= 1}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: (tempFilters.participants ?? 1) <= 1 ? "not-allowed" : "pointer",
+              opacity: (tempFilters.participants ?? 1) <= 1 ? 0.35 : 1,
+            }}
+          >
+            <Minus size={18} />
+          </button>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: "#222",
+              minWidth: 36,
+              textAlign: "center",
+            }}
+          >
+            {tempFilters.participants ?? 1}
+          </span>
+          <button
+            type="button"
+            aria-label="Increase group size"
+            onClick={() =>
+              setTempFilters((prev) => ({
+                ...prev,
+                participants: Math.min(20, (prev.participants ?? 1) + 1),
+              }))
+            }
+            disabled={(tempFilters.participants ?? 1) >= 20}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: (tempFilters.participants ?? 1) >= 20 ? "not-allowed" : "pointer",
+              opacity: (tempFilters.participants ?? 1) >= 20 ? 0.35 : 1,
+            }}
+          >
+            <Plus size={18} />
+          </button>
+        </div>
       </Section>
 
       <Section>

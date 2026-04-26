@@ -871,7 +871,7 @@ const Revenue = forwardRef((props, ref) => {
               {filterParams.source === "widget"
                 ? "Widget bookings only — revenue from your embedded booking widget."
                 : filterParams.source === "marketplace"
-                ? "Marketplace bookings only — revenue from Classeasily discovery."
+                ? "Marketplace bookings only — revenue from ClassEasily discovery."
                 : filterParams.source === "membership"
                 ? "Membership payments only — recurring revenue from member subscriptions."
                 : "Track revenue performance and growth insights across all sources."}

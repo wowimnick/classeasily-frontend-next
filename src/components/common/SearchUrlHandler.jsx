@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useSearch } from "@/context/SearchContext";
+import { useSearch, formatCollectionDisplayName } from "@/context/SearchContext";
 import dayjs from "dayjs";
 
 const SearchUrlHandler = () => {
@@ -14,6 +14,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
+    setSelectedCollection,
   } = useSearch();
 
   // We use a ref to track the last URL string we processed.
@@ -49,6 +50,7 @@ const SearchUrlHandler = () => {
     const endDateParam = searchParams.get("end_date");
 
     const participantsParam = searchParams.get("participants");
+    const collectionParam = searchParams.get("collection");
 
     // Only sync "missing param → clear context" on flat /explore (query-driven).
     // Slug routes like /explore/ontario/toronto often have no location in the query.
@@ -102,6 +104,15 @@ const SearchUrlHandler = () => {
     } else if (isFlatExplore) {
       setParticipantCount(1);
     }
+
+    if (collectionParam) {
+      setSelectedCollection({
+        slug: collectionParam,
+        name: formatCollectionDisplayName(collectionParam),
+      });
+    } else if (isFlatExplore) {
+      setSelectedCollection(null);
+    }
   }, [
     pathname,
     searchParams,
@@ -109,6 +120,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
+    setSelectedCollection,
   ]);
 
   return null;

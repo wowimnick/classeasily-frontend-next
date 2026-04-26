@@ -11,8 +11,8 @@ import { Suspense } from "react";
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
   title: {
-    default: "Classeasily - Discover Fun Local Experiences",
-    template: "%s | Classeasily",
+    default: "ClassEasily - Discover Fun Local Experiences",
+    template: "%s | ClassEasily",
   },
   description:
     "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
@@ -28,16 +28,16 @@ export const metadata = {
     "adventures",
     "learn new skills",
   ],
-  authors: [{ name: "Classeasily" }],
-  creator: "Classeasily",
-  publisher: "Classeasily",
+  authors: [{ name: "ClassEasily" }],
+  creator: "ClassEasily",
+  publisher: "ClassEasily",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "Classeasily - Discover Unique Local Experiences",
+    title: "ClassEasily - Discover Unique Local Experiences",
     description:
       "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
     images: [
@@ -45,17 +45,17 @@ export const metadata = {
         url: "https://i.imgur.com/biTTckW.png",
         width: 1200,
         height: 630,
-        alt: "Classeasily - Discover Local Experiences",
+        alt: "ClassEasily - Discover Local Experiences",
       },
     ],
     url: "https://classeasily.com",
-    siteName: "Classeasily",
+    siteName: "ClassEasily",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Classeasily - Discover Unique Local Experiences",
+    title: "ClassEasily - Discover Unique Local Experiences",
     description:
       "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
     images: ["https://i.imgur.com/biTTckW.png"],
@@ -63,7 +63,7 @@ export const metadata = {
   },
   manifest: "/favicon/site.webmanifest",
   appleWebApp: {
-    title: "Classeasily",
+    title: "ClassEasily",
     statusBarStyle: "default",
     capable: true,
   },

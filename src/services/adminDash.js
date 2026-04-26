@@ -1238,6 +1238,28 @@ export const classManagementService = {
     }
   },
 
+  bulkAssignCollectionClasses: async (collectionId, classIds) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/collections/${collectionId}/bulk-assign-classes/`,
+        { class_ids: classIds },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        `Error bulk-assigning classes to collection ${collectionId}:`,
+        error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to assign classes",
+      };
+    }
+  },
+
   deleteCollection: async (id) => {
     try {
       await axiosInstance.delete(`/admin/collections/${id}/`);

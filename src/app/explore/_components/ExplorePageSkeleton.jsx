@@ -66,7 +66,7 @@ const FallbackLogoIcon = ({ color = "#ff3562" }) => (
     viewBox="0 0 64.81 105.86"
     fill={color}
     role="img"
-    aria-label="Classeasily Logo"
+    aria-label="ClassEasily Logo"
     style={{ width: "100%", height: "100%", flexShrink: 0 }}
   >
     <circle cx="64" cy="30" r="4" fill={color} />
@@ -588,7 +588,7 @@ export function ExploreHeaderSkeleton() {
   return (
     <HeaderWrapper>
       {/* 1. Logo – same as homepage Header.jsx: solid icon #ff3562 */}
-      <LogoPlaceholderWrapper href="/" aria-label="Classeasily home">
+      <LogoPlaceholderWrapper href="/" aria-label="ClassEasily home">
         <FallbackLogoIcon color="#ff3562" />
       </LogoPlaceholderWrapper>
 

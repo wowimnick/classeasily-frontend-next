@@ -40,7 +40,7 @@ export async function generateMetadata({ params }) {
 
   if (!businessData) {
     return {
-      title: "Business Not Found | Classeasily",
+      title: "Business Not Found | ClassEasily",
       description: "The requested business could not be found.",
     };
   }
@@ -57,7 +57,7 @@ export async function generateMetadata({ params }) {
     businessDescription?.substring(0, 160) ||
     `Explore classes and reviews for ${businessName} in ${businessCity}, ${businessState}.`;
 
-  const pageTitle = `${businessName} - Classes in ${businessCity} | Classeasily`;
+  const pageTitle = `${businessName} - Classes in ${businessCity} | ClassEasily`;
 
   return {
     title: pageTitle,

@@ -11,7 +11,7 @@ const LogoIcon = ({
   isScrolled = false,
   restingColor = "#fff",
   activeColor = "#ff385c",
-  ariaLabel = "Classeasily Logo",
+  ariaLabel = "ClassEasily logo",
 }) => {
   const color = isScrolled ? activeColor : restingColor;
 

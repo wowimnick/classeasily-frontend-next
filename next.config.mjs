@@ -375,9 +375,15 @@ const nextConfig = {
       "@reduxjs/toolkit",
     ],
 
-    // CSS optimization
-    optimizeCss: true,
-    cssChunking: "strict",
+    // NOTE: `optimizeCss` (Critters) was removed — it is deprecated and
+    // incompatible with App Router streaming. With `cacheComponents: true`
+    // the homepage uses PPR/streaming, and Critters caused the dev server
+    // to hang during hydration on `/`.
+    // See: https://github.com/vercel/next.js/discussions/59989
+    //
+    // `cssChunking` kept on default ("loose"). "strict" mode is known to
+    // ship non-deterministic CSS ordering in Turbopack (#89523) and is
+    // not needed for this app.
   },
 
   // React Compiler Support (stable in Next.js 16)

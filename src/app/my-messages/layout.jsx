@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "My Messages | Classeasily",
+  title: "My Messages | ClassEasily",
   description: "Your conversations with hosts.",
   robots: { index: false, follow: true },
 };

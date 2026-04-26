@@ -21,12 +21,17 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Minus,
-  Plus,
+  Sparkles,
 } from "lucide-react";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useSearch, SUGGESTED_AREAS, ICON_PALETTE } from "@/context/SearchContext";
+import {
+  useSearch,
+  SUGGESTED_AREAS,
+  ICON_PALETTE,
+  formatCollectionDisplayName,
+} from "@/context/SearchContext";
+import { collectionService } from "@/services/apiService";
 
 // Dynamic Imports
 const CustomUserMenu = dynamic(
@@ -167,6 +172,9 @@ const SearchFormWrapper = styled(motion.form)`
   height: 56px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   width: auto;
+  max-width: min(620px, calc(100vw - 280px));
+  /* Dropdown is absolutely positioned below — do not clip (clip only SearchPillRow). */
+  overflow: visible;
   z-index: 50;
 
   &:hover {
@@ -176,6 +184,16 @@ const SearchFormWrapper = styled(motion.form)`
   @media (max-width: 768px) {
     display: none;
   }
+`;
+
+const SearchPillRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border-radius: 100px;
+  overflow: hidden;
 `;
 
 const ActivePillBackground = styled(motion.div)`
@@ -261,10 +279,11 @@ const SearchCircleButton = styled(motion.button)`
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  margin-right: 8px;
-  margin-left: 8px;
+  margin-right: 10px;
+  margin-left: 4px;
   cursor: pointer;
   flex-shrink: 0;
+  align-self: center;
   z-index: 2;
   box-shadow: 0 2px 8px rgba(255, 56, 92, 0.2);
 `;
@@ -632,74 +651,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   );
 };
 
-// 2. Participants
-const ParticipantRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 8px 0;
-`;
-const CounterBtn = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid #d1d5db;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #374151;
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  &:hover:not(:disabled) {
-    border-color: #111;
-    color: #111;
-  }
-`;
-
-const CustomParticipant = ({ count, onChange }) => (
-  <ParticipantRow>
-    <div
-      style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
-    >
-      <span style={{ fontWeight: 600, color: "#111", fontSize: 16 }}>
-        Participants
-      </span>
-      <span style={{ fontSize: 13, color: "#717171" }}>Join the class</span>
-    </div>
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <CounterBtn
-        type="button"
-        disabled={count <= 1}
-        onClick={() => onChange(Math.max(1, count - 1))}
-      >
-        <Minus size={16} />
-      </CounterBtn>
-      <span
-        style={{
-          width: 24,
-          textAlign: "center",
-          fontWeight: 600,
-          fontSize: 16,
-        }}
-      >
-        {count}
-      </span>
-      <CounterBtn
-        type="button"
-        disabled={count >= 20}
-        onClick={() => onChange(count + 1)}
-      >
-        <Plus size={16} />
-      </CounterBtn>
-    </div>
-  </ParticipantRow>
-);
-
 // 3. Location List
 const LocationList = styled.div`
   display: flex;
@@ -714,10 +665,20 @@ const LocationOption = styled.div`
   padding: 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  background: ${(p) => (p.$isActive ? "#fff0f0" : "transparent")};
+  box-shadow: ${(p) =>
+    p.$isActive ? "inset 0 0 0 2px #f81e3e" : "none"};
   &:hover {
-    background: #f3f4f6;
+    background: ${(p) => (p.$isActive ? "#fff0f0" : "#f3f4f6")};
   }
+`;
+const ExploreCollectionSectionLabel = styled.div`
+  font-size: 12px;
+  font-weight: 700;
+  color: #999;
+  margin-bottom: 8px;
+  text-align: left;
 `;
 const IconBox = styled.div`
   width: 38px;
@@ -761,7 +722,7 @@ const MobileSearchTrigger = styled.div`
 const POPUP_SIZES = {
   location: 380,
   date: 660,
-  participants: 340,
+  collection: 400,
 };
 
 const contentVariants = {
@@ -774,7 +735,10 @@ const contentVariants = {
 //  MAIN COMPONENT
 // ------------------------------------------------------------------------
 
-function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
+function ExploreHeaderContent({
+  showOptionsWrapper = true,
+  isFixed = true,
+}) {
   const router = useRouter();
   const { user: currentUser } = useAuthUser();
   const menuTriggerRef = useRef(null);
@@ -790,8 +754,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     setSearchTerm,
     datePickerValue,
     setDatePickerValue,
-    participantCount,
-    setParticipantCount,
+    selectedCollection,
+    setSelectedCollection,
     geocodedAddressResults,
     handleLocationChange,
     handleLocationSelect,
@@ -801,14 +765,30 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
 
   // Search Interaction State
   const [activeField, setActiveField] = useState(null);
+  const [iWantCollections, setIWantCollections] = useState([]);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 360 });
   const containerRef = useRef(null);
   const locationRef = useRef(null);
   const dateRef = useRef(null);
-  const participantsRef = useRef(null);
+  const collectionRef = useRef(null);
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await collectionService.listByPlacement("i_want");
+        if (!cancelled) setIWantCollections(rows);
+      } catch {
+        if (!cancelled) setIWantCollections([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const closeActiveField = useCallback(() => setActiveField(null), []);
@@ -823,7 +803,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       const refs = {
         location: locationRef,
         date: dateRef,
-        participants: participantsRef,
+        collection: collectionRef,
       };
       const targetRef = refs[activeField];
 
@@ -992,6 +972,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
               layout
               style={{ visibility: isMounted ? "visible" : "hidden" }}
             >
+              <SearchPillRow>
               {/* 1. LOCATION */}
               <SectionButton
                 ref={locationRef}
@@ -1047,29 +1028,31 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
 
               <Divider
                 $isHidden={
-                  activeField === "date" || activeField === "participants"
+                  activeField === "date" || activeField === "collection"
                 }
               />
 
-              {/* 3. WHO */}
+              {/* 3. I want… */}
               <SectionButton
-                ref={participantsRef}
-                $isActive={activeField === "participants"}
-                onClick={() => handleFieldClick("participants")}
-                onKeyDown={(e) => handleSectionButtonKeyDown(e, "participants")}
-                style={{ width: 130 }}
+                ref={collectionRef}
+                $isActive={activeField === "collection"}
+                onClick={() => handleFieldClick("collection")}
+                onKeyDown={(e) => handleSectionButtonKeyDown(e, "collection")}
+                style={{ width: 150 }}
               >
-                {activeField === "participants" && (
+                {activeField === "collection" && (
                   <ActivePillBackground
                     layoutId="header-pill"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <FieldLabel>Who</FieldLabel>
-                <ValueDisplay $hasValue={true}>
-                  {participantCount === 1
-                    ? "1 Person"
-                    : `${participantCount} People`}
+                <FieldLabel>I want…</FieldLabel>
+                <ValueDisplay $hasValue={!!selectedCollection}>
+                  {selectedCollection
+                    ? formatCollectionDisplayName(
+                        selectedCollection.name || selectedCollection.slug,
+                      )
+                    : "Anything"}
                 </ValueDisplay>
               </SectionButton>
 
@@ -1078,10 +1061,10 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 type="submit"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                layout
               >
                 <Search size={18} strokeWidth={3} />
               </SearchCircleButton>
+              </SearchPillRow>
 
               {/* --- POPUP CONTAINER --- */}
               <AnimatePresence>
@@ -1131,14 +1114,112 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                             <CustomCalendar
                               value={datePickerValue}
                               onChange={setDatePickerValue}
-                              onClose={() => handleFieldClick("participants")}
+                              onClose={closeActiveField}
                             />
                           )}
-                          {activeField === "participants" && (
-                            <CustomParticipant
-                              count={Math.max(1, participantCount)}
-                              onChange={setParticipantCount}
-                            />
+                          {activeField === "collection" && (
+                            <>
+                              <ExploreCollectionSectionLabel>
+                                SUGGESTED
+                              </ExploreCollectionSectionLabel>
+                              <LocationList>
+                                <LocationOption
+                                  key="__any__"
+                                  $isActive={!selectedCollection}
+                                  onClick={() => {
+                                    setSelectedCollection(null);
+                                    closeActiveField();
+                                  }}
+                                >
+                                  <IconBox
+                                    $bgColor={ICON_PALETTE[0].bg}
+                                    $iconColor={ICON_PALETTE[0].icon}
+                                  >
+                                    <Sparkles size={18} strokeWidth={2.5} />
+                                  </IconBox>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      textAlign: "left",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontWeight: 600,
+                                        fontSize: 14,
+                                        color: "#111",
+                                      }}
+                                    >
+                                      Any experience
+                                    </span>
+                                    <span
+                                      style={{ fontSize: 12, color: "#717171" }}
+                                    >
+                                      Show all categories
+                                    </span>
+                                  </div>
+                                </LocationOption>
+                                {iWantCollections.map((c, idx) => {
+                                  const active =
+                                    selectedCollection?.slug === c.slug;
+                                  const title = formatCollectionDisplayName(
+                                    c.name || c.slug,
+                                  );
+                                  const theme =
+                                    ICON_PALETTE[idx % ICON_PALETTE.length];
+                                  const secondary =
+                                    (c.description &&
+                                      String(c.description).trim()) ||
+                                    "Curated experiences";
+                                  return (
+                                    <LocationOption
+                                      key={c.id ?? c.slug}
+                                      $isActive={active}
+                                      onClick={() => {
+                                        setSelectedCollection({
+                                          slug: c.slug,
+                                          name: c.name || title,
+                                        });
+                                        closeActiveField();
+                                      }}
+                                    >
+                                      <IconBox
+                                        $bgColor={theme.bg}
+                                        $iconColor={theme.icon}
+                                      >
+                                        <Sparkles size={18} strokeWidth={2.5} />
+                                      </IconBox>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          textAlign: "left",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontWeight: 600,
+                                            fontSize: 14,
+                                            color: "#111",
+                                          }}
+                                        >
+                                          {title}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 12,
+                                            color: "#717171",
+                                          }}
+                                        >
+                                          {secondary}
+                                        </span>
+                                      </div>
+                                    </LocationOption>
+                                  );
+                                })}
+                              </LocationList>
+                            </>
                           )}
                         </motion.div>
                       </AnimatePresence>

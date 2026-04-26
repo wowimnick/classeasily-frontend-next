@@ -39,7 +39,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Welcome to Classeasily! Getting your business up and running as a Host is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
+            text: "Welcome to ClassEasily! Getting your business up and running as a Host is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
           },
           { type: "h3", text: "1. Connect Stripe for Payouts" },
           {
@@ -91,7 +91,7 @@ export const helpCenterData = [
           },
           {
             type: "p",
-            text: "Click <strong>Setup Payouts</strong>. You will be redirected to Stripe's secure site. Classeasily does not store your bank or card details—Stripe handles everything. Complete the steps on Stripe, then return to your dashboard. Your status will sync automatically (you may see a short 'Synchronizing account status' message).",
+            text: "Click <strong>Setup Payouts</strong>. You will be redirected to Stripe's secure site. ClassEasily does not store your bank or card details—Stripe handles everything. Complete the steps on Stripe, then return to your dashboard. Your status will sync automatically (you may see a short 'Synchronizing account status' message).",
           },
           { type: "h3", text: "Payout Account Statuses" },
           {
@@ -212,15 +212,15 @@ export const helpCenterData = [
           { type: "h3", text: "Marketplace vs. widget email branding" },
           {
             type: "p",
-            text: "Classeasily sends emails for two types of bookings: those from the <strong>marketplace</strong> (Guests who found you on Classeasily) and those from your <strong>widget</strong> (Guests who booked on your own website). You can set different branding for each.",
+            text: "ClassEasily sends emails for two types of bookings: those from the <strong>marketplace</strong> (Guests who found you on ClassEasily) and those from your <strong>widget</strong> (Guests who booked on your own website). You can set different branding for each.",
           },
           {
             type: "p",
-            text: "<strong>Marketplace email branding</strong> applies to all emails for bookings made through the Classeasily discovery site. You can customize it when you have the Marketplace email branding add-on (subscribed from Plan & Billing).",
+            text: "<strong>Marketplace email branding</strong> applies to all emails for bookings made through the ClassEasily discovery site. You can customize it when you have the Marketplace email branding add-on (subscribed from Plan & Billing).",
           },
           {
             type: "p",
-            text: "<strong>Widget email branding</strong> applies only to emails for bookings made through your embedded booking widget. This option is available only on a <strong>Growth</strong> or <strong>Advanced</strong> widget plan. On the Basic widget plan, widget booking emails use your marketplace email branding (if you have the add-on); otherwise they use default Classeasily styling.",
+            text: "<strong>Widget email branding</strong> applies only to emails for bookings made through your embedded booking widget. This option is available only on a <strong>Growth</strong> or <strong>Advanced</strong> widget plan. On the Basic widget plan, widget booking emails use your marketplace email branding (if you have the add-on); otherwise they use default ClassEasily styling.",
           },
           {
             type: "blockquote",
@@ -376,7 +376,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Moving from another system? You can bulk import your existing guest list into Classeasily using a CSV or Excel file.",
+            text: "Moving from another system? You can bulk import your existing guest list into ClassEasily using a CSV or Excel file.",
           },
           { type: "h3", text: "How to Import" },
           {
@@ -459,7 +459,7 @@ export const helpCenterData = [
             items: [
               "<strong>Gross Revenue:</strong> Total money paid by Guests (before fees/taxes).",
               "<strong>Net Revenue:</strong> The actual amount you take home.",
-              "<strong>Platform Fees:</strong> The service fee charged by Classeasily (includes credit card processing costs).",
+              "<strong>Platform Fees:</strong> The service fee charged by ClassEasily (includes credit card processing costs).",
             ],
           },
           { type: "h3", text: "Exporting Data" },
@@ -627,7 +627,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "The Classeasily booking widget lets you embed a full booking flow on your own website. Guests can browse classes, choose dates, add options, and pay without leaving your site. This article explains all widget functions and customization options.",
+            text: "The ClassEasily booking widget lets you embed a full booking flow on your own website. Guests can browse classes, choose dates, add options, and pay without leaving your site. This article explains all widget functions and customization options.",
           },
           { type: "h3", text: "Display modes" },
           {
@@ -725,7 +725,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Adding the Classeasily booking widget to your website takes a few minutes. You will copy a small piece of code from your dashboard and paste it into your site. This guide tells you what to do first so everything works the first time.",
+            text: "Adding the ClassEasily booking widget to your website takes a few minutes. You will copy a small piece of code from your dashboard and paste it into your site. This guide tells you what to do first so everything works the first time.",
           },
           { type: "h3", text: "Step 1: Choose your display mode" },
           {
@@ -742,7 +742,7 @@ export const helpCenterData = [
           { type: "h3", text: "Step 2: Add your website to the allowed list" },
           {
             type: "p",
-            text: "Before you paste the code on your site, you must tell Classeasily which website is allowed to show your widget. This keeps your widget secure.",
+            text: "Before you paste the code on your site, you must tell ClassEasily which website is allowed to show your widget. This keeps your widget secure.",
           },
           {
             type: "ol",
@@ -827,7 +827,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Same page:</strong> <code>onclick=\"ClasseasilyWidget.openMembership('your-plan-id')\"</code>",
+              "<strong>Same page:</strong> <code>onclick=\"openClasseasilyMembership('your-plan-id')\"</code>",
               "<strong>From an iframe (e.g. Wix embed):</strong> <code>onclick=\"window.parent.openClasseasilyMembership('your-plan-id')\"</code>",
             ],
           },
@@ -860,13 +860,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Add your Classeasily booking form to any page or post using the block editor’s <strong>Custom HTML</strong> block. You copy the code from your Classeasily dashboard and paste it into that block.",
+            text: "Add your ClassEasily booking form to any page or post using the block editor’s <strong>Custom HTML</strong> block. You copy the code from your ClassEasily dashboard and paste it into that block.",
           },
           { type: "h3", text: "Block editor (Gutenberg)" },
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
               "In WordPress, edit the page or post where you want the form.",
               "Click the <strong>+</strong> (Block Inserter), search for <strong>Custom HTML</strong>, and add that block. You can also type <code>/html</code> in a new block and press Enter to insert it quickly.",
               "Paste the code you copied into the Custom HTML block.",
@@ -880,7 +880,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your site address (e.g. <code>https://yoursite.com</code>) under <strong>Widget → Allowed Domains</strong> in Classeasily before testing. If the form doesn’t show, clear your site cache and try again.",
+            text: "Add your site address (e.g. <code>https://yoursite.com</code>) under <strong>Widget → Allowed Domains</strong> in ClassEasily before testing. If the form doesn’t show, clear your site cache and try again.",
           },
         ],
       },
@@ -905,7 +905,7 @@ export const helpCenterData = [
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose <strong>Inline</strong>, and copy the embed code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose <strong>Inline</strong>, and copy the embed code.",
               "In Wix: <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong>. Paste the code into the embed.",
               "Place the embed where you want the form (e.g. in a section or sidebar). Don’t hide it — leave it visible so the form shows.",
               "Click <strong>Publish</strong>.",
@@ -913,7 +913,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, try clearing your browser cache or a private window.",
+            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) under <strong>Widget → Allowed Domains</strong> in ClassEasily. If the form doesn’t show, try clearing your browser cache or a private window.",
           },
           { type: "h3", text: "Option 2: Popup (button opens full-screen form) — paid Wix plan only" },
           {
@@ -924,7 +924,7 @@ export const helpCenterData = [
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose <strong>Popup</strong>, and copy the code snippet (one script line with your key).",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose <strong>Popup</strong>, and copy the code snippet (one script line with your key).",
               "In Wix: <strong>Settings</strong> → <strong>Custom Code</strong> → <strong>+ Add Code</strong>. Paste that snippet. Set <strong>Placement</strong> to <strong>Body - end</strong> and where to load it (e.g. All pages). Save.",
               "Add your button. If you use an <strong>HTML embed</strong> for the button: paste the button code from the dashboard (or use the example below). If you use a <strong>Wix button</strong> with Dev Mode (Velo), you can connect the click to open the form — see the dashboard for the exact line to run.",
               "Click <strong>Publish</strong>.",
@@ -940,7 +940,7 @@ export const helpCenterData = [
           },
           {
             type: "p",
-            text: "Add your Wix site URL to <strong>Allowed Domains</strong> in Classeasily (Widget settings). If the popup doesn’t open, clear cache or try a private window.",
+            text: "Add your Wix site URL to <strong>Allowed Domains</strong> in ClassEasily (Widget settings). If the popup doesn’t open, clear cache or try a private window.",
           },
         ],
       },
@@ -950,13 +950,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Add your booking form to any Squarespace page using a <strong>Code</strong> block. You copy the code from your Classeasily dashboard and paste it into the block.",
+            text: "Add your booking form to any Squarespace page using a <strong>Code</strong> block. You copy the code from your ClassEasily dashboard and paste it into the block.",
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
               "In Squarespace, click <strong>Edit</strong> on the page where you want the form. Click the <strong>+</strong> (add block) and select <strong>Code</strong> from the content blocks.",
               "Double-click the Code block (or click the pencil icon) to open it, then paste your code and save the block.",
               "Save the page and <strong>Publish</strong> your site.",
@@ -972,7 +972,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your site address (e.g. <code>https://yoursite.squarespace.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, clear your cache and try again.",
+            text: "Add your site address (e.g. <code>https://yoursite.squarespace.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in ClassEasily. If the form doesn’t show, clear your cache and try again.",
           },
         ],
       },
@@ -982,13 +982,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Add your booking form to any Webflow page using the <strong>Code Embed</strong> element. You copy the code from your Classeasily dashboard and paste it into the embed. Code Embed requires a Core, Growth, Agency, or Freelancer Workspace, or an active Site plan.",
+            text: "Add your booking form to any Webflow page using the <strong>Code Embed</strong> element. You copy the code from your ClassEasily dashboard and paste it into the embed. Code Embed requires a Core, Growth, Agency, or Freelancer Workspace, or an active Site plan.",
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
               "In Webflow, open the page where you want the form. Open the <strong>Add</strong> panel and drag a <strong>Code Embed</strong> element onto the canvas where the form should appear.",
               "Paste your code into the Code Embed modal. Don’t include <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, or <code>&lt;body&gt;</code> tags — just the code from the dashboard.",
               "Click <strong>Save and Close</strong>, then <strong>Publish</strong> your site so the form goes live.",
@@ -996,7 +996,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your site address (e.g. <code>https://yoursite.webflow.io</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, clear cache and try again. Custom code only appears after you publish; preview may show a placeholder.",
+            text: "Add your site address (e.g. <code>https://yoursite.webflow.io</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in ClassEasily. If the form doesn’t show, clear cache and try again. Custom code only appears after you publish; preview may show a placeholder.",
           },
         ],
       },
@@ -1006,13 +1006,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Add your booking form to a Shopify page (e.g. “Book a class”). You’ll paste the code from your Classeasily dashboard into a place that accepts custom HTML — either the page editor (if your theme supports it) or the theme code editor.",
+            text: "Add your booking form to a Shopify page (e.g. “Book a class”). You’ll paste the code from your ClassEasily dashboard into a place that accepts custom HTML — either the page editor (if your theme supports it) or the theme code editor.",
           },
           { type: "h3", text: "Option 1: Page with HTML (simplest when available)" },
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
               "In Shopify admin go to <strong>Online Store</strong> → <strong>Pages</strong>. Create a new page or edit one (e.g. “Book a class”).",
               "In the page content area, if you see a <strong>Show HTML</strong> button or a section that allows custom HTML, paste the code there and save. Add the page to your navigation if you want it in the menu.",
             ],
@@ -1028,7 +1028,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your store address (e.g. <code>https://yourstore.myshopify.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. Clear cache after adding the code.",
+            text: "Add your store address (e.g. <code>https://yourstore.myshopify.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in ClassEasily. Clear cache after adding the code.",
           },
         ],
       },
@@ -1044,7 +1044,7 @@ export const helpCenterData = [
           {
             type: "ol",
             items: [
-              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In your ClassEasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
               "Go to your GoDaddy <strong>product page</strong>, find your site under Websites + Marketing, and click <strong>Manage</strong>.",
               "Open the page and the spot where you want the form (e.g. a section). Click <strong>Add a section</strong>, search for <strong>HTML</strong>, and select <strong>Add</strong>.",
               "Paste your code into the <strong>Custom Code</strong> field. You can leave the section title and other options as is, or customize them. Leave <strong>Forced Height</strong> blank so the form can size itself.",
@@ -1057,7 +1057,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Add your site address under <strong>Widget → Allowed Domains</strong> in Classeasily before testing. If the form doesn’t show, clear cache and try again.",
+            text: "Add your site address under <strong>Widget → Allowed Domains</strong> in ClassEasily before testing. If the form doesn’t show, clear cache and try again.",
           },
         ],
       },
@@ -1067,13 +1067,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Most website builders let you add a block or section for “Custom HTML”, “Embed”, or “Code”. Use that to add your Classeasily booking form.",
+            text: "Most website builders let you add a block or section for “Custom HTML”, “Embed”, or “Code”. Use that to add your ClassEasily booking form.",
           },
           { type: "h3", text: "What you need" },
           {
             type: "ul",
             items: [
-              "The code from your Classeasily dashboard (go to <strong>Widget</strong>, choose Inline or Popup, and copy the code).",
+              "The code from your ClassEasily dashboard (go to <strong>Widget</strong>, choose Inline or Popup, and copy the code).",
               "A spot on your site that accepts custom HTML, embed, or code (usually when editing a page or section).",
             ],
           },
@@ -1081,7 +1081,7 @@ export const helpCenterData = [
           {
             type: "ol",
             items: [
-              "In Classeasily, add your website address under <strong>Widget → Allowed Domains</strong> and save.",
+              "In ClassEasily, add your website address under <strong>Widget → Allowed Domains</strong> and save.",
               "Copy the code from the dashboard. Don’t change or shorten it — paste the whole thing.",
               "Paste it into the custom HTML / embed / code area where you want the form to appear.",
               "Save and publish your page or site.",

@@ -1,4 +1,4 @@
-# Classeasily
+# ClassEasily
 
 > Discover and book local workshops, classes, and experiences. Hosts list verified offerings; guests search by location and book online.
 
@@ -13,4 +13,4 @@
 
 ## Suggested citation
 
-Classeasily — local class and experience marketplace at https://classeasily.com
+ClassEasily — local class and experience marketplace at https://classeasily.com

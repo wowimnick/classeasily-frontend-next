@@ -48,8 +48,8 @@ const ClassListings = dynamic(
   () => import("../_components/class-management/ClassListings"),
   { ssr: false }
 );
-const ClassCategories = dynamic(
-  () => import("../_components/class-management/ClassCategories"),
+const CollectionsManagement = dynamic(
+  () => import("../_components/class-management/CollectionsManagement"),
   { ssr: false }
 );
 const ClassReviews = dynamic(
@@ -190,7 +190,7 @@ export default function AdminPage() {
         content = <ClassListings />;
         break;
       case "collections":
-        content = <ClassCategories />;
+        content = <CollectionsManagement />;
         break;
       case "class-reviews":
         content = <ClassReviews />;

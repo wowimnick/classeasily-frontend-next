@@ -16,9 +16,6 @@ const SubscriptionContext = createContext({
   loading: true,
   error: null,
   refetch: () => {},
-  subscribe: async () => ({ success: false }),
-  cancel: async () => ({ success: false }),
-  reactivate: async () => ({ success: false }),
   canManageSubscription: false,
 });
 
@@ -91,60 +88,6 @@ export function SubscriptionProvider({ children }) {
     refetch();
   }, [refetch]);
 
-  const subscribe = useCallback(
-    async (planId) => {
-      try {
-        const result = await businessService.subscribeWidgetPlan(planId);
-        if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
-          setSubscription(result.data.subscription);
-          await refetch();
-        }
-        return result;
-      } catch (e) {
-        await refetch();
-        return {
-          success: false,
-          error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
-        };
-      }
-    },
-    [refetch],
-  );
-
-  const cancel = useCallback(async () => {
-    try {
-      const result = await businessService.cancelWidgetSubscription();
-      if (result.success && result.data?.subscription) {
-        setSubscription(result.data.subscription);
-        await refetch();
-      }
-      return result;
-    } catch (e) {
-      await refetch();
-      return {
-        success: false,
-        error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
-      };
-    }
-  }, [refetch]);
-
-  const reactivate = useCallback(async () => {
-    try {
-      const result = await businessService.reactivateWidgetSubscription();
-      if (result.success && result.data?.subscription) {
-        setSubscription(result.data.subscription);
-        await refetch();
-      }
-      return result;
-    } catch (e) {
-      await refetch();
-      return {
-        success: false,
-        error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
-      };
-    }
-  }, [refetch]);
-
   const value = useMemo(
     () => ({
       subscription,
@@ -158,9 +101,6 @@ export function SubscriptionProvider({ children }) {
       loading,
       error,
       refetch,
-      subscribe,
-      cancel,
-      reactivate,
       canManageSubscription,
     }),
     [
@@ -175,9 +115,6 @@ export function SubscriptionProvider({ children }) {
       loading,
       error,
       refetch,
-      subscribe,
-      cancel,
-      reactivate,
       canManageSubscription,
     ],
   );

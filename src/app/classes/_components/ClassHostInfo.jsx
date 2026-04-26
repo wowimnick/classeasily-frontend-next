@@ -169,7 +169,7 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
     const { founding_year, createdAt, businessName, total_reviews_count } =
       businessData;
     let tenureValue = "New";
-    let tenureLabel = "on Classeasily";
+    let tenureLabel = "on ClassEasily";
     if (createdAt) {
       const registrationDate = new Date(createdAt);
       const diffTime = Date.now() - registrationDate.getTime();
@@ -252,7 +252,7 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
             <HostName>{hostDisplayName}</HostName>
             <HostMeta>
               <Building2 size={14} />
-              {foundingYearDisplay || "Host on Classeasily"}
+              {foundingYearDisplay || "Host on ClassEasily"}
             </HostMeta>
           </HostMain>
         </HostRow>

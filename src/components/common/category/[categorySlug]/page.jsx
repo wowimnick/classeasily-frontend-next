@@ -27,26 +27,26 @@ export async function generateMetadata({ params }) {
 
   if (!category) {
     return {
-      title: "Category Not Found | Classeasily Blog",
+      title: "Category Not Found | ClassEasily Blog",
       description: "The category you're looking for could not be found.",
     };
   }
 
   return {
-    title: `${category.name} | Classeasily Blog`,
-    description: `Browse ${category.name} articles on the Classeasily Blog. Expert insights for learners and instructors.`,
+    title: `${category.name} | ClassEasily Blog`,
+    description: `Browse ${category.name} articles on the ClassEasily Blog. Expert insights for learners and instructors.`,
     keywords: `${category.name}, blog, education, learning`,
     openGraph: {
-      title: `${category.name} | Classeasily Blog`,
-      description: `Browse ${category.name} articles on the Classeasily Blog.`,
+      title: `${category.name} | ClassEasily Blog`,
+      description: `Browse ${category.name} articles on the ClassEasily Blog.`,
       type: "website",
       url: `https://classeasily.com/blog/category/${category.slug}`,
-      siteName: "Classeasily",
+      siteName: "ClassEasily",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${category.name} | Classeasily Blog`,
-      description: `Browse ${category.name} articles on the Classeasily Blog.`,
+      title: `${category.name} | ClassEasily Blog`,
+      description: `Browse ${category.name} articles on the ClassEasily Blog.`,
     },
     alternates: {
       canonical: `https://classeasily.com/blog/category/${category.slug}`,

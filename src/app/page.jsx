@@ -68,23 +68,23 @@ import HomepageConversationOverlayClient from "./(homepage)/_components/Homepage
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
-  title: "Classeasily - Find Local Classes & Experiences Near You",
+  title: "ClassEasily - Find Local Classes & Experiences Near You",
   description:
-    "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+    "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Classeasily - Find Local Classes & Experiences Near You",
+    title: "ClassEasily - Find Local Classes & Experiences Near You",
     description:
-      "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+      "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
     type: "website",
     images: [
       {
         url: "https://i.imgur.com/biTTckW.png",
         width: 1200,
         height: 630,
-        alt: "Classeasily - Discover local experiences",
+        alt: "ClassEasily - Discover local experiences",
       },
     ],
   },
@@ -100,10 +100,10 @@ export default async function HomePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Classeasily",
+    name: "ClassEasily",
     url: "https://classeasily.com",
     description:
-      "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+      "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
     potentialAction: {
       "@type": "SearchAction",
       target: "https://classeasily.com/explore?query={search_term_string}",
@@ -117,10 +117,10 @@ export default async function HomePage() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "What is Classeasily?",
+        name: "What is ClassEasily?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Classeasily is a marketplace to discover and book local workshops, classes, and experiences near you. Guests browse verified hosts; hosts list schedules, take bookings, and get paid through the platform.",
+          text: "ClassEasily is a marketplace to discover and book local workshops, classes, and experiences near you. Guests browse verified hosts; hosts list schedules, take bookings, and get paid through the platform.",
         },
       },
       {
@@ -133,10 +133,10 @@ export default async function HomePage() {
       },
       {
         "@type": "Question",
-        name: "How can I host classes on Classeasily?",
+        name: "How can I host classes on ClassEasily?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Register your business at classeasily.com/business, complete verification, then create class listings with schedules. Classeasily handles discovery, booking, and payments.",
+          text: "Register your business at classeasily.com/business, complete verification, then create class listings with schedules. ClassEasily handles discovery, booking, and payments.",
         },
       },
     ],
