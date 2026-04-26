@@ -1,6 +1,5 @@
-"use client";
-
-import FooterClient from "@/components/homepage/FooterClient";
+import { Suspense } from "react";
+import Footer from "@/components/homepage/Footer";
 import CorporateAboveFaqRedesign from "./_components/CorporateAboveFaqRedesign";
 import CorporateFAQ from "./_components/CorporateFAQ";
 import InquiryForm from "./_components/InquiryForm";
@@ -11,14 +10,19 @@ export default function CorporatePageClient() {
     <div style={{ background: "#fff", minHeight: "100vh" }}>
       <ExploreHeader showOptionsWrapper={false} />
       <main>
-        <CorporateAboveFaqRedesign />
-        <InquiryForm />
-        <CorporateFAQ />
-
+        <Suspense fallback={<div style={{ minHeight: "520px", background: "#fff" }} aria-hidden />}>
+          <CorporateAboveFaqRedesign />
+        </Suspense>
+        <Suspense fallback={<div style={{ minHeight: "420px", background: "#fff" }} aria-hidden />}>
+          <InquiryForm />
+        </Suspense>
+        <Suspense fallback={<div style={{ minHeight: "320px", background: "#fff" }} aria-hidden />}>
+          <CorporateFAQ />
+        </Suspense>
       </main>
-      {/* FooterClient only: the async Footer server component pulls homepage-content and
-          must not live under this client tree (it re-fetches from the browser and can 429). */}
-      <FooterClient />
+      <Suspense fallback={<div style={{ minHeight: "220px", background: "#fff" }} aria-hidden />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

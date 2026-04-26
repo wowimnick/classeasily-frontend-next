@@ -1,5 +1,5 @@
-import { Suspense } from "react";
-import CorporatePageGate from "./CorporatePageGate";
+import CorporatePageClient from "./CorporatePageClient";
+import { cacheLife } from "next/cache";
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
@@ -58,20 +58,17 @@ const jsonLd = [
   },
 ];
 
-export default function CorporatePage() {
+export default async function CorporatePage() {
+  "use cache";
+  cacheLife("max");
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Suspense
-        fallback={
-          <div style={{ minHeight: "100vh", background: "#fff" }} aria-hidden />
-        }
-      >
-        <CorporatePageGate />
-      </Suspense>
+      <CorporatePageClient />
     </>
   );
 }
