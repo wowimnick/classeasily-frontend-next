@@ -115,6 +115,11 @@ export function formatCollectionDisplayName(raw) {
   if (raw == null) return "";
   const s = String(raw).trim();
   if (!s) return "";
+  const looksSlugLike = /[-_]/.test(s);
+  if (!looksSlugLike) {
+    // Preserve editorial casing (e.g., DIY, 2SLGBTQ+, iPhone) for admin-provided names.
+    return s.replace(/\s+/g, " ");
+  }
   return s
     .replace(/[-_]+/g, " ")
     .split(/\s+/)

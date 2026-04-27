@@ -796,19 +796,23 @@ const UniversalEditDrawer = ({
             />
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label={<FormLabel>Homepage description</FormLabel>}
-            rules={[{ required: true, message: "A description is required." }]}
-          >
-            <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-              Shown on the homepage and explore where this collection appears.
-            </FormHelpText>
-            <Input.TextArea
-              rows={3}
-              placeholder="e.g., Unleash your inner creative genius with our art classes"
-              style={{ resize: "none" }}
-            />
+          <Form.Item label={<FormLabel>Homepage description</FormLabel>}>
+            <>
+              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
+                Shown on the homepage and explore where this collection appears.
+              </FormHelpText>
+              <Form.Item
+                name="description"
+                rules={[{ required: true, message: "A description is required." }]}
+                noStyle
+              >
+                <Input.TextArea
+                  rows={3}
+                  placeholder="e.g., Unleash your inner creative genius with our art classes"
+                  style={{ resize: "none" }}
+                />
+              </Form.Item>
+            </>
           </Form.Item>
 
           <Form.Item
@@ -853,49 +857,54 @@ const UniversalEditDrawer = ({
             Placement toggles control where this collection appears. The publish
             toggle in the next section acts as a master on/off switch.
           </FormHelpText>
-          <Form.Item
-            name="search_aliases"
-            label={<FormLabel>Search aliases</FormLabel>}
-            normalize={(value) =>
-              (value || [])
-                .map((t) => String(t).toLowerCase().trim())
-                .filter(Boolean)
-            }
-          >
-            <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-              Tokens that map this collection to keyword search (e.g. pottery,
-              pizza).
-            </FormHelpText>
-            <Select
-              mode="tags"
-              size="large"
-              style={{ width: "100%" }}
-              placeholder="Type and press Enter — e.g. pottery, ceramics"
-              tokenSeparators={[","]}
-            />
+          <Form.Item label={<FormLabel>Search aliases</FormLabel>}>
+            <>
+              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
+                Tokens that map this collection to keyword search (e.g. pottery,
+                pizza).
+              </FormHelpText>
+              <Form.Item
+                name="search_aliases"
+                normalize={(value) =>
+                  (value || [])
+                    .map((t) => String(t).toLowerCase().trim())
+                    .filter(Boolean)
+                }
+                noStyle
+              >
+                <Select
+                  mode="tags"
+                  size="large"
+                  style={{ width: "100%" }}
+                  placeholder="Type and press Enter — e.g. pottery, ceramics"
+                  tokenSeparators={[","]}
+                />
+              </Form.Item>
+            </>
           </Form.Item>
 
-          <Form.Item
-            name="icon_name"
-            label={<FormLabel>Collection icon</FormLabel>}
-          >
-            <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-              Search valid Lucide icons and preview before saving.
-            </FormHelpText>
-            <Select
-              allowClear
-              showSearch
-              size="large"
-              placeholder="Search icons (e.g. palette, utensils)"
-              options={iconOptions}
-              filterOption={false}
-              onSearch={setIconSearchQuery}
-              onChange={(value) => {
-                const normalized = normalizeLucideIconName(value);
-                form.setFieldValue("icon_name", normalized || "");
-              }}
-              notFoundContent="No matching Lucide icon"
-            />
+          <Form.Item label={<FormLabel>Collection icon</FormLabel>}>
+            <>
+              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
+                Search valid Lucide icons and preview before saving.
+              </FormHelpText>
+              <Form.Item name="icon_name" noStyle>
+                <Select
+                  allowClear
+                  showSearch
+                  size="large"
+                  placeholder="Search icons (e.g. palette, utensils)"
+                  options={iconOptions}
+                  filterOption={false}
+                  onSearch={setIconSearchQuery}
+                  onChange={(value) => {
+                    const normalized = normalizeLucideIconName(value);
+                    form.setFieldValue("icon_name", normalized || "");
+                  }}
+                  notFoundContent="No matching Lucide icon"
+                />
+              </Form.Item>
+            </>
           </Form.Item>
 
           <div
