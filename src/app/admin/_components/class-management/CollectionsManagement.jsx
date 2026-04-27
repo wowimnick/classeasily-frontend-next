@@ -7,6 +7,9 @@ import {
   useMemo,
   useContext,
   createContext,
+  lazy,
+  memo,
+  Suspense,
 } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
@@ -52,11 +55,18 @@ import {
   CircleHelp,
   Search,
   X,
+  Box,
 } from "lucide-react";
 import debounce from "lodash/debounce";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { uploadService } from "@/services/apiService";
+import {
+  formatLucideIconLabel,
+  getLucideIconImporter,
+  normalizeLucideIconName,
+  searchLucideIcons,
+} from "@/lib/lucideIconCatalog";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import {
   bookingTheme,
@@ -106,6 +116,47 @@ const hexToRgba = (hex, alpha = 1) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+const iconPreviewCache = new Map();
+
+function getLazyIconPreview(iconKey) {
+  const normalizedKey = normalizeLucideIconName(iconKey);
+  if (!normalizedKey) return null;
+  if (!iconPreviewCache.has(normalizedKey)) {
+    const importer = getLucideIconImporter(normalizedKey);
+    iconPreviewCache.set(
+      normalizedKey,
+      lazy(async () => {
+        if (!importer) return { default: Box };
+        try {
+          const module = await importer();
+          return { default: module.default || Box };
+        } catch {
+          return { default: Box };
+        }
+      }),
+    );
+  }
+  return iconPreviewCache.get(normalizedKey);
+}
+
+const IconPreviewFallback = ({ size = 16, color = "#64748b" }) => (
+  <Box size={size} color={color} />
+);
+
+const IconPreview = memo(
+  ({ iconKey, size = 16, color = "#64748b", strokeWidth = 2.2 }) => {
+    const LazyIcon = useMemo(() => getLazyIconPreview(iconKey), [iconKey]);
+    if (!LazyIcon) {
+      return <IconPreviewFallback size={size} color={color} />;
+    }
+    return (
+      <Suspense fallback={<IconPreviewFallback size={size} color={color} />}>
+        <LazyIcon size={size} color={color} strokeWidth={strokeWidth} />
+      </Suspense>
+    );
+  },
+);
 
 // --- DASHBOARD COMPONENTS (Restored to Original Design) ---
 const DashboardWrapper = styled.div`
@@ -504,6 +555,59 @@ const UniversalEditDrawer = ({
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const typeValue = Form.useWatch("type", form);
+  const iconValue = Form.useWatch("icon_name", form);
+  const colorValue = Form.useWatch("color", form);
+  const [iconSearchQuery, setIconSearchQuery] = useState("");
+  const normalizedIconValue = useMemo(
+    () => normalizeLucideIconName(iconValue),
+    [iconValue],
+  );
+  const iconPreviewColor = useMemo(() => {
+    const raw = String(colorValue ?? "").trim();
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw) ? raw : colors.textSecondary;
+  }, [colorValue]);
+  const iconOptions = useMemo(() => {
+    const results = searchLucideIcons(iconSearchQuery, 80);
+    if (normalizedIconValue && !results.includes(normalizedIconValue)) {
+      results.unshift(normalizedIconValue);
+    }
+    return results.map((iconKey) => ({
+      value: iconKey,
+      label: (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: `1px solid ${bookingTheme.borderLight}`,
+              background: "#fff",
+              flexShrink: 0,
+            }}
+          >
+            <IconPreview iconKey={iconKey} size={15} color={colors.textSecondary} />
+          </span>
+          <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+            <span style={{ fontWeight: 600, color: colors.textPrimary }}>
+              {formatLucideIconLabel(iconKey)}
+            </span>
+            <span style={{ fontSize: 12, color: colors.textSecondary }}>
+              {iconKey}
+            </span>
+          </span>
+        </div>
+      ),
+    }));
+  }, [iconSearchQuery, normalizedIconValue]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -518,6 +622,12 @@ const UniversalEditDrawer = ({
     } else {
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) {
+      setIconSearchQuery("");
     }
   }, [isVisible]);
 
@@ -674,13 +784,61 @@ const UniversalEditDrawer = ({
 
           <Form.Item
             name="icon_name"
-            label={<FormLabel>Lucide icon name</FormLabel>}
+            label={<FormLabel>Collection icon</FormLabel>}
           >
             <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-              Optional. e.g. Palette, Utensils — see lucide.dev
+              Search valid Lucide icons and preview before saving.
             </FormHelpText>
-            <Input placeholder="Palette" allowClear size="large" />
+            <Select
+              allowClear
+              showSearch
+              size="large"
+              placeholder="Search icons (e.g. palette, utensils)"
+              options={iconOptions}
+              filterOption={false}
+              onSearch={setIconSearchQuery}
+              onChange={(value) => {
+                const normalized = normalizeLucideIconName(value);
+                form.setFieldValue("icon_name", normalized || "");
+              }}
+              notFoundContent="No matching Lucide icon"
+            />
           </Form.Item>
+
+          <div
+            style={{
+              marginTop: -8,
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <span
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: "#f8fafc",
+                border: `1px solid ${bookingTheme.borderLight}`,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IconPreview
+                iconKey={normalizedIconValue}
+                size={18}
+                color={iconPreviewColor}
+                strokeWidth={2.3}
+              />
+            </span>
+            <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+              {normalizedIconValue
+                ? `Selected: ${formatLucideIconLabel(normalizedIconValue)}`
+                : "Default icon will be used when none is set."}
+            </Text>
+          </div>
 
           <Form.Item
             name="color"
@@ -1227,7 +1385,7 @@ const CollectionsManagement = () => {
       payload.show_in_i_want = !!values.show_in_i_want;
       payload.show_in_featured_categories = !!values.show_in_featured_categories;
       payload.show_on_homepage_rows = values.show_on_homepage_rows !== false;
-      payload.icon_name = (values.icon_name || "").trim();
+      payload.icon_name = normalizeLucideIconName(values.icon_name) || "";
       payload.color = (values.color || "").trim();
 
       const response = selectedItem
@@ -1286,7 +1444,7 @@ const CollectionsManagement = () => {
         show_in_i_want: !!item.show_in_i_want,
         show_in_featured_categories: !!item.show_in_featured_categories,
         show_on_homepage_rows: item.show_on_homepage_rows !== false,
-        icon_name: item.icon_name || "",
+        icon_name: normalizeLucideIconName(item.icon_name) || "",
         color: item.color || "",
       });
     } else {

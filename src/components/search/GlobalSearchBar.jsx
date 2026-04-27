@@ -138,18 +138,18 @@ const Dropdown = styled.div`
     0 12px 40px rgba(15, 23, 42, 0.12),
     0 0 0 1px rgba(0, 0, 0, 0.06);
   z-index: 10020;
-  max-height: min(70vh, 420px);
+  max-height: ${(p) => (p.$compact ? "min(60vh, 340px)" : "min(70vh, 420px)")};
   overflow: auto;
-  padding: 8px 0;
+  padding: ${(p) => (p.$compact ? "6px 0" : "8px 0")};
 `;
 
 const SectionLabel = styled.div`
-  font-size: 11px;
+  font-size: ${(p) => (p.$compact ? "10px" : "11px")};
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #64748b;
-  padding: 8px 14px 4px;
+  padding: ${(p) => (p.$compact ? "6px 12px 3px" : "8px 14px 4px")};
   display: flex;
   align-items: center;
   gap: 6px;
@@ -161,10 +161,10 @@ const Row = styled.button`
   background: ${(p) => (p.$active ? "rgba(251, 34, 67, 0.08)" : "transparent")};
   cursor: pointer;
   text-align: left;
-  padding: 10px 14px;
+  padding: ${(p) => (p.$compact ? "7px 12px" : "10px 14px")};
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: ${(p) => (p.$compact ? "9px" : "12px")};
   font: inherit;
   color: #0f172a;
 
@@ -174,9 +174,9 @@ const Row = styled.button`
 `;
 
 const RowThumb = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: ${(p) => (p.$compact ? "34px" : "44px")};
+  height: ${(p) => (p.$compact ? "34px" : "44px")};
+  border-radius: ${(p) => (p.$compact ? "8px" : "10px")};
   flex-shrink: 0;
   overflow: hidden;
   background: #f1f5f9;
@@ -194,16 +194,16 @@ const RowMeta = styled.div`
 
 const RowTitle = styled.div`
   font-weight: 600;
-  font-size: 14px;
+  font-size: ${(p) => (p.$compact ? "13px" : "14px")};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
 const RowSub = styled.div`
-  font-size: 12px;
+  font-size: ${(p) => (p.$compact ? "11px" : "12px")};
   color: #64748b;
-  margin-top: 2px;
+  margin-top: ${(p) => (p.$compact ? "1px" : "2px")};
 `;
 
 const Overlay = styled.div`
@@ -506,8 +506,8 @@ export default function GlobalSearchBar({
         <>
           {collections.length > 0 && (
             <>
-              <SectionLabel id={`${listboxId}-col`}>
-                <Layers size={14} aria-hidden /> Collections
+              <SectionLabel id={`${listboxId}-col`} $compact={isHomeKeyword}>
+                 Collections
               </SectionLabel>
               {collections.map((c, i) => (
                 <Row
@@ -517,21 +517,22 @@ export default function GlobalSearchBar({
                   role="option"
                   aria-selected={activeIndex === i}
                   $active={activeIndex === i}
+                  $compact={isHomeKeyword}
                   onMouseEnter={() => setActiveIndex(i)}
                   onClick={() => {
                     setActiveIndex(i);
                     onPickIndex(i);
                   }}
                 >
-                  <RowThumb>
+                  <RowThumb $compact={isHomeKeyword}>
                     {c.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={c.image} alt="" />
                     ) : (
                       <Layers
-                        size={22}
+                        size={isHomeKeyword ? 18 : 22}
                         style={{
-                          margin: "10px auto",
+                          margin: isHomeKeyword ? "8px auto" : "10px auto",
                           display: "block",
                           color: "#94a3b8",
                         }}
@@ -539,8 +540,8 @@ export default function GlobalSearchBar({
                     )}
                   </RowThumb>
                   <RowMeta>
-                    <RowTitle>{c.name}</RowTitle>
-                    <RowSub>
+                    <RowTitle $compact={isHomeKeyword}>{c.name}</RowTitle>
+                    <RowSub $compact={isHomeKeyword}>
                       {typeof c.count === "number"
                         ? `${c.count} class${c.count === 1 ? "" : "es"}`
                         : ""}
@@ -552,7 +553,7 @@ export default function GlobalSearchBar({
           )}
           {classes.length > 0 && (
             <>
-              <SectionLabel id={`${listboxId}-cls`}>
+              <SectionLabel id={`${listboxId}-cls`} $compact={isHomeKeyword}>
                 <Compass size={14} aria-hidden /> Classes
               </SectionLabel>
               {classes.map((cl, j) => {
@@ -565,21 +566,22 @@ export default function GlobalSearchBar({
                     role="option"
                     aria-selected={activeIndex === idx}
                     $active={activeIndex === idx}
+                    $compact={isHomeKeyword}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => {
                       setActiveIndex(idx);
                       onPickIndex(idx);
                     }}
                   >
-                    <RowThumb>
+                    <RowThumb $compact={isHomeKeyword}>
                       {cl.thumbnail ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={cl.thumbnail} alt="" />
                       ) : (
                         <Compass
-                          size={22}
+                          size={isHomeKeyword ? 18 : 22}
                           style={{
-                            margin: "10px auto",
+                            margin: isHomeKeyword ? "8px auto" : "10px auto",
                             display: "block",
                             color: "#94a3b8",
                           }}
@@ -587,8 +589,8 @@ export default function GlobalSearchBar({
                       )}
                     </RowThumb>
                     <RowMeta>
-                      <RowTitle>{cl.title}</RowTitle>
-                      <RowSub>
+                      <RowTitle $compact={isHomeKeyword}>{cl.title}</RowTitle>
+                      <RowSub $compact={isHomeKeyword}>
                         {[cl.business_name, formatCad(cl.price_from)]
                           .filter(Boolean)
                           .join(" · ")}
@@ -691,7 +693,7 @@ export default function GlobalSearchBar({
           size="middle"
         />
         {(open || loading) && query.trim() && !mobileOpen && (
-          <Dropdown id={`${listboxId}-desktop`} role="listbox">
+          <Dropdown id={`${listboxId}-desktop`} role="listbox" $compact={isHomeKeyword}>
             {dropdownContent}
           </Dropdown>
         )}

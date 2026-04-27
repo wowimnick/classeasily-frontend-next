@@ -6,6 +6,9 @@ import React, {
   useLayoutEffect,
   useEffect,
   useCallback,
+  lazy,
+  memo,
+  Suspense,
 } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import {
@@ -14,7 +17,7 @@ import {
   Star,
   ArrowRight,
   ChevronRight,
-  Sparkles,
+  Box,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
@@ -24,7 +27,6 @@ import dynamic from "next/dynamic";
 import {
   useSearch,
   SUGGESTED_AREAS,
-  ICON_PALETTE,
   formatCollectionDisplayName,
 } from "@/context/SearchContext";
 import { collectionService } from "@/services/apiService";
@@ -199,8 +201,23 @@ const UnifiedPopupContainer = styled(motion.div)`
   z-index: 100;
 `;
 
+const SearchModeStage = styled.div`
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+`;
+
+const KeywordModeShell = styled(motion.div)`
+  width: 100%;
+  max-width: 520px;
+`;
+
+const POPUP_CONTENT_PADDING = 16;
+
 const PopupContentPadding = styled.div`
-  padding: 24px;
+  padding: ${POPUP_CONTENT_PADDING}px;
 `;
 
 const LocationInput = styled.input`
@@ -230,7 +247,7 @@ const LocationList = styled.div`
 const LocationOption = styled.div`
   display: flex;
   align-items: center;
-  padding: 12px;
+  padding: 9px 10px;
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
@@ -240,6 +257,13 @@ const LocationOption = styled.div`
   &:hover {
     background: ${(p) => (p.$isActive ? "#fff0f0" : "#f3f4f6")};
   }
+`;
+
+const PopupSectionLabel = styled(Label)`
+  padding-bottom: 6px;
+  color: #999;
+  text-align: left;
+  font-size: 11px;
 `;
 
 const IconBox = styled.div`
@@ -254,6 +278,73 @@ const IconBox = styled.div`
   color: ${(props) => props.$iconColor ?? "#374151"};
   flex-shrink: 0;
 `;
+
+const collectionIconCache = new Map();
+
+const IconFallback = ({ size = 20, strokeWidth = 2.5 }) => (
+  <Box size={size} strokeWidth={strokeWidth} />
+);
+
+const normalizeCollectionIconExportName = (raw) => {
+  const value = String(raw ?? "").trim();
+  if (!value) return "";
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[-_]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join("");
+};
+
+const getLazyCollectionIcon = (iconName) => {
+  const exportName = normalizeCollectionIconExportName(iconName);
+  if (!exportName) return null;
+  if (!collectionIconCache.has(exportName)) {
+    collectionIconCache.set(
+      exportName,
+      lazy(async () => {
+        try {
+          const module = await import("lucide-react");
+          return { default: module[exportName] || Box };
+        } catch {
+          return { default: Box };
+        }
+      }),
+    );
+  }
+  return collectionIconCache.get(exportName);
+};
+
+const CollectionIcon = memo(({ iconName, size = 20, strokeWidth = 2.5 }) => {
+  const LazyIcon = getLazyCollectionIcon(iconName);
+  if (!LazyIcon) return <IconFallback size={size} strokeWidth={strokeWidth} />;
+  return (
+    <Suspense fallback={<IconFallback size={size} strokeWidth={strokeWidth} />}>
+      <LazyIcon size={size} strokeWidth={strokeWidth} />
+    </Suspense>
+  );
+});
+
+const resolveCollectionTheme = (hexColor) => {
+  const normalized = String(hexColor ?? "").trim();
+  const validHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(normalized)
+    ? normalized
+    : null;
+  if (!validHex) {
+    return { bg: "#f3f4f6", icon: "#374151" };
+  }
+  const short = validHex.length === 4;
+  const toInt = (index) =>
+    parseInt(short ? validHex[index] + validHex[index] : validHex.slice(index, index + 2), 16);
+  const r = toInt(1);
+  const g = toInt(short ? 2 : 3);
+  const b = toInt(short ? 3 : 5);
+  return {
+    bg: `rgba(${r}, ${g}, ${b}, 0.14)`,
+    icon: validHex,
+  };
+};
 
 // --- MOBILE COMPONENTS ---
 const StaticSearchPill = styled(motion.button)`
@@ -561,7 +652,8 @@ export default function BannerSearchClient({ mode }) {
   } = useSearch();
 
   const [iWantCollections, setIWantCollections] = useState([]);
-  const [keywordExpanded, setKeywordExpanded] = useState(false);
+  const [isKeywordMode, setIsKeywordMode] = useState(false);
+  const [searchModeDirection, setSearchModeDirection] = useState(1);
   const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
   const [isSwitching, setIsSwitching] = useState(false);
@@ -653,6 +745,13 @@ export default function BannerSearchClient({ mode }) {
   const scrollToHowItWorks = () => {
     const section = document.getElementById("how-it-works");
     if (section) section.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const switchSearchMode = (toKeywordMode) => {
+    setSearchModeDirection(toKeywordMode ? 1 : -1);
+    setIsKeywordMode(toKeywordMode);
+    setActiveField(null);
+    setIsSwitching(false);
   };
 
   useEffect(() => {
@@ -773,6 +872,37 @@ export default function BannerSearchClient({ mode }) {
       transition: { delay: 0.1, duration: 0.3, ease: "easeOut" },
     },
     exit: { opacity: 0, transition: { duration: 0 } },
+  };
+
+  const modeSwapVariants = {
+    enter: (direction) => ({
+      opacity: 0,
+      y: direction > 0 ? 20 : -20,
+      scale: 0.965,
+      filter: "blur(8px)",
+    }),
+    center: {
+      opacity: 1,
+      y: [0, -3, 0],
+      scale: [0.985, 1.01, 1],
+      filter: "blur(0px)",
+      transition: {
+        y: { duration: 0.52, ease: [0.22, 1, 0.36, 1] },
+        scale: { duration: 0.52, ease: [0.22, 1, 0.36, 1] },
+        opacity: { duration: 0.32 },
+        filter: { duration: 0.28 },
+      },
+    },
+    exit: (direction) => ({
+      opacity: 0,
+      y: direction > 0 ? -16 : 16,
+      scale: 0.97,
+      filter: "blur(6px)",
+      transition: {
+        duration: 0.28,
+        ease: [0.4, 0, 0.2, 1],
+      },
+    }),
   };
 
   if (mode === "announcement") {
@@ -937,263 +1067,279 @@ export default function BannerSearchClient({ mode }) {
   return (
     <>
       <GlobalOverrides />
-      <SearchFormWrapper
-        ref={containerRef}
-        onSubmit={handleSearchSubmit}
-        layout
-        animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        <SearchPillRow>
-        <SectionButton
-          ref={locationRef}
-          $isActive={activeField === "location"}
-          onClick={() => handleFieldClick("location")}
-          style={{ width: "260px", flexShrink: 0 }}
-        >
-          {activeField === "location" && (
-            <ActivePill
-              layoutId="search-pill"
-              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-            />
-          )}
-          <Label>Location</Label>
-          {activeField === "location" ? (
-            <LocationInput
-              autoFocus
-              value={searchTerm}
-              onChange={(e) => handleLocationChange(e.target.value)}
-              placeholder="Where are you looking?"
-            />
-          ) : (
-            <ValueDisplay $hasValue={!!searchTerm}>
-              {searchTerm || "Where are you looking?"}
-            </ValueDisplay>
-          )}
-        </SectionButton>
-        <Divider
-          $isHidden={activeField === "location" || activeField === "date"}
-        />
-
-        <SectionButton
-          ref={dateRef}
-          $isActive={activeField === "date"}
-          onClick={() => handleFieldClick("date")}
-          style={{ minWidth: "170px" }}
-        >
-          {activeField === "date" && (
-            <ActivePill
-              layoutId="search-pill"
-              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-            />
-          )}
-          <Label>Date</Label>
-          <ValueDisplay $hasValue={!!datePickerValue}>
-            {getDateDisplay()}
-          </ValueDisplay>
-        </SectionButton>
-        <Divider
-          $isHidden={activeField === "date" || activeField === "collection"}
-        />
-
-        <SectionButton
-          ref={collectionRef}
-          $isActive={activeField === "collection"}
-          onClick={() => handleFieldClick("collection")}
-          style={{ minWidth: "160px" }}
-        >
-          {activeField === "collection" && (
-            <ActivePill
-              layoutId="search-pill"
-              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-            />
-          )}
-          <Label>I want…</Label>
-          <ValueDisplay $hasValue={!!selectedCollection}>
-            {collectionDisplay}
-          </ValueDisplay>
-        </SectionButton>
-
-        <SearchButton
-          type="submit"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Search size={22} strokeWidth={2.5} />
-        </SearchButton>
-        </SearchPillRow>
-
-        <AnimatePresence>
-          {activeField && (
-            <UnifiedPopupContainer
-              key="popup-container"
-              layout
-              initial={{
-                opacity: 0,
-                y: 10,
-                scale: 0.95,
-                left: popupConfig.left,
-                width: popupConfig.width,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                left: popupConfig.left,
-                width: popupConfig.width,
-              }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{
-                layout: { duration: 0.4, ease: "easeInOut" },
-                left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
-                width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
-                opacity: { duration: 0.25 },
-                scale: { duration: 0.25 },
-              }}
+      <SearchModeStage>
+        <AnimatePresence custom={searchModeDirection} mode="wait" initial={false}>
+          {isKeywordMode ? (
+            <KeywordModeShell
+              key="keyword-mode"
+              custom={searchModeDirection}
+              variants={modeSwapVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
             >
-              <PopupContentPadding>
-                <AnimatePresence mode="popLayout">
-                  <motion.div
-                    key={activeField}
-                    layout="position"
-                    variants={contentVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    style={{ width: (POPUP_SIZES[activeField] || 400) - 48 }}
-                  >
-                    {/* --- FIX: Use FrozenContent to prevent crash during exit --- */}
-                    <FrozenContent
-                      field={activeField}
-                      renderLocation={() => (
-                        <>
-                          <Label
-                            style={{
-                              paddingBottom: 8,
-                              color: "#999",
-                              textAlign: "left",
-                            }}
-                          >
-                            SUGGESTED
-                          </Label>
-                          <LocationList>
-                            {renderLocationSuggestions()}
-                          </LocationList>
-                        </>
-                      )}
-                      renderDate={() => (
-                        <CustomCalendar
-                          value={datePickerValue}
-                          onChange={setDatePickerValue}
-                          onClose={() => setActiveField(null)}
-                        />
-                      )}
-                      renderCollectionPicker={() => (
-                        <>
-                          <Label
-                            style={{
-                              paddingBottom: 8,
-                              color: "#999",
-                              textAlign: "left",
-                            }}
-                          >
-                            SUGGESTED
-                          </Label>
-                          <LocationList>
-                            <LocationOption
-                              key="__any__"
-                              $isActive={!selectedCollection}
-                              onClick={() => {
-                                setSelectedCollection(null);
-                                setActiveField(null);
-                                setIsSwitching(false);
-                              }}
-                            >
-                              <IconBox
-                                $bgColor={ICON_PALETTE[0].bg}
-                                $iconColor={ICON_PALETTE[0].icon}
-                              >
-                                <Sparkles size={20} strokeWidth={2.5} />
-                              </IconBox>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  textAlign: "left",
-                                }}
-                              >
-                                <span
-                                  style={{ fontWeight: 600, color: "#111" }}
-                                >
-                                  Any experience
-                                </span>
-                                <span style={{ fontSize: 13, color: "#717171" }}>
-                                  Show all categories
-                                </span>
-                              </div>
-                            </LocationOption>
-                            {iWantCollections.map((c, idx) => {
-                              const active =
-                                selectedCollection?.slug === c.slug;
-                              const title = formatCollectionDisplayName(
-                                c.name || c.slug,
-                              );
-                              const theme =
-                                ICON_PALETTE[idx % ICON_PALETTE.length];
-                              const secondary =
-                                (c.description && String(c.description).trim()) ||
-                                "Curated experiences";
-                              return (
-                                <LocationOption
-                                  key={c.id ?? c.slug}
-                                  $isActive={active}
-                                  onClick={() => {
-                                    setSelectedCollection({
-                                      slug: c.slug,
-                                      name: c.name || title,
-                                    });
-                                    setActiveField(null);
-                                    setIsSwitching(false);
-                                  }}
-                                >
-                                  <IconBox
-                                    $bgColor={theme.bg}
-                                    $iconColor={theme.icon}
-                                  >
-                                    <Sparkles size={20} strokeWidth={2.5} />
-                                  </IconBox>
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      textAlign: "left",
-                                    }}
-                                  >
-                                    <span
-                                      style={{ fontWeight: 600, color: "#111" }}
-                                    >
-                                      {title}
-                                    </span>
-                                    <span
-                                      style={{ fontSize: 13, color: "#717171" }}
-                                    >
-                                      {secondary}
-                                    </span>
-                                  </div>
-                                </LocationOption>
-                              );
-                            })}
-                          </LocationList>
-                        </>
-                      )}
+              <GlobalSearchBar variant="home-keyword" inverseColors={false} />
+            </KeywordModeShell>
+          ) : (
+            <motion.div
+              key="pill-mode"
+              custom={searchModeDirection}
+              variants={modeSwapVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              style={{ width: "100%", display: "flex", justifyContent: "center" }}
+            >
+              <SearchFormWrapper
+                ref={containerRef}
+                onSubmit={handleSearchSubmit}
+                layout
+                animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <SearchPillRow>
+                <SectionButton
+                  ref={locationRef}
+                  $isActive={activeField === "location"}
+                  onClick={() => handleFieldClick("location")}
+                  style={{ width: "260px", flexShrink: 0 }}
+                >
+                  {activeField === "location" && (
+                    <ActivePill
+                      layoutId="search-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
-                  </motion.div>
+                  )}
+                  <Label>Location</Label>
+                  {activeField === "location" ? (
+                    <LocationInput
+                      autoFocus
+                      value={searchTerm}
+                      onChange={(e) => handleLocationChange(e.target.value)}
+                      placeholder="Where are you looking?"
+                    />
+                  ) : (
+                    <ValueDisplay $hasValue={!!searchTerm}>
+                      {searchTerm || "Where are you looking?"}
+                    </ValueDisplay>
+                  )}
+                </SectionButton>
+                <Divider
+                  $isHidden={activeField === "location" || activeField === "date"}
+                />
+
+                <SectionButton
+                  ref={dateRef}
+                  $isActive={activeField === "date"}
+                  onClick={() => handleFieldClick("date")}
+                  style={{ minWidth: "170px" }}
+                >
+                  {activeField === "date" && (
+                    <ActivePill
+                      layoutId="search-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <Label>Date</Label>
+                  <ValueDisplay $hasValue={!!datePickerValue}>
+                    {getDateDisplay()}
+                  </ValueDisplay>
+                </SectionButton>
+                <Divider
+                  $isHidden={activeField === "date" || activeField === "collection"}
+                />
+
+                <SectionButton
+                  ref={collectionRef}
+                  $isActive={activeField === "collection"}
+                  onClick={() => handleFieldClick("collection")}
+                  style={{ minWidth: "160px" }}
+                >
+                  {activeField === "collection" && (
+                    <ActivePill
+                      layoutId="search-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <Label>I want…</Label>
+                  <ValueDisplay $hasValue={!!selectedCollection}>
+                    {collectionDisplay}
+                  </ValueDisplay>
+                </SectionButton>
+
+                <SearchButton
+                  type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Search size={22} strokeWidth={2.5} />
+                </SearchButton>
+                </SearchPillRow>
+
+                <AnimatePresence>
+                  {activeField && (
+                    <UnifiedPopupContainer
+                      key="popup-container"
+                      layout
+                      initial={{
+                        opacity: 0,
+                        y: 10,
+                        scale: 0.95,
+                        left: popupConfig.left,
+                        width: popupConfig.width,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        left: popupConfig.left,
+                        width: popupConfig.width,
+                      }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{
+                        layout: { duration: 0.4, ease: "easeInOut" },
+                        left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+                        width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+                        opacity: { duration: 0.25 },
+                        scale: { duration: 0.25 },
+                      }}
+                    >
+                      <PopupContentPadding>
+                        <AnimatePresence mode="popLayout">
+                          <motion.div
+                            key={activeField}
+                            layout="position"
+                            variants={contentVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            style={{
+                              width:
+                                (POPUP_SIZES[activeField] || 400) -
+                                POPUP_CONTENT_PADDING * 2,
+                            }}
+                          >
+                            <FrozenContent
+                              field={activeField}
+                              renderLocation={() => (
+                                <>
+                                  <PopupSectionLabel>
+                                    SUGGESTED
+                                  </PopupSectionLabel>
+                                  <LocationList>
+                                    {renderLocationSuggestions()}
+                                  </LocationList>
+                                </>
+                              )}
+                              renderDate={() => (
+                                <CustomCalendar
+                                  value={datePickerValue}
+                                  onChange={setDatePickerValue}
+                                  onClose={() => setActiveField(null)}
+                                />
+                              )}
+                              renderCollectionPicker={() => (
+                                <>
+                                  <PopupSectionLabel>
+                                    SUGGESTED
+                                  </PopupSectionLabel>
+                                  <LocationList>
+                                    <LocationOption
+                                      key="__any__"
+                                      onClick={() => {
+                                        setSelectedCollection(null);
+                                        setActiveField(null);
+                                        setIsSwitching(false);
+                                      }}
+                                    >
+                                      <IconBox $bgColor="#f3f4f6" $iconColor="#374151">
+                                        <Box size={20} strokeWidth={2.5} />
+                                      </IconBox>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          textAlign: "left",
+                                        }}
+                                      >
+                                        <span
+                                          style={{ fontWeight: 600, color: "#111" }}
+                                        >
+                                          Any experience
+                                        </span>
+                                        <span style={{ fontSize: 13, color: "#717171" }}>
+                                          Show all categories
+                                        </span>
+                                      </div>
+                                    </LocationOption>
+                                    {iWantCollections.map((c) => {
+                                      const title = formatCollectionDisplayName(
+                                        c.name || c.slug,
+                                      );
+                                      const theme = resolveCollectionTheme(c.color);
+                                      const secondary =
+                                        (c.description && String(c.description).trim()) ||
+                                        "Curated experiences";
+                                      return (
+                                        <LocationOption
+                                          key={c.id ?? c.slug}
+                                          onClick={() => {
+                                            setSelectedCollection({
+                                              slug: c.slug,
+                                              name: c.name || title,
+                                              icon_name: c.icon_name || "",
+                                              color: c.color || "",
+                                            });
+                                            setActiveField(null);
+                                            setIsSwitching(false);
+                                          }}
+                                        >
+                                          <IconBox
+                                            $bgColor={theme.bg}
+                                            $iconColor={theme.icon}
+                                          >
+                                            <CollectionIcon
+                                              iconName={c.icon_name}
+                                              size={20}
+                                              strokeWidth={2.5}
+                                            />
+                                          </IconBox>
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              textAlign: "left",
+                                            }}
+                                          >
+                                            <span
+                                              style={{ fontWeight: 600, color: "#111" }}
+                                            >
+                                              {title}
+                                            </span>
+                                            <span
+                                              style={{ fontSize: 13, color: "#717171" }}
+                                            >
+                                              {secondary}
+                                            </span>
+                                          </div>
+                                        </LocationOption>
+                                      );
+                                    })}
+                                  </LocationList>
+                                </>
+                              )}
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                      </PopupContentPadding>
+                    </UnifiedPopupContainer>
+                  )}
                 </AnimatePresence>
-              </PopupContentPadding>
-            </UnifiedPopupContainer>
+              </SearchFormWrapper>
+            </motion.div>
           )}
         </AnimatePresence>
-      </SearchFormWrapper>
+      </SearchModeStage>
 
       <div
         style={{
@@ -1208,7 +1354,7 @@ export default function BannerSearchClient({ mode }) {
       >
         <button
           type="button"
-          onClick={() => setKeywordExpanded((v) => !v)}
+          onClick={() => switchSearchMode(!isKeywordMode)}
           style={{
             background: "transparent",
             border: "none",
@@ -1220,13 +1366,8 @@ export default function BannerSearchClient({ mode }) {
             cursor: "pointer",
           }}
         >
-          {keywordExpanded ? "Hide keyword search" : "or search with keyword"}
+          {isKeywordMode ? "switch back to guided search" : "or search with keyword"}
         </button>
-        {keywordExpanded && (
-          <div style={{ width: "100%", maxWidth: 520 }}>
-            <GlobalSearchBar variant="home-keyword" inverseColors={false} />
-          </div>
-        )}
       </div>
 
     </>
