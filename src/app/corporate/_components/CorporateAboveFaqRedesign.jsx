@@ -349,8 +349,13 @@ const HowSidebarLead = styled.p`
 `;
 
 const StepPicker = styled.div`
-  display: grid;
-  gap: 0.58rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  padding: 0.25rem 0;
+
+
 `;
 
 const StepButton = styled.button`
@@ -359,25 +364,43 @@ const StepButton = styled.button`
   border-radius: 14px;
   background: #fff;
   color: #111;
-  padding: 0.75rem 0.78rem;
+  padding: 0.75rem 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.64rem;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  width: calc(100% - 2.8rem);
+  position: relative;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  @media (max-width: 980px) {
+    width: 100%;
+    align-self: stretch;
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
   ${({ $active }) =>
     $active
       ? css`
           background: #111;
           color: #fff;
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
+          &::after {
+            background: #111;
+            border-color: #111;
+          }
         `
       : css`
           opacity: 0.85;
           &:hover {
             opacity: 1;
-            transform: translateX(2px);
+            transform: translateY(-2px);
           }
         `}
 `;
@@ -716,7 +739,13 @@ function HowItWorks({ reduceMotion }) {
             const Icon = step.icon;
             const isActive = active === index;
             return (
-              <StepButton key={step.label} type="button" $active={isActive} onClick={() => setActive(index)}>
+              <StepButton
+                key={step.label}
+                type="button"
+                $active={isActive}
+                $index={index}
+                onClick={() => setActive(index)}
+              >
                 <StepBadge>{index + 1}</StepBadge>
                 <Icon size={16} />
                 {step.label}

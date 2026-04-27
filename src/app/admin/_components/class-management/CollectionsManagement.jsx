@@ -486,6 +486,95 @@ function ToggleColumnHeader({ label, helpKey }) {
   );
 }
 
+function ToggleSettingRow({ title, description, checked, onChange }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <Text
+          style={{
+            display: "block",
+            fontSize: 14,
+            fontWeight: 600,
+            color: colors.textPrimary,
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </Text>
+        {description ? (
+          <Text
+            style={{
+              display: "block",
+              fontSize: 12,
+              color: colors.textSecondary,
+              marginTop: 2,
+              lineHeight: 1.35,
+            }}
+          >
+            {description}
+          </Text>
+        ) : null}
+      </div>
+      <Switch checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+
+const COLLECTION_FORM_DEFAULTS = {
+  name: "",
+  slug: "",
+  description: "",
+  image: [],
+  type: "manual",
+  ai_criteria: "",
+  is_active: true,
+  search_aliases: [],
+  is_searchable: true,
+  show_in_i_want: false,
+  show_in_featured_categories: false,
+  show_on_homepage_rows: true,
+  icon_name: "",
+  color: "",
+};
+
+function mapCollectionToFormValues(item) {
+  if (!item) return { ...COLLECTION_FORM_DEFAULTS };
+
+  return {
+    ...COLLECTION_FORM_DEFAULTS,
+    name: item.name || "",
+    slug: item.slug || "",
+    description: item.description || "",
+    image: item.image_medium_url
+      ? [
+          {
+            uid: "-1",
+            name: "current_image.webp",
+            status: "done",
+            url: item.image_medium_url,
+          },
+        ]
+      : [],
+    is_active: item.is_active !== false,
+    type: item.type || "manual",
+    ai_criteria: item.automation_rules?.ai_criteria || "",
+    search_aliases: Array.isArray(item.search_aliases) ? item.search_aliases : [],
+    is_searchable: item.is_searchable !== false,
+    show_in_i_want: !!item.show_in_i_want,
+    show_in_featured_categories: !!item.show_in_featured_categories,
+    show_on_homepage_rows: item.show_on_homepage_rows !== false,
+    icon_name: normalizeLucideIconName(item.icon_name) || "",
+    color: item.color || "",
+  };
+}
+
 // --- DND & UTILITIES ---
 const RowContext = createContext({});
 
@@ -760,6 +849,10 @@ const UniversalEditDrawer = ({
 
         <FormSectionCard>
           <SectionCardHeading>Discovery & placement</SectionCardHeading>
+          <FormHelpText style={{ marginTop: 0, marginBottom: 16 }}>
+            Placement toggles control where this collection appears. The publish
+            toggle in the next section acts as a master on/off switch.
+          </FormHelpText>
           <Form.Item
             name="search_aliases"
             label={<FormLabel>Search aliases</FormLabel>}
@@ -847,87 +940,91 @@ const UniversalEditDrawer = ({
             <Input placeholder="#f81e3e" allowClear maxLength={20} size="large" />
           </Form.Item>
 
-          <Form.Item
-            name="is_searchable"
-            label={<FormLabel>Keyword / suggest</FormLabel>}
-            valuePropName="checked"
-          >
+          <Form.Item label={<FormLabel>Keyword / suggest</FormLabel>}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "flex-start",
                 padding: "12px 16px",
                 border: `1px solid ${bookingTheme.borderLight}`,
                 borderRadius: 12,
                 background: bookingTheme.bgSecondary,
               }}
             >
-              <Text style={{ fontSize: 14 }}>Searchable</Text>
-              <Switch />
+              <Form.Item name="is_searchable" valuePropName="checked" noStyle>
+                <ToggleSettingRow
+                  title="Include in keyword search"
+                  description="Allows keyword search and suggest to match this collection by slug, name, and aliases."
+                />
+              </Form.Item>
             </div>
           </Form.Item>
 
-          <Form.Item
-            name="show_in_i_want"
-            label={<FormLabel>“I want…” picker</FormLabel>}
-            valuePropName="checked"
-          >
+          <Form.Item label={<FormLabel>“I want…” picker</FormLabel>}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "flex-start",
                 padding: "12px 16px",
                 border: `1px solid ${bookingTheme.borderLight}`,
                 borderRadius: 12,
                 background: bookingTheme.bgSecondary,
               }}
             >
-              <Text style={{ fontSize: 14 }}>Show in chips</Text>
-              <Switch />
+              <Form.Item name="show_in_i_want" valuePropName="checked" noStyle>
+                <ToggleSettingRow
+                  title="Show in guided search chips"
+                  description="Displays this collection in homepage and mobile “I want…” pickers."
+                />
+              </Form.Item>
             </div>
           </Form.Item>
 
-          <Form.Item
-            name="show_in_featured_categories"
-            label={<FormLabel>Featured categories strip</FormLabel>}
-            valuePropName="checked"
-          >
+          <Form.Item label={<FormLabel>Featured categories strip</FormLabel>}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "flex-start",
                 padding: "12px 16px",
                 border: `1px solid ${bookingTheme.borderLight}`,
                 borderRadius: 12,
                 background: bookingTheme.bgSecondary,
               }}
             >
-              <Text style={{ fontSize: 14 }}>Show in strip</Text>
-              <Switch />
+              <Form.Item
+                name="show_in_featured_categories"
+                valuePropName="checked"
+                noStyle
+              >
+                <ToggleSettingRow
+                  title="Show in featured strip"
+                  description="Shows this collection in the homepage featured categories row."
+                />
+              </Form.Item>
             </div>
           </Form.Item>
 
-          <Form.Item
-            name="show_on_homepage_rows"
-            label={<FormLabel>Homepage collection rows</FormLabel>}
-            valuePropName="checked"
-          >
+          <Form.Item label={<FormLabel>Homepage collection rows</FormLabel>}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "flex-start",
                 padding: "12px 16px",
                 border: `1px solid ${bookingTheme.borderLight}`,
                 borderRadius: 12,
                 background: bookingTheme.bgSecondary,
               }}
             >
-              <Text style={{ fontSize: 14 }}>Show in carousels</Text>
-              <Switch />
+              <Form.Item
+                name="show_on_homepage_rows"
+                valuePropName="checked"
+                noStyle
+              >
+                <ToggleSettingRow
+                  title="Show in homepage rows"
+                  description="Includes this collection in homepage carousels such as “Date night near you”."
+                />
+              </Form.Item>
             </div>
           </Form.Item>
         </FormSectionCard>
@@ -1027,24 +1124,27 @@ const UniversalEditDrawer = ({
             </div>
           )}
 
-          <Form.Item
-            name="is_active"
-            label={<FormLabel>Visibility</FormLabel>}
-            valuePropName="checked"
-          >
+        </FormSectionCard>
+
+        <FormSectionCard>
+          <SectionCardHeading>Publishing</SectionCardHeading>
+          <Form.Item label={<FormLabel>Collection is published</FormLabel>}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "flex-start",
                 padding: "12px 16px",
                 border: `1px solid ${bookingTheme.borderLight}`,
                 borderRadius: 12,
                 background: bookingTheme.bgSecondary,
               }}
             >
-              <Text style={{ fontSize: 14 }}>Show on homepage</Text>
-              <Switch />
+              <Form.Item name="is_active" valuePropName="checked" noStyle>
+                <ToggleSettingRow
+                  title="Visible to customers"
+                  description="Master visibility switch. When off, the collection is hidden everywhere, regardless of placement toggles."
+                />
+              </Form.Item>
             </div>
           </Form.Item>
         </FormSectionCard>
@@ -1362,31 +1462,48 @@ const CollectionsManagement = () => {
         imageS3Key = null;
       }
 
-      const payload = {
-        name: values.name,
-        description: values.description,
-        ...(values.slug && { slug: values.slug }),
+      const safeValues = {
+        ...COLLECTION_FORM_DEFAULTS,
+        ...values,
       };
+
+      const payload = {
+        name: String(safeValues.name || "").trim(),
+        description: String(safeValues.description || "").trim(),
+      };
+
+      const normalizedSlug = String(safeValues.slug || "")
+        .trim()
+        .toLowerCase();
+      if (normalizedSlug) {
+        payload.slug = normalizedSlug;
+      }
 
       if (imageS3Key !== undefined) {
         payload.image_s3_key = imageS3Key;
       }
 
-      payload.is_active = values.is_active;
-      payload.type = values.type;
-      if (values.type === "automated") {
-        payload.automation_rules = { ai_criteria: values.ai_criteria };
+      payload.is_active = safeValues.is_active !== false;
+      payload.type = safeValues.type;
+      if (safeValues.type === "automated") {
+        payload.automation_rules = {
+          ai_criteria: String(safeValues.ai_criteria || "").trim(),
+        };
       } else {
         payload.automation_rules = {};
       }
 
-      payload.search_aliases = values.search_aliases || [];
-      payload.is_searchable = values.is_searchable !== false;
-      payload.show_in_i_want = !!values.show_in_i_want;
-      payload.show_in_featured_categories = !!values.show_in_featured_categories;
-      payload.show_on_homepage_rows = values.show_on_homepage_rows !== false;
-      payload.icon_name = normalizeLucideIconName(values.icon_name) || "";
-      payload.color = (values.color || "").trim();
+      payload.search_aliases = Array.isArray(safeValues.search_aliases)
+        ? safeValues.search_aliases
+            .map((token) => String(token || "").trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+      payload.is_searchable = safeValues.is_searchable !== false;
+      payload.show_in_i_want = !!safeValues.show_in_i_want;
+      payload.show_in_featured_categories = !!safeValues.show_in_featured_categories;
+      payload.show_on_homepage_rows = safeValues.show_on_homepage_rows !== false;
+      payload.icon_name = normalizeLucideIconName(safeValues.icon_name) || "";
+      payload.color = String(safeValues.color || "").trim();
 
       const response = selectedItem
         ? await classManagementService.updateCollection(selectedItem.id, payload)
@@ -1419,49 +1536,8 @@ const CollectionsManagement = () => {
 
   const openDrawer = (item = null) => {
     setSelectedItem(item);
-    if (item) {
-      const fileList = item.image_medium_url
-        ? [
-            {
-              uid: "-1",
-              name: "current_image.webp",
-              status: "done",
-              url: item.image_medium_url,
-            },
-          ]
-        : [];
-
-      editForm.setFieldsValue({
-        name: item.name,
-        slug: item.slug,
-        description: item.description,
-        image: fileList,
-        is_active: item.is_active,
-        type: item.type || "manual",
-        ai_criteria: item.automation_rules?.ai_criteria,
-        search_aliases: item.search_aliases || [],
-        is_searchable: item.is_searchable !== false,
-        show_in_i_want: !!item.show_in_i_want,
-        show_in_featured_categories: !!item.show_in_featured_categories,
-        show_on_homepage_rows: item.show_on_homepage_rows !== false,
-        icon_name: normalizeLucideIconName(item.icon_name) || "",
-        color: item.color || "",
-      });
-    } else {
-      editForm.resetFields();
-      editForm.setFieldsValue({
-        is_active: true,
-        type: "manual",
-        image: [],
-        search_aliases: [],
-        is_searchable: true,
-        show_in_i_want: false,
-        show_in_featured_categories: false,
-        show_on_homepage_rows: true,
-        icon_name: "",
-        color: "",
-      });
-    }
+    editForm.resetFields();
+    editForm.setFieldsValue(mapCollectionToFormValues(item));
     setIsEditDrawerVisible(true);
   };
 

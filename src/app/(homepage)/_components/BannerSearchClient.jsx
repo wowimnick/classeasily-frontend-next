@@ -209,6 +209,13 @@ const SearchModeStage = styled.div`
   align-items: flex-start;
 `;
 
+const SearchModeHeightAnimator = styled(motion.div)`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+`;
+
 const KeywordModeShell = styled(motion.div)`
   width: 100%;
   max-width: 520px;
@@ -657,11 +664,14 @@ export default function BannerSearchClient({ mode }) {
   const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
   const [isSwitching, setIsSwitching] = useState(false);
+  const [modeHeight, setModeHeight] = useState(76);
 
   const containerRef = useRef(null);
   const locationRef = useRef(null);
   const dateRef = useRef(null);
   const collectionRef = useRef(null);
+  const guidedModeRef = useRef(null);
+  const keywordModeRef = useRef(null);
 
   useClickOutside(containerRef, () => {
     setActiveField(null);
@@ -768,6 +778,28 @@ export default function BannerSearchClient({ mode }) {
       cancelled = true;
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const activeModeElement = isKeywordMode
+      ? keywordModeRef.current
+      : guidedModeRef.current;
+
+    if (!activeModeElement) return;
+
+    const updateHeight = () => {
+      const nextHeight = activeModeElement.offsetHeight;
+      if (nextHeight > 0) {
+        setModeHeight(nextHeight);
+      }
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(activeModeElement);
+    return () => observer.disconnect();
+  }, [isKeywordMode]);
 
   const collectionDisplay = selectedCollection
     ? formatCollectionDisplayName(
@@ -1067,36 +1099,42 @@ export default function BannerSearchClient({ mode }) {
   return (
     <>
       <GlobalOverrides />
-      <SearchModeStage>
-        <AnimatePresence custom={searchModeDirection} mode="wait" initial={false}>
-          {isKeywordMode ? (
-            <KeywordModeShell
-              key="keyword-mode"
-              custom={searchModeDirection}
-              variants={modeSwapVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
-              <GlobalSearchBar variant="home-keyword" inverseColors={false} />
-            </KeywordModeShell>
-          ) : (
-            <motion.div
-              key="pill-mode"
-              custom={searchModeDirection}
-              variants={modeSwapVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              style={{ width: "100%", display: "flex", justifyContent: "center" }}
-            >
-              <SearchFormWrapper
-                ref={containerRef}
-                onSubmit={handleSearchSubmit}
-                layout
-                animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      <SearchModeHeightAnimator
+        animate={{ height: modeHeight }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <SearchModeStage>
+          <AnimatePresence custom={searchModeDirection} mode="wait" initial={false}>
+            {isKeywordMode ? (
+              <KeywordModeShell
+                key="keyword-mode"
+                ref={keywordModeRef}
+                custom={searchModeDirection}
+                variants={modeSwapVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
+                <GlobalSearchBar variant="home-keyword" inverseColors={false} />
+              </KeywordModeShell>
+            ) : (
+              <motion.div
+                key="pill-mode"
+                ref={guidedModeRef}
+                custom={searchModeDirection}
+                variants={modeSwapVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                style={{ width: "100%", display: "flex", justifyContent: "center" }}
+              >
+                <SearchFormWrapper
+                  ref={containerRef}
+                  onSubmit={handleSearchSubmit}
+                  layout
+                  animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
                 <SearchPillRow>
                 <SectionButton
                   ref={locationRef}
@@ -1335,11 +1373,12 @@ export default function BannerSearchClient({ mode }) {
                     </UnifiedPopupContainer>
                   )}
                 </AnimatePresence>
-              </SearchFormWrapper>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SearchModeStage>
+                </SearchFormWrapper>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </SearchModeStage>
+      </SearchModeHeightAnimator>
 
       <div
         style={{
