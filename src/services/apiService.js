@@ -2127,6 +2127,35 @@ export const corporateService = {
   },
 };
 
+/**
+ * Public corporate shortlist (magic link token, no auth).
+ */
+export const corporateBookingService = {
+  getShortlist: async (token) => {
+    const response = await axiosInstance.get(`/corporate/shortlist/${token}/`);
+    return response.data;
+  },
+  selectOption: async (token, payload) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/select/`,
+      payload,
+    );
+    return response.data;
+  },
+  getBooking: async (token, bookingId) => {
+    const response = await axiosInstance.get(
+      `/corporate/shortlist/${token}/booking/${bookingId}/`,
+    );
+    return response.data;
+  },
+  createDepositIntent: async (token, bookingId) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/booking/${bookingId}/deposit-intent/`,
+    );
+    return response.data;
+  },
+};
+
 // --- Class Services (Public Context) ---
 export const classService = {
   fetchClasses: async (filters = {}, fullUrl = null) => {

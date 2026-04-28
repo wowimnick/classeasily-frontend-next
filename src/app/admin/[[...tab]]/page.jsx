@@ -76,6 +76,10 @@ const PaymentManagement = dynamic(
   () => import("../_components/payment-management/PaymentManagement"),
   { ssr: false }
 );
+const CorporateInquiriesTab = dynamic(
+  () => import("../_components/corporate/CorporateInquiriesTab"),
+  { ssr: false }
+);
 
 const PageLayout = styled.div`
   display: flex;
@@ -176,6 +180,9 @@ export default function AdminPage() {
         break;
       case "all-bookings":
         content = <BookingsList />;
+        break;
+      case "corporate-inquiries":
+        content = <CorporateInquiriesTab />;
         break;
       case "business-listings":
         content = <BusinessListings />;

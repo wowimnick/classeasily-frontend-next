@@ -3239,3 +3239,48 @@ export const attachmentService = {
     }
   },
 };
+
+/** Corporate B2B shortlists & bookings (super-admin). */
+export const corporateAdminService = {
+  listInquiries: (params) =>
+    axiosInstance.get("/admin/corporate-inquiries/", { params }),
+  getInquiry: (inquiryId) =>
+    axiosInstance.get(`/admin/corporate-inquiries/${inquiryId}/`),
+  getShortlistForInquiry: (inquiryId) =>
+    axiosInstance.get(`/admin/corporate-inquiries/${inquiryId}/shortlist/`),
+  createShortlistForInquiry: (inquiryId, payload) =>
+    axiosInstance.post(`/admin/corporate-inquiries/${inquiryId}/shortlist/`, payload ?? {}),
+  getShortlist: (shortlistId) =>
+    axiosInstance.get(`/admin/corporate-shortlists/${shortlistId}/`),
+  updateShortlist: (shortlistId, payload) =>
+    axiosInstance.patch(`/admin/corporate-shortlists/${shortlistId}/`, payload),
+  addOption: (shortlistId, payload) =>
+    axiosInstance.post(`/admin/corporate-shortlists/${shortlistId}/options/`, payload),
+  addOptionFromClass: (shortlistId, payload) =>
+    axiosInstance.post(
+      `/admin/corporate-shortlists/${shortlistId}/options/from-class/`,
+      payload,
+    ),
+  sendShortlist: (shortlistId) =>
+    axiosInstance.post(`/admin/corporate-shortlists/${shortlistId}/send/`),
+  updateOption: (optionId, payload) =>
+    axiosInstance.patch(`/admin/corporate-shortlist-options/${optionId}/`, payload),
+  deleteOption: (optionId) =>
+    axiosInstance.delete(`/admin/corporate-shortlist-options/${optionId}/`),
+  listBookings: (params) =>
+    axiosInstance.get("/admin/corporate-bookings/", { params }),
+  getBooking: (bookingId) =>
+    axiosInstance.get(`/admin/corporate-bookings/${bookingId}/`),
+  issueInvoice: (bookingId, payload) =>
+    axiosInstance.post(
+      `/admin/corporate-bookings/${bookingId}/issue-invoice/`,
+      payload ?? {},
+    ),
+  markCompleted: (bookingId) =>
+    axiosInstance.post(`/admin/corporate-bookings/${bookingId}/mark-completed/`),
+  cancelBooking: (bookingId, payload) =>
+    axiosInstance.post(
+      `/admin/corporate-bookings/${bookingId}/cancel/`,
+      payload ?? {},
+    ),
+};
