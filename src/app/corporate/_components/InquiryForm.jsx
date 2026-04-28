@@ -441,25 +441,62 @@ export default function InquiryForm() {
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /** Build API payload. Multistep form: step-0 fields unmount on step 1, so `onFinish` values omit them — merge full store. */
+  const buildInquiryPayload = (values) => {
+    const v = values || {};
+    const company = typeof v.company_name === "string" ? v.company_name.trim() : v.company_name;
+    const contact = typeof v.contact_name === "string" ? v.contact_name.trim() : v.contact_name;
+    const email = typeof v.email === "string" ? v.email.trim() : v.email;
+    return {
+      company_name: company || "",
+      contact_name: contact || "",
+      email: email || "",
+      phone: typeof v.phone === "string" ? v.phone.trim() : v.phone || "",
+      company_size: v.company_size || "",
+      message: typeof v.message === "string" ? v.message.trim() : v.message || "",
+      meta: {
+        source: "corporate_page",
+        use_cases: Array.isArray(v.use_cases) ? v.use_cases : [],
+        preferred_date: v.preferred_date?.format?.("YYYY-MM-DD") || "",
+        city: typeof v.city === "string" ? v.city.trim() : v.city || "",
+      },
+    };
+  };
+
+  const formatApiErrors = (data) => {
+    if (!data || typeof data !== "object") return "";
+    if (typeof data.detail === "string" && data.detail) return data.detail;
+    const label = (key) =>
+      ({
+        company_name: "Company",
+        contact_name: "Name",
+        email: "Email",
+        phone: "Phone",
+        company_size: "Company size",
+        message: "Message",
+        meta: "Details",
+        non_field_errors: "",
+      }[key] || key.replace(/_/g, " "));
+    const parts = [];
+    for (const [key, val] of Object.entries(data)) {
+      if (key === "detail" && typeof val === "string") {
+        parts.push(val);
+        continue;
+      }
+      const text = Array.isArray(val) ? val.join(" ") : String(val);
+      if (!text) continue;
+      const prefix = label(key);
+      parts.push(prefix ? `${prefix}: ${text}` : text);
+    }
+    return parts.join(" ") || "Please check your input.";
+  };
+
   const submitInquiry = async (values) => {
     setLoading(true);
     setStatus(null);
     setErrorMessage("");
     try {
-      await corporateService.submitInquiry({
-        company_name: values.company_name,
-        contact_name: values.contact_name,
-        email: values.email,
-        phone: values.phone || "",
-        company_size: values.company_size || "",
-        message: values.message || "",
-        meta: {
-          source: "corporate_page",
-          use_cases: values.use_cases || [],
-          preferred_date: values.preferred_date?.format?.("YYYY-MM-DD") || "",
-          city: values.city || "",
-        },
-      });
+      await corporateService.submitInquiry(buildInquiryPayload(values));
       setStatus("success");
       try {
         confetti({
@@ -474,15 +511,19 @@ export default function InquiryForm() {
       form.resetFields();
       setStep(0);
     } catch (e) {
-      const apiDetail = e?.response?.data?.detail;
-      if (typeof apiDetail === "string" && apiDetail.length > 0) {
-        if (apiDetail.toLowerCase().includes("throttled")) {
-          setErrorMessage("You have submitted too quickly. Please wait a moment and try again.");
-        } else {
-          setErrorMessage(apiDetail);
-        }
+      const data = e?.response?.data;
+      const apiDetail = typeof data?.detail === "string" ? data.detail : "";
+      if (apiDetail && apiDetail.toLowerCase().includes("throttled")) {
+        setErrorMessage("You have submitted too quickly. Please wait a moment and try again.");
       } else {
-        setErrorMessage("Please try again or email support@classeasily.com.");
+        const fromFields = formatApiErrors(data);
+        if (fromFields) {
+          setErrorMessage(fromFields);
+        } else if (apiDetail) {
+          setErrorMessage(apiDetail);
+        } else {
+          setErrorMessage("Please try again or email support@classeasily.com.");
+        }
       }
       setStatus("error");
     } finally {
@@ -509,7 +550,9 @@ export default function InquiryForm() {
       await next();
       return;
     }
-    await submitInquiry(values);
+    // `onFinish` only includes mounted fields; step-0 fields are unmounted here.
+    const allValues = { ...form.getFieldsValue(true), ...values };
+    await submitInquiry(allValues);
   };
 
   const handlePrimaryAction = async () => {
