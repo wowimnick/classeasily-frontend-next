@@ -83,16 +83,6 @@ const MobileSummary = styled.p`
   font-weight: 500;
 `;
 
-const PendingInline = styled.div`
-  margin-bottom: 12px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #f4f4f5;
-  font-size: 13px;
-  color: #52525b;
-  display: inline-block;
-`;
-
 const MobileActionsWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -508,7 +498,6 @@ const ClassInformation = React.memo(
     description,
     descriptionSummary,
     descriptionSections,
-    descriptionAiStatus,
     reviewCount = 0,
     averageRating = 0,
     businessData,
@@ -688,11 +677,6 @@ const ClassInformation = React.memo(
         )}
 
         <DescriptionSection>
-          {descriptionAiStatus === "pending" &&
-          sectionList.length === 0 &&
-          !(descriptionSummary && String(descriptionSummary).trim()) ? (
-            <PendingInline>Refreshing description layout…</PendingInline>
-          ) : null}
           {sectionList.length > 0 ? (
             sectionList.map((sec, idx) => (
               <CollapsibleSection

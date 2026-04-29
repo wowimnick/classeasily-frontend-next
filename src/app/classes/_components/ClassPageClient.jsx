@@ -1515,7 +1515,6 @@ export default function ClassPageClient({
               description={classDetailForDescription.description}
               descriptionSummary={classDetailForDescription.description_summary}
               descriptionSections={classDetailForDescription.description_sections}
-              descriptionAiStatus={classDetailForDescription.description_ai_status}
               reviewCount={classData.review_count || 0}
               averageRating={classData.average_rating || 0}
               businessData={businessData}
