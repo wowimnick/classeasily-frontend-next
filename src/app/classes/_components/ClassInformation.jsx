@@ -682,6 +682,7 @@ const ClassInformation = React.memo(
               <CollapsibleSection
                 key={sec.id || sec.title || idx}
                 title={sec.title}
+                lordicon={sec.lordicon}
                 icon={sec.icon}
                 defaultOpen={idx < 2}
               >

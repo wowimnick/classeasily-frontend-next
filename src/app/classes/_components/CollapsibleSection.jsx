@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { Collapse } from "antd";
 import { ChevronDown } from "lucide-react";
 import { lazy, Suspense, memo } from "react";
+import { LordIcon } from "@/services/ReactUtils";
 
 const IconFallback = (props) => (
   <span {...props} style={{ width: 16, height: 16, display: "inline-block" }} />
@@ -65,14 +66,20 @@ const BodyText = styled.div`
 `;
 
 /**
- * Renders one collapsible block (title, optional lucide icon, body text).
+ * Renders one collapsible block (Lordicon CDN URL when present, else legacy Lucide name, body text).
  */
 export default function CollapsibleSection({
   title,
+  lordicon,
   icon,
   defaultOpen = false,
   children,
 }) {
+  const showLord =
+    typeof lordicon === "string" &&
+    lordicon.startsWith("https://cdn.lordicon.com/") &&
+    lordicon.endsWith(".json");
+
   return (
     <StyledCollapse
       bordered={false}
@@ -92,7 +99,17 @@ export default function CollapsibleSection({
           key: "panel",
           label: (
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {icon ? <SectionIcon iconName={icon} size={18} strokeWidth={2} /> : null}
+              {showLord ? (
+                <LordIcon
+                  src={lordicon}
+                  trigger="hover"
+                  colors="primary:#52525b"
+                  size="22px"
+                  style={{ flexShrink: 0 }}
+                />
+              ) : icon ? (
+                <SectionIcon iconName={icon} size={18} strokeWidth={2} />
+              ) : null}
               {title}
             </span>
           ),
