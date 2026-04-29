@@ -6,6 +6,7 @@ import { Button, Typography, Tooltip, Divider } from "antd";
 import { Share2, Heart, Star, MessageCircle } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 import CollapsibleSection from "./CollapsibleSection";
+import { renderTextWithBold } from "./formatDescriptionText";
 
 const { Paragraph, Title } = Typography;
 
@@ -362,6 +363,11 @@ const Description = styled(Paragraph)`
     margin-bottom: 0 !important;
     word-wrap: break-word;
     white-space: pre-line;
+
+    strong {
+      font-weight: 600;
+      color: #111;
+    }
     max-height: ${(props) =>
       props.$canBeTruncated && !props.$expanded
         ? `${COLLAPSED_MAX_HEIGHT_PX}px`
@@ -682,9 +688,7 @@ const ClassInformation = React.memo(
               <CollapsibleSection
                 key={sec.id || sec.title || idx}
                 title={sec.title}
-                lordicon={sec.lordicon}
-                icon={sec.icon}
-                defaultOpen={idx < 2}
+                defaultOpen={idx === 0}
               >
                 {sec.body}
               </CollapsibleSection>
@@ -697,7 +701,7 @@ const ClassInformation = React.memo(
                 $canBeTruncated={canBeTruncated}
                 id="class-description"
               >
-                {description}
+                {renderTextWithBold(description)}
               </Description>
               {canBeTruncated && (
                 <ShowMoreButton

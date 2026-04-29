@@ -4,37 +4,7 @@ import React from "react";
 import styled from "styled-components";
 import { Collapse } from "antd";
 import { ChevronDown } from "lucide-react";
-import { lazy, Suspense, memo } from "react";
-import { LordIcon } from "@/services/ReactUtils";
-
-const IconFallback = (props) => (
-  <span {...props} style={{ width: 16, height: 16, display: "inline-block" }} />
-);
-
-const lazyIconCache = new Map();
-function getLazyIcon(iconName) {
-  const key = iconName || "Info";
-  if (!lazyIconCache.has(key)) {
-    lazyIconCache.set(
-      key,
-      lazy(() =>
-        import("lucide-react").then((module) => ({
-          default: module[key] || module.Info,
-        })),
-      ),
-    );
-  }
-  return lazyIconCache.get(key);
-}
-
-const SectionIcon = memo(({ iconName, ...props }) => {
-  const IconComponent = getLazyIcon(iconName);
-  return (
-    <Suspense fallback={<IconFallback {...props} />}>
-      <IconComponent {...props} />
-    </Suspense>
-  );
-});
+import { renderTextWithBold } from "./formatDescriptionText";
 
 const StyledCollapse = styled(Collapse)`
   background: transparent !important;
@@ -63,23 +33,21 @@ const BodyText = styled.div`
   line-height: 1.6;
   color: #333;
   white-space: pre-line;
+
+  strong {
+    font-weight: 600;
+    color: #111;
+  }
 `;
 
 /**
- * Renders one collapsible block (Lordicon CDN URL when present, else legacy Lucide name, body text).
+ * Collapsible block: title (include one leading emoji in copy from the API), body supports **bold**.
  */
 export default function CollapsibleSection({
   title,
-  lordicon,
-  icon,
   defaultOpen = false,
   children,
 }) {
-  const showLord =
-    typeof lordicon === "string" &&
-    lordicon.startsWith("https://cdn.lordicon.com/") &&
-    lordicon.endsWith(".json");
-
   return (
     <StyledCollapse
       bordered={false}
@@ -97,23 +65,10 @@ export default function CollapsibleSection({
       items={[
         {
           key: "panel",
-          label: (
-            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {showLord ? (
-                <LordIcon
-                  src={lordicon}
-                  trigger="hover"
-                  colors="primary:#52525b"
-                  size="22px"
-                  style={{ flexShrink: 0 }}
-                />
-              ) : icon ? (
-                <SectionIcon iconName={icon} size={18} strokeWidth={2} />
-              ) : null}
-              {title}
-            </span>
+          label: title,
+          children: (
+            <BodyText>{renderTextWithBold(children)}</BodyText>
           ),
-          children: <BodyText>{children}</BodyText>,
         },
       ]}
     />
