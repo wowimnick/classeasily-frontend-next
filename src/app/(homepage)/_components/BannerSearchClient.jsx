@@ -30,8 +30,6 @@ import {
   formatCollectionDisplayName,
 } from "@/context/SearchContext";
 import { collectionService } from "@/services/apiService";
-import GlobalSearchBar from "@/components/search/GlobalSearchBar";
-
 import CustomCalendar from "./CustomCalendar";
 
 // --- HELPER HOOKS ---
@@ -214,11 +212,6 @@ const SearchModeHeightAnimator = styled(motion.div)`
   display: flex;
   justify-content: center;
   overflow: visible;
-`;
-
-const KeywordModeShell = styled(motion.div)`
-  width: 100%;
-  max-width: 520px;
 `;
 
 const POPUP_CONTENT_PADDING = 16;
@@ -659,8 +652,6 @@ export default function BannerSearchClient({ mode }) {
   } = useSearch();
 
   const [iWantCollections, setIWantCollections] = useState([]);
-  const [isKeywordMode, setIsKeywordMode] = useState(false);
-  const [searchModeDirection, setSearchModeDirection] = useState(1);
   const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
   const [isSwitching, setIsSwitching] = useState(false);
@@ -671,7 +662,6 @@ export default function BannerSearchClient({ mode }) {
   const dateRef = useRef(null);
   const collectionRef = useRef(null);
   const guidedModeRef = useRef(null);
-  const keywordModeRef = useRef(null);
 
   useClickOutside(containerRef, () => {
     setActiveField(null);
@@ -757,13 +747,6 @@ export default function BannerSearchClient({ mode }) {
     if (section) section.scrollIntoView({ behavior: "smooth" });
   };
 
-  const switchSearchMode = (toKeywordMode) => {
-    setSearchModeDirection(toKeywordMode ? 1 : -1);
-    setIsKeywordMode(toKeywordMode);
-    setActiveField(null);
-    setIsSwitching(false);
-  };
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -780,9 +763,7 @@ export default function BannerSearchClient({ mode }) {
   }, []);
 
   useLayoutEffect(() => {
-    const activeModeElement = isKeywordMode
-      ? keywordModeRef.current
-      : guidedModeRef.current;
+    const activeModeElement = guidedModeRef.current;
 
     if (!activeModeElement) return;
 
@@ -799,7 +780,7 @@ export default function BannerSearchClient({ mode }) {
     const observer = new ResizeObserver(updateHeight);
     observer.observe(activeModeElement);
     return () => observer.disconnect();
-  }, [isKeywordMode]);
+  }, [activeField]);
 
   const collectionDisplay = selectedCollection
     ? formatCollectionDisplayName(
@@ -904,37 +885,6 @@ export default function BannerSearchClient({ mode }) {
       transition: { delay: 0.1, duration: 0.3, ease: "easeOut" },
     },
     exit: { opacity: 0, transition: { duration: 0 } },
-  };
-
-  const modeSwapVariants = {
-    enter: (direction) => ({
-      opacity: 0,
-      y: direction > 0 ? 20 : -20,
-      scale: 0.965,
-      filter: "blur(8px)",
-    }),
-    center: {
-      opacity: 1,
-      y: [0, -3, 0],
-      scale: [0.985, 1.01, 1],
-      filter: "blur(0px)",
-      transition: {
-        y: { duration: 0.52, ease: [0.22, 1, 0.36, 1] },
-        scale: { duration: 0.52, ease: [0.22, 1, 0.36, 1] },
-        opacity: { duration: 0.32 },
-        filter: { duration: 0.28 },
-      },
-    },
-    exit: (direction) => ({
-      opacity: 0,
-      y: direction > 0 ? -16 : 16,
-      scale: 0.97,
-      filter: "blur(6px)",
-      transition: {
-        duration: 0.28,
-        ease: [0.4, 0, 0.2, 1],
-      },
-    }),
   };
 
   if (mode === "announcement") {
@@ -1104,30 +1054,10 @@ export default function BannerSearchClient({ mode }) {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <SearchModeStage>
-          <AnimatePresence custom={searchModeDirection} mode="wait" initial={false}>
-            {isKeywordMode ? (
-              <KeywordModeShell
-                key="keyword-mode"
-                ref={keywordModeRef}
-                custom={searchModeDirection}
-                variants={modeSwapVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <GlobalSearchBar variant="home-keyword" inverseColors={false} />
-              </KeywordModeShell>
-            ) : (
-              <motion.div
-                key="pill-mode"
-                ref={guidedModeRef}
-                custom={searchModeDirection}
-                variants={modeSwapVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                style={{ width: "100%", display: "flex", justifyContent: "center" }}
-              >
+          <motion.div
+            ref={guidedModeRef}
+            style={{ width: "100%", display: "flex", justifyContent: "center" }}
+          >
                 <SearchFormWrapper
                   ref={containerRef}
                   onSubmit={handleSearchSubmit}
@@ -1375,39 +1305,8 @@ export default function BannerSearchClient({ mode }) {
                 </AnimatePresence>
                 </SearchFormWrapper>
               </motion.div>
-            )}
-          </AnimatePresence>
         </SearchModeStage>
       </SearchModeHeightAnimator>
-
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 650,
-          marginTop: 14,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => switchSearchMode(!isKeywordMode)}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#fff",
-            fontSize: 15,
-            fontWeight: 600,
-            textDecoration: "underline",
-            textUnderlineOffset: 4,
-            cursor: "pointer",
-          }}
-        >
-          {isKeywordMode ? "switch back to guided search" : "or search with keyword"}
-        </button>
-      </div>
 
     </>
   );

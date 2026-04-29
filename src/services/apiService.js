@@ -2110,6 +2110,16 @@ export const collectionService = {
     const data = response.data;
     return Array.isArray(data) ? data : [];
   },
+  /** Active sub-collections for a top-level collection slug (explore filters). */
+  fetchChildren: async (parentSlug, signal) => {
+    const safe = encodeURIComponent(parentSlug);
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.PUBLIC_CLASSES}collections/${safe}/children/`,
+      { signal },
+    );
+    const data = response.data;
+    return Array.isArray(data) ? data : [];
+  },
 };
 
 /**

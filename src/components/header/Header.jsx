@@ -539,7 +539,7 @@ const HeaderContent = ({
               $hoverColor="rgba(255,255,255,0.2)"
               $isScrolled={isScrolled}
             >
-              For teams
+              Corporate
             </AuthLink>
           </Link>
           <Link href="/business" legacyBehavior>

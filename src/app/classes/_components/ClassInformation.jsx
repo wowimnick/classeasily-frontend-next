@@ -5,6 +5,7 @@ import styled, { keyframes } from "styled-components";
 import { Button, Typography, Tooltip, Divider } from "antd";
 import { Share2, Heart, Star, MessageCircle } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
+import CollapsibleSection from "./CollapsibleSection";
 
 const { Paragraph, Title } = Typography;
 
@@ -73,6 +74,25 @@ const MobileStyledTitle = styled(Title)`
     text-overflow: ellipsis;
   }
 `;
+const MobileSummary = styled.p`
+  margin: 10px 1rem 0;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #52525b;
+  font-weight: 500;
+`;
+
+const PendingInline = styled.div`
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 13px;
+  color: #52525b;
+  display: inline-block;
+`;
+
 const MobileActionsWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -486,6 +506,9 @@ const ClassInformation = React.memo(
   ({
     title,
     description,
+    descriptionSummary,
+    descriptionSections,
+    descriptionAiStatus,
     reviewCount = 0,
     averageRating = 0,
     businessData,
@@ -501,7 +524,13 @@ const ClassInformation = React.memo(
     const [canBeTruncated, setCanBeTruncated] = useState(false);
     const descriptionRef = useRef(null);
 
+    const sectionList = Array.isArray(descriptionSections) ? descriptionSections : [];
+
     useLayoutEffect(() => {
+      if (sectionList.length > 0) {
+        setCanBeTruncated(false);
+        return;
+      }
       const checkTruncation = () => {
         if (descriptionRef.current) {
           setCanBeTruncated(
@@ -512,7 +541,7 @@ const ClassInformation = React.memo(
       checkTruncation();
       window.addEventListener("resize", checkTruncation);
       return () => window.removeEventListener("resize", checkTruncation);
-    }, [description]);
+    }, [description, sectionList.length]);
 
     const toggleDescription = () =>
       setIsDescriptionExpanded(!isDescriptionExpanded);
@@ -534,6 +563,9 @@ const ClassInformation = React.memo(
           <MobileTitleRow>
             <MobileStyledTitle level={1}>{title}</MobileStyledTitle>
           </MobileTitleRow>
+          {descriptionSummary ? (
+            <MobileSummary>{descriptionSummary}</MobileSummary>
+          ) : null}
         </MobileHeaderSection>
 
         <BusinessAndAskRow>
@@ -656,23 +688,41 @@ const ClassInformation = React.memo(
         )}
 
         <DescriptionSection>
-          <Description
-            ref={descriptionRef}
-            $expanded={isDescriptionExpanded}
-            $canBeTruncated={canBeTruncated}
-            id="class-description"
-          >
-            {description}
-          </Description>
-          {canBeTruncated && (
-            <ShowMoreButton
-              type="link"
-              onClick={toggleDescription}
-              aria-expanded={isDescriptionExpanded}
-              aria-controls="class-description"
-            >
-              {isDescriptionExpanded ? "Show less" : "Show more"}
-            </ShowMoreButton>
+          {descriptionAiStatus === "pending" ? (
+            <PendingInline>Refreshing description layout…</PendingInline>
+          ) : null}
+          {sectionList.length > 0 ? (
+            sectionList.map((sec, idx) => (
+              <CollapsibleSection
+                key={sec.id || sec.title || idx}
+                title={sec.title}
+                icon={sec.icon}
+                defaultOpen={idx < 2}
+              >
+                {sec.body}
+              </CollapsibleSection>
+            ))
+          ) : (
+            <>
+              <Description
+                ref={descriptionRef}
+                $expanded={isDescriptionExpanded}
+                $canBeTruncated={canBeTruncated}
+                id="class-description"
+              >
+                {description}
+              </Description>
+              {canBeTruncated && (
+                <ShowMoreButton
+                  type="link"
+                  onClick={toggleDescription}
+                  aria-expanded={isDescriptionExpanded}
+                  aria-controls="class-description"
+                >
+                  {isDescriptionExpanded ? "Show less" : "Show more"}
+                </ShowMoreButton>
+              )}
+            </>
           )}
         </DescriptionSection>
       </InfoWrapper>

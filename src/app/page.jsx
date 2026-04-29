@@ -106,7 +106,8 @@ export default async function HomePage() {
       "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://classeasily.com/explore?query={search_term_string}",
+      target:
+        "https://classeasily.com/explore?collection={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };

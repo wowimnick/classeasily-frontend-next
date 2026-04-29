@@ -15,7 +15,6 @@ import {
   Users,
   Minus,
   Plus,
-  Search,
 } from "lucide-react";
 import { ConfigProvider, Modal } from "antd";
 import Slider from "@/components/explore/Slider";
@@ -351,7 +350,6 @@ export default function FilterModal({
       timePreference: [],
       days: [],
       classType: "class",
-      keyword: "",
       date: "",
       startDate: "",
       endDate: "",
@@ -398,43 +396,6 @@ export default function FilterModal({
             );
           })}
         </SortGrid>
-      </Section>
-
-      <Section>
-        <SectionTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Search size={20} aria-hidden />
-          Keyword
-        </SectionTitle>
-        <p
-          style={{
-            fontSize: 14,
-            color: "#717171",
-            marginTop: -8,
-            marginBottom: 16,
-            lineHeight: 1.45,
-          }}
-        >
-          Match class titles, topics, or tags. Clear the field and apply to
-          remove this filter.
-        </p>
-        <input
-          type="search"
-          enterKeyHint="search"
-          value={tempFilters.keyword || ""}
-          onChange={(e) =>
-            setTempFilters((prev) => ({ ...prev, keyword: e.target.value }))
-          }
-          placeholder="e.g. Pottery, Spanish, date night…"
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            padding: "12px 14px",
-            fontSize: 15,
-            borderRadius: 12,
-            border: `1px solid ${themeToken.borderDefault}`,
-            outline: "none",
-          }}
-        />
       </Section>
 
       <Section>

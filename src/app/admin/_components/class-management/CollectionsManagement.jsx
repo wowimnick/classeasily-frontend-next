@@ -542,6 +542,7 @@ const COLLECTION_FORM_DEFAULTS = {
   show_on_homepage_rows: true,
   icon_name: "",
   color: "",
+  parent: undefined,
 };
 
 function mapCollectionToFormValues(item) {
@@ -572,11 +573,18 @@ function mapCollectionToFormValues(item) {
     show_on_homepage_rows: item.show_on_homepage_rows !== false,
     icon_name: normalizeLucideIconName(item.icon_name) || "",
     color: item.color || "",
+    parent:
+      item.parent != null && item.parent !== ""
+        ? typeof item.parent === "object"
+          ? item.parent?.id
+          : item.parent
+        : undefined,
   };
 }
 
 // --- DND & UTILITIES ---
 const RowContext = createContext({});
+const CollectionTableContext = createContext({ rootIdSet: new Set() });
 
 const DragHandleButton = styled(Button)`
   cursor: grab;
@@ -599,6 +607,18 @@ const DragHandle = () => {
 };
 
 const Row = (props) => {
+  const { rootIdSet } = useContext(CollectionTableContext);
+  const rawKey = props["data-row-key"];
+  const rowKey =
+    typeof rawKey === "string" && /^\d+$/.test(rawKey) ? Number(rawKey) : rawKey;
+  const isRoot =
+    rootIdSet.has(rowKey) ||
+    (typeof rawKey === "string" && rootIdSet.has(Number(rawKey)));
+
+  if (!isRoot) {
+    return <tr {...props} />;
+  }
+
   const {
     attributes,
     listeners,
@@ -607,7 +627,7 @@ const Row = (props) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props["data-row-key"] });
+  } = useSortable({ id: rowKey });
   const style = {
     ...props.style,
     transform: CSS.Translate.toString(transform),
@@ -640,6 +660,7 @@ const UniversalEditDrawer = ({
   onSave,
   isLoading,
   form,
+  parentOptions = [],
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -793,6 +814,29 @@ const UniversalEditDrawer = ({
                   />
                 </Tooltip>
               }
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="parent"
+            label={<FormLabel>Parent collection</FormLabel>}
+            extra={
+              <FormHelpText style={{ marginTop: 4 }}>
+                Leave empty for a top-level chip on the homepage. Choose a parent to create a
+                sub-tag for explore filters (one level deep).
+              </FormHelpText>
+            }
+          >
+            <Select
+              allowClear
+              size="large"
+              placeholder="Top-level (no parent)"
+              showSearch
+              optionFilterProp="label"
+              options={parentOptions.map((c) => ({
+                value: c.id,
+                label: c.name,
+              }))}
             />
           </Form.Item>
 
@@ -1368,18 +1412,77 @@ const CollectionsManagement = () => {
     }
   }, [fetchCollections]);
 
+  const parentOptions = useMemo(
+    () =>
+      collections
+        .filter(
+          (c) =>
+            (c.parent == null || c.parent === undefined) &&
+            c.id !== selectedItem?.id,
+        )
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+    [collections, selectedItem],
+  );
+
+  const orderedCollections = useMemo(() => {
+    const roots = collections
+      .filter((c) => c.parent == null || c.parent === undefined)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const out = [];
+    const seen = new Set();
+    for (const r of roots) {
+      out.push(r);
+      seen.add(r.id);
+      const kids = collections
+        .filter((c) => c.parent === r.id)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      for (const k of kids) {
+        out.push(k);
+        seen.add(k.id);
+      }
+    }
+    for (const c of collections) {
+      if (!seen.has(c.id)) out.push(c);
+    }
+    return out;
+  }, [collections]);
+
+  const rootIdSet = useMemo(
+    () =>
+      new Set(
+        collections
+          .filter((c) => c.parent == null || c.parent === undefined)
+          .map((c) => c.id),
+      ),
+    [collections],
+  );
+
+  const rootIdsOrdered = useMemo(
+    () =>
+      orderedCollections
+        .filter((c) => c.parent == null || c.parent === undefined)
+        .map((c) => c.id),
+    [orderedCollections],
+  );
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setCollections((prev) => {
-        const oldIndex = prev.findIndex((c) => c.id === active.id);
-        const newIndex = prev.findIndex((c) => c.id === over.id);
-        if (oldIndex === -1 || newIndex === -1) return prev;
-        const newArray = arrayMove(prev, oldIndex, newIndex);
-        updateOrder(newArray);
-        return newArray;
-      });
-    }
+    if (!active?.id || !over?.id || active.id === over.id) return;
+    setCollections((prev) => {
+      const rootsOnly = prev
+        .filter((c) => c.parent == null || c.parent === undefined)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const oldIndex = rootsOnly.findIndex((c) => c.id === active.id);
+      const newIndex = rootsOnly.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const newRoots = arrayMove(rootsOnly, oldIndex, newIndex).map((r, i) => ({
+        ...r,
+        sort_order: i,
+      }));
+      updateOrder(newRoots);
+      const nonRoots = prev.filter((c) => c.parent != null && c.parent !== undefined);
+      return [...newRoots, ...nonRoots];
+    });
   };
 
   const updateOrder = async (items) => {
@@ -1513,6 +1616,7 @@ const CollectionsManagement = () => {
       payload.show_on_homepage_rows = safeValues.show_on_homepage_rows !== false;
       payload.icon_name = normalizeLucideIconName(safeValues.icon_name) || "";
       payload.color = String(safeValues.color || "").trim();
+      payload.parent = safeValues.parent ?? null;
 
       const response = selectedItem
         ? await classManagementService.updateCollection(selectedItem.id, payload)
@@ -1551,56 +1655,89 @@ const CollectionsManagement = () => {
   };
 
   const collectionColumns = [
-    { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
+    {
+      key: "sort",
+      width: 50,
+      fixed: "left",
+      render: (_, col) =>
+        col.parent != null && col.parent !== undefined ? (
+          <span style={{ display: "inline-block", width: 22 }} aria-hidden />
+        ) : (
+          <DragHandle />
+        ),
+    },
     {
       title: "Collection",
       key: "name",
-      render: (_, col) => (
-        <Space>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              backgroundColor: col.is_active
-                ? colors.success
-                : colors.textTertiary,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-            }}
-          >
-            <Sparkles size={14} />
-          </div>
-          <div>
+      render: (_, col) => {
+        const isChild = col.parent != null && col.parent !== undefined;
+        return (
+          <Space style={{ marginLeft: isChild ? 8 : 0 }}>
             <div
               style={{
-                fontWeight: 500,
-                fontSize: 14,
-                color: colors.textPrimary,
+                width: 24,
+                height: 24,
+                borderRadius: 6,
+                backgroundColor: col.is_active
+                  ? colors.success
+                  : colors.textTertiary,
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                justifyContent: "center",
+                color: "#fff",
               }}
             >
-              {col.name}
-              {col.type === "automated" && (
-                <Tag
-                  color="purple"
-                  style={{ margin: 0, fontSize: 10, lineHeight: "16px" }}
+              <Sparkles size={14} />
+            </div>
+            <div>
+              <div
+                style={{
+                  fontWeight: 500,
+                  fontSize: 14,
+                  color: colors.textPrimary,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                {isChild ? (
+                  <Tag
+                    style={{ margin: 0, fontSize: 10, lineHeight: "16px" }}
+                    color="default"
+                  >
+                    Sub
+                  </Tag>
+                ) : null}
+                {col.name}
+                {col.type === "automated" && (
+                  <Tag
+                    color="purple"
+                    style={{ margin: 0, fontSize: 10, lineHeight: "16px" }}
+                  >
+                    <Bot size={10} style={{ marginRight: 4 }} />
+                    Auto
+                  </Tag>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: colors.textSecondary }}>
+                /{col.slug}
+              </div>
+              {col.parent_name ? (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                    marginTop: 2,
+                  }}
                 >
-                  <Bot size={10} style={{ marginRight: 4 }} />
-                  Auto
-                </Tag>
-              )}
+                  Under {col.parent_name}
+                </div>
+              ) : null}
             </div>
-            <div style={{ fontSize: 12, color: colors.textSecondary }}>
-              /{col.slug}
-            </div>
-          </div>
-        </Space>
-      ),
+          </Space>
+        );
+      },
     },
     {
       title: "Classes",
@@ -1821,19 +1958,21 @@ const CollectionsManagement = () => {
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={collections.map((c) => c.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table
-                  columns={collectionColumns}
-                  dataSource={collections}
-                  rowKey="id"
-                  loading={loading}
-                  components={{ body: { row: Row } }}
-                  pagination={false}
-                />
-              </SortableContext>
+              <CollectionTableContext.Provider value={{ rootIdSet }}>
+                <SortableContext
+                  items={rootIdsOrdered}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <Table
+                    columns={collectionColumns}
+                    dataSource={orderedCollections}
+                    rowKey="id"
+                    loading={loading}
+                    components={{ body: { row: Row } }}
+                    pagination={false}
+                  />
+                </SortableContext>
+              </CollectionTableContext.Provider>
             </DndContext>
           </TableSection>
 
@@ -2052,6 +2191,7 @@ const CollectionsManagement = () => {
             onSave={handleSaveItem}
             isLoading={actionLoading}
             form={editForm}
+            parentOptions={parentOptions}
           />
         </DashboardWrapper>
       </ConfigProvider>

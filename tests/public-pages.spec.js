@@ -64,9 +64,9 @@ test.describe('Public pages and navigation', () => {
     await expect(page).toHaveURL(/\/business\/register/);
   });
 
-  test('footer: Help Center link works', async ({ page }) => {
+  test('footer: Contact us link works', async ({ page }) => {
     await scrollFooterIntoView(page);
-    await page.getByRole('link', { name: 'Help Center' }).click();
+    await page.getByRole('link', { name: 'Contact us' }).click();
     await expect(page).toHaveURL('/my-tickets');
   });
 

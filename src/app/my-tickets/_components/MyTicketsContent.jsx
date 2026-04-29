@@ -7,14 +7,12 @@ import {
   Input,
   Empty,
   ConfigProvider,
-  Modal,
   Form,
   Select,
 } from "antd";
 import message from "@/lib/message";
 import {
   Ticket as TicketIcon,
-  PlusCircle,
   Search,
   Clock,
   Tag as TagIcon,
@@ -22,7 +20,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronRight,
-  MessageSquare,
 } from "lucide-react";
 import styled, { ThemeProvider } from "styled-components";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -45,7 +42,7 @@ const PageWrapper = styled.div`
 
 const PageContainer = styled.div`
   flex-grow: 1;
-  max-width: 900px;
+  max-width: 1040px;
   width: 100%;
   margin: 0 auto;
   padding: 24px 24px 48px;
@@ -55,50 +52,58 @@ const PageContainer = styled.div`
   }
 `;
 
-const HeaderSection = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 28px;
+const IntroCard = styled.div`
+  margin-bottom: 24px;
+  padding: 20px 22px;
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  background: #fafafa;
 
-  @media (max-width: 640px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-`;
-
-const HeaderTexts = styled.div`
   h1 {
     font-size: 26px;
     font-weight: 700;
     color: #334155;
-    margin: 0 0 4px;
-    line-height: 1.2;
+    margin: 0 0 8px;
   }
-
   p {
-    font-size: 14px;
-    color: #717171;
-    margin: 0;
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #52525b;
+    line-height: 1.5;
+  }
+  a {
+    color: #e11d48;
+    font-weight: 600;
   }
 `;
 
-const CreateTicketButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  flex-shrink: 0;
+const TwoColumn = styled.div`
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 28px;
+  align-items: start;
 
-  @media (max-width: 640px) {
-    width: 100%;
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
   }
+`;
+
+const ContactFormCard = styled.div`
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 20px 22px;
+  background: #fff;
+
+  h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #334155;
+  }
+`;
+
+const TicketsColumn = styled.div`
+  min-width: 0;
 `;
 
 const ControlsRow = styled.div`
@@ -262,20 +267,6 @@ const CenteredState = styled.div`
   border-radius: 12px;
 `;
 
-const StyledModal = styled(Modal)`
-  .ant-modal-content {
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .ant-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #ebebeb;
-  }
-  .ant-modal-body {
-    padding: 0px;
-  }
-`;
-
 // --- Helpers ---
 const statusMap = {
   open: {
@@ -335,7 +326,6 @@ export default function MyTicketsContent() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [createForm] = Form.useForm();
   const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
@@ -377,7 +367,6 @@ export default function MyTicketsContent() {
       const response = await CustomerSupportTicketService.createTicket(values);
       if (response.success) {
         message.success("Support ticket created successfully.");
-        setCreateModalVisible(false);
         createForm.resetFields();
         const newTickets = await CustomerSupportTicketService.getUserTickets();
         if (newTickets.success) setTickets(newTickets.data);
@@ -398,10 +387,11 @@ export default function MyTicketsContent() {
         description={
           <div style={{ maxWidth: 280, margin: "0 auto" }}>
             <h4 style={{ margin: "0 0 8px", fontSize: 16, color: "#334155", fontWeight: 600 }}>
-              No support tickets yet
+              No conversations yet
             </h4>
             <p style={{ margin: 0, color: "#717171", fontSize: 14 }}>
-              Need help? Create a ticket to start a conversation with our support team.
+              Use the &quot;Send a message&quot; form to start a conversation — we&apos;ll reply by
+              email.
             </p>
           </div>
         }
@@ -457,149 +447,138 @@ export default function MyTicketsContent() {
     </TicketsList>
   );
 
+  const ticketForm = (
+    <Form form={createForm} layout="vertical" onFinish={handleSubmitTicket}>
+      <Form.Item
+        name="subject"
+        label="Subject"
+        rules={[{ required: true, message: "Subject required" }]}
+      >
+        <Input placeholder="Brief summary of your issue" />
+      </Form.Item>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <Form.Item
+          name="category"
+          label="Category"
+          rules={[{ required: true, message: "Select category" }]}
+        >
+          <Select placeholder="Select...">
+            <Option value="booking">Booking</Option>
+            <Option value="payment">Payment</Option>
+            <Option value="account">Account</Option>
+            <Option value="technical">Technical</Option>
+            <Option value="other">Other</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item name="priority" label="Priority" initialValue="medium">
+          <Select>
+            <Option value="low">Low</Option>
+            <Option value="medium">Medium</Option>
+            <Option value="high">High</Option>
+            <Option value="urgent">Urgent</Option>
+          </Select>
+        </Form.Item>
+      </div>
+
+      <Form.Item
+        name="description"
+        label="Details"
+        rules={[{ required: true, message: "Details required" }]}
+      >
+        <TextArea
+          placeholder="Describe your issue..."
+          rows={4}
+          showCount
+          maxLength={1000}
+        />
+      </Form.Item>
+
+      <Button
+        type="primary"
+        htmlType="submit"
+        loading={isCreatingTicket}
+        block
+        size="large"
+        style={{ marginTop: 8, fontWeight: 600 }}
+      >
+        Submit ticket
+      </Button>
+    </Form>
+  );
+
   return (
     <ThemeProvider theme={globalTheme}>
       <ConfigProvider theme={globalTheme}>
         <PageWrapper>
           <ExploreHeader showOptionsWrapper={false} />
           <PageContainer>
-            <HeaderSection>
-              <HeaderTexts>
-                <h1>Support Center</h1>
-                <p>Manage your support tickets</p>
-              </HeaderTexts>
-              <CreateTicketButton
-                type="primary"
-                icon={<PlusCircle size={18} />}
-                onClick={() => setCreateModalVisible(true)}
-              >
-                New ticket
-              </CreateTicketButton>
-            </HeaderSection>
+            <IntroCard>
+              <h1>Contact us</h1>
+              <p>
+                We usually reply within one business day. For anything urgent, email us
+                directly at{" "}
+                <a href="mailto:support@classeasily.com">support@classeasily.com</a>.
+              </p>
+            </IntroCard>
 
-            {tickets.length > 0 && (
-              <ControlsRow>
-                <SearchInputWrapper>
-                  <Input
-                    placeholder="Search tickets..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    prefix={<Search size={16} />}
-                    allowClear
-                  />
-                </SearchInputWrapper>
-                <FilterPills>
-                  <FilterPill $active={filter === "all"} onClick={() => setFilter("all")}>
-                    All
-                  </FilterPill>
-                  <FilterPill $active={filter === "open"} onClick={() => setFilter("open")}>
-                    Open {stats.open > 0 && `(${stats.open})`}
-                  </FilterPill>
-                  <FilterPill $active={filter === "in_progress"} onClick={() => setFilter("in_progress")}>
-                    In progress {stats.inProgress > 0 && `(${stats.inProgress})`}
-                  </FilterPill>
-                  <FilterPill $active={filter === "resolved"} onClick={() => setFilter("resolved")}>
-                    Resolved {stats.resolved > 0 && `(${stats.resolved})`}
-                  </FilterPill>
-                </FilterPills>
-              </ControlsRow>
-            )}
+            <TwoColumn>
+              <ContactFormCard>
+                <h2>Send a message</h2>
+                {ticketForm}
+              </ContactFormCard>
 
-            {isLoading ? (
-              <CenteredState>
-                <GlobalLoaderWithoutInlineStyles />
-              </CenteredState>
-            ) : tickets.length === 0 ? (
-              renderEmptyState()
-            ) : filteredTickets.length === 0 ? (
-              <CenteredState>
-                <Empty description="No tickets match your filters." />
-              </CenteredState>
-            ) : (
-              renderTickets()
-            )}
+              <TicketsColumn>
+                {tickets.length > 0 && (
+                  <ControlsRow>
+                    <SearchInputWrapper>
+                      <Input
+                        placeholder="Search tickets..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        prefix={<Search size={16} />}
+                        allowClear
+                      />
+                    </SearchInputWrapper>
+                    <FilterPills>
+                      <FilterPill $active={filter === "all"} onClick={() => setFilter("all")}>
+                        All
+                      </FilterPill>
+                      <FilterPill $active={filter === "open"} onClick={() => setFilter("open")}>
+                        Open {stats.open > 0 && `(${stats.open})`}
+                      </FilterPill>
+                      <FilterPill
+                        $active={filter === "in_progress"}
+                        onClick={() => setFilter("in_progress")}
+                      >
+                        In progress {stats.inProgress > 0 && `(${stats.inProgress})`}
+                      </FilterPill>
+                      <FilterPill $active={filter === "resolved"} onClick={() => setFilter("resolved")}>
+                        Resolved {stats.resolved > 0 && `(${stats.resolved})`}
+                      </FilterPill>
+                    </FilterPills>
+                  </ControlsRow>
+                )}
+
+                {isLoading ? (
+                  <CenteredState>
+                    <GlobalLoaderWithoutInlineStyles />
+                  </CenteredState>
+                ) : tickets.length === 0 ? (
+                  renderEmptyState()
+                ) : filteredTickets.length === 0 ? (
+                  <CenteredState>
+                    <Empty description="No tickets match your filters." />
+                  </CenteredState>
+                ) : (
+                  renderTickets()
+                )}
+              </TicketsColumn>
+            </TwoColumn>
           </PageContainer>
           <FooterClient />
         </PageWrapper>
-
-        <StyledModal
-          title={
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <MessageSquare size={20} color={globalTheme.token.colorPrimary} />
-              <span style={{ fontWeight: 600 }}>Create ticket</span>
-            </span>
-          }
-          open={createModalVisible}
-          onCancel={() => setCreateModalVisible(false)}
-          footer={null}
-          width={480}
-          destroyOnClose
-          centered
-        >
-          <Form
-            form={createForm}
-            layout="vertical"
-            onFinish={handleSubmitTicket}
-          >
-            <Form.Item
-              name="subject"
-              label="Subject"
-              rules={[{ required: true, message: "Subject required" }]}
-            >
-              <Input placeholder="Brief summary of your issue" />
-            </Form.Item>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Form.Item
-                name="category"
-                label="Category"
-                rules={[{ required: true, message: "Select category" }]}
-              >
-                <Select placeholder="Select...">
-                  <Option value="booking">Booking</Option>
-                  <Option value="payment">Payment</Option>
-                  <Option value="account">Account</Option>
-                  <Option value="technical">Technical</Option>
-                  <Option value="other">Other</Option>
-                </Select>
-              </Form.Item>
-
-              <Form.Item name="priority" label="Priority" initialValue="medium">
-                <Select>
-                  <Option value="low">Low</Option>
-                  <Option value="medium">Medium</Option>
-                  <Option value="high">High</Option>
-                  <Option value="urgent">Urgent</Option>
-                </Select>
-              </Form.Item>
-            </div>
-
-            <Form.Item
-              name="description"
-              label="Details"
-              rules={[{ required: true, message: "Details required" }]}
-            >
-              <TextArea
-                placeholder="Describe your issue..."
-                rows={4}
-                showCount
-                maxLength={1000}
-              />
-            </Form.Item>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isCreatingTicket}
-              block
-              size="large"
-              style={{ marginTop: 8, fontWeight: 600 }}
-              key={`btn-${isCreatingTicket}`}
-            >
-              Submit ticket
-            </Button>
-          </Form>
-        </StyledModal>
       </ConfigProvider>
     </ThemeProvider>
   );

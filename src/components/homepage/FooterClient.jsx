@@ -427,8 +427,7 @@ export default function FooterClient({ collections = [] }) {
             <NavCol>
               <NavTitle>Support</NavTitle>
               <NavList>
-                <li><NavLinkA href="mailto:support@classeasily.com">Email Support</NavLinkA></li>
-                <li><NavLink href="/my-tickets">Help Center</NavLink></li>
+                <li><NavLink href="/my-tickets">Contact us</NavLink></li>
                 <li><NavLink href="/fees">Fees & Charges</NavLink></li>
                 <li><NavLink href="/terms-of-service">Trust & Safety</NavLink></li>
                 <li><NavLink href="/copyright-policy">Copyright Policy</NavLink></li>

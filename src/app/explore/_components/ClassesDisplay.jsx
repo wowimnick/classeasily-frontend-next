@@ -284,6 +284,9 @@ const ClassesDisplay = ({
   city,
   tag,
   totalClassesCount,
+  subCollections = [],
+  currentSubs = [],
+  onSubsChange,
 }) => {
   const applyRandomReviewOffset = (reviewCount, classId) => {
     const offset = classId % 10;
@@ -566,6 +569,10 @@ const ClassesDisplay = ({
             setIsFilterModalOpen={setIsFilterModalOpen}
             isMapVisible={isMapVisible}
             onShowMap={() => setIsMapVisible(true)}
+            subCollections={subCollections}
+            currentSubs={currentSubs}
+            onSubsChange={onSubsChange}
+            totalClassesCount={totalClassesCount}
           />
         </CategoriesWrapper>
         <ClassGridWrapper ref={gridWrapperRef}>

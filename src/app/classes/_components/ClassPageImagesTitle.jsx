@@ -76,6 +76,20 @@ const StyledTitle = styled(Title)`
     margin-bottom: 0 !important;
   }
 `;
+
+const SummaryLine = styled.p`
+  margin: 8px 0 0;
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  line-height: 1.45;
+  color: #52525b;
+  font-weight: 500;
+  max-width: 720px;
+`;
+
+const TitleTextBlock = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
 const ActionsWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -739,6 +753,7 @@ const ClassPageImagesTitle = React.memo(
     onShareClick,
     /** If set, merged into the copied/shared URL (e.g. optionId & date deep links). */
     shareUrlQueryString = "",
+    descriptionSummary = "",
   }) => {
     const [isGalleryModalVisible, setIsGalleryModalVisible] = useState(false);
     const [isEmbedModalVisible, setIsEmbedModalVisible] = useState(false);
@@ -878,7 +893,12 @@ const ClassPageImagesTitle = React.memo(
           {title && (
             <TitleSection>
               <TitleRow>
-                <StyledTitle level={1}>{title}</StyledTitle>
+                <TitleTextBlock>
+                  <StyledTitle level={1}>{title}</StyledTitle>
+                  {descriptionSummary ? (
+                    <SummaryLine>{descriptionSummary}</SummaryLine>
+                  ) : null}
+                </TitleTextBlock>
                 <ActionsWrapper>
                   <Tooltip
                     title={

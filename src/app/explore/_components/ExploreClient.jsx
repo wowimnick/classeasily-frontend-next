@@ -14,7 +14,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import ExploreHeader from "../../../components/explore/ExploreHeader";
-import { classService } from "@/services/apiService";
+import { classService, collectionService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
@@ -85,6 +85,9 @@ function buildApiParamsFromSearchParams(sp) {
   const tag = sp.get("tag");
   if (tag) apiParams.tag = tag;
 
+  const subs = sp.getAll("sub").filter(Boolean);
+  if (subs.length) apiParams.sub = subs;
+
   const keyword = sp.get("keyword");
   if (keyword) apiParams.keyword = keyword;
 
@@ -144,7 +147,7 @@ function ExploreClientContent({
     useSearch();
   const { location: userLocation } = useIpGeolocation();
 
-  // --- STATE ---
+  const [subCollections, setSubCollections] = useState([]);
   const [displayClasses, setDisplayClasses] = useState(initialClasses);
   const [totalClassesCount, setTotalClassesCount] = useState(initialTotalCount);
   const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
@@ -183,8 +186,32 @@ function ExploreClientContent({
 
   // --- DERIVED DATA FROM URL ---
   const currentCollection = searchParams.get("collection") || "";
+  const currentSubs = useMemo(
+    () => searchParams.getAll("sub").filter(Boolean),
+    [searchParams],
+  );
   const tag = searchParams.get("tag") || "";
   const currentSortBy = searchParams.get("sort_by") || "relevance";
+
+  useEffect(() => {
+    let cancelled = false;
+    const slug = currentCollection;
+    if (!slug) {
+      setSubCollections([]);
+      return;
+    }
+    (async () => {
+      try {
+        const rows = await collectionService.fetchChildren(slug);
+        if (!cancelled) setSubCollections(Array.isArray(rows) ? rows : []);
+      } catch {
+        if (!cancelled) setSubCollections([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentCollection]);
 
   const currentFilters = useMemo(() => {
     const defaultMaxPrice = 500;
@@ -209,7 +236,7 @@ function ExploreClientContent({
       timePreference: searchParams.getAll("time_preference") || [],
       days: searchParams.getAll("days") || [],
       classType: searchParams.get("class_type") || "class",
-      keyword: searchParams.get("keyword") || "",
+      keyword: "",
       date: searchParams.get("date") || "",
       startDate: searchParams.get("start_date") || "",
       endDate: searchParams.get("end_date") || "",
@@ -418,6 +445,7 @@ function ExploreClientContent({
 
       newParams.delete("category");
       newParams.delete("subcategory");
+      newParams.delete("sub");
 
       if (collectionSlug) {
         newParams.set("collection", collectionSlug);
@@ -428,6 +456,19 @@ function ExploreClientContent({
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
     [getCurrentSearchString, router, pathname, selectedLocation, searchTerm],
+  );
+
+  const handleSubsChange = useCallback(
+    (nextSubs) => {
+      setIsNavigating(true);
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete("sub");
+      (nextSubs || []).forEach((s) => {
+        if (s) newParams.append("sub", s);
+      });
+      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+    },
+    [searchParams, pathname, router],
   );
 
   const handleApplyModalChanges = useCallback(
@@ -443,7 +484,6 @@ function ExploreClientContent({
         "time_preference",
         "days",
         "class_type",
-        "keyword",
         "sort_by",
         "date",
         "start_date",
@@ -471,8 +511,6 @@ function ExploreClientContent({
       ) {
         newParams.set("class_type", newFilters.classType);
       }
-      const keywordTrim = (newFilters.keyword || "").trim();
-      if (keywordTrim) newParams.set("keyword", keywordTrim);
       if (newSort && newSort !== "relevance") {
         newParams.set("sort_by", newSort);
       }
@@ -517,6 +555,9 @@ function ExploreClientContent({
       city: routeParams.city,
       tag,
       totalClassesCount,
+      subCollections,
+      currentSubs,
+      onSubsChange: handleSubsChange,
     }),
     [
       displayClasses,
@@ -537,6 +578,9 @@ function ExploreClientContent({
       routeParams.city,
       tag,
       totalClassesCount,
+      subCollections,
+      currentSubs,
+      handleSubsChange,
     ],
   );
 

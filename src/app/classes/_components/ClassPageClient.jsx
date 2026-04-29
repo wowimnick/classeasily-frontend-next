@@ -1427,6 +1427,7 @@ export default function ClassPageClient({
           onFavoriteClick={handleFavoriteClick}
           onShareClick={handleOpenShareModal}
           shareUrlQueryString={classPageShareQuery}
+          descriptionSummary={classData.description_summary}
         />
 
         <MainContentLayout>
@@ -1444,6 +1445,9 @@ export default function ClassPageClient({
             <ClassInformation
               title={classData.title}
               description={classData.description}
+              descriptionSummary={classData.description_summary}
+              descriptionSections={classData.description_sections}
+              descriptionAiStatus={classData.description_ai_status}
               reviewCount={classData.review_count || 0}
               averageRating={classData.average_rating || 0}
               businessData={businessData}

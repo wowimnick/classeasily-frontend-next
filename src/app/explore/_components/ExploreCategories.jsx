@@ -23,6 +23,9 @@ import styled from "styled-components";
 
 // Defer FilterModal loading to reduce initial bundle size
 const FilterModal = dynamic(() => import("./FilterModal"), { ssr: false });
+const SubCollectionDrawer = dynamic(() => import("./SubCollectionDrawer"), {
+  ssr: false,
+});
 
 // Icon loading logic
 const IconFallback = (props) => (
@@ -445,6 +448,41 @@ const CategoryItem = memo(({ category, isSelected, onClick }) => (
   prevProps.isSelected === nextProps.isSelected
 );
 
+const SubPill = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: ${({ $selected }) =>
+    $selected ? "2px solid #111" : "1px solid #d4d4d8"};
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #111;
+  &:hover {
+    border-color: #71717a;
+  }
+`;
+
+const MobileTagsTrigger = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+`;
+
 const CollectionItem = memo(({ collection, isSelected, onClick }) => (
   <CollectionPill
     onClick={onClick}
@@ -456,6 +494,7 @@ const CollectionItem = memo(({ collection, isSelected, onClick }) => (
 ), (prevProps, nextProps) =>
   prevProps.collection.key === nextProps.collection.key &&
   prevProps.collection.slug === nextProps.collection.slug &&
+  prevProps.collection.is_all === nextProps.collection.is_all &&
   prevProps.isSelected === nextProps.isSelected
 );
 
@@ -467,6 +506,10 @@ function ExploreCategoriesContent({
   collections = [],
   currentCollection,
   onCollectionChange,
+  subCollections = [],
+  currentSubs = [],
+  onSubsChange,
+  totalClassesCount = 0,
   filters,
   onFiltersChange,
   currentSortBy,
@@ -480,6 +523,20 @@ function ExploreCategoriesContent({
     () => sortCollectionsByOrder(collections),
     [collections]
   );
+  const parentHasSubs =
+    Boolean(currentCollection) && (subCollections?.length || 0) > 0;
+
+  const [subDrawerOpen, setSubDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const fn = () => setIsMobile(mq.matches);
+    fn();
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
   const [optimisticCollection, setOptimisticCollection] =
     useState(currentCollection);
 
@@ -543,12 +600,30 @@ function ExploreCategoriesContent({
 
   const handleCollectionClick = useCallback(
     (collectionSlug) => {
-      if (optimisticCollection === collectionSlug) return;
-      setOptimisticCollection(collectionSlug);
-      onCollectionChange(collectionSlug);
+      const normalized =
+        collectionSlug === undefined || collectionSlug === null
+          ? ""
+          : String(collectionSlug);
+      if (optimisticCollection === normalized) return;
+      setOptimisticCollection(normalized);
+      onCollectionChange(normalized);
     },
     [optimisticCollection, onCollectionChange]
   );
+
+  const toggleSubSlug = useCallback(
+    (slug) => {
+      const next = new Set(currentSubs);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      onSubsChange([...next]);
+    },
+    [currentSubs, onSubsChange]
+  );
+
+  const clearSubs = useCallback(() => {
+    onSubsChange([]);
+  }, [onSubsChange]);
 
   return (
     <CategoriesWrapper>
@@ -567,10 +642,62 @@ function ExploreCategoriesContent({
             </PrevButton>
 
             <Categories ref={categoriesRef}>
-              {sortedCollections.map((collection, index) => {
+              {parentHasSubs && !isMobile ? (
+                <>
+                  <SubPill
+                    type="button"
+                    $selected={currentSubs.length === 0}
+                    aria-pressed={currentSubs.length === 0}
+                    onClick={() => onSubsChange([])}
+                  >
+                    All
+                  </SubPill>
+                  {subCollections.map((sub, index) => {
+                    const slug = sub.slug || sub.key || `sub-${index}`;
+                    const sel = currentSubs.includes(slug);
+                    return (
+                      <SubPill
+                        key={slug}
+                        type="button"
+                        $selected={sel}
+                        aria-pressed={sel}
+                        onClick={() => toggleSubSlug(slug)}
+                      >
+                        {sub.icon_name ? (
+                          <CategoryIcon iconName={sub.icon_name} size={16} />
+                        ) : null}
+                        {sub.name}
+                      </SubPill>
+                    );
+                  })}
+                </>
+              ) : parentHasSubs && isMobile ? (
+                <MobileTagsTrigger
+                  type="button"
+                  onClick={() => setSubDrawerOpen(true)}
+                >
+                  <Layers size={18} />
+                  Experience tags
+                  {currentSubs.length > 0 ? ` (${currentSubs.length})` : ""}
+                </MobileTagsTrigger>
+              ) : (
+              sortedCollections.map((collection, index) => {
+                const rawSlug = collection.key ?? collection.slug;
+                const slug =
+                  rawSlug === undefined || rawSlug === null ? "" : String(rawSlug);
                 const id =
-                  collection.key || collection.slug || `collection-${index}`;
-                const slug = collection.key || collection.slug;
+                  collection.key ||
+                  collection.slug ||
+                  (collection.is_all ? "all-chip" : `collection-${index}`);
+                const isAllChip =
+                  collection.is_all === true ||
+                  (slug === "" &&
+                    String(collection.name || "")
+                      .trim()
+                      .toLowerCase() === "all");
+                const isSelected = isAllChip
+                  ? !optimisticCollection
+                  : optimisticCollection === slug;
                 return (
                   <React.Fragment key={id}>
                     {index === 1 && (
@@ -578,12 +705,13 @@ function ExploreCategoriesContent({
                     )}
                     <CollectionItem
                       collection={collection}
-                      isSelected={optimisticCollection === slug}
-                      onClick={() => handleCollectionClick(slug)}
+                      isSelected={isSelected}
+                      onClick={() => handleCollectionClick(isAllChip ? "" : slug)}
                     />
                   </React.Fragment>
                 );
-              })}
+              })
+              )}
             </Categories>
 
             <NextButton
@@ -620,6 +748,18 @@ function ExploreCategoriesContent({
         currentSortBy={currentSortBy}
         onApplyChanges={onApplyModalChanges}
         onFiltersChangeForTags={onFiltersChange}
+      />
+      <SubCollectionDrawer
+        open={subDrawerOpen}
+        onOpenChange={setSubDrawerOpen}
+        subCollections={subCollections}
+        selectedSubs={currentSubs}
+        onToggle={(next) => onSubsChange(next)}
+        onClearAll={() => {
+          onSubsChange([]);
+          setSubDrawerOpen(false);
+        }}
+        resultCount={totalClassesCount}
       />
     </CategoriesWrapper>
   );
