@@ -1158,6 +1158,74 @@ export default function ClassPageClient({
     useState(false);
   const [contactHostOpen, setContactHostOpen] = useState(false);
 
+  /**
+   * Server-rendered class payload can be stale (Next fetch uses force-cache): if Gemini
+   * finished after that snapshot, description_ai_status may still be "pending" and sections
+   * missing. Merge live client fetches so structured description appears without a full refresh.
+   */
+  const [descriptionLive, setDescriptionLive] = useState(null);
+
+  const classDetailForDescription = useMemo(
+    () =>
+      descriptionLive ? { ...classData, ...descriptionLive } : classData,
+    [classData, descriptionLive],
+  );
+
+  useEffect(() => {
+    setDescriptionLive(null);
+  }, [classData.slug]);
+
+  useEffect(() => {
+    if (!mounted || !classData?.slug) return;
+    const st = classData.description_ai_status;
+    if (st !== "pending" && st !== "stale") return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+    const intervalMs = 4000;
+
+    const tick = async () => {
+      if (cancelled || attempts >= maxAttempts) return;
+      attempts += 1;
+      try {
+        const fresh = await classService.fetchClassDetail(classData.slug);
+        if (cancelled || !fresh) return;
+        setDescriptionLive({
+          description_summary: fresh.description_summary,
+          description_sections: fresh.description_sections,
+          description_ai_status: fresh.description_ai_status,
+          description: fresh.description,
+        });
+        const hasSections =
+          Array.isArray(fresh.description_sections) &&
+          fresh.description_sections.length > 0;
+        const done =
+          fresh.description_ai_status === "ready" ||
+          fresh.description_ai_status === "failed" ||
+          hasSections;
+        if (done) cancelled = true;
+      } catch {
+        /* network errors — keep polling until maxAttempts */
+      }
+    };
+
+    tick();
+    const id = setInterval(async () => {
+      if (cancelled) {
+        clearInterval(id);
+        return;
+      }
+      await tick();
+      if (cancelled || attempts >= maxAttempts) clearInterval(id);
+    }, intervalMs);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [mounted, classData.slug, classData.description_ai_status]);
+
   /* Mobile Reserve flow: pre-selected date/time, mini calendar, time drawer — state lives in useMobileReserveFlow */
   // Simulate booking options loading state if needed, or derived from props
   // Since options come from server props, they are technically loaded.
@@ -1427,7 +1495,7 @@ export default function ClassPageClient({
           onFavoriteClick={handleFavoriteClick}
           onShareClick={handleOpenShareModal}
           shareUrlQueryString={classPageShareQuery}
-          descriptionSummary={classData.description_summary}
+          descriptionSummary={classDetailForDescription.description_summary}
         />
 
         <MainContentLayout>
@@ -1444,10 +1512,10 @@ export default function ClassPageClient({
             {/* Render Description immediately for SEO */}
             <ClassInformation
               title={classData.title}
-              description={classData.description}
-              descriptionSummary={classData.description_summary}
-              descriptionSections={classData.description_sections}
-              descriptionAiStatus={classData.description_ai_status}
+              description={classDetailForDescription.description}
+              descriptionSummary={classDetailForDescription.description_summary}
+              descriptionSections={classDetailForDescription.description_sections}
+              descriptionAiStatus={classDetailForDescription.description_ai_status}
               reviewCount={classData.review_count || 0}
               averageRating={classData.average_rating || 0}
               businessData={businessData}

@@ -1,7 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Breadcrumb } from "antd";
 
 import {
   fetchClassDetail,
@@ -13,6 +12,22 @@ import ClassPageClient from "../_components/ClassPageClient";
 import ClassReviewsSeo from "../_components/ClassReviewsSeo";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+/** API may return non-strings; metadata + JSON-LD must not call string methods blindly. */
+function safeTextSnippet(value, maxLen) {
+  if (value == null) return "";
+  const s = String(value);
+  if (!s.trim()) return "";
+  return s.length <= maxLen ? s : `${s.slice(0, maxLen)}...`;
+}
+
+/** DRF may serialize Decimals as strings; `.toFixed` only exists on numbers. */
+function formatRatingOneDecimal(value) {
+  if (value == null || value === "") return "0";
+  const n = typeof value === "number" ? value : parseFloat(String(value), 10);
+  if (!Number.isFinite(n)) return "0";
+  return n.toFixed(1);
+}
 
 // Generate static params - fetch ALL classes
 export async function generateStaticParams() {
@@ -146,11 +161,11 @@ export async function generateMetadata({ params }) {
   const { classData, businessData } = await getClassData(resolvedParams.slug);
 
   const pageTitle = classData?.title
-    ? `${classData.title} | ClassEasily`
+    ? `${String(classData.title)} | ClassEasily`
     : "Experience Details | ClassEasily";
-  const pageDescription = classData?.description
-    ? classData.description.substring(0, 160) + "..."
-    : "View details and book this experience for your next date night or friend gathering on ClassEasily.";
+  const pageDescription =
+    safeTextSnippet(classData?.description, 160) ||
+    "View details and book this experience for your next date night or friend gathering on ClassEasily.";
   const canonicalUrl = `https://classeasily.com/classes/${classData.slug}`;
   const imageUrl =
     classData.images?.length > 0
@@ -169,7 +184,15 @@ export async function generateMetadata({ params }) {
       url: canonicalUrl,
       siteName: "ClassEasily",
       images: [
-        { url: imageUrl, width: 1200, height: 630, alt: classData.title },
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt:
+            classData?.title != null
+              ? String(classData.title)
+              : "Class experience",
+        },
       ],
       type: "website",
     },
@@ -200,7 +223,7 @@ function buildCourseSchema(classData, businessData) {
       ? classData.images[0].medium_url || classData.images[0].original_url
       : "https://classeasily.com/placeholder-image.jpg";
   let geoCoordinates = null;
-  if (classData.coordinates) {
+  if (classData.coordinates != null && typeof classData.coordinates === "string") {
     const parts = classData.coordinates.split(",");
     if (parts.length === 2) {
       const lat = parts[0].trim();
@@ -217,8 +240,9 @@ function buildCourseSchema(classData, businessData) {
   return {
     "@context": "https://schema.org",
     "@type": "Course",
-    name: classData.title,
-    description: classData.description,
+    name: classData.title != null ? String(classData.title) : "",
+    description:
+      classData.description != null ? String(classData.description) : "",
     image: imageUrl,
     courseCode: `CLASS-${classData.classId}`,
     provider: {
@@ -240,8 +264,8 @@ function buildCourseSchema(classData, businessData) {
     },
     aggregateRating: {
       "@type": "AggregateRating",
-      ratingValue: classData.average_rating?.toFixed(1) || "0",
-      reviewCount: classData.review_count || "0",
+      ratingValue: formatRatingOneDecimal(classData.average_rating),
+      reviewCount: String(classData.review_count ?? "0"),
     },
     offers: classData.options
       ?.filter((opt) =>
@@ -251,7 +275,7 @@ function buildCourseSchema(classData, businessData) {
         "@type": "Offer",
         name: option.title || "Experience Option",
         price:
-          option.schedules.find((s) => s.price && parseFloat(s.price) > 0)
+          option.schedules?.find((s) => s.price && parseFloat(s.price) > 0)
             ?.price || "0",
         priceCurrency: classData.currency_code || "USD",
         availability: "https://schema.org/InStock",
@@ -280,7 +304,7 @@ function buildBreadcrumbSchema(classData) {
   }
   items.push({
     position: position,
-    name: classData.title,
+    name: classData.title != null ? String(classData.title) : "",
     item: `${base}/classes/${classData.slug}`,
   });
   return {
@@ -327,7 +351,8 @@ export default async function ClassPage({ params }) {
 
   breadcrumbItems.push({
     key: "class",
-    title: classData.title,
+    title:
+      classData?.title != null ? String(classData.title) : "Experience",
   });
 
   const courseSchema = buildCourseSchema(classData, businessData);
@@ -347,7 +372,9 @@ export default async function ClassPage({ params }) {
       />
       <main style={{ flex: 1 }}>
         <ClassReviewsSeo
-          classTitle={classData.title}
+          classTitle={
+            classData?.title != null ? String(classData.title) : ""
+          }
           reviews={initialReviews}
         />
         <ClassPageClient
@@ -364,7 +391,33 @@ export default async function ClassPage({ params }) {
           width: "100%",
         }}
       >
-        <Breadcrumb items={breadcrumbItems} />
+        <nav aria-label="Breadcrumb" style={{ fontSize: 14, color: "#717171" }}>
+          <ol
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              alignItems: "center",
+            }}
+          >
+            {breadcrumbItems.map((item, idx) => (
+              <li
+                key={item.key}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+              >
+                {idx > 0 ? (
+                  <span style={{ color: "#d4d4d4", userSelect: "none" }} aria-hidden>
+                    /
+                  </span>
+                ) : null}
+                {item.title}
+              </li>
+            ))}
+          </ol>
+        </nav>
       </div>
       <FooterSmart />
     </div>

@@ -688,7 +688,9 @@ const ClassInformation = React.memo(
         )}
 
         <DescriptionSection>
-          {descriptionAiStatus === "pending" ? (
+          {descriptionAiStatus === "pending" &&
+          sectionList.length === 0 &&
+          !(descriptionSummary && String(descriptionSummary).trim()) ? (
             <PendingInline>Refreshing description layout…</PendingInline>
           ) : null}
           {sectionList.length > 0 ? (
