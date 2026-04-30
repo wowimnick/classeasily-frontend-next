@@ -65,6 +65,14 @@ const LordIcon = dynamic(
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
+/** Avoid rendering the literal "undefined" when API fields are missing or malformed. */
+function safeDisplayPart(v) {
+  if (v == null) return "";
+  const s = String(v).trim();
+  if (!s || s === "undefined" || s === "null") return "";
+  return s;
+}
+
 // Skeleton loader styles (ORIGINAL)
 const shimmer = keyframes`
   0% { background-position: -1000px 0; }
@@ -300,9 +308,10 @@ const Skel_FooterBtn = styled(Skel_Base)`
 
 // Styled Components (original)
 const ContentWrapper = styled.div`
-  max-width: 1200px;
+  max-width: 1360px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
+  overflow-x: hidden;
   @media (max-width: 768px) {
     padding: 0;
   }
@@ -1462,42 +1471,80 @@ export default function ClassPageClient({
   }, [mounted, optionToDisplayOnCard]);
 
   const locationText = useMemo(() => {
-    const venue =
-      typeof classData?.location_name === "string"
-        ? classData.location_name.trim()
-        : "";
+    const venue = safeDisplayPart(classData?.location_name);
+    const city = safeDisplayPart(classData?.business_city);
+    const st = safeDisplayPart(classData?.business_state);
     const cityState =
-      classData?.business_city && classData?.business_state
-        ? `${classData.business_city}, ${classData.business_state}`
-        : classData?.business_state || classData?.business_city || null;
+      city && st ? `${city}, ${st}` : city || st || "";
     if (venue && cityState) return `${venue} · ${cityState}`;
     if (venue) return venue;
     return cityState;
   }, [classData]);
+
+  /** Same source order as `HomeClassCard` `displayLocation` (card row truncates via CSS). */
+  const cardStyleLocation = useMemo(() => {
+    const loc = safeDisplayPart(classData?.location);
+    const city = safeDisplayPart(classData?.city ?? classData?.business_city);
+    const st = safeDisplayPart(classData?.state ?? classData?.business_state);
+    if (loc) return loc;
+    if (city && st) return `${city}, ${st}`;
+    return city || st || "";
+  }, [classData]);
+
+  /** City, state / province — used under summary and as location row title. */
+  const locationCityState = useMemo(() => {
+    const city = safeDisplayPart(classData?.city ?? classData?.business_city);
+    const st = safeDisplayPart(classData?.state ?? classData?.business_state);
+    if (city && st) return `${city}, ${st}`;
+    return city || st || "";
+  }, [classData]);
+
+  /** Tags under summary + mobile nav: same as location row title. */
+  const heroTagsLine = locationCityState;
+
+  /** Location row subtitle (gray): venue / card line / full line when it adds detail beyond city & state. */
+  const locationRowSubtitle = useMemo(() => {
+    const cs = locationCityState;
+    const card = cardStyleLocation;
+    const venue = safeDisplayPart(classData?.location_name);
+    if (venue && venue !== cs) return venue;
+    if (card && card !== cs) return card;
+    if (locationText && locationText !== cs) return locationText;
+    return "";
+  }, [classData, locationCityState, cardStyleLocation, locationText]);
 
   return (
     <>
       <DesktopHeaderWrapper>
         <ExploreHeader showOptionsWrapper={false} />
       </DesktopHeaderWrapper>
+      <ClassPageImagesTitle
+        title={classData.title}
+        images={classData.images || []}
+        rating={classData.average_rating}
+        business_name={businessData?.businessName}
+        location={locationText}
+        isShareModalVisible={isShareModalVisible}
+        onShareModalClose={handleCloseShareModal}
+        isFavorite={isFavorite}
+        isTogglingFavorite={isTogglingFavorite}
+        onFavoriteClick={handleFavoriteClick}
+        onShareClick={handleOpenShareModal}
+        shareUrlQueryString={classPageShareQuery}
+        descriptionSummary={classDetailForDescription.description_summary}
+        heroTagsLine={heroTagsLine}
+        businessData={businessData}
+        onBusinessClick={businessData ? handleBusinessClick : undefined}
+        onContactHost={
+          businessData ? () => setContactHostOpen(true) : undefined
+        }
+        partnerTierName={businessData?.partner_tier_name}
+        reviewCount={classData.review_count || 0}
+        averageRating={classData.average_rating || 0}
+        locationHeadline={locationCityState}
+        locationSubline={locationRowSubtitle}
+      />
       <ContentWrapper>
-        {/* Render Title & Images immediately for SEO */}
-        <ClassPageImagesTitle
-          title={classData.title}
-          images={classData.images || []}
-          rating={classData.average_rating}
-          business_name={businessData?.businessName}
-          location={locationText}
-          isShareModalVisible={isShareModalVisible}
-          onShareModalClose={handleCloseShareModal}
-          isFavorite={isFavorite}
-          isTogglingFavorite={isTogglingFavorite}
-          onFavoriteClick={handleFavoriteClick}
-          onShareClick={handleOpenShareModal}
-          shareUrlQueryString={classPageShareQuery}
-          descriptionSummary={classDetailForDescription.description_summary}
-        />
-
         <MainContentLayout>
           <PrimaryContentArea>
             {mobileReserve.isMobileView && mobileReserve.mobileAvailabilityError && (
@@ -1511,20 +1558,8 @@ export default function ClassPageClient({
             )}
             {/* Render Description immediately for SEO */}
             <ClassInformation
-              title={classData.title}
               description={classDetailForDescription.description}
-              descriptionSummary={classDetailForDescription.description_summary}
               descriptionSections={classDetailForDescription.description_sections}
-              reviewCount={classData.review_count || 0}
-              averageRating={classData.average_rating || 0}
-              businessData={businessData}
-              onBusinessClick={businessData ? handleBusinessClick : undefined}
-              onContactHost={businessData ? () => setContactHostOpen(true) : undefined}
-              partnerTierName={businessData?.partner_tier_name}
-              isFavorite={isFavorite}
-              isTogglingFavorite={isTogglingFavorite}
-              onFavoriteClick={handleFavoriteClick}
-              onShareClick={handleOpenShareModal}
             />
 
             <SectionDividerAnt />

@@ -11,8 +11,16 @@ const StyledCollapse = styled(Collapse)`
   border: none !important;
 
   .ant-collapse-item {
-    border-bottom: 1px solid #f0f0f0 !important;
+    border-bottom: none !important;
     margin-bottom: 0;
+  }
+
+  .ant-collapse-item-active {
+    border-bottom: 1px solid #f0f0f0 !important;
+  }
+
+  .ant-collapse-item:not(:first-child) {
+    border-top: 1px solid #f0f0f0 !important;
   }
 
   .ant-collapse-header {
@@ -25,6 +33,16 @@ const StyledCollapse = styled(Collapse)`
 
   .ant-collapse-content-box {
     padding: 0 0 16px 0 !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-collapse-header {
+      padding: 16px 0 14px !important;
+    }
+
+    .ant-collapse-content-box {
+      padding: 4px 0 22px !important;
+    }
   }
 `;
 
