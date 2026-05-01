@@ -1,19 +1,13 @@
 "use client";
 
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Modal } from "antd";
 import { Drawer } from "vaul";
 import message from "@/lib/message";
-import styled, { css } from "styled-components";
-import { motion, AnimatePresence, animate, LayoutGroup } from "framer-motion";
+import styled, { css, keyframes } from "styled-components";
 import {
   Heart,
   Share2,
@@ -26,12 +20,11 @@ import {
   Facebook,
   Twitter,
   Phone,
-  Grid3x3,
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   MessageCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
@@ -274,11 +267,16 @@ const BentoCell = styled.div`
   overflow: hidden;
   background: #f0f0f0;
   border-radius: 8px;
-  cursor: ${(p) => (p.$noClick ? "default" : "pointer")};
+  cursor: pointer;
 
   @media (min-width: 769px) {
     border-radius: 9px;
   }
+`;
+
+const BentoImageInner = styled.div`
+  position: absolute;
+  inset: 0;
 `;
 
 const HeroContentColumn = styled.div`
@@ -563,239 +561,6 @@ const ActionButton = styled.button`
     opacity: 0.6;
   }
 `;
-const ViewAllPhotosButton = styled.button`
-  position: absolute;
-  left: auto;
-  right: clamp(16px, 11%, 25px);
-  bottom: clamp(22px, 10%, 20px);
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(1px);
-  border: 1px solid #ddd;
-  border-radius: 40%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 10;
-  color: #333;
-
-  &:hover {
-    background: white;
-    transform: scale(1.04);
-  }
-`;
-
-// --- Fullscreen gallery (white overlay, FLIP-style shared transition) ---
-const GalleryOverlay = styled(motion.div)`
-  position: fixed;
-  inset: 0;
-  background: #ffffff;
-  z-index: 3000;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-`;
-
-const GalleryTopBar = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: clamp(14px, 2vw, 20px) clamp(16px, 3vw, 28px);
-  z-index: 4;
-  flex-shrink: 0;
-`;
-
-const GalleryPillButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
-  color: #111;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
-  &:hover {
-    background: #f7f7f7;
-  }
-  &:active {
-    transform: scale(0.97);
-  }
-`;
-
-const GalleryIconBtn = styled.button`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
-  color: #111;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
-  &:hover {
-    background: #f7f7f7;
-  }
-  &:active {
-    transform: scale(0.94);
-  }
-`;
-
-const ViewerStage = styled.div`
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  position: relative;
-  /* bottom padding gives room for the counter */
-  padding-bottom: 48px;
-  @media (max-width: 768px) {
-    padding-bottom: 44px;
-  }
-`;
-
-/* The layoutId target — always has DOM dimensions because it's a flex child filling the stage. */
-const ViewerImageContainer = styled(motion.div)`
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-  border-radius: 14px;
-  margin: 8px clamp(72px, 9vw, 128px) 8px;
-  @media (max-width: 768px) {
-    margin: 8px 56px;
-  }
-`;
-
-const ViewerImg = styled.img`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  user-select: none;
-`;
-
-const ViewerNavBtn = styled.button`
-  position: absolute;
-  /* Centre on the image container (stage minus 48px bottom padding) */
-  top: calc(50% - 24px);
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
-  color: #111;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  transition: background 0.18s ease, transform 0.18s ease;
-  z-index: 5;
-  ${({ $side }) =>
-    $side === "left"
-      ? css`
-          left: clamp(12px, 2vw, 28px);
-        `
-      : css`
-          right: clamp(12px, 2vw, 28px);
-        `}
-  &:hover {
-    background: #f7f7f7;
-  }
-  &:active {
-    transform: translateY(-50%) scale(0.94);
-  }
-  @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
-    top: calc(50% - 22px);
-    ${({ $side }) =>
-      $side === "left"
-        ? css`
-            left: 8px;
-          `
-        : css`
-            right: 8px;
-          `}
-  }
-`;
-
-const ViewerCounter = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: clamp(16px, 3vh, 28px);
-  text-align: center;
-  font-size: 13px;
-  color: #717171;
-  pointer-events: none;
-  z-index: 4;
-`;
-
-const OverviewScroller = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: clamp(8px, 1.5vh, 24px) clamp(20px, 5vw, 80px) 80px;
-  -webkit-overflow-scrolling: touch;
-`;
-
-const OverviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  grid-auto-rows: 220px;
-  gap: 16px;
-  max-width: 1280px;
-  margin: 0 auto;
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 44vw;
-    gap: 10px;
-  }
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    grid-auto-rows: 56vw;
-  }
-`;
-
-const OverviewTile = styled(motion.button)`
-  position: relative;
-  border: none;
-  padding: 0;
-  margin: 0;
-  background: #f0f0f0;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-  display: block;
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: scale(1.01);
-  }
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-`;
-
 const StyledModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 24px;
@@ -1037,6 +802,472 @@ const HostRowButton = styled.button`
   }
 `;
 
+// --- Lightbox keyframes ---
+const lbBgFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+
+const lbBgFadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+
+const lbClipShrink = keyframes`
+  0%   { padding: 0px; }
+  40%  { padding: 14px; }
+  100% { padding: 0px; }
+`;
+
+const lbImgZoom = keyframes`
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+`;
+
+// --- Lightbox styled components ---
+const LightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+/* Separate background layer — fades in on mount, fades out on close.
+   Kept independent so the image container is never opacity-affected. */
+const LightboxBg = styled.div`
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  pointer-events: none;
+  animation: ${lbBgFadeIn} 0.35s ease both;
+
+  ${({ $fading }) =>
+    $fading &&
+    css`
+      animation: ${lbBgFadeOut} 0.5s ease both;
+    `}
+`;
+
+const LightboxImgContainer = styled.div`
+  position: relative;
+  width: min(88vw, 82vh);
+  height: min(82vh, 88vw);
+  max-width: 1100px;
+  flex-shrink: 0;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+
+  ${({ $hiddenForGallery }) =>
+    $hiddenForGallery &&
+    css`
+      opacity: 0;
+    `}
+`;
+
+const LightboxImgClip = styled.div`
+  width: 100%;
+  height: 100%;
+  border-radius: 50px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+
+  ${({ $navBurst }) =>
+    $navBurst &&
+    css`
+      animation: ${lbClipShrink} 0.38s cubic-bezier(0.4, 0, 0.2, 1) both;
+    `}
+`;
+
+const LightboxImgEl = styled.img`
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  ${({ $navBurst }) =>
+    $navBurst &&
+    css`
+      animation: ${lbImgZoom} 0.38s cubic-bezier(0.4, 0, 0.2, 1) both;
+    `}
+`;
+
+const lbUiFade = css`
+  animation: ${lbBgFadeIn} 0.35s ease both;
+  ${({ $fading }) =>
+    $fading &&
+    css`
+      animation: ${lbBgFadeOut} 0.5s ease both;
+    `}
+`;
+
+const LightboxCloseBtn = styled.button`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+  ${lbUiFade}
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+`;
+
+/* Nav buttons sit inline beside the image container — no position:fixed */
+const LightboxNavBtn = styled.button`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 1;
+  transition: background 0.2s, transform 0.2s;
+  ${lbUiFade}
+  ${({ $busy }) =>
+    $busy
+      ? css`
+          pointer-events: none;
+          cursor: default;
+          &:hover,
+          &:active {
+            background: transparent;
+            transform: none;
+          }
+        `
+      : css`
+          &:hover {
+            background: rgba(0, 0, 0, 0.08);
+            transform: scale(1.08);
+          }
+          &:active {
+            transform: scale(0.95);
+          }
+        `}
+`;
+
+/* Row that holds [prev] [image] [next] side by side */
+const LightboxRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  max-width: calc(min(88vw, 82vh) + 120px);
+  width: 100%;
+  justify-content: center;
+
+  /* During gallery→single FLIP the gallery stays mounted but hidden — paint on top */
+  ${({ $elevate }) =>
+    $elevate &&
+    css`
+      z-index: 4;
+    `}
+
+  ${({ $noPointer }) =>
+    $noPointer &&
+    css`
+      pointer-events: none;
+    `}
+`;
+
+const LightboxDots = styled.div`
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 10;
+  ${lbUiFade}
+  ${({ $busy }) =>
+    $busy &&
+    css`
+      pointer-events: none;
+    `}
+`;
+
+const LightboxDot = styled.button`
+  width: ${({ $active }) => ($active ? "22px" : "8px")};
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+  background: ${({ $active }) => ($active ? "#111" : "rgba(0,0,0,0.2)")};
+  cursor: pointer;
+  padding: 0;
+  transition: width 0.25s ease, background 0.25s ease;
+  &:hover {
+    background: ${({ $active }) =>
+      $active ? "#111" : "rgba(0,0,0,0.35)"};
+  }
+`;
+
+const LightboxCounter = styled.div`
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 12px;
+  border-radius: 20px;
+  z-index: 10;
+  ${lbUiFade}
+  ${({ $busy }) =>
+    $busy &&
+    css`
+      pointer-events: none;
+    `}
+`;
+
+const AllImagesBtn = styled.button`
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 24px;
+  border: none;
+  background: transparent;
+  color: #111;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+  letter-spacing: -0.01em;
+  transition: background 0.2s;
+  ${lbUiFade}
+  ${({ $locked }) =>
+    $locked
+      ? css`
+          pointer-events: none;
+          cursor: default;
+          &:hover {
+            background: transparent;
+          }
+        `
+      : css`
+          &:hover {
+            background: rgba(0, 0, 0, 0.08);
+          }
+        `}
+`;
+
+/* --- Gallery view --- */
+/* z-index: 2 so it sits above the always-rendered LightboxRow (z-index: 1).
+   No fade-in animation — appears instantly so only the FLIP cell is seen flying. */
+const GalleryScrollArea = styled.div`
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 76px 24px 48px;
+  box-sizing: border-box;
+  z-index: 2;
+  background: #ffffff;
+
+  /* Block all interaction during FLIP / stagger / exit-to-single */
+  ${({ $inputLocked }) =>
+    $inputLocked &&
+    css`
+      pointer-events: none;
+    `}
+
+  /* Gallery stays mounted until lightbox FLIP finishes — hide visually so FLIP shows */
+  ${({ $exitPending }) =>
+    $exitPending &&
+    css`
+      opacity: 0;
+      visibility: hidden;
+      transition: none;
+    `}
+
+  ${({ $fading }) =>
+    $fading &&
+    css`
+      animation: ${lbBgFadeOut} 0.5s ease both;
+      pointer-events: none;
+    `}
+`;
+
+const GalleryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 860px;
+  margin: 0 auto;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
+
+const GalleryCell = styled.div`
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  cursor: pointer;
+  background: #f0f0f0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Hidden by default — FLIP cell overrides to opacity:1, others reveal via stagger */
+  opacity: 0;
+
+  ${({ $proxySrc }) =>
+    $proxySrc &&
+    css`
+      background-image: url(${$proxySrc});
+    `}
+
+  ${({ $hidden }) =>
+    $hidden &&
+    css`
+      visibility: hidden;
+    `}
+
+  ${({ $isFlipCell }) =>
+    $isFlipCell &&
+    css`
+      opacity: 1;
+    `}
+
+  ${({ $reveal, $animDelay, $isFlipCell }) =>
+    $reveal &&
+    !$isFlipCell &&
+    css`
+      animation: ${lbBgFadeIn} 0.3s ease both;
+      animation-delay: ${$animDelay}s;
+    `}
+
+  ${({ $locked }) =>
+    $locked
+      ? css`
+          cursor: default;
+          pointer-events: none;
+          &:hover {
+            transform: none;
+          }
+        `
+      : css`
+          &:hover {
+            transform: scale(0.97);
+            transition: transform 0.15s;
+          }
+        `}
+`;
+
+const GalleryImg = styled.img`
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+`;
+
+const OpeningFlipProxy = styled.div`
+  position: fixed;
+  z-index: 6;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: left, top, width, height, border-radius;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+`;
+
+// Isolated so lightbox state changes don't re-render the bento images.
+// gridRef is forwarded to HeroBentoGrid so the parent can look up cell elements by index.
+const BentoGridInner = React.memo(
+  React.forwardRef(function BentoGridInner(
+    { imagesToDisplay, usePlaceholders, title, onImageClick },
+    gridRef,
+  ) {
+    const bentoRaw =
+      imagesToDisplay.length >= 4
+        ? imagesToDisplay.slice(0, 4)
+        : imagesToDisplay;
+    const count = bentoRaw.length;
+    return (
+      <HeroBentoWrap>
+        <HeroBentoGrid ref={gridRef} $count={count}>
+          {bentoRaw.map((image, index) => {
+          const imageUrl = usePlaceholders
+            ? image
+            : image?.large_url ||
+              image?.medium_url ||
+              image?.thumbnail_url ||
+              (typeof image === "string" ? image : undefined);
+          const isLcp = index === 0;
+          return (
+            <BentoCell
+              key={index}
+              onClick={(e) => onImageClick(index, e.currentTarget)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ")
+                  onImageClick(index, e.currentTarget);
+              }}
+              aria-label={`View image ${index + 1} full screen`}
+            >
+              <BentoImageInner>
+                {imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={
+                      isLcp
+                        ? `${title || "Class"} - image 1`
+                        : `Class image ${index + 1}`
+                    }
+                    fill
+                    sizes="(max-width: 768px) 50vw, 42vw"
+                    priority={isLcp}
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : null}
+              </BentoImageInner>
+            </BentoCell>
+          );
+          })}
+        </HeroBentoGrid>
+      </HeroBentoWrap>
+    );
+  }),
+);
+
 const ClassPageImagesTitle = React.memo(
   ({
     images,
@@ -1065,17 +1296,33 @@ const ClassPageImagesTitle = React.memo(
     locationHeadline = "",
     locationSubline = "",
   }) => {
-    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-    const [galleryView, setGalleryView] = useState("viewer"); // 'viewer' | 'overview'
-    const [activeIndex, setActiveIndex] = useState(0);
-    /** The layoutId string used by the current viewer container — matches the bento cell opened from.
-     *  Stays constant during navigation so layoutId doesn't re-trigger a FLIP on next/prev. */
-    const [viewerLayoutId, setViewerLayoutId] = useState(null);
     const [isEmbedModalVisible, setIsEmbedModalVisible] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [currentUrl, setCurrentUrl] = useState("");
-
-    const viewerImgRef = useRef(null);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [isClosingLightbox, setIsClosingLightbox] = useState(false);
+    const [navBurst, setNavBurst] = useState(false);
+    const lightboxContainerRef = useRef(null);
+    const lightboxClipRef = useRef(null);
+    const lightboxImgInnerRef = useRef(null);
+    const navBurstTimeout = useRef(null);
+    const lightboxOpenedRef = useRef(false);
+    const originCellRef = useRef(null);
+    const bentoGridRef = useRef(null);
+    const lightboxIndexRef = useRef(0);
+    const [galleryOpen, setGalleryOpen] = useState(false);
+    const [galleryPhase, setGalleryPhase] = useState("idle"); // 'idle' | 'revealed'
+    const [galleryOpening, setGalleryOpening] = useState(false);
+    const [openingFlipProxy, setOpeningFlipProxy] = useState(null);
+    const [galleryExitPending, setGalleryExitPending] = useState(false);
+    const [lightboxFlipKey, setLightboxFlipKey] = useState(0);
+    const galleryItemRefs = useRef([]);
+    const preSingleRect = useRef(null);
+    const lightboxFlipSourceRect = useRef(null);
+    const galleryFlipDoneRef = useRef(false);
+    const galleryFlipIdxRef = useRef(0);
+    const galleryExitTimerRef = useRef(null);
 
     useEffect(() => {
       if (typeof window === "undefined") return;
@@ -1102,6 +1349,373 @@ const ClassPageImagesTitle = React.memo(
     const usePlaceholders = classImages.length === 0;
 
     const imagesToDisplay = usePlaceholders ? PLACEHOLDER_IMAGES : classImages;
+
+    const resolveImageUrl = (img, preferSmaller = false) => {
+      if (!img) return "";
+      if (typeof img === "string") return img;
+      if (preferSmaller) {
+        return img.thumbnail_url || img.medium_url || img.large_url || "";
+      }
+      return img.large_url || img.medium_url || img.thumbnail_url || "";
+    };
+
+    const lightboxImageUrl = resolveImageUrl(imagesToDisplay[lightboxIndex]);
+
+    const preloadImage = useCallback((src) => {
+      if (typeof window === "undefined" || !src) return Promise.resolve();
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        const done = () => resolve();
+        img.onload = done;
+        img.onerror = done;
+        img.src = src;
+        if (img.complete) done();
+      });
+    }, []);
+
+    const triggerNavBurst = useCallback(() => {
+      [lightboxClipRef, lightboxImgInnerRef].forEach((ref) => {
+        if (!ref.current) return;
+        ref.current.style.animation = "none";
+        void ref.current.offsetWidth;
+        ref.current.style.animation = "";
+      });
+      setNavBurst(true);
+      if (navBurstTimeout.current) clearTimeout(navBurstTimeout.current);
+      navBurstTimeout.current = setTimeout(() => setNavBurst(false), 420);
+    }, []);
+
+    const openLightbox = useCallback((index, cellEl) => {
+      originCellRef.current = cellEl;
+      setLightboxIndex(index);
+      setIsClosingLightbox(false);
+      setLightboxOpen(true);
+    }, []);
+
+    const closeLightbox = useCallback(() => {
+      if (galleryExitTimerRef.current) {
+        clearTimeout(galleryExitTimerRef.current);
+        galleryExitTimerRef.current = null;
+      }
+      setGalleryExitPending(false);
+      const el = lightboxContainerRef.current;
+      const originEl = originCellRef.current;
+      setIsClosingLightbox(true);
+      if (!el || !originEl) {
+        setTimeout(() => {
+          setLightboxOpen(false);
+          lightboxOpenedRef.current = false;
+          setIsClosingLightbox(false);
+        }, 500);
+        return;
+      }
+      // Re-measure origin cell at close time so scroll position is always correct
+      const originRect = originEl.getBoundingClientRect();
+      const finalRect = el.getBoundingClientRect();
+      const scale = Math.min(
+        originRect.width / finalRect.width,
+        originRect.height / finalRect.height,
+      );
+      const dx =
+        originRect.left +
+        originRect.width / 2 -
+        (finalRect.left + finalRect.width / 2);
+      const dy =
+        originRect.top +
+        originRect.height / 2 -
+        (finalRect.top + finalRect.height / 2);
+      el.style.transition =
+        "transform 0.55s cubic-bezier(0.4,0,0.6,1), border-radius 0.55s cubic-bezier(0.4,0,0.6,1)";
+      el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
+      el.style.borderRadius = "9px";
+      setTimeout(() => {
+        setLightboxOpen(false);
+        lightboxOpenedRef.current = false;
+        setIsClosingLightbox(false);
+      }, 560);
+    }, []);
+
+    // Keep a ref in sync so goNext/goPrev can read current index without adding it to deps
+    useEffect(() => {
+      lightboxIndexRef.current = lightboxIndex;
+    }, [lightboxIndex]);
+
+    const goNext = useCallback(() => {
+      const newIdx =
+        (lightboxIndexRef.current + 1) % imagesToDisplay.length;
+      // If new image has a bento cell, update the exit-animation target
+      const cell = bentoGridRef.current?.children[newIdx];
+      if (cell) originCellRef.current = cell;
+      triggerNavBurst();
+      setLightboxIndex(newIdx);
+    }, [triggerNavBurst, imagesToDisplay.length]);
+
+    const goPrev = useCallback(() => {
+      const newIdx =
+        (lightboxIndexRef.current - 1 + imagesToDisplay.length) %
+        imagesToDisplay.length;
+      const cell = bentoGridRef.current?.children[newIdx];
+      if (cell) originCellRef.current = cell;
+      triggerNavBurst();
+      setLightboxIndex(newIdx);
+    }, [triggerNavBurst, imagesToDisplay.length]);
+
+    useLayoutEffect(() => {
+      if (!lightboxOpen) {
+        lightboxOpenedRef.current = false;
+        return;
+      }
+      if (lightboxOpenedRef.current) return;
+      lightboxOpenedRef.current = true;
+      const el = lightboxContainerRef.current;
+      const originEl = originCellRef.current;
+      if (!el || !originEl) return;
+      const originRect = originEl.getBoundingClientRect();
+      const finalRect = el.getBoundingClientRect();
+      const scale = Math.min(
+        originRect.width / finalRect.width,
+        originRect.height / finalRect.height,
+      );
+      const dx =
+        originRect.left +
+        originRect.width / 2 -
+        (finalRect.left + finalRect.width / 2);
+      const dy =
+        originRect.top +
+        originRect.height / 2 -
+        (finalRect.top + finalRect.height / 2);
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
+      el.style.borderRadius = "9px";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transition =
+            "transform 0.65s cubic-bezier(0.4,0,0.2,1), border-radius 0.65s cubic-bezier(0.4,0,0.2,1)";
+          el.style.transform = "";
+          el.style.borderRadius = "50px";
+        });
+      });
+    }, [lightboxOpen]);
+
+    useEffect(() => {
+      if (!lightboxOpen) return;
+      const handleKey = (e) => {
+        const galleryBlocked =
+          galleryExitPending ||
+          (galleryOpen && galleryPhase !== "revealed");
+        if (galleryBlocked && e.key !== "Escape") return;
+        if (e.key === "Escape") closeLightbox();
+        else if (e.key === "ArrowRight") goNext();
+        else if (e.key === "ArrowLeft") goPrev();
+      };
+      window.addEventListener("keydown", handleKey);
+      return () => window.removeEventListener("keydown", handleKey);
+    }, [
+      lightboxOpen,
+      galleryOpen,
+      galleryPhase,
+      galleryExitPending,
+      closeLightbox,
+      goNext,
+      goPrev,
+    ]);
+
+    useEffect(() => {
+      if (!lightboxOpen) {
+        setGalleryOpening(false);
+        setOpeningFlipProxy(null);
+      }
+    }, [lightboxOpen]);
+
+    useEffect(() => {
+      if (galleryPhase === "revealed" || galleryExitPending || !galleryOpen) {
+        setOpeningFlipProxy(null);
+      }
+    }, [galleryPhase, galleryExitPending, galleryOpen]);
+
+    // Reusable helper: apply a FLIP from sourceRect to the lightbox container's current position
+    const flipLightboxContainerFrom = useCallback((sourceRect) => {
+      const el = lightboxContainerRef.current;
+      if (!el || !sourceRect) return;
+      const finalRect = el.getBoundingClientRect();
+      const scale = Math.min(
+        sourceRect.width / finalRect.width,
+        sourceRect.height / finalRect.height,
+      );
+      const dx =
+        sourceRect.left +
+        sourceRect.width / 2 -
+        (finalRect.left + finalRect.width / 2);
+      const dy =
+        sourceRect.top +
+        sourceRect.height / 2 -
+        (finalRect.top + finalRect.height / 2);
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
+      el.style.borderRadius = "12px";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transition =
+            "transform 0.6s cubic-bezier(0.4,0,0.2,1), border-radius 0.6s cubic-bezier(0.4,0,0.2,1)";
+          el.style.transform = "";
+          el.style.borderRadius = "50px";
+        });
+      });
+    }, []);
+
+    // Reset gallery when lightbox fully closes
+    useEffect(() => {
+      if (lightboxOpen) return;
+      if (galleryExitTimerRef.current) {
+        clearTimeout(galleryExitTimerRef.current);
+        galleryExitTimerRef.current = null;
+      }
+      setGalleryOpen(false);
+      setGalleryExitPending(false);
+      setGalleryPhase("idle");
+      galleryFlipDoneRef.current = false;
+    }, [lightboxOpen]);
+
+    const finishGalleryExit = useCallback(() => {
+      setGalleryOpen(false);
+      setGalleryExitPending(false);
+      setGalleryPhase("idle");
+      galleryFlipDoneRef.current = false;
+      galleryExitTimerRef.current = null;
+    }, []);
+
+    // Gallery open: snapshot lightbox position, record which cell will fly
+    const openGallery = useCallback(() => {
+      if (galleryExitTimerRef.current) {
+        clearTimeout(galleryExitTimerRef.current);
+        galleryExitTimerRef.current = null;
+      }
+      if (galleryOpening) return;
+      setGalleryExitPending(false);
+      if (lightboxContainerRef.current) {
+        preSingleRect.current =
+          lightboxContainerRef.current.getBoundingClientRect();
+      }
+      galleryFlipDoneRef.current = false;
+      const idx = lightboxIndexRef.current;
+      galleryFlipIdxRef.current = idx;
+      setGalleryPhase("idle");
+      setGalleryOpening(true);
+      const activeSrc =
+        lightboxImageUrl || resolveImageUrl(imagesToDisplay[idx], true);
+      preloadImage(activeSrc).finally(() => {
+        if (typeof window === "undefined") {
+          setGalleryOpen(true);
+          setGalleryOpening(false);
+          return;
+        }
+        requestAnimationFrame(() => {
+          setGalleryOpen(true);
+          setGalleryOpening(false);
+        });
+      });
+    }, [
+      galleryOpening,
+      lightboxImageUrl,
+      imagesToDisplay,
+      preloadImage,
+      resolveImageUrl,
+    ]);
+
+    // Gallery close without selecting a new image (back button)
+    const closeGallery = useCallback(() => {
+      if (galleryExitTimerRef.current) return;
+      // Don't interrupt the open FLIP / stagger
+      if (galleryPhase !== "revealed") return;
+      const idx = lightboxIndexRef.current;
+      const galleryCell = galleryItemRefs.current[idx];
+      if (galleryCell) {
+        lightboxFlipSourceRect.current = galleryCell.getBoundingClientRect();
+      }
+      setGalleryExitPending(true);
+      setLightboxFlipKey((k) => k + 1);
+      galleryExitTimerRef.current = setTimeout(finishGalleryExit, 680);
+    }, [galleryPhase, finishGalleryExit]);
+
+    // Select an image from the gallery — FLIP to single, then unmount gallery
+    const selectFromGallery = useCallback(
+      (index) => {
+        if (galleryExitTimerRef.current) return;
+        if (galleryPhase !== "revealed") return;
+        const galleryCell = galleryItemRefs.current[index];
+        if (galleryCell) {
+          lightboxFlipSourceRect.current = galleryCell.getBoundingClientRect();
+        }
+        const bentoCell = bentoGridRef.current?.children[index];
+        if (bentoCell) originCellRef.current = bentoCell;
+        setGalleryExitPending(true);
+        setLightboxIndex(index);
+        setLightboxFlipKey((k) => k + 1);
+        galleryExitTimerRef.current = setTimeout(finishGalleryExit, 680);
+      },
+      [galleryPhase, finishGalleryExit],
+    );
+
+    // After the FLIP animation finishes, reveal all other cells with stagger
+    useEffect(() => {
+      if (!galleryOpen) {
+        setGalleryPhase("idle");
+        return;
+      }
+      // FLIP duration is 0.6s — start reveals just after it completes
+      const t = setTimeout(() => setGalleryPhase("revealed"), 640);
+      return () => clearTimeout(t);
+    }, [galleryOpen]);
+
+    // FLIP: gallery cell → lightbox center (runs when lightboxFlipKey increments)
+    useLayoutEffect(() => {
+      if (!lightboxFlipKey) return;
+      flipLightboxContainerFrom(lightboxFlipSourceRect.current);
+    }, [lightboxFlipKey, flipLightboxContainerFrom]);
+
+    // FLIP: lightbox center → gallery cell (runs when galleryOpen becomes true)
+    useLayoutEffect(() => {
+      if (!galleryOpen) {
+        galleryFlipDoneRef.current = false;
+        return;
+      }
+      if (galleryFlipDoneRef.current) return;
+      galleryFlipDoneRef.current = true;
+      const idx = lightboxIndexRef.current;
+      const galleryEl = galleryItemRefs.current[idx];
+      const sourceRect = preSingleRect.current;
+      if (!galleryEl || !sourceRect) return;
+      const finalRect = galleryEl.getBoundingClientRect();
+      const proxySrc =
+        lightboxImageUrl || resolveImageUrl(imagesToDisplay[idx], true);
+      setOpeningFlipProxy({
+        src: proxySrc,
+        left: sourceRect.left,
+        top: sourceRect.top,
+        width: sourceRect.width,
+        height: sourceRect.height,
+        borderRadius: 50,
+        transitioning: false,
+      });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setOpeningFlipProxy((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  left: finalRect.left,
+                  top: finalRect.top,
+                  width: finalRect.width,
+                  height: finalRect.height,
+                  borderRadius: 14,
+                  transitioning: true,
+                }
+              : prev,
+          );
+        });
+      });
+    }, [galleryOpen, lightboxImageUrl, imagesToDisplay, resolveImageUrl]);
+
     const bentoImagesRaw =
       imagesToDisplay.length >= 4
         ? imagesToDisplay.slice(0, 4)
@@ -1114,118 +1728,11 @@ const ClassPageImagesTitle = React.memo(
 
     const embedCode = `<iframe src="${currentUrl}" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`;
 
-    const totalImages = imagesToDisplay.length;
-
     const handleCopyToClipboard = (text, successMessage) => {
       navigator.clipboard
         .writeText(text)
         .then(() => message.success(successMessage));
     };
-
-    const getImageSrc = useCallback(
-      (idx) => {
-        const item = imagesToDisplay[idx];
-        if (!item) return undefined;
-        if (typeof item === "string") return item;
-        return item.large_url || item.medium_url || item.thumbnail_url;
-      },
-      [imagesToDisplay],
-    );
-
-    const showGalleryModal = (startIndex = 0) => {
-      if (classImages.length === 0) return;
-      setActiveIndex(startIndex);
-      setViewerLayoutId(`gallery-img-${startIndex}`);
-      setGalleryView("viewer");
-      setIsGalleryOpen(true);
-    };
-
-    /** Crossfade the viewer img between images — works reliably because image is already mounted. */
-    const goToIndex = useCallback(
-      async (newIndex) => {
-        if (newIndex === activeIndex || totalImages === 0) return;
-        const el = viewerImgRef.current;
-        if (!el) {
-          setActiveIndex(newIndex);
-          return;
-        }
-        await animate(
-          el,
-          { opacity: 0, scale: 0.94 },
-          { duration: 0.13, ease: [0.32, 0, 0.5, 1] },
-        ).finished;
-        setActiveIndex(newIndex);
-        // wait one frame so React has updated src
-        await new Promise((r) => requestAnimationFrame(r));
-        await animate(
-          el,
-          { opacity: [0, 1], scale: [1.04, 1] },
-          { duration: 0.2, ease: [0.32, 0, 0.32, 1] },
-        ).finished;
-      },
-      [activeIndex, totalImages],
-    );
-
-    const handleNext = useCallback(() => {
-      goToIndex((activeIndex + 1) % totalImages);
-    }, [activeIndex, totalImages, goToIndex]);
-
-    const handlePrev = useCallback(() => {
-      goToIndex((activeIndex - 1 + totalImages) % totalImages);
-    }, [activeIndex, totalImages, goToIndex]);
-
-    const handleOpenOverview = useCallback(() => {
-      setGalleryView("overview");
-    }, []);
-
-    const handleSelectFromOverview = useCallback((index) => {
-      setActiveIndex(index);
-      // Update layoutId so close animates back to the correct bento cell
-      setViewerLayoutId(`gallery-img-${index}`);
-      setGalleryView("viewer");
-    }, []);
-
-    const handleGalleryClose = useCallback(() => {
-      setIsGalleryOpen(false);
-    }, []);
-
-    /** Keyboard navigation: arrows + Escape. */
-    useEffect(() => {
-      if (!isGalleryOpen) return;
-      const onKey = (e) => {
-        if (galleryView === "viewer") {
-          if (e.key === "ArrowRight") {
-            e.preventDefault();
-            handleNext();
-          } else if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            handlePrev();
-          }
-        }
-        if (e.key === "Escape") {
-          e.preventDefault();
-          handleGalleryClose();
-        }
-      };
-      window.addEventListener("keydown", onKey);
-      return () => window.removeEventListener("keydown", onKey);
-    }, [
-      isGalleryOpen,
-      galleryView,
-      handleNext,
-      handlePrev,
-      handleGalleryClose,
-    ]);
-
-    /** Lock body scroll while the gallery is open. */
-    useEffect(() => {
-      if (!isGalleryOpen) return;
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }, [isGalleryOpen]);
 
     const router = useRouter();
     const handleBack = useCallback(() => {
@@ -1313,8 +1820,14 @@ const ClassPageImagesTitle = React.memo(
       hostSubParts.join(" · ") ||
       "Message the host anytime before you book.";
 
+    const galleryInputLocked =
+      galleryOpening ||
+      galleryExitPending ||
+      (galleryOpen && galleryPhase !== "revealed");
+    const allImagesLocked =
+      galleryOpening || (galleryOpen && galleryPhase !== "revealed");
+
     return (
-      <LayoutGroup id="gallery">
       <MainContent>
         <HeroFullBleed>
           <HeroDesktopRow>
@@ -1360,69 +1873,13 @@ const ClassPageImagesTitle = React.memo(
                 </MobileNavIcons>
               </MobileTopNav>
 
-              <HeroBentoWrap>
-                <HeroBentoGrid $count={bentoCount}>
-                  {bentoImagesRaw.map((image, index) => {
-                    const imageUrl = usePlaceholders
-                      ? image
-                      : image?.large_url ||
-                        image?.medium_url ||
-                        image?.thumbnail_url ||
-                        (typeof image === "string" ? image : undefined);
-                    const isLcp = index === 0;
-
-                    return (
-                      <BentoCell
-                        key={index}
-                        $noClick={usePlaceholders}
-                        onClick={() => {
-                          if (!usePlaceholders) showGalleryModal(index);
-                        }}
-                      >
-                        {/* layoutId wrapper — always has DOM dimensions for the FLIP */}
-                        <motion.div
-                          layoutId={`gallery-img-${index}`}
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            overflow: "hidden",
-                            borderRadius: "inherit",
-                          }}
-                        >
-                          {imageUrl ? (
-                            <Image
-                              src={imageUrl}
-                              alt={
-                                isLcp
-                                  ? `${title || "Class"} - image 1`
-                                  : `Class image ${index + 1}`
-                              }
-                              fill
-                              sizes="(max-width: 768px) 50vw, 42vw"
-                              priority={isLcp}
-                              style={{ objectFit: "cover" }}
-                            />
-                          ) : null}
-                        </motion.div>
-                      </BentoCell>
-                    );
-                  })}
-                </HeroBentoGrid>
-                {classImages.length > 4 ? (
-                  <ViewAllPhotosButton
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveIndex(0);
-                      setGalleryView("overview");
-                      setIsGalleryOpen(true);
-                    }}
-                    aria-label="Show all photos"
-                  >
-                    <Grid3x3 size={18} strokeWidth={2} aria-hidden />
-                  </ViewAllPhotosButton>
-                ) : null}
-              </HeroBentoWrap>
+              <BentoGridInner
+                ref={bentoGridRef}
+                imagesToDisplay={imagesToDisplay}
+                usePlaceholders={usePlaceholders}
+                title={title}
+                onImageClick={openLightbox}
+              />
             </HeroPhotoColumn>
 
             <HeroContentColumn>
@@ -1597,116 +2054,6 @@ const ClassPageImagesTitle = React.memo(
           </HeroDesktopRow>
         </HeroFullBleed>
 
-        <AnimatePresence>
-          {isGalleryOpen && (
-            <GalleryOverlay
-              key="gallery-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.32, 0, 0.32, 1] }}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Photo gallery"
-            >
-              <GalleryTopBar>
-                {galleryView === "viewer" ? (
-                  <GalleryPillButton
-                    type="button"
-                    onClick={handleOpenOverview}
-                    aria-label="Show all photos"
-                  >
-                    <Grid3x3 size={16} strokeWidth={2} aria-hidden />
-                    All photos
-                  </GalleryPillButton>
-                ) : (
-                  <GalleryPillButton
-                    type="button"
-                    onClick={() => setGalleryView("viewer")}
-                    aria-label="Back to photo viewer"
-                  >
-                    <ChevronLeft size={16} strokeWidth={2} aria-hidden />
-                    Back
-                  </GalleryPillButton>
-                )}
-                <GalleryIconBtn
-                  type="button"
-                  onClick={handleGalleryClose}
-                  aria-label="Close gallery"
-                >
-                  <X size={20} strokeWidth={2} />
-                </GalleryIconBtn>
-              </GalleryTopBar>
-
-              {galleryView === "viewer" ? (
-                <ViewerStage>
-                  <ViewerImageContainer layoutId={viewerLayoutId}>
-                    <ViewerImg
-                      ref={viewerImgRef}
-                      src={getImageSrc(activeIndex)}
-                      alt={`Class image ${activeIndex + 1}`}
-                      draggable={false}
-                    />
-                  </ViewerImageContainer>
-
-                  {totalImages > 1 ? (
-                    <ViewerNavBtn
-                      type="button"
-                      $side="left"
-                      onClick={handlePrev}
-                      aria-label="Previous photo"
-                    >
-                      <ChevronLeft size={22} strokeWidth={2} />
-                    </ViewerNavBtn>
-                  ) : null}
-                  {totalImages > 1 ? (
-                    <ViewerNavBtn
-                      type="button"
-                      $side="right"
-                      onClick={handleNext}
-                      aria-label="Next photo"
-                    >
-                      <ChevronRight size={22} strokeWidth={2} />
-                    </ViewerNavBtn>
-                  ) : null}
-
-                  <ViewerCounter aria-live="polite">
-                    {activeIndex + 1} / {totalImages}
-                  </ViewerCounter>
-                </ViewerStage>
-              ) : (
-                <OverviewScroller>
-                  <OverviewGrid>
-                    {imagesToDisplay.map((img, index) => {
-                      const tileSrc =
-                        (typeof img === "string" && img) ||
-                        img?.medium_url ||
-                        img?.thumbnail_url ||
-                        img?.large_url;
-                      return (
-                        <OverviewTile
-                          key={`overview-${index}`}
-                          type="button"
-                          onClick={() => handleSelectFromOverview(index)}
-                          aria-label={`Open photo ${index + 1}`}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.28,
-                            ease: [0.32, 0, 0.32, 1],
-                            delay: 0.04 + index * 0.012,
-                          }}
-                        >
-                          {tileSrc ? <img src={tileSrc} alt="" /> : null}
-                        </OverviewTile>
-                      );
-                    })}
-                  </OverviewGrid>
-                </OverviewScroller>
-              )}
-            </GalleryOverlay>
-          )}
-        </AnimatePresence>
         {/* Share: mobile = Vaul drawer from bottom */}
         {isMobile && (
           <Drawer.Root
@@ -1988,8 +2335,203 @@ const ClassPageImagesTitle = React.memo(
             </ActionButton>
           </EmbedModalContent>
         </Modal>
+
+        {/* Lightbox — shared-element FLIP from bento cell */}
+        {lightboxOpen &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <LightboxOverlay
+              role="dialog"
+              aria-modal="true"
+              aria-label="Image viewer"
+              onClick={galleryOpen ? undefined : closeLightbox}
+            >
+              {/* Background fades independently */}
+              <LightboxBg $fading={isClosingLightbox} />
+
+              {/* Fixed header buttons — always visible */}
+              {imagesToDisplay.length > 1 && (
+                <AllImagesBtn
+                  type="button"
+                  $fading={isClosingLightbox}
+                  $locked={allImagesLocked}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    galleryOpen ? closeGallery() : openGallery();
+                  }}
+                >
+                  {galleryOpen ? (
+                    <><ArrowLeft size={14} /> Back</>
+                  ) : (
+                    <>All images ({imagesToDisplay.length})</>
+                  )}
+                </AllImagesBtn>
+              )}
+
+              <LightboxCloseBtn
+                type="button"
+                aria-label="Close image viewer"
+                $fading={isClosingLightbox}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeLightbox();
+                }}
+              >
+                <X size={20} />
+              </LightboxCloseBtn>
+
+              {/* ── Single image view — always rendered so FLIP always has a target ── */}
+              <LightboxRow
+                $elevate={galleryExitPending}
+                $noPointer={galleryInputLocked}
+              >
+                {imagesToDisplay.length > 1 && (
+                  <LightboxNavBtn
+                    type="button"
+                    aria-label="Previous image"
+                    $fading={isClosingLightbox}
+                    $busy={galleryInputLocked}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goPrev();
+                    }}
+                  >
+                    <ChevronLeft size={22} />
+                  </LightboxNavBtn>
+                )}
+
+                <LightboxImgContainer
+                  ref={lightboxContainerRef}
+                  $hiddenForGallery={
+                    galleryOpen && galleryPhase !== "revealed" && !galleryExitPending
+                  }
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <LightboxImgClip
+                    ref={lightboxClipRef}
+                    $navBurst={navBurst}
+                  >
+                    <LightboxImgEl
+                      ref={lightboxImgInnerRef}
+                      src={lightboxImageUrl}
+                      alt={`Image ${lightboxIndex + 1}`}
+                      $navBurst={navBurst}
+                    />
+                  </LightboxImgClip>
+                </LightboxImgContainer>
+
+                {imagesToDisplay.length > 1 && (
+                  <LightboxNavBtn
+                    type="button"
+                    aria-label="Next image"
+                    $fading={isClosingLightbox}
+                    $busy={galleryInputLocked}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goNext();
+                    }}
+                  >
+                    <ChevronRight size={22} />
+                  </LightboxNavBtn>
+                )}
+              </LightboxRow>
+
+              {imagesToDisplay.length > 1 && imagesToDisplay.length <= 8 ? (
+                <LightboxDots
+                  $fading={isClosingLightbox}
+                  $busy={galleryInputLocked}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {imagesToDisplay.map((_, i) => (
+                    <LightboxDot
+                      key={i}
+                      $active={i === lightboxIndex}
+                      type="button"
+                      aria-label={`Go to image ${i + 1}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (i !== lightboxIndex) {
+                          const cell = bentoGridRef.current?.children[i];
+                          if (cell) originCellRef.current = cell;
+                          triggerNavBurst();
+                          setLightboxIndex(i);
+                        }
+                      }}
+                    />
+                  ))}
+                </LightboxDots>
+              ) : imagesToDisplay.length > 8 ? (
+                <LightboxCounter
+                  $fading={isClosingLightbox}
+                  $busy={galleryInputLocked}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {lightboxIndex + 1} / {imagesToDisplay.length}
+                </LightboxCounter>
+              ) : null}
+
+              {/* ── Gallery overlay — position:absolute covers LightboxRow ── */}
+              {galleryOpen && (
+                <GalleryScrollArea
+                  $fading={isClosingLightbox}
+                  $inputLocked={galleryInputLocked}
+                  $exitPending={galleryExitPending}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GalleryGrid>
+                    {imagesToDisplay.map((img, i) => {
+                      const isFlipCell = i === galleryFlipIdxRef.current;
+                      const src = isFlipCell
+                        ? lightboxImageUrl || resolveImageUrl(img, true)
+                        : resolveImageUrl(img, true);
+                      const useFlipProxyImage =
+                        isFlipCell &&
+                        galleryPhase !== "revealed" &&
+                        !galleryExitPending;
+                      return (
+                        <GalleryCell
+                          key={i}
+                          ref={(el) => {
+                            galleryItemRefs.current[i] = el;
+                          }}
+                          $isFlipCell={isFlipCell}
+                          $reveal={galleryPhase === "revealed"}
+                          $animDelay={i * 0.05}
+                          $locked={galleryInputLocked}
+                          $hidden={useFlipProxyImage}
+                          $proxySrc={useFlipProxyImage ? src : ""}
+                          onClick={() => selectFromGallery(i)}
+                          role="button"
+                          aria-label={`View image ${i + 1}`}
+                        >
+                          {src && !useFlipProxyImage && (
+                            <GalleryImg src={src} alt="" loading="eager" />
+                          )}
+                        </GalleryCell>
+                      );
+                    })}
+                  </GalleryGrid>
+                </GalleryScrollArea>
+              )}
+              {openingFlipProxy?.src && (
+                <OpeningFlipProxy
+                  style={{
+                    left: `${openingFlipProxy.left}px`,
+                    top: `${openingFlipProxy.top}px`,
+                    width: `${openingFlipProxy.width}px`,
+                    height: `${openingFlipProxy.height}px`,
+                    borderRadius: `${openingFlipProxy.borderRadius}px`,
+                    backgroundImage: `url(${openingFlipProxy.src})`,
+                    transition: openingFlipProxy.transitioning
+                      ? "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), width 0.6s cubic-bezier(0.4,0,0.2,1), height 0.6s cubic-bezier(0.4,0,0.2,1), border-radius 0.6s cubic-bezier(0.4,0,0.2,1)"
+                      : "none",
+                  }}
+                />
+              )}
+            </LightboxOverlay>,
+            document.body,
+          )}
       </MainContent>
-      </LayoutGroup>
     );
   },
 );
