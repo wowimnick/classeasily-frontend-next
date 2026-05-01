@@ -853,25 +853,35 @@ const LightboxBg = styled.div`
 
 const LightboxImgContainer = styled.div`
   position: relative;
-  width: min(88vw, 82vh);
-  height: min(82vh, 88vw);
-  max-width: 1100px;
   flex-shrink: 0;
-  will-change: transform;
+  will-change: transform, width, height;
   transform: translateZ(0);
   backface-visibility: hidden;
+  /* Width/height transition only enabled when animating to/from the class-page bento grid */
+  ${({ $resizeTransition }) =>
+    $resizeTransition &&
+    css`
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    `}
 
   ${({ $hiddenForGallery }) =>
     $hiddenForGallery &&
     css`
       opacity: 0;
     `}
+
+  ${({ $fadeOnly }) =>
+    $fadeOnly &&
+    css`
+      animation: ${lbBgFadeOut} 0.5s ease both;
+    `}
 `;
 
 const LightboxImgClip = styled.div`
   width: 100%;
   height: 100%;
-  border-radius: 50px;
+  border-radius: 32px;
   overflow: hidden;
   box-sizing: border-box;
   transform: translateZ(0);
@@ -1086,10 +1096,16 @@ const GalleryScrollArea = styled.div`
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  padding: 76px 24px 48px;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 76px 12px 48px;
   box-sizing: border-box;
   z-index: 2;
   background: #ffffff;
+
+  @media (min-width: 769px) {
+    padding: 76px 24px 48px;
+  }
 
   /* Block all interaction during FLIP / stagger / exit-to-single */
   ${({ $inputLocked }) =>
@@ -1098,13 +1114,13 @@ const GalleryScrollArea = styled.div`
       pointer-events: none;
     `}
 
-  /* Gallery stays mounted until lightbox FLIP finishes — hide visually so FLIP shows */
+  /* Fade out quickly when a gallery cell is tapped so the FLIP
+     animation feels instant; 200ms is fast enough to not feel abrupt. */
   ${({ $exitPending }) =>
     $exitPending &&
     css`
-      opacity: 0;
-      visibility: hidden;
-      transition: none;
+      animation: ${lbBgFadeOut} 0.2s ease both;
+      pointer-events: none;
     `}
 
   ${({ $fading }) =>
@@ -1115,39 +1131,47 @@ const GalleryScrollArea = styled.div`
     `}
 `;
 
+/* CSS-columns masonry: each cell flows naturally based on its image's aspect ratio.
+   Images different sizes → no empty gaps as they pack vertically per column. */
 const GalleryGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  max-width: 860px;
+  column-count: 3;
+  column-gap: 6px;
+  max-width: 1200px;
   margin: 0 auto;
 
-  @media (max-width: 600px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 900px) {
+    column-count: 2;
+  }
+
+  @media (max-width: 500px) {
+    column-count: 2;
+    column-gap: 4px;
   }
 `;
 
 const GalleryCell = styled.div`
-  aspect-ratio: 1;
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
   overflow: hidden;
   border-radius: 14px;
   cursor: pointer;
   background: #f0f0f0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   position: relative;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
   will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
+  /* aspect-ratio applied inline from loaded image dims — falls back to 1:1 pre-load */
+  aspect-ratio: 1 / 1;
   /* Hidden by default — FLIP cell overrides to opacity:1, others reveal via stagger */
   opacity: 0;
 
-  ${({ $proxySrc }) =>
-    $proxySrc &&
-    css`
-      background-image: url(${$proxySrc});
-    `}
+  @media (max-width: 500px) {
+    margin: 0 0 4px;
+  }
 
   ${({ $hidden }) =>
     $hidden &&
@@ -1180,7 +1204,7 @@ const GalleryCell = styled.div`
         `
       : css`
           &:hover {
-            transform: scale(0.97);
+            transform: scale(0.98);
             transition: transform 0.15s;
           }
         `}
@@ -1200,12 +1224,18 @@ const OpeningFlipProxy = styled.div`
   position: fixed;
   z-index: 6;
   pointer-events: none;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overflow: hidden;
   will-change: left, top, width, height, border-radius;
   transform: translateZ(0);
   backface-visibility: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
 `;
 
 // Isolated so lightbox state changes don't re-render the bento images.
@@ -1302,6 +1332,7 @@ const ClassPageImagesTitle = React.memo(
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [isClosingLightbox, setIsClosingLightbox] = useState(false);
+    const [closeFadeOnly, setCloseFadeOnly] = useState(false);
     const [navBurst, setNavBurst] = useState(false);
     const lightboxContainerRef = useRef(null);
     const lightboxClipRef = useRef(null);
@@ -1322,7 +1353,22 @@ const ClassPageImagesTitle = React.memo(
     const lightboxFlipSourceRect = useRef(null);
     const galleryFlipDoneRef = useRef(false);
     const galleryFlipIdxRef = useRef(0);
+    // Locked-in src for the flip cell so it never changes during exit (prevents flash).
+    const galleryFlipSrcRef = useRef(null);
     const galleryExitTimerRef = useRef(null);
+    const galleryExitSourceIdxRef = useRef(null); // which gallery cell triggered the exit
+    const touchStartRef = useRef(null);
+    const [lightboxResized, setLightboxResized] = useState(false);
+    const [resizeTransition, setResizeTransition] = useState(false);
+    const lightboxResizeTimerRef = useRef(null);
+    const pendingOpenResizeIdxRef = useRef(null);
+    const [imageDims, setImageDims] = useState({});
+    const imageDimsRef = useRef({});
+    const [windowDim, setWindowDim] = useState(() =>
+      typeof window === "undefined"
+        ? { w: 1280, h: 800 }
+        : { w: window.innerWidth, h: window.innerHeight },
+    );
 
     useEffect(() => {
       if (typeof window === "undefined") return;
@@ -1338,11 +1384,18 @@ const ClassPageImagesTitle = React.memo(
       setCurrentUrl(u.toString());
     }, [shareUrlQueryString]);
     useEffect(() => {
-      const check = () => setIsMobile(window.innerWidth <= 768);
+      const check = () => {
+        setIsMobile(window.innerWidth <= 768);
+        setWindowDim({ w: window.innerWidth, h: window.innerHeight });
+      };
       check();
       window.addEventListener("resize", check);
       return () => window.removeEventListener("resize", check);
     }, []);
+
+    useEffect(() => {
+      imageDimsRef.current = imageDims;
+    }, [imageDims]);
 
     const classImages =
       Array.isArray(images) && images.length > 0 ? images : [];
@@ -1373,6 +1426,66 @@ const ClassPageImagesTitle = React.memo(
       });
     }, []);
 
+    const preloadImageWithSize = useCallback((src) => {
+      if (typeof window === "undefined" || !src) return Promise.resolve(null);
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        const getDim = () =>
+          img.naturalWidth && img.naturalHeight
+            ? { width: img.naturalWidth, height: img.naturalHeight }
+            : null;
+        img.onload = () => resolve(getDim());
+        img.onerror = () => resolve(null);
+        img.src = src;
+        if (img.complete && img.naturalWidth) resolve(getDim());
+      });
+    }, []);
+
+    const ensureImageDim = useCallback(
+      async (idx) => {
+        const existing = imageDimsRef.current[idx];
+        if (existing) return existing;
+        const imgObj = imagesToDisplay[idx];
+        const src =
+          typeof imgObj === "string"
+            ? imgObj
+            : imgObj?.thumbnail_url ||
+              imgObj?.medium_url ||
+              imgObj?.large_url ||
+              "";
+        if (!src) return null;
+        const dim = await preloadImageWithSize(src);
+        if (dim) {
+          imageDimsRef.current = { ...imageDimsRef.current, [idx]: dim };
+          setImageDims((prev) =>
+            prev[idx] ? prev : { ...prev, [idx]: dim },
+          );
+        }
+        return dim;
+      },
+      [imagesToDisplay, preloadImageWithSize],
+    );
+
+    /* Compute single-lightbox container sizes.
+       squareSize: used during open/close FLIP (keeps origin-cell aspect).
+       naturalSize: transitioned to AFTER FLIP lands (or during index change). */
+    const { squareSize, naturalSize } = (() => {
+      const dim = imageDims[lightboxIndex];
+      const { w: winW, h: winH } = windowDim;
+      const maxW = Math.min(winW * 0.92, 1200);
+      const maxH = winH * 0.82;
+      const sq = Math.min(maxW, maxH);
+      const square = { width: sq, height: sq };
+      if (!dim) return { squareSize: square, naturalSize: square };
+      const ar = dim.width / dim.height;
+      const natural =
+        maxW / ar <= maxH
+          ? { width: maxW, height: maxW / ar }
+          : { width: maxH * ar, height: maxH };
+      return { squareSize: square, naturalSize: natural };
+    })();
+    const lightboxBoxSize = lightboxResized ? naturalSize : squareSize;
+
     const triggerNavBurst = useCallback(() => {
       [lightboxClipRef, lightboxImgInnerRef].forEach((ref) => {
         if (!ref.current) return;
@@ -1385,55 +1498,150 @@ const ClassPageImagesTitle = React.memo(
       navBurstTimeout.current = setTimeout(() => setNavBurst(false), 420);
     }, []);
 
-    const openLightbox = useCallback((index, cellEl) => {
-      originCellRef.current = cellEl;
-      setLightboxIndex(index);
-      setIsClosingLightbox(false);
-      setLightboxOpen(true);
+    const kickoffOpenNaturalResize = useCallback((targetIdx) => {
+      setResizeTransition(true);
+      const startedAt =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
+      const maxWaitMs = 1800;
+
+      const applyNaturalResize = () => {
+        // Give React one full paint with transition enabled before size change.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setLightboxResized(true);
+            // Disable transition once resize settles so nav remains instant.
+            setTimeout(() => setResizeTransition(false), 420);
+          });
+        });
+      };
+
+      const waitForDimThenResize = () => {
+        if (!lightboxContainerRef.current) {
+          setResizeTransition(false);
+          return;
+        }
+        if (lightboxIndexRef.current !== targetIdx) {
+          setResizeTransition(false);
+          return;
+        }
+        if (imageDimsRef.current[targetIdx]) {
+          applyNaturalResize();
+          return;
+        }
+        const now =
+          typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (now - startedAt >= maxWaitMs) {
+          // Fallback: don't hang forever on broken/missing images.
+          applyNaturalResize();
+          return;
+        }
+        requestAnimationFrame(waitForDimThenResize);
+      };
+
+      waitForDimThenResize();
     }, []);
+
+    const openLightbox = useCallback(
+      async (index, cellEl) => {
+        originCellRef.current = cellEl;
+        setLightboxIndex(index);
+        setIsClosingLightbox(false);
+        setCloseFadeOnly(false);
+        setLightboxResized(false);
+        if (lightboxResizeTimerRef.current) {
+          clearTimeout(lightboxResizeTimerRef.current);
+          lightboxResizeTimerRef.current = null;
+        }
+        pendingOpenResizeIdxRef.current = null;
+        if (!imageDimsRef.current[index]) {
+          await Promise.race([
+            ensureImageDim(index),
+            new Promise((r) => setTimeout(r, 600)),
+          ]);
+        }
+        setLightboxOpen(true);
+        // Resize after open FLIP fully settles (triggered from open FLIP effect).
+        pendingOpenResizeIdxRef.current = index;
+      },
+      [ensureImageDim],
+    );
 
     const closeLightbox = useCallback(() => {
       if (galleryExitTimerRef.current) {
         clearTimeout(galleryExitTimerRef.current);
         galleryExitTimerRef.current = null;
       }
+      if (lightboxResizeTimerRef.current) {
+        clearTimeout(lightboxResizeTimerRef.current);
+        lightboxResizeTimerRef.current = null;
+      }
+      pendingOpenResizeIdxRef.current = null;
+      setResizeTransition(false);
       setGalleryExitPending(false);
+
       const el = lightboxContainerRef.current;
-      const originEl = originCellRef.current;
+      const idx = lightboxIndexRef.current;
+      const bentoLen = Math.min(imagesToDisplay.length, 4);
+      const matchingBento =
+        idx < bentoLen ? bentoGridRef.current?.children[idx] : null;
+
+      // Fade-only when: gallery is open, no matching bento cell, or refs missing.
+      const fadeOnly = galleryOpen || !el || !matchingBento;
+
+      setCloseFadeOnly(fadeOnly);
       setIsClosingLightbox(true);
-      if (!el || !originEl) {
+
+      if (fadeOnly) {
+        setLightboxResized(false);
         setTimeout(() => {
           setLightboxOpen(false);
           lightboxOpenedRef.current = false;
           setIsClosingLightbox(false);
+          setCloseFadeOnly(false);
         }, 500);
         return;
       }
-      // Re-measure origin cell at close time so scroll position is always correct
-      const originRect = originEl.getBoundingClientRect();
-      const finalRect = el.getBoundingClientRect();
-      const scale = Math.min(
-        originRect.width / finalRect.width,
-        originRect.height / finalRect.height,
-      );
-      const dx =
-        originRect.left +
-        originRect.width / 2 -
-        (finalRect.left + finalRect.width / 2);
-      const dy =
-        originRect.top +
-        originRect.height / 2 -
-        (finalRect.top + finalRect.height / 2);
-      el.style.transition =
-        "transform 0.55s cubic-bezier(0.4,0,0.6,1), border-radius 0.55s cubic-bezier(0.4,0,0.6,1)";
-      el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
-      el.style.borderRadius = "9px";
-      setTimeout(() => {
-        setLightboxOpen(false);
-        lightboxOpenedRef.current = false;
-        setIsClosingLightbox(false);
-      }, 560);
-    }, []);
+
+      // Step 1: if container is at natural aspect, shrink back to square first
+      // so the FLIP uses uniform scale (no distortion on the way out).
+      const doFlip = () => {
+        const originRect = matchingBento.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const scale = Math.min(
+          originRect.width / elRect.width,
+          originRect.height / elRect.height,
+        );
+        const dx =
+          originRect.left + originRect.width / 2 -
+          (elRect.left + elRect.width / 2);
+        const dy =
+          originRect.top + originRect.height / 2 -
+          (elRect.top + elRect.height / 2);
+        el.style.transition =
+          "transform 0.45s cubic-bezier(0.4,0,0.6,1), border-radius 0.45s cubic-bezier(0.4,0,0.6,1)";
+        el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
+        el.style.borderRadius = "9px";
+        setTimeout(() => {
+          setLightboxOpen(false);
+          lightboxOpenedRef.current = false;
+          setIsClosingLightbox(false);
+          setCloseFadeOnly(false);
+          setLightboxResized(false);
+        }, 460);
+      };
+
+      if (lightboxResized) {
+        // Enable transition, shrink to square, then FLIP
+        setResizeTransition(true);
+        setLightboxResized(false);
+        setTimeout(() => {
+          setResizeTransition(false);
+          doFlip();
+        }, 320);
+      } else {
+        doFlip();
+      }
+    }, [galleryOpen, imagesToDisplay.length, lightboxResized]);
 
     // Keep a ref in sync so goNext/goPrev can read current index without adding it to deps
     useEffect(() => {
@@ -1443,12 +1651,13 @@ const ClassPageImagesTitle = React.memo(
     const goNext = useCallback(() => {
       const newIdx =
         (lightboxIndexRef.current + 1) % imagesToDisplay.length;
-      // If new image has a bento cell, update the exit-animation target
       const cell = bentoGridRef.current?.children[newIdx];
       if (cell) originCellRef.current = cell;
       triggerNavBurst();
       setLightboxIndex(newIdx);
-    }, [triggerNavBurst, imagesToDisplay.length]);
+      // Keep lightboxResized=true so container instantly snaps to new natural size
+      ensureImageDim(newIdx);
+    }, [triggerNavBurst, imagesToDisplay.length, ensureImageDim]);
 
     const goPrev = useCallback(() => {
       const newIdx =
@@ -1458,7 +1667,8 @@ const ClassPageImagesTitle = React.memo(
       if (cell) originCellRef.current = cell;
       triggerNavBurst();
       setLightboxIndex(newIdx);
-    }, [triggerNavBurst, imagesToDisplay.length]);
+      ensureImageDim(newIdx);
+    }, [triggerNavBurst, imagesToDisplay.length, ensureImageDim]);
 
     useLayoutEffect(() => {
       if (!lightboxOpen) {
@@ -1472,17 +1682,16 @@ const ClassPageImagesTitle = React.memo(
       if (!el || !originEl) return;
       const originRect = originEl.getBoundingClientRect();
       const finalRect = el.getBoundingClientRect();
+      // Uniform scale: container is square on open FLIP so no distortion
       const scale = Math.min(
         originRect.width / finalRect.width,
         originRect.height / finalRect.height,
       );
       const dx =
-        originRect.left +
-        originRect.width / 2 -
+        originRect.left + originRect.width / 2 -
         (finalRect.left + finalRect.width / 2);
       const dy =
-        originRect.top +
-        originRect.height / 2 -
+        originRect.top + originRect.height / 2 -
         (finalRect.top + finalRect.height / 2);
       el.style.transition = "none";
       el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
@@ -1492,10 +1701,23 @@ const ClassPageImagesTitle = React.memo(
           el.style.transition =
             "transform 0.65s cubic-bezier(0.4,0,0.2,1), border-radius 0.65s cubic-bezier(0.4,0,0.2,1)";
           el.style.transform = "";
-          el.style.borderRadius = "50px";
+          el.style.borderRadius = "32px";
+          // Clear inline transition after FLIP so the CSS rule
+          // (width/height 0.35s) takes over for the aspect-ratio resize.
+          setTimeout(() => {
+            el.style.transition = "";
+            const pendingIdx = pendingOpenResizeIdxRef.current;
+            if (
+              pendingIdx != null &&
+              pendingIdx === lightboxIndexRef.current
+            ) {
+              pendingOpenResizeIdxRef.current = null;
+              kickoffOpenNaturalResize(pendingIdx);
+            }
+          }, 680);
         });
       });
-    }, [lightboxOpen]);
+    }, [lightboxOpen, kickoffOpenNaturalResize]);
 
     useEffect(() => {
       if (!lightboxOpen) return;
@@ -1533,7 +1755,125 @@ const ClassPageImagesTitle = React.memo(
       }
     }, [galleryPhase, galleryExitPending, galleryOpen]);
 
-    // Reusable helper: apply a FLIP from sourceRect to the lightbox container's current position
+    /* Gallery masonry reflows as its images load and column heights change,
+       so the FLIP target cell can move. Whenever any gallery image finishes
+       loading, re-measure the target and update the proxy endpoint so the
+       transition smoothly tracks to its final resting position. */
+    const recalibrateOpeningFlipTarget = useCallback(
+      (loadedIdx) => {
+        if (galleryPhase === "revealed" || galleryExitPending) return;
+        const idx = galleryFlipIdxRef.current;
+        const galleryEl = galleryItemRefs.current[idx];
+        if (!galleryEl) return;
+        const finalRect = galleryEl.getBoundingClientRect();
+        setOpeningFlipProxy((prev) => {
+          if (!prev || !prev.transitioning) return prev;
+          if (
+            prev.left === finalRect.left &&
+            prev.top === finalRect.top &&
+            prev.width === finalRect.width &&
+            prev.height === finalRect.height
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            left: finalRect.left,
+            top: finalRect.top,
+            width: finalRect.width,
+            height: finalRect.height,
+          };
+        });
+      },
+      [galleryPhase, galleryExitPending],
+    );
+
+    // Preload natural dimensions for all images when the lightbox opens,
+    // so single-view sizing and masonry aspect ratios are instantly correct.
+    useEffect(() => {
+      if (!lightboxOpen) return;
+      imagesToDisplay.forEach((_, i) => {
+        ensureImageDim(i);
+      });
+    }, [lightboxOpen, imagesToDisplay, ensureImageDim]);
+
+    // Scroll lock while lightbox is open (desktop + mobile, iOS-safe).
+    // Uses position: fixed so iOS Safari actually stops the page from scrolling.
+    useEffect(() => {
+      if (!lightboxOpen || typeof window === "undefined") return;
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const { body, documentElement: html } = document;
+      const prev = {
+        bodyOverflow: body.style.overflow,
+        bodyPosition: body.style.position,
+        bodyTop: body.style.top,
+        bodyWidth: body.style.width,
+        htmlOverflow: html.style.overflow,
+        htmlOverscroll: html.style.overscrollBehavior,
+      };
+      body.style.overflow = "hidden";
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.width = "100%";
+      html.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+      return () => {
+        body.style.overflow = prev.bodyOverflow;
+        body.style.position = prev.bodyPosition;
+        body.style.top = prev.bodyTop;
+        body.style.width = prev.bodyWidth;
+        html.style.overflow = prev.htmlOverflow;
+        html.style.overscrollBehavior = prev.htmlOverscroll;
+        window.scrollTo(0, scrollY);
+      };
+    }, [lightboxOpen]);
+
+    // Swipe navigation for the single image view (touch only; mouse uses arrows).
+    const onLightboxTouchStart = useCallback(
+      (e) => {
+        if (galleryOpen) return;
+        if (!e.touches || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        touchStartRef.current = {
+          x: t.clientX,
+          y: t.clientY,
+          time: Date.now(),
+        };
+      },
+      [galleryOpen],
+    );
+
+    const onLightboxTouchEnd = useCallback(
+      (e) => {
+        const start = touchStartRef.current;
+        touchStartRef.current = null;
+        if (!start || galleryOpen) return;
+        if (galleryExitPending || isClosingLightbox) return;
+        const end = e.changedTouches?.[0];
+        if (!end) return;
+        const dx = end.clientX - start.x;
+        const dy = end.clientY - start.y;
+        const dt = Date.now() - start.time;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (dt > 700) return;
+        if (absDx < 40 || absDx < absDy) return;
+        if (imagesToDisplay.length <= 1) return;
+        if (dx < 0) goNext();
+        else goPrev();
+      },
+      [
+        galleryOpen,
+        galleryExitPending,
+        isClosingLightbox,
+        imagesToDisplay.length,
+        goNext,
+        goPrev,
+      ],
+    );
+
+    // Reusable helper: apply a FLIP from sourceRect to the lightbox container's current position.
+    // Uses uniform scale so there's no image distortion (container is square at this point).
     const flipLightboxContainerFrom = useCallback((sourceRect) => {
       const el = lightboxContainerRef.current;
       if (!el || !sourceRect) return;
@@ -1543,22 +1883,26 @@ const ClassPageImagesTitle = React.memo(
         sourceRect.height / finalRect.height,
       );
       const dx =
-        sourceRect.left +
-        sourceRect.width / 2 -
+        sourceRect.left + sourceRect.width / 2 -
         (finalRect.left + finalRect.width / 2);
       const dy =
-        sourceRect.top +
-        sourceRect.height / 2 -
+        sourceRect.top + sourceRect.height / 2 -
         (finalRect.top + finalRect.height / 2);
       el.style.transition = "none";
       el.style.transform = `translate(${dx}px,${dy}px) scale(${scale})`;
-      el.style.borderRadius = "12px";
+      el.style.borderRadius = "14px";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           el.style.transition =
             "transform 0.6s cubic-bezier(0.4,0,0.2,1), border-radius 0.6s cubic-bezier(0.4,0,0.2,1)";
           el.style.transform = "";
-          el.style.borderRadius = "50px";
+          el.style.borderRadius = "32px";
+          // After FLIP lands, clear inline transition and snap to natural size
+          // (no width/height animation — user is already inside the lightbox).
+          setTimeout(() => {
+            el.style.transition = "";
+            setLightboxResized(true);
+          }, 620);
         });
       });
     }, []);
@@ -1582,10 +1926,14 @@ const ClassPageImagesTitle = React.memo(
       setGalleryPhase("idle");
       galleryFlipDoneRef.current = false;
       galleryExitTimerRef.current = null;
+      galleryExitSourceIdxRef.current = null;
     }, []);
 
-    // Gallery open: snapshot lightbox position, record which cell will fly
-    const openGallery = useCallback(() => {
+    // Gallery open: snapshot lightbox position, record which cell will fly.
+    // Ensures ALL gallery image dimensions are loaded first so every masonry
+    // cell can render with its final aspect-ratio and the FLIP target rect
+    // stays stable (doesn't drift off-screen as images load in).
+    const openGallery = useCallback(async () => {
       if (galleryExitTimerRef.current) {
         clearTimeout(galleryExitTimerRef.current);
         galleryExitTimerRef.current = null;
@@ -1599,28 +1947,26 @@ const ClassPageImagesTitle = React.memo(
       galleryFlipDoneRef.current = false;
       const idx = lightboxIndexRef.current;
       galleryFlipIdxRef.current = idx;
+      // Lock in the flip cell's src now so it never changes during exit.
+      galleryFlipSrcRef.current = resolveImageUrl(imagesToDisplay[idx], true);
       setGalleryPhase("idle");
       setGalleryOpening(true);
-      const activeSrc =
-        lightboxImageUrl || resolveImageUrl(imagesToDisplay[idx], true);
-      preloadImage(activeSrc).finally(() => {
-        if (typeof window === "undefined") {
-          setGalleryOpen(true);
-          setGalleryOpening(false);
-          return;
-        }
-        requestAnimationFrame(() => {
-          setGalleryOpen(true);
-          setGalleryOpening(false);
-        });
+
+      await Promise.race([
+        Promise.all(imagesToDisplay.map((_, i) => ensureImageDim(i))),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+
+      if (typeof window === "undefined") {
+        setGalleryOpen(true);
+        setGalleryOpening(false);
+        return;
+      }
+      requestAnimationFrame(() => {
+        setGalleryOpen(true);
+        setGalleryOpening(false);
       });
-    }, [
-      galleryOpening,
-      lightboxImageUrl,
-      imagesToDisplay,
-      preloadImage,
-      resolveImageUrl,
-    ]);
+    }, [galleryOpening, imagesToDisplay, ensureImageDim]);
 
     // Gallery close without selecting a new image (back button)
     const closeGallery = useCallback(() => {
@@ -1632,6 +1978,8 @@ const ClassPageImagesTitle = React.memo(
       if (galleryCell) {
         lightboxFlipSourceRect.current = galleryCell.getBoundingClientRect();
       }
+      // Clear the opening proxy immediately so stale imagery can't flash on exit.
+      setOpeningFlipProxy(null);
       setGalleryExitPending(true);
       setLightboxFlipKey((k) => k + 1);
       galleryExitTimerRef.current = setTimeout(finishGalleryExit, 680);
@@ -1639,21 +1987,42 @@ const ClassPageImagesTitle = React.memo(
 
     // Select an image from the gallery — FLIP to single, then unmount gallery
     const selectFromGallery = useCallback(
-      (index) => {
+      async (index) => {
         if (galleryExitTimerRef.current) return;
         if (galleryPhase !== "revealed") return;
+        if (!imageDimsRef.current[index]) {
+          await Promise.race([
+            ensureImageDim(index),
+            new Promise((r) => setTimeout(r, 400)),
+          ]);
+        }
         const galleryCell = galleryItemRefs.current[index];
         if (galleryCell) {
           lightboxFlipSourceRect.current = galleryCell.getBoundingClientRect();
         }
         const bentoCell = bentoGridRef.current?.children[index];
         if (bentoCell) originCellRef.current = bentoCell;
+        // Record the source cell index BEFORE lightboxIndex updates so
+        // hideForExit hides the right cell (the one that was clicked).
+        galleryExitSourceIdxRef.current = index;
+        // Exit FLIP should track the newly selected gallery cell, not the
+        // previously selected image from gallery-open time.
+        galleryFlipIdxRef.current = index;
+        galleryFlipSrcRef.current = resolveImageUrl(imagesToDisplay[index], true);
+        // Clear opening proxy in the same tick to prevent stale one-frame swaps.
+        setOpeningFlipProxy(null);
         setGalleryExitPending(true);
         setLightboxIndex(index);
         setLightboxFlipKey((k) => k + 1);
         galleryExitTimerRef.current = setTimeout(finishGalleryExit, 680);
       },
-      [galleryPhase, finishGalleryExit],
+      [
+        galleryPhase,
+        finishGalleryExit,
+        ensureImageDim,
+        imagesToDisplay,
+        resolveImageUrl,
+      ],
     );
 
     // After the FLIP animation finishes, reveal all other cells with stagger
@@ -1826,6 +2195,7 @@ const ClassPageImagesTitle = React.memo(
       (galleryOpen && galleryPhase !== "revealed");
     const allImagesLocked =
       galleryOpening || (galleryOpen && galleryPhase !== "revealed");
+    const hasOpeningFlipProxy = Boolean(openingFlipProxy?.src);
 
     return (
       <MainContent>
@@ -2384,6 +2754,8 @@ const ClassPageImagesTitle = React.memo(
               <LightboxRow
                 $elevate={galleryExitPending}
                 $noPointer={galleryInputLocked}
+                onTouchStart={onLightboxTouchStart}
+                onTouchEnd={onLightboxTouchEnd}
               >
                 {imagesToDisplay.length > 1 && (
                   <LightboxNavBtn
@@ -2402,8 +2774,21 @@ const ClassPageImagesTitle = React.memo(
 
                 <LightboxImgContainer
                   ref={lightboxContainerRef}
+                  style={{
+                    width: `${lightboxBoxSize.width}px`,
+                    height: `${lightboxBoxSize.height}px`,
+                  }}
+                  $resizeTransition={resizeTransition}
                   $hiddenForGallery={
-                    galleryOpen && galleryPhase !== "revealed" && !galleryExitPending
+                    (galleryOpen &&
+                      !galleryExitPending &&
+                      (galleryPhase === "revealed" ||
+                        (galleryPhase !== "revealed" &&
+                          hasOpeningFlipProxy))) ||
+                    (isClosingLightbox && closeFadeOnly && galleryOpen)
+                  }
+                  $fadeOnly={
+                    isClosingLightbox && closeFadeOnly && !galleryOpen
                   }
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -2436,7 +2821,7 @@ const ClassPageImagesTitle = React.memo(
                 )}
               </LightboxRow>
 
-              {imagesToDisplay.length > 1 && imagesToDisplay.length <= 8 ? (
+              {!galleryOpen && imagesToDisplay.length > 1 && imagesToDisplay.length <= 8 ? (
                 <LightboxDots
                   $fading={isClosingLightbox}
                   $busy={galleryInputLocked}
@@ -2460,7 +2845,7 @@ const ClassPageImagesTitle = React.memo(
                     />
                   ))}
                 </LightboxDots>
-              ) : imagesToDisplay.length > 8 ? (
+              ) : !galleryOpen && imagesToDisplay.length > 8 ? (
                 <LightboxCounter
                   $fading={isClosingLightbox}
                   $busy={galleryInputLocked}
@@ -2481,31 +2866,47 @@ const ClassPageImagesTitle = React.memo(
                   <GalleryGrid>
                     {imagesToDisplay.map((img, i) => {
                       const isFlipCell = i === galleryFlipIdxRef.current;
+                      // Always use the locked-in src for the flip cell so the URL never
+                      // changes (open → revealed → exit), preventing any re-fetch flash.
                       const src = isFlipCell
-                        ? lightboxImageUrl || resolveImageUrl(img, true)
+                        ? galleryFlipSrcRef.current || resolveImageUrl(img, true)
                         : resolveImageUrl(img, true);
-                      const useFlipProxyImage =
+                      const hideForFlip =
                         isFlipCell &&
                         galleryPhase !== "revealed" &&
                         !galleryExitPending;
+                      // During exit FLIP (gallery → single), hide only the source cell
+                      // (the one that was clicked). Use a ref so this stays correct even
+                      // after lightboxIndex has been updated to the new value.
+                      const hideForExit =
+                        galleryExitPending && i === galleryExitSourceIdxRef.current;
+                      const dim = imageDims[i];
+                      const cellStyle = dim
+                        ? { aspectRatio: `${dim.width} / ${dim.height}` }
+                        : undefined;
                       return (
                         <GalleryCell
                           key={i}
                           ref={(el) => {
                             galleryItemRefs.current[i] = el;
                           }}
+                          style={cellStyle}
                           $isFlipCell={isFlipCell}
                           $reveal={galleryPhase === "revealed"}
                           $animDelay={i * 0.05}
                           $locked={galleryInputLocked}
-                          $hidden={useFlipProxyImage}
-                          $proxySrc={useFlipProxyImage ? src : ""}
+                          $hidden={hideForFlip || hideForExit}
                           onClick={() => selectFromGallery(i)}
                           role="button"
                           aria-label={`View image ${i + 1}`}
                         >
-                          {src && !useFlipProxyImage && (
-                            <GalleryImg src={src} alt="" loading="eager" />
+                          {src && (
+                            <GalleryImg
+                              src={src}
+                              alt=""
+                              loading="eager"
+                              onLoad={() => recalibrateOpeningFlipTarget(i)}
+                            />
                           )}
                         </GalleryCell>
                       );
@@ -2521,12 +2922,13 @@ const ClassPageImagesTitle = React.memo(
                     width: `${openingFlipProxy.width}px`,
                     height: `${openingFlipProxy.height}px`,
                     borderRadius: `${openingFlipProxy.borderRadius}px`,
-                    backgroundImage: `url(${openingFlipProxy.src})`,
                     transition: openingFlipProxy.transitioning
                       ? "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), width 0.6s cubic-bezier(0.4,0,0.2,1), height 0.6s cubic-bezier(0.4,0,0.2,1), border-radius 0.6s cubic-bezier(0.4,0,0.2,1)"
                       : "none",
                   }}
-                />
+                >
+                  <img src={openingFlipProxy.src} alt="" />
+                </OpeningFlipProxy>
               )}
             </LightboxOverlay>,
             document.body,
