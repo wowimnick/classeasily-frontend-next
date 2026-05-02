@@ -1560,7 +1560,7 @@ export default function ClassPageClient({
             ? `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim()
             : "";
         const slot = {
-          id: schedule.id ?? schedule.instance_id ?? null,
+          id: schedule.instance_id ?? schedule.id ?? null,
           date: schedule.date ?? null,
           time: schedule.time ?? null,
           duration: schedule.duration ?? null,
