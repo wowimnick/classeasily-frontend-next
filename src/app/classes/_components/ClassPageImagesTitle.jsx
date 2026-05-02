@@ -30,12 +30,16 @@ import { LordIcon } from "@/services/ReactUtils";
 const HERO_TEXT = "#111111";
 const HERO_MUTED = "#717171";
 
+/** Soft elevation under hero / modal icons (Lucide, LordIcon wrappers, inline SVG). */
+const iconDropShadow = css`
+  filter: drop-shadow(0 3px 8px rgba(15, 23, 42, 0.18))
+    drop-shadow(0 2px 4px rgba(15, 23, 42, 0.1));
+`;
+
 /** Toronto / homepage suggested-area marker (SearchContext LORDICON_TORONTO). */
-const LOCATION_LORD_ICON = "https://cdn.lordicon.com/luvlauio.json";
+const LOCATION_LORD_ICON = "https://cdn.lordicon.com/bpmglzll.json";
 /** Partner & Premium pills (legacy class page). */
 const PARTNER_LORD_ICON = "https://cdn.lordicon.com/zopdjjjs.json";
-/** Reviews / schedule cue on class hero (calendar, hover-wink). */
-const SCHEDULE_LORD_ICON = "https://cdn.lordicon.com/edplgash.json";
 
 const calculateHostingDuration = (dateString) => {
   if (!dateString) return "";
@@ -148,6 +152,9 @@ const MobileNavBack = styled.button`
   &:hover {
     background: #f7f7f7;
   }
+  svg {
+    ${iconDropShadow}
+  }
 `;
 
 const MobileNavTitle = styled.span`
@@ -186,6 +193,9 @@ const StrokeIconBtn = styled.button`
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+  svg {
+    ${iconDropShadow}
   }
 `;
 
@@ -352,7 +362,7 @@ const HeroSummary = styled.p`
   max-width: 20rem;
 
   @media (max-width: 768px) {
-    order: 2;
+    order: 3;
     margin: 0 auto 10px;
     max-width: 22rem;
     text-align: center;
@@ -368,6 +378,29 @@ const TagsRowDesktop = styled.p`
 
   @media (max-width: 768px) {
     display: none;
+  }
+`;
+
+/** Premium partner: compact rating under title / tags, above summary (matches review row stats). */
+const HeroPremiumRatingStrip = styled.div`
+  order: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 auto 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: ${HERO_MUTED};
+  line-height: 1.3;
+
+  @media (max-width: 768px) {
+    order: 2;
+    margin: 0 auto 10px;
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 `;
 
@@ -427,7 +460,7 @@ const MobileDividerAfterHero = styled.hr`
 
   @media (max-width: 768px) {
     display: block;
-    order: 4;
+    order: 5;
     margin: 16px 0 18px;
   }
 `;
@@ -440,7 +473,7 @@ const MobileDividerBeforeDescription = styled.hr`
 
   @media (max-width: 768px) {
     display: block;
-    order: 6;
+    order: 7;
     margin: 20px 0 0;
   }
 `;
@@ -454,7 +487,7 @@ const InfoRowsStack = styled.div`
   text-align: left;
 
   @media (max-width: 768px) {
-    order: 5;
+    order: 6;
   }
 `;
 
@@ -468,9 +501,25 @@ const InfoRowIcon = styled.div`
   flex-shrink: 0;
   width: 54px;
   height: 54px;
+  font-size: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  & > *,
+  lord-icon {
+    ${iconDropShadow}
+  }
+`;
+
+/** Hero info row: elevation for emoji/sticker only (does not swap icon assets). */
+const InfoRowEmojiWrap = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  ${iconDropShadow}
 `;
 
 const InfoRowBody = styled.div`
@@ -518,7 +567,7 @@ const AskRow = styled.div`
   text-align: center;
 
   @media (max-width: 768px) {
-    order: 3;
+    order: 4;
     margin-top: 0;
     margin-bottom: 4px;
     display: flex;
@@ -685,6 +734,9 @@ const CloseButton = styled.button`
     background-color: #f5f5f5;
     color: #111;
   }
+  svg {
+    ${iconDropShadow}
+  }
 `;
 const ShareCopySection = styled.div`
   display: flex;
@@ -729,6 +781,9 @@ const ShareCopyBtn = styled.button`
   }
   &:active {
     transform: scale(0.98);
+  }
+  svg {
+    ${iconDropShadow}
   }
 `;
 const ShareSectionLabel = styled.p`
@@ -783,6 +838,9 @@ const ShareOptionButton = styled.button`
     background: #f8f8f8;
     border-color: #ddd;
   }
+  svg {
+    ${iconDropShadow}
+  }
 `;
 const EmbedModalContent = styled.div`
   padding: 1rem;
@@ -805,6 +863,10 @@ const MetaItem = styled.span`
   display: flex;
   align-items: center;
   gap: 4px;
+
+  svg {
+    ${iconDropShadow}
+  }
 `;
 
 const HostRowButton = styled.button`
@@ -967,6 +1029,9 @@ const LightboxCloseBtn = styled.button`
   &:hover {
     background: rgba(0, 0, 0, 0.08);
   }
+  svg {
+    ${iconDropShadow}
+  }
 `;
 
 const LightboxNavBtn = styled.button`
@@ -1014,6 +1079,10 @@ const LightboxNavBtn = styled.button`
           }
         `}
   transform: translateY(-50%);
+
+  svg {
+    ${iconDropShadow}
+  }
 
   @media (max-width: 768px) {
     display: none;
@@ -1131,6 +1200,9 @@ const AllImagesBtn = styled.button`
             background: rgba(0, 0, 0, 0.08);
           }
         `}
+  svg {
+    ${iconDropShadow}
+  }
 `;
 
 /* --- Gallery view --- */
@@ -2164,14 +2236,16 @@ const ClassPageImagesTitle = React.memo(
     const hostingDuration = calculateHostingDuration(businessData?.createdAt);
     const shouldShowTopRated = averageRating >= 4.5 && reviewCount >= 5;
 
+    const tierKey = String(partnerTierName ?? "").trim().toLowerCase();
+
     let partnerBadgeLabel = null;
     let partnerSubtitle =
       "Trusted organizations that list and run classes on Classeasily.";
-    if (partnerTierName === "Founding Partner") {
+    if (tierKey === "founding partner") {
       partnerBadgeLabel = "Classeasily Partner";
       partnerSubtitle =
         "Founding partners helped shape Classeasily and meet elevated listing standards.";
-    } else if (partnerTierName === "Premium Partner") {
+    } else if (tierKey === "premium partner") {
       partnerBadgeLabel = "Premium Partner";
       partnerSubtitle =
         "Premium partners are vetted and provide exceptional experiences.";
@@ -2192,9 +2266,7 @@ const ClassPageImagesTitle = React.memo(
     };
     const locTitle = "Located in";
     const locPlaceLine = cleanLocStr(locationHeadline);
-    const locExtra = cleanLocStr(locationSubline);
-    const locSubParts = [locPlaceLine, locExtra].filter(Boolean);
-    const locSub = locSubParts.length ? locSubParts.join(" · ") : null;
+    const locSub = locPlaceLine || null;
 
     const reviewTitle =
       reviewCount > 0
@@ -2221,6 +2293,21 @@ const ClassPageImagesTitle = React.memo(
           .map((s) => s.trim())
           .filter((s) => s && s !== "undefined")
       : [];
+
+    const showPremiumHeroRatingStrip = tierKey === "premium partner";
+
+    /** Match `ClassReviews` reviewsHeading (same props as initialRating / initialReviewCount). */
+    const premiumHeroRatingText = showPremiumHeroRatingStrip
+      ? (() => {
+          const r = Number(averageRating ?? rating ?? 0);
+          const safeRating = Number.isFinite(r) ? r.toFixed(1) : "0.0";
+          const c = Number(reviewCount ?? 0);
+          const safeCount = Number.isFinite(c) ? c : 0;
+          return `${safeRating} · ${safeCount} ${
+            safeCount === 1 ? "review" : "reviews"
+          }`;
+        })()
+      : "";
 
     const hostSubParts = [];
     if (hostingDuration) hostSubParts.push(`${hostingDuration} hosting`);
@@ -2308,6 +2395,19 @@ const ClassPageImagesTitle = React.memo(
                       </React.Fragment>
                     ))}
                   </TagsRowDesktop>
+                ) : null}
+
+                {showPremiumHeroRatingStrip ? (
+                  <HeroPremiumRatingStrip>
+                    <Star
+                      size={13}
+                      fill="#FFB400"
+                      color="#FFB400"
+                      strokeWidth={0}
+                      aria-hidden
+                    />
+                    <span>{premiumHeroRatingText}</span>
+                  </HeroPremiumRatingStrip>
                 ) : null}
 
                 {descriptionSummary ? (
@@ -2415,11 +2515,22 @@ const ClassPageImagesTitle = React.memo(
                           size="42px"
                         />
                       ) : (
-                        <Sparkles
-                          size={30}
-                          color="#d97706"
-                          strokeWidth={1.75}
-                        />
+                        <svg
+                          width={32}
+                          height={32}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden
+                        >
+                          <path
+                            d="M9 12L11 14L15.5 9.5M17.9012 4.99851C18.1071 5.49653 18.5024 5.8924 19.0001 6.09907L20.7452 6.82198C21.2433 7.02828 21.639 7.42399 21.8453 7.92206C22.0516 8.42012 22.0516 8.97974 21.8453 9.47781L21.1229 11.2218C20.9165 11.7201 20.9162 12.2803 21.1236 12.7783L21.8447 14.5218C21.9469 14.7685 21.9996 15.0329 21.9996 15.2999C21.9997 15.567 21.9471 15.8314 21.8449 16.0781C21.7427 16.3249 21.5929 16.549 21.4041 16.7378C21.2152 16.9266 20.991 17.0764 20.7443 17.1785L19.0004 17.9009C18.5023 18.1068 18.1065 18.5021 17.8998 18.9998L17.1769 20.745C16.9706 21.2431 16.575 21.6388 16.0769 21.8451C15.5789 22.0514 15.0193 22.0514 14.5212 21.8451L12.7773 21.1227C12.2792 20.9169 11.7198 20.9173 11.2221 21.1239L9.47689 21.8458C8.97912 22.0516 8.42001 22.0514 7.92237 21.8453C7.42473 21.6391 7.02925 21.2439 6.82281 20.7464L6.09972 19.0006C5.8938 18.5026 5.49854 18.1067 5.00085 17.9L3.25566 17.1771C2.75783 16.9709 2.36226 16.5754 2.15588 16.0777C1.94951 15.5799 1.94923 15.0205 2.1551 14.5225L2.87746 12.7786C3.08325 12.2805 3.08283 11.7211 2.8763 11.2233L2.15497 9.47678C2.0527 9.2301 2.00004 8.96568 2 8.69863C1.99996 8.43159 2.05253 8.16715 2.15472 7.92043C2.25691 7.67372 2.40671 7.44955 2.59557 7.26075C2.78442 7.07195 3.00862 6.92222 3.25537 6.8201L4.9993 6.09772C5.49687 5.89197 5.89248 5.4972 6.0993 5.00006L6.82218 3.25481C7.02848 2.75674 7.42418 2.36103 7.92222 2.15473C8.42027 1.94842 8.97987 1.94842 9.47792 2.15473L11.2218 2.87712C11.7199 3.08291 12.2793 3.08249 12.7771 2.87595L14.523 2.15585C15.021 1.94966 15.5804 1.9497 16.0784 2.15597C16.5763 2.36223 16.972 2.75783 17.1783 3.25576L17.9014 5.00153L17.9012 4.99851Z"
+                            stroke="currentColor"
+                            strokeWidth="1.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       )}
                     </InfoRowIcon>
                     <InfoRowBody>
@@ -2432,10 +2543,10 @@ const ClassPageImagesTitle = React.memo(
                     <InfoRowIcon aria-hidden>
                       <LordIcon
                         src={LOCATION_LORD_ICON}
-                        trigger="hover"
-                        colors="primary:#3a3347,secondary:#e4e4e4,tertiary:#ffc738"
+                        trigger="in"
+                        state="in-jump-dynamic"
+                        colors="primary:#000000"
                         size="42px"
-                        playOnLoad
                         inState="in-reveal"
                       />
                     </InfoRowIcon>
@@ -2447,13 +2558,7 @@ const ClassPageImagesTitle = React.memo(
 
                   <InfoRow>
                     <InfoRowIcon aria-hidden>
-                      <LordIcon
-                        src={SCHEDULE_LORD_ICON}
-                        trigger="in"
-                        delay="1000"
-                        state="hover-wink"
-                        size="42px"
-                      />
+                      <InfoRowEmojiWrap>⭐</InfoRowEmojiWrap>
                     </InfoRowIcon>
                     <InfoRowBody>
                       <InfoRowTitle>{reviewTitle}</InfoRowTitle>

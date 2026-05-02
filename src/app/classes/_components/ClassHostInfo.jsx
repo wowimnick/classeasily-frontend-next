@@ -263,7 +263,7 @@ const HostInfo = React.memo(
         transition={{ duration: 0.25 }}
         aria-labelledby="about-host-heading"
       >
-        <SectionHeading id="about-host-heading">About me</SectionHeading>
+        <SectionHeading id="about-host-heading">About the host</SectionHeading>
 
         <AboutGrid>
           <LeftColumn>

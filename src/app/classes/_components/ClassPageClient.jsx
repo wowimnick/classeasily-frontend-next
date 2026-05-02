@@ -1554,7 +1554,9 @@ export default function ClassPageClient({
       if (typeof window === "undefined") return;
 
       try {
-        const participantCount = 1;
+        const rawMin = Number(schedule.minParticipants);
+        const participantCount =
+          Number.isFinite(rawMin) && rawMin >= 1 ? Math.floor(rawMin) : 1;
         const userName =
           currentUser
             ? `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim()
@@ -1569,6 +1571,7 @@ export default function ClassPageClient({
           isCourse: option.booking_type === "Full Course",
           days: schedule.days ?? undefined,
           end_date: schedule.end_date ?? undefined,
+          min_participants: participantCount,
         };
 
         const bookingData = {

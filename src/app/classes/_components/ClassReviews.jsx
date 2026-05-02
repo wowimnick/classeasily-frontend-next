@@ -6,22 +6,27 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  Fragment,
 } from "react";
 import { createPortal } from "react-dom"; // Added for Image Viewer Fix
 import styled, { keyframes, css } from "styled-components";
-import { Avatar, Rate, Modal } from "antd";
+import { Avatar, Modal } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
+import Link from "next/link";
 import {
   Star,
   MessageSquareText,
-  ChevronRight,
   User,
   X,
   ZoomIn,
   Globe,
+  Languages,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatDistanceToNow, isValid } from "date-fns";
 import { classService } from "@/services/apiService";
+import { fetchReviewTranslation } from "@/lib/reviewTranslationClient";
 
 // --- ANIMATIONS & SKELETONS ---
 
@@ -36,26 +41,36 @@ const SkeletonPulse = css`
   animation: ${shimmer} 2s infinite linear;
 `;
 
-const SkeletonCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #eaeaea;
-  padding: 1.25rem;
-  display: flex;
+const SkeletonGrid = styled.div`
+  column-count: 2;
+  column-gap: 32px;
+  margin-bottom: 28px;
+  width: 100%;
+
+  @media (max-width: 900px) {
+    column-count: 1;
+  }
+`;
+
+const SkeletonReviewCell = styled.div`
+  display: inline-flex;
   flex-direction: column;
-  margin-bottom: 1rem;
+  width: 100%;
+  vertical-align: top;
+  break-inside: avoid;
+  margin-bottom: 32px;
+  gap: 12px;
 `;
 
 const SkeletonHeader = styled.div`
   display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  gap: 12px;
 `;
 
 const SkeletonAvatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   ${SkeletonPulse}
   flex-shrink: 0;
@@ -64,19 +79,19 @@ const SkeletonAvatar = styled.div`
 const SkeletonInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
 `;
 
 const SkeletonName = styled.div`
-  height: 14px;
+  height: 15px;
   width: 140px;
   border-radius: 4px;
   ${SkeletonPulse}
 `;
 
 const SkeletonDate = styled.div`
-  height: 12px;
+  height: 13px;
   width: 90px;
   border-radius: 4px;
   ${SkeletonPulse}
@@ -133,194 +148,319 @@ const VaulBody = styled.div`
 // --- MAIN UI STYLED COMPONENTS ---
 
 const ReviewsContainer = styled(motion.div)`
-  background: white;
-  border-radius: 16px;
+  background: #ffffff;
   width: 100%;
-  max-width: 800px;
-  padding: 1rem;
+  max-width: 1120px;
+  padding: 0 0 1rem;
 
   @media (max-width: 768px) {
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 0 1.25rem 1rem;
   }
+`;
+
+const SectionHead = styled.div`
+  margin-bottom: 24px;
 `;
 
 const Header = styled.h2`
-  font-size: 20px;
-  font-weight: 600;
-  color: #000;
-  margin-bottom: 1rem;
+  font-size: clamp(22px, 2.2vw, 24px);
+  font-weight: 700;
+  color: #111111;
+  margin: 0;
+  line-height: 1.25;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-
-  svg {
-    color: #ff385c;
-  }
-
-  @media (max-width: 768px) {
-    margin-bottom: 0.75rem;
-  }
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.35rem;
 `;
 
-const HeaderTitle = styled.span``;
-
-const HeaderRating = styled.span`
+const HeaderTitle = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-weight: 600;
 `;
 
-const ReviewsColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
+const ReviewsGrid = styled.div`
+  column-count: 2;
+  column-gap: 32px;
+  margin-bottom: 28px;
+  width: 100%;
+
+  @media (max-width: 900px) {
+    column-count: 1;
+  }
 `;
 
-const CardBaseStyles = `
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #eaeaea;
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
+const PreviewReviewRoot = styled.div`
   position: relative;
-  transition: all 0.2s ease;
+  display: inline-flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  vertical-align: top;
+  break-inside: avoid;
+  margin-bottom: 32px;
 `;
 
-const ReviewCard = styled(motion.div)`
-  ${CardBaseStyles}
+const PreviewTopRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+`;
 
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: #ff385c;
-  }
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    &:hover {
-      transform: none;
-    }
+const FlatAvatar = styled(Avatar)`
+  flex-shrink: 0;
+  && {
+    border: none;
+    box-shadow: none;
   }
 `;
 
-const ModalReviewItem = styled.div`
-  ${CardBaseStyles}
-  margin-bottom: 1rem;
+const NameBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`;
 
-  &:hover {
-    border-color: #ff385c;
+const ReviewerNameLine = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.3;
+`;
+
+const ReviewerLocationLine = styled.div`
+  font-size: 13px;
+  font-weight: 400;
+  color: #717171;
+  line-height: 1.35;
+`;
+
+const StarsWhenRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-right: ${(p) => (p.$padSource ? "76px" : "0")};
+`;
+
+const StarRatingWrap = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+const BlackStarIcon = styled(Star)`
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  ${(p) =>
+    p.$filled
+      ? css`
+          color: #111111;
+          fill: #111111;
+          stroke: none;
+        `
+      : css`
+          color: #dddddd;
+          fill: none;
+          stroke: currentColor;
+        `}
+`;
+
+const WhenText = styled.span`
+  font-size: 13px;
+  font-weight: 400;
+  color: #717171;
+`;
+
+const DotSep = styled.span`
+  color: #717171;
+  font-size: 13px;
+  user-select: none;
+`;
+
+const InlineSource = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  color: #717171;
+  margin-left: 4px;
+`;
+
+const ModalReviewBlock = styled.div`
+  position: relative;
+  padding: 20px 0;
+  border-bottom: 1px solid #eeeeee;
+
+  &:last-of-type {
+    border-bottom: none;
+    padding-bottom: 4px;
   }
+`;
+
+const ModalInnerTop = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 `;
 
 const ReviewSourceTag = styled.div`
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 0;
   background-color: ${(props) =>
-    props.source === "google" ? "#e8f0fe" : "#fff0f3"};
-  color: ${(props) => (props.source === "google" ? "#1a73e8" : "#ff385c")};
+    props.source === "google" ? "#e8f0fe" : "#f3f4f6"};
+  color: ${(props) => (props.source === "google" ? "#1a73e8" : "#374151")};
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: 10px;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 4px;
 `;
 
-const ReviewHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.875rem;
-  margin-bottom: 0.75rem;
-`;
-
-const ReviewerInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ReviewerName = styled.div`
-  font-weight: 600;
-  color: #000;
-  font-size: 0.95rem;
-  line-height: 1.3;
-`;
-
-const ReviewMeta = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-`;
-
-const ReviewDate = styled.div`
-  color: #767676;
-  font-size: 0.8rem;
-`;
-
-const StyledAvatar = styled(Avatar)`
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-`;
-
-const StyledRate = styled(Rate)`
-  font-size: 14px;
-  .ant-rate-star-full .ant-rate-star-first,
-  .ant-rate-star-full .ant-rate-star-second,
-  .ant-rate-star-full {
-    color: #ff385c;
-  }
-`;
-
 const Comment = styled.p`
-  margin: 0 0 0.75rem 0;
-  color: #333;
-  font-size: 0.9rem;
+  margin: 6px 0 0;
+  color: #111111;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.5;
   white-space: pre-wrap;
 `;
 
-const ShowMoreButton = styled.button`
+const ShowMoreLink = styled.button`
+  display: inline;
   background: none;
   border: none;
-  color: #ff385c;
   padding: 0;
-  margin-left: 0.25rem;
+  margin: 0 0 0 0.25rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  color: #111111;
+  text-decoration: underline;
+  &:hover {
+    opacity: 0.85;
+  }
+`;
+
+const TranslationNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid #ececec;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #555555;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #717171;
+  }
+`;
+
+const TranslationNoticeLabel = styled.span`
+  font-weight: 600;
+  color: #374151;
+`;
+
+const TranslationSpinner = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #717171;
+  margin-bottom: 8px;
+`;
+
+const ToggleOriginalLink = styled.button`
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 0 0.35rem;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 13px;
+  color: #ff385c;
   &:hover {
     text-decoration: underline;
   }
 `;
 
-const BusinessResponse = styled.div`
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin-top: 0.75rem;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -6px;
-    left: 1rem;
-    width: 12px;
-    height: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-bottom: none;
-    border-right: none;
-    transform: rotate(45deg);
+const spinKF = keyframes`
+  from {
+    transform: rotate(0deg);
   }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const SpinIcon = styled(Loader2)`
+  animation: ${spinKF} 0.75s linear infinite;
+`;
+
+const ShowAllButton = styled(motion.button)`
+  background-color: #ffffff;
+  border: none;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #111111;
+  width: 100%;
+  margin: 0;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #fafafa;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  }
+`;
+
+const ReviewFooter = styled.div`
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+`;
+
+const LearnReviewsLink = styled(Link)`
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111111;
+  text-decoration: underline;
+
+  &:hover {
+    opacity: 0.75;
+  }
+`;
+
+const BusinessResponse = styled.div`
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  margin-top: 0.75rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 `;
 
 const ResponseHeader = styled.div`
@@ -328,15 +468,15 @@ const ResponseHeader = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: #334155;
-  font-size: 0.8rem;
+  color: #374151;
+  font-size: 13px;
   margin-bottom: 0.5rem;
 `;
 
 const ResponseText = styled.div`
-  color: #475569;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  color: #444444;
+  font-size: 14px;
+  line-height: 1.55;
 `;
 
 const ReviewImageContainer = styled.div`
@@ -386,37 +526,6 @@ const ImageOverlay = styled.div`
 const ZoomIcon = styled(ZoomIn)`
   color: white;
   size: 24px;
-`;
-
-const ShowAllButton = styled(motion.button)`
-  background-color: white;
-  border: 1px solid #eaeaea;
-  font-weight: 600;
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #000;
-  width: 100%;
-  max-width: 280px;
-  margin: 0 auto;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background-color: #fff8f8;
-    border-color: #ff385c;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: 100%;
-  }
 `;
 
 const ImageModalOverlay = styled(motion.div)`
@@ -480,6 +589,62 @@ const EmptyState = styled.div`
   }
 `;
 
+const ModalToolbar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+`;
+
+const SortLabel = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: #717171;
+`;
+
+const SortChip = styled.button`
+  border: 1px solid #dddddd;
+  background: #ffffff;
+  color: #222222;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &[data-active="true"] {
+    background: #111111;
+    color: #ffffff;
+    border-color: #111111;
+  }
+
+  &:hover {
+    border-color: #bbbbbb;
+  }
+`;
+
+const DrawerModalTitle = styled.div`
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eeeeee;
+`;
+
+const DrawerModalHeading = styled.h3`
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111111;
+  margin: 0 0 6px;
+`;
+
+const DrawerModalSub = styled.p`
+  margin: 0;
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.45;
+`;
+
 // --- Helpers ---
 /** On the class page we only show positive reviews (4–5 stars); "See all reviews" shows everything. */
 const isPositiveReview = (review) => (Number(review?.rating) || 0) >= 4;
@@ -490,6 +655,11 @@ const normalizeReview = (review) => ({
   reviewer_avatar_url:
     review.reviewer_avatar_url || review.user?.avatar_thumb_url,
   reviewer_name: review.reviewer_name || review.user?.name,
+  reviewer_location:
+    (typeof review.reviewer_location === "string" && review.reviewer_location) ||
+    (typeof review.reviewerLocation === "string" && review.reviewerLocation) ||
+    (typeof review.location === "string" && review.location) ||
+    null,
   image_urls:
     review.image_urls?.length > 0
       ? review.image_urls
@@ -499,8 +669,137 @@ const normalizeReview = (review) => ({
   business_response: review.business_response || review.owner_response,
 });
 
+function formatReviewWhen(review) {
+  const raw = review.date || review.createdAt || review.review_date;
+  const d = raw ? new Date(raw) : null;
+  if (!d || !isValid(d)) return "";
+  return formatDistanceToNow(d, { addSuffix: true });
+}
+
+function StarRatingBlack({ rating }) {
+  const r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+  return (
+    <StarRatingWrap>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <BlackStarIcon key={i} size={12} $filled={i <= r} aria-hidden />
+      ))}
+    </StarRatingWrap>
+  );
+}
+
+function TranslatedReviewText({
+  text,
+  isModal,
+  expanded,
+  onToggleExpand,
+  variant = "comment",
+}) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [tr, setTr] = useState({
+    status: "idle",
+    translated: null,
+    sourceLanguage: null,
+  });
+
+  useEffect(() => {
+    setShowOriginal(false);
+  }, [text]);
+
+  useEffect(() => {
+    if (!text?.trim()) {
+      setTr({ status: "idle", translated: null, sourceLanguage: null });
+      return;
+    }
+    let cancelled = false;
+    setTr({ status: "loading", translated: null, sourceLanguage: null });
+    fetchReviewTranslation(text).then((data) => {
+      if (cancelled) return;
+      if (data?.translated && data.text) {
+        setTr({
+          status: "done",
+          translated: data.text,
+          sourceLanguage: data.sourceLanguage || "another language",
+        });
+      } else {
+        setTr({ status: "original", translated: null, sourceLanguage: null });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [text]);
+
+  const TextEl = variant === "response" ? ResponseText : Comment;
+
+  const active =
+    tr.status === "done" && tr.translated && !showOriginal
+      ? tr.translated
+      : text;
+
+  const shouldTruncate =
+    Boolean(active) &&
+    active.length > 150 &&
+    !isModal &&
+    variant === "comment";
+
+  const shown =
+    shouldTruncate && !expanded ? `${active.slice(0, 150)}...` : active;
+
+  const showSpinner = variant === "comment" && tr.status === "loading";
+
+  return (
+    <>
+      {showSpinner && (
+        <TranslationSpinner>
+          <SpinIcon size={14} aria-hidden />
+          Translating…
+        </TranslationSpinner>
+      )}
+      {tr.status === "done" && tr.translated && !showOriginal && (
+        <TranslationNotice>
+          <Languages size={14} aria-hidden />
+          <span>
+            <TranslationNoticeLabel>Translated</TranslationNoticeLabel>
+            {" · "}
+            Automatic translation from {tr.sourceLanguage}. Machine translation
+            may be imperfect.
+            <ToggleOriginalLink
+              type="button"
+              onClick={() => setShowOriginal(true)}
+            >
+              Show original
+            </ToggleOriginalLink>
+          </span>
+        </TranslationNotice>
+      )}
+      {tr.status === "done" && tr.translated && showOriginal && (
+        <TranslationNotice>
+          <Languages size={14} aria-hidden />
+          <span>
+            Showing original ({tr.sourceLanguage}).
+            <ToggleOriginalLink
+              type="button"
+              onClick={() => setShowOriginal(false)}
+            >
+              Show translation
+            </ToggleOriginalLink>
+          </span>
+        </TranslationNotice>
+      )}
+      <TextEl>
+        {shown}
+        {variant === "comment" && shouldTruncate && (
+          <ShowMoreLink type="button" onClick={onToggleExpand}>
+            {expanded ? "Show less" : "Show more"}
+          </ShowMoreLink>
+        )}
+      </TextEl>
+    </>
+  );
+}
+
 const ReviewSkeletonLoader = () => (
-  <SkeletonCard>
+  <SkeletonReviewCell>
     <SkeletonHeader>
       <SkeletonAvatar />
       <SkeletonInfo>
@@ -508,13 +807,20 @@ const ReviewSkeletonLoader = () => (
         <SkeletonDate />
       </SkeletonInfo>
     </SkeletonHeader>
-    <div style={{ marginTop: "10px" }}>
+    <div style={{ marginTop: 8 }}>
       <SkeletonLine width="100%" />
       <SkeletonLine width="92%" />
-      <SkeletonLine width="96%" />
       <SkeletonLine width="60%" />
     </div>
-  </SkeletonCard>
+  </SkeletonReviewCell>
+);
+
+const PreviewReviewsSkeletonGrid = () => (
+  <SkeletonGrid>
+    {[1, 2, 3, 4, 5, 6].map((k) => (
+      <ReviewSkeletonLoader key={k} />
+    ))}
+  </SkeletonGrid>
 );
 
 // --- Main Component ---
@@ -557,6 +863,38 @@ const Reviews = ({
   const [expandedReviews, setExpandedReviews] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [modalSort, setModalSort] = useState("recent");
+
+  const sortedModalReviews = useMemo(() => {
+    const list = [...modalReviews];
+    const idKey = (r) => String(r.id ?? "");
+    const time = (r) => {
+      const d = new Date(r.date || r.createdAt || r.review_date || 0);
+      const x = d.getTime();
+      return Number.isFinite(x) ? x : 0;
+    };
+    const cmpRecent = (a, b) => {
+      const dt = time(b) - time(a);
+      if (dt !== 0) return dt;
+      return idKey(a).localeCompare(idKey(b));
+    };
+    const cmpHigh = (a, b) => {
+      const dr = (Number(b.rating) || 0) - (Number(a.rating) || 0);
+      if (dr !== 0) return dr;
+      return cmpRecent(a, b);
+    };
+    const cmpLow = (a, b) => {
+      const dr = (Number(a.rating) || 0) - (Number(b.rating) || 0);
+      if (dr !== 0) return dr;
+      return cmpRecent(a, b);
+    };
+
+    if (modalSort === "high") list.sort(cmpHigh);
+    else if (modalSort === "low") list.sort(cmpLow);
+    else list.sort(cmpRecent);
+
+    return list;
+  }, [modalReviews, modalSort]);
 
   // On the class page only show positive reviews; modal "See all" shows every review.
   const displayPreviewReviews = useMemo(
@@ -564,12 +902,21 @@ const Reviews = ({
     [previewReviews],
   );
 
-  const reviewsHeading = useMemo(() => {
+  const previewGridReviews = useMemo(
+    () => displayPreviewReviews.slice(0, 6),
+    [displayPreviewReviews],
+  );
+
+  const reviewStats = useMemo(() => {
     const rating = Number(initialRating ?? 0);
     const safeRating = Number.isFinite(rating) ? rating.toFixed(1) : "0.0";
     const count = Number(initialReviewCount ?? 0);
     const safeCount = Number.isFinite(count) ? count : 0;
-    return `⭐ ${safeRating} · ${safeCount} ${safeCount === 1 ? "review" : "reviews"}`;
+    return {
+      safeRating,
+      safeCount,
+      reviewWord: safeCount === 1 ? "review" : "reviews",
+    };
   }, [initialRating, initialReviewCount]);
 
   // --- CRITICAL FIX: SYNC STATE WITH PARENT COMPONENT ---
@@ -581,24 +928,41 @@ const Reviews = ({
     );
   }, [isModalVisible]);
 
-  // --- Infinite Scroll Logic ---
-  const observer = useRef();
+  // --- Infinite scroll (modal): refs avoid stale closures when sorting / paginating ---
+  const observer = useRef(null);
+  const modalPageRef = useRef(1);
+  const modalHasMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
+  const loadModalReviewsRef = useRef(async (_page) => {});
 
-  const lastReviewElementRef = useCallback(
-    (node) => {
-      if (loadingMore) return;
-      if (observer.current) observer.current.disconnect();
+  useEffect(() => {
+    modalPageRef.current = modalPage;
+  }, [modalPage]);
+  useEffect(() => {
+    modalHasMoreRef.current = modalHasMore;
+  }, [modalHasMore]);
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
 
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && modalHasMore) {
-          loadModalReviews(modalPage + 1);
-        }
-      });
-
-      if (node) observer.current.observe(node);
-    },
-    [loadingMore, modalHasMore, modalPage],
-  );
+  const lastReviewElementRef = useCallback((node) => {
+    if (observer.current) {
+      observer.current.disconnect();
+      observer.current = null;
+    }
+    if (!node) return;
+    observer.current = new IntersectionObserver((entries) => {
+      if (
+        entries[0]?.isIntersecting &&
+        modalHasMoreRef.current &&
+        !loadingMoreRef.current
+      ) {
+        const next = modalPageRef.current + 1;
+        loadModalReviewsRef.current(next);
+      }
+    });
+    observer.current.observe(node);
+  }, []);
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -637,43 +1001,48 @@ const Reviews = ({
     fetchPreviewReviews();
   }, [slug, initialReviewCount, normalizedServerReviews.length, mode]);
 
-  const loadModalReviews = async (page) => {
-    if (!slug) return;
+  const loadModalReviews = useCallback(
+    async (page) => {
+      if (!slug) return;
 
-    try {
-      setLoadingMore(true);
-      if (mode === "business") {
-        const result = await classService.fetchBusinessReviews(slug, page, 10);
-        if (result.success && result.data) {
-          const newReviews = (result.data || []).map(normalizeReview);
-          setModalReviews((prev) =>
-            page === 1 ? newReviews : [...prev, ...newReviews],
+      try {
+        setLoadingMore(true);
+        if (mode === "business") {
+          const result = await classService.fetchBusinessReviews(slug, page, 10);
+          if (result.success && result.data) {
+            const newReviews = (result.data || []).map(normalizeReview);
+            setModalReviews((prev) =>
+              page === 1 ? newReviews : [...prev, ...newReviews],
+            );
+            setModalPage(page);
+            setModalHasMore(result.hasMore || false);
+          }
+        } else {
+          const result = await classService.fetchClassReviewsPaginated(
+            slug,
+            page,
+            10,
           );
-          setModalPage(page);
-          setModalHasMore(result.hasMore || false);
+          if (result.success) {
+            const newReviews = (result.reviews || []).map(normalizeReview);
+            const pagination = result.pagination || {};
+            setModalReviews((prev) =>
+              page === 1 ? newReviews : [...prev, ...newReviews],
+            );
+            setModalPage(page);
+            setModalHasMore(pagination.has_more || false);
+          }
         }
-      } else {
-        const result = await classService.fetchClassReviewsPaginated(
-          slug,
-          page,
-          10,
-        );
-        if (result.success) {
-          const newReviews = (result.reviews || []).map(normalizeReview);
-          const pagination = result.pagination || {};
-          setModalReviews((prev) =>
-            page === 1 ? newReviews : [...prev, ...newReviews],
-          );
-          setModalPage(page);
-          setModalHasMore(pagination.has_more || false);
-        }
+      } catch (error) {
+        console.error("Error loading modal reviews:", error);
+      } finally {
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error("Error loading modal reviews:", error);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+    },
+    [slug, mode],
+  );
+
+  loadModalReviewsRef.current = loadModalReviews;
 
   const handleOpenModal = () => {
     setIsModalVisible(true);
@@ -689,96 +1058,107 @@ const Reviews = ({
   const toggleReviewExpansion = (reviewId) =>
     setExpandedReviews((prev) => ({ ...prev, [reviewId]: !prev[reviewId] }));
 
+  const handleSortChange = useCallback((sort) => {
+    return (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setModalSort(sort);
+    };
+  }, []);
+
   // --- Render Helpers ---
   const renderReviewContent = (review, index, isModal) => {
-    const CardComponent = isModal ? ModalReviewItem : ReviewCard;
-    const shouldTruncate =
-      review.comment && review.comment.length > 150 && !isModal;
     const isExpanded = expandedReviews[review.id];
-
-    const isLastElement = isModal && index === modalReviews.length - 1;
+    const isLastElement = isModal && index === sortedModalReviews.length - 1;
     const refProp = isLastElement ? { ref: lastReviewElementRef } : {};
 
     const avatarUrl =
       review.reviewer_avatar_url || review.user?.avatar_thumb_url;
     const reviewerName =
       review.reviewer_name || review.user?.name || "Anonymous";
+    const locationLine =
+      typeof review.reviewer_location === "string"
+        ? review.reviewer_location.trim()
+        : "";
+    const whenText = formatReviewWhen(review);
     const reviewImages =
       review.image_urls && review.image_urls.length > 0
         ? review.image_urls
         : review.image_medium_url
           ? [review.image_medium_url]
           : [];
+    const hostReply = review.business_response || review.owner_response;
 
-    return (
-      <CardComponent
-        key={`${review.id}-${isModal ? "modal" : "preview"}`}
-        {...refProp}
-        initial={!isModal ? { opacity: 0, y: 10 } : undefined}
-        animate={!isModal ? { opacity: 1, y: 0 } : undefined}
-        transition={!isModal ? { delay: index * 0.05 } : undefined}
-      >
-        {(isModal || (platformReviewCount > 0 && platformReviewCount < 10)) &&
-          review.source && (
-            <ReviewSourceTag source={review.source}>
-              {review.source === "google" ? (
-                <Globe size={12} />
-              ) : (
-                <Star size={12} />
-              )}
-              {review.source === "google" ? "From Google" : "On ClassEasily"}
-            </ReviewSourceTag>
-          )}
+    const showSourceBadge =
+      Boolean(review.source) &&
+      (isModal || (platformReviewCount > 0 && platformReviewCount < 10));
 
-        <ReviewHeader>
-          <StyledAvatar
-            size={isModal ? 44 : 40}
-            src={avatarUrl}
-            alt={reviewerName}
-          >
-            {reviewerName.charAt(0).toUpperCase() || <User size={18} />}
-          </StyledAvatar>
-          <ReviewerInfo>
-            <ReviewerName>{reviewerName}</ReviewerName>
-            <ReviewMeta>
-              <StyledRate disabled value={review.rating} />
-              <ReviewDate>
-                {new Date(
-                  review.date || review.createdAt || review.review_date,
-                ).toLocaleDateString("en-US", {
-                  month: "short",
-                  year: "numeric",
-                })}
-              </ReviewDate>
-            </ReviewMeta>
-          </ReviewerInfo>
-        </ReviewHeader>
-
-        {review.comment && (
-          <Comment>
-            {shouldTruncate && !isExpanded
-              ? `${review.comment.slice(0, 150)}...`
-              : review.comment}
-            {shouldTruncate && (
-              <ShowMoreButton onClick={() => toggleReviewExpansion(review.id)}>
-                {isExpanded ? "Show less" : "Show more"}
-              </ShowMoreButton>
+    const inner = (
+      <>
+        {showSourceBadge && isModal ? (
+          <ReviewSourceTag source={review.source}>
+            {review.source === "google" ? (
+              <Globe size={12} aria-hidden />
+            ) : (
+              <Star size={12} aria-hidden />
             )}
-          </Comment>
-        )}
+            {review.source === "google" ? "Google" : "ClassEasily"}
+          </ReviewSourceTag>
+        ) : null}
 
-        {(review.business_response || review.owner_response) && (
+        <PreviewTopRow>
+          <FlatAvatar size={48} src={avatarUrl} alt={reviewerName}>
+            {reviewerName.charAt(0).toUpperCase() || <User size={18} />}
+          </FlatAvatar>
+          <NameBlock>
+            <ReviewerNameLine>{reviewerName}</ReviewerNameLine>
+            {locationLine ? (
+              <ReviewerLocationLine>{locationLine}</ReviewerLocationLine>
+            ) : null}
+          </NameBlock>
+        </PreviewTopRow>
+
+        <StarsWhenRow $padSource={Boolean(showSourceBadge && isModal)}>
+          <StarRatingBlack rating={review.rating} />
+          {whenText ? (
+            <>
+              <DotSep aria-hidden>·</DotSep>
+              <WhenText>{whenText}</WhenText>
+            </>
+          ) : null}
+          {showSourceBadge && !isModal ? (
+            <InlineSource>
+              {review.source === "google" ? "Google" : "ClassEasily"}
+            </InlineSource>
+          ) : null}
+        </StarsWhenRow>
+
+        {review.comment ? (
+          <TranslatedReviewText
+            text={review.comment}
+            isModal={isModal}
+            expanded={isExpanded}
+            onToggleExpand={() => toggleReviewExpansion(review.id)}
+            variant="comment"
+          />
+        ) : null}
+
+        {hostReply ? (
           <BusinessResponse>
             <ResponseHeader>
-              <MessageSquareText size={16} /> Response from Host
+              <MessageSquareText size={16} aria-hidden /> Response from Host
             </ResponseHeader>
-            <ResponseText>
-              {review.business_response || review.owner_response}
-            </ResponseText>
+            <TranslatedReviewText
+              text={hostReply}
+              isModal={isModal}
+              expanded={isExpanded}
+              onToggleExpand={() => toggleReviewExpansion(review.id)}
+              variant="response"
+            />
           </BusinessResponse>
-        )}
+        ) : null}
 
-        {reviewImages.length > 0 && (
+        {reviewImages.length > 0 ? (
           <ReviewImageContainer>
             <ReviewImage
               src={reviewImages[0]}
@@ -789,22 +1169,48 @@ const Reviews = ({
               <ZoomIcon size={24} />
             </ImageOverlay>
           </ReviewImageContainer>
-        )}
-      </CardComponent>
+        ) : null}
+      </>
+    );
+
+    if (!isModal) {
+      return <PreviewReviewRoot>{inner}</PreviewReviewRoot>;
+    }
+
+    return (
+      <ModalReviewBlock {...refProp}>{inner}</ModalReviewBlock>
     );
   };
+
+  const reviewsHeaderBlock = useMemo(
+    () => (
+      <SectionHead>
+        <Header>
+          <HeaderTitle>
+            <Star
+              size={18}
+              fill="#111111"
+              color="#111111"
+              strokeWidth={0}
+              aria-hidden
+            />
+            <span>
+              {reviewStats.safeRating} ·{" "}
+              {reviewStats.safeCount.toLocaleString("en-US")}{" "}
+              {reviewStats.reviewWord}
+            </span>
+          </HeaderTitle>
+        </Header>
+      </SectionHead>
+    ),
+    [reviewStats],
+  );
 
   if (loadingPreview) {
     return (
       <ReviewsContainer>
-        <Header>
-          <HeaderTitle>{reviewsHeading}</HeaderTitle>
-        </Header>
-        <ReviewsColumn>
-          <ReviewSkeletonLoader />
-          <ReviewSkeletonLoader />
-          <ReviewSkeletonLoader />
-        </ReviewsColumn>
+        {reviewsHeaderBlock}
+        <PreviewReviewsSkeletonGrid />
       </ReviewsContainer>
     );
   }
@@ -812,9 +1218,7 @@ const Reviews = ({
   if (initialReviewCount === 0) {
     return (
       <ReviewsContainer>
-        <Header>
-          <HeaderTitle>{reviewsHeading}</HeaderTitle>
-        </Header>
+        {reviewsHeaderBlock}
         <EmptyState>
           <h3>No reviews yet</h3>
           <p>Be the first to leave a review for this experience!</p>
@@ -864,27 +1268,29 @@ const Reviews = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Header>
-          <HeaderTitle>{reviewsHeading}</HeaderTitle>
+        {reviewsHeaderBlock}
 
-        </Header>
+        <ReviewsGrid>
+          {previewGridReviews.map((review, index) => (
+            <Fragment key={String(review.id)}>
+              {renderReviewContent(review, index, false)}
+            </Fragment>
+          ))}
+        </ReviewsGrid>
 
-        <ReviewsColumn>
-          <AnimatePresence>
-            {displayPreviewReviews.map((review, index) =>
-              renderReviewContent(review, index, false),
+        {(initialReviewCount > 6 || initialReviewCount > 0) && (
+          <ReviewFooter>
+            {initialReviewCount > 6 && (
+              <ShowAllButton type="button" onClick={handleOpenModal}>
+                Show all reviews
+              </ShowAllButton>
             )}
-          </AnimatePresence>
-        </ReviewsColumn>
-
-        {initialReviewCount > 6 && (
-          <ShowAllButton
-            onClick={handleOpenModal}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Show all {initialReviewCount} reviews <ChevronRight size={16} />
-          </ShowAllButton>
+            {initialReviewCount > 0 && (
+              <LearnReviewsLink href="/terms-of-service">
+                Learn how reviews work
+              </LearnReviewsLink>
+            )}
+          </ReviewFooter>
         )}
       </ReviewsContainer>
 
@@ -897,30 +1303,68 @@ const Reviews = ({
           width={720}
           centered
           destroyOnClose
-          zIndex={9999} // High Z-Index to stay above Header
+          zIndex={9999}
           title={
-            <div
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: 600,
-                paddingBottom: "10px",
-              }}
-            >
-              All reviews ({initialReviewCount})
+            <div>
+              <div
+                style={{
+                  fontSize: "1.125rem",
+                  fontWeight: 700,
+                  color: "#111111",
+                  marginBottom: 4,
+                }}
+              >
+                All reviews
+              </div>
+              <div style={{ fontSize: "14px", color: "#717171", fontWeight: 400 }}>
+                {initialReviewCount} total · sort and read every comment
+              </div>
             </div>
           }
           styles={{
+            content: { borderRadius: 16, overflow: "hidden" },
+            header: {
+              borderBottom: "1px solid #eeeeee",
+              padding: "16px 24px 14px",
+              marginBottom: 0,
+            },
             body: {
+              padding: "16px 24px 28px",
               maxHeight: "70vh",
               overflowY: "auto",
-              paddingRight: "8px",
             },
           }}
         >
-          <div style={{ paddingTop: "10px" }}>
-            {modalReviews.map((review, index) =>
-              renderReviewContent(review, index, true),
-            )}
+          <ModalToolbar>
+            <SortLabel>Sort</SortLabel>
+            <SortChip
+              type="button"
+              data-active={modalSort === "recent"}
+              onClick={handleSortChange("recent")}
+            >
+              Most recent
+            </SortChip>
+            <SortChip
+              type="button"
+              data-active={modalSort === "high"}
+              onClick={handleSortChange("high")}
+            >
+              Highest rated
+            </SortChip>
+            <SortChip
+              type="button"
+              data-active={modalSort === "low"}
+              onClick={handleSortChange("low")}
+            >
+              Lowest rated
+            </SortChip>
+          </ModalToolbar>
+          <div>
+            {sortedModalReviews.map((review, index) => (
+              <Fragment key={String(review.id)}>
+                {renderReviewContent(review, index, true)}
+              </Fragment>
+            ))}
             {loadingMore && (
               <div style={{ padding: "0 0 20px 0" }}>
                 <ReviewSkeletonLoader />
@@ -940,22 +1384,41 @@ const Reviews = ({
             <VaulContent>
               <VaulHandle />
               <VaulBody>
-                <div
-                  style={{
-                    paddingBottom: "16px",
-                    borderBottom: "1px solid #eee",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <h3
-                    style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}
+                <DrawerModalTitle>
+                  <DrawerModalHeading>All reviews</DrawerModalHeading>
+                  <DrawerModalSub>
+                    {initialReviewCount} total · sort and read every comment
+                  </DrawerModalSub>
+                </DrawerModalTitle>
+                <ModalToolbar>
+                  <SortLabel>Sort</SortLabel>
+                  <SortChip
+                    type="button"
+                    data-active={modalSort === "recent"}
+                    onClick={handleSortChange("recent")}
                   >
-                    All reviews ({initialReviewCount})
-                  </h3>
-                </div>
-                {modalReviews.map((review, index) =>
-                  renderReviewContent(review, index, true),
-                )}
+                    Most recent
+                  </SortChip>
+                  <SortChip
+                    type="button"
+                    data-active={modalSort === "high"}
+                    onClick={handleSortChange("high")}
+                  >
+                    Highest rated
+                  </SortChip>
+                  <SortChip
+                    type="button"
+                    data-active={modalSort === "low"}
+                    onClick={handleSortChange("low")}
+                  >
+                    Lowest rated
+                  </SortChip>
+                </ModalToolbar>
+                {sortedModalReviews.map((review, index) => (
+                  <Fragment key={String(review.id)}>
+                    {renderReviewContent(review, index, true)}
+                  </Fragment>
+                ))}
                 {loadingMore && (
                   <div style={{ padding: "0 0 20px 0" }}>
                     <ReviewSkeletonLoader />

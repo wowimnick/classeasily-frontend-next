@@ -803,11 +803,29 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       .finally(() => setChangeTimeLoading(false));
   }, [changeTimeDrawerOpen, changeDateSelectedDate, bookingData?.selectedOption?.optionId, bookingData?.selectedSlots?.[0]?.date, changeDateAvailableSlots]);
 
+  const changeParticipantsMax = useMemo(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    const spots = slot?.available_spots;
+    if (spots != null && typeof spots === "number") return Math.max(1, spots);
+    return 20;
+  }, [bookingData?.selectedSlots]);
+
+  const changeParticipantsMin = useMemo(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    const raw = Number(slot?.min_participants ?? slot?.minParticipants);
+    return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+  }, [bookingData?.selectedSlots]);
+
   useEffect(() => {
     if (changeParticipantsDrawerOpen && bookingData) {
-      setParticipantsDraft(Math.max(1, bookingData.participants || 1));
+      const p = bookingData.participants || changeParticipantsMin;
+      setParticipantsDraft(Math.max(changeParticipantsMin, p));
     }
-  }, [changeParticipantsDrawerOpen, bookingData?.participants]);
+  }, [
+    changeParticipantsDrawerOpen,
+    bookingData?.participants,
+    changeParticipantsMin,
+  ]);
 
   const handleChangeDateSelect = useCallback((date) => {
     setChangeDateSelectedDate(date);
@@ -854,22 +872,18 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
     [changeDateSelectedDate, bookingData, handleUpdateBookingData]
   );
 
-  const changeParticipantsMax = useMemo(() => {
-    const slot = bookingData?.selectedSlots?.[0];
-    const spots = slot?.available_spots;
-    if (spots != null && typeof spots === "number") return Math.max(1, spots);
-    return 20;
-  }, [bookingData?.selectedSlots]);
-
   const handleChangeParticipantsApply = useCallback(() => {
-    const count = Math.min(Math.max(1, participantsDraft), changeParticipantsMax);
+    const count = Math.min(
+      Math.max(changeParticipantsMin, participantsDraft),
+      changeParticipantsMax,
+    );
     const existingName = bookingData?.participant_details?.[0]?.name || "";
     handleUpdateBookingData({
       participants: count,
       participant_details: Array.from({ length: count }, () => ({ name: existingName })),
     });
     setChangeParticipantsDrawerOpen(false);
-  }, [participantsDraft, changeParticipantsMax, bookingData?.participant_details, handleUpdateBookingData]);
+  }, [participantsDraft, changeParticipantsMin, changeParticipantsMax, bookingData?.participant_details, handleUpdateBookingData]);
 
   const handleCloseCheckout = () => {
     const intentId = bookingData?.paymentIntentId;
@@ -1115,12 +1129,21 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
                 </h3>
                 <p style={{ margin: "0 1rem 1rem", fontSize: "0.875rem", color: "#6b7280", textAlign: "center" }}>
                   Up to {changeParticipantsMax} guests for this time slot.
+                  {changeParticipantsMin > 1 ? (
+                    <span style={{ display: "block", marginTop: "0.35rem" }}>
+                      Minimum {changeParticipantsMin} guests.
+                    </span>
+                  ) : null}
                 </p>
                 <ParticipantsStepperWrap>
                   <ParticipantsStepperBtn
                     type="button"
-                    disabled={participantsDraft <= 1}
-                    onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
+                    disabled={participantsDraft <= changeParticipantsMin}
+                    onClick={() =>
+                      setParticipantsDraft((n) =>
+                        Math.max(changeParticipantsMin, n - 1),
+                      )
+                    }
                     aria-label="Decrease guests"
                   >
                     −
@@ -1162,12 +1185,22 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
                   </DesktopParticipantsModalTitle>
                   <DesktopParticipantsModalSub>
                     Up to {changeParticipantsMax} guests for this time slot.
+                    {changeParticipantsMin > 1 ? (
+                      <>
+                        {" "}
+                        Minimum {changeParticipantsMin} guests.
+                      </>
+                    ) : null}
                   </DesktopParticipantsModalSub>
                   <ParticipantsStepperWrap style={{ padding: "12px 0 16px" }}>
                     <ParticipantsStepperBtn
                       type="button"
-                      disabled={participantsDraft <= 1}
-                      onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
+                      disabled={participantsDraft <= changeParticipantsMin}
+                      onClick={() =>
+                        setParticipantsDraft((n) =>
+                          Math.max(changeParticipantsMin, n - 1),
+                        )
+                      }
                       aria-label="Decrease guests"
                     >
                       −
