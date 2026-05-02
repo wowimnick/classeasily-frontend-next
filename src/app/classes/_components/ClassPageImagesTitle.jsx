@@ -2179,14 +2179,10 @@ const ClassPageImagesTitle = React.memo(
 
     const row2Title = partnerBadgeLabel
       ? partnerBadgeLabel
-      : shouldShowTopRated
-        ? "Highly rated"
-        : "Verified listing";
+      : "Verified listing";
     const row2Sub = partnerBadgeLabel
       ? partnerSubtitle
-      : shouldShowTopRated
-        ? "Learners rate this class 4.5+ with multiple reviews."
-        : "Every host and class listing is reviewed by our team.";
+      : "Every host and class listing is reviewed by our team.";
 
     const cleanLocStr = (v) => {
       if (v == null) return "";
@@ -2194,8 +2190,11 @@ const ClassPageImagesTitle = React.memo(
       if (!s || s === "undefined") return "";
       return s;
     };
-    const locTitle = cleanLocStr(locationHeadline) || "Where you'll be";
-    const locSub = cleanLocStr(locationSubline);
+    const locTitle = "Located in";
+    const locPlaceLine = cleanLocStr(locationHeadline);
+    const locExtra = cleanLocStr(locationSubline);
+    const locSubParts = [locPlaceLine, locExtra].filter(Boolean);
+    const locSub = locSubParts.length ? locSubParts.join(" · ") : null;
 
     const reviewTitle =
       reviewCount > 0
