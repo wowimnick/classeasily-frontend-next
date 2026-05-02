@@ -7,6 +7,7 @@ import { Drawer } from "vaul";
 import { motion, AnimatePresence } from "framer-motion";
 import { Award as AwardIcon, Plus, X } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
+import { getClassFeatureDescription } from "@/app/classes/_constants/classFeatureDescriptions";
 
 // --- Styled Components ---
 const OffersContainer = styled(motion.div)`
@@ -24,7 +25,7 @@ const OffersContainer = styled(motion.div)`
   }
 `;
 const Title = styled.h2`
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: #000;
   margin-bottom: 1rem;
@@ -85,21 +86,21 @@ const MobileAmenitiesList = styled.ul`
 `;
 const MobileAmenityRow = styled(motion.li)`
   display: flex;
-  align-items: center;
-  padding: 1rem 1rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
   background: #fff;
   border-top: 1px solid #e5e7eb;
   font-family: "ProximaSoft", sans-serif;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #000;
   word-break: break-word;
   &:first-of-type {
     border-top: none;
   }
   @media (max-width: 480px) {
-    padding: 0.875rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.8125rem;
   }
 `;
 const ModalTagsContainer = styled.ul`
@@ -123,14 +124,15 @@ const FeatureTagListItem = styled.li`
 `;
 const TagBase = styled(motion.div)`
   display: flex;
-  align-items: center;
-  padding: 1rem;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0.75rem 0.875rem;
   background: #fff;
   border-radius: 12px;
   border: 1px solid #eaeaea;
   font-family: "ProximaSoft", sans-serif;
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: #000;
   transition: all 0.2s ease;
   word-break: break-word;
@@ -140,8 +142,8 @@ const TagBase = styled(motion.div)`
     border-color: #ff385c;
   }
   @media (max-width: 768px) {
-    padding: 0.875rem;
-    font-size: 0.9rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
     border-radius: 10px;
     &:hover {
       transform: translateY(-1px);
@@ -149,8 +151,8 @@ const TagBase = styled(motion.div)`
     }
   }
   @media (max-width: 480px) {
-    padding: 0.75rem 0.875rem;
-    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
   }
 `;
 const Tag = styled(TagBase)``;
@@ -160,18 +162,41 @@ const ModalTag = styled(TagBase)`
     background: #fff8f8;
   }
 `;
+const FeatureTextStack = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+const FeatureTitleText = styled.span`
+  font-weight: 500;
+  color: #111;
+  line-height: 1.25;
+`;
+const FeatureDescText = styled.span`
+  font-size: 11px;
+  font-weight: 400;
+  color: #717171;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
 const IconWrapper = styled.span`
-  margin-right: 1rem;
+  margin-right: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
+  margin-top: 1px;
   background: ${(props) => (props.$highlighted ? "#fff8f8" : "#f8f8f8")};
   border-radius: 8px;
   color: #ff385c;
   transition: background-color 0.2s ease;
-  flex-shrink: 0;
   ${TagBase}:hover & {
     background: #fff8f8;
   }
@@ -255,7 +280,7 @@ const StyledModal = styled(Modal)`
     overflow-y: auto;
   }
   .ant-modal-title {
-    font-size: 1.25rem;
+    font-size: 20px;
     font-weight: 600;
     color: #000;
   }
@@ -338,13 +363,13 @@ const AmenitiesDrawerList = styled.ul`
 `;
 const AmenitiesDrawerRow = styled.li`
   display: flex;
-  align-items: center;
-  padding: 1rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
   background: #fff;
   border-top: 1px solid #e5e7eb;
   font-family: "ProximaSoft", sans-serif;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #000;
   word-break: break-word;
   &:first-of-type {
@@ -352,7 +377,7 @@ const AmenitiesDrawerRow = styled.li`
   }
 `;
 const AmenitiesDrawerTitle = styled.h2`
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: #000;
   margin: 0 0 1rem 0;
@@ -538,13 +563,26 @@ const featureIcons = {
   default: { icon: ICONS.default, highlight: false },
 };
 
+function FeatureLines({ feature }) {
+  const normalized =
+    typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
+  const raw = typeof feature === "string" ? feature : "Amenity";
+  const title = raw.charAt(0).toUpperCase() + raw.slice(1);
+  const description = getClassFeatureDescription(normalized);
+  return (
+    <FeatureTextStack>
+      <FeatureTitleText>{title}</FeatureTitleText>
+      {description ? <FeatureDescText>{description}</FeatureDescText> : null}
+    </FeatureTextStack>
+  );
+}
+
 const FeatureTag = ({ feature, isModal = false, index }) => {
   const TagComponent = isModal ? ModalTag : Tag;
   const normalizedFeature =
     typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
   const featureConfig =
     featureIcons[normalizedFeature] || featureIcons["default"];
-  const displayFeature = typeof feature === "string" ? feature : "Amenity";
 
   return (
     <TagComponent
@@ -559,7 +597,7 @@ const FeatureTag = ({ feature, isModal = false, index }) => {
           style={{ width: "24px", height: "24px" }}
         />
       </IconWrapper>
-      {displayFeature.charAt(0).toUpperCase() + displayFeature.slice(1)}
+      <FeatureLines feature={feature} />
     </TagComponent>
   );
 };
@@ -569,7 +607,6 @@ const MobileAmenityRowContent = ({ feature, index }) => {
     typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
   const featureConfig =
     featureIcons[normalizedFeature] || featureIcons["default"];
-  const displayFeature = typeof feature === "string" ? feature : "Amenity";
   return (
     <MobileAmenityRow
       initial={{ opacity: 0 }}
@@ -582,7 +619,7 @@ const MobileAmenityRowContent = ({ feature, index }) => {
           style={{ width: "24px", height: "24px" }}
         />
       </IconWrapper>
-      {displayFeature.charAt(0).toUpperCase() + displayFeature.slice(1)}
+      <FeatureLines feature={feature} />
     </MobileAmenityRow>
   );
 };
@@ -640,8 +677,7 @@ const ClassOffers = React.memo(({ features }) => {
       aria-labelledby="class-offers-title"
     >
       <Title id="class-offers-title">
-        <AwardIcon size={24} aria-hidden="true" />
-        The good stuff
+        Things to know
       </Title>
 
       <DesktopTagsWrap>
@@ -687,21 +723,19 @@ const ClassOffers = React.memo(({ features }) => {
             <AmenitiesDrawerHandle aria-hidden />
             <AmenitiesDrawerBody>
               <AmenitiesDrawerTitle>
-                <AwardIcon size={24} aria-hidden="true" />
-                The good stuff
+                Things to know
               </AmenitiesDrawerTitle>
               <AmenitiesDrawerList role="list">
                 {validFeatures.map((feature, index) => {
                   const normalizedFeature =
                     typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
                   const featureConfig = featureIcons[normalizedFeature] || featureIcons["default"];
-                  const displayFeature = typeof feature === "string" ? feature : "Amenity";
                   return (
                     <AmenitiesDrawerRow key={`drawer-${feature}-${index}`}>
                       <IconWrapper $highlighted={featureConfig.highlight}>
                         <LordIcon {...featureConfig.icon} style={{ width: "24px", height: "24px" }} />
                       </IconWrapper>
-                      {displayFeature.charAt(0).toUpperCase() + displayFeature.slice(1)}
+                      <FeatureLines feature={feature} />
                     </AmenitiesDrawerRow>
                   );
                 })}

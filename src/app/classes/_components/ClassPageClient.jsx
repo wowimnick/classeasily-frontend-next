@@ -3,6 +3,7 @@
 import React, {
   useState,
   useEffect,
+  useRef,
   useMemo,
   useCallback,
   Suspense,
@@ -26,6 +27,9 @@ import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/
 import MiniCalendar from "./MiniCalendar";
 import { getDurationText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
+
+/** Max width for fixed glass footers (tablet / iPad — avoids full-bleed bars) */
+const MOBILE_STICKY_FOOTER_MAX_WIDTH_PX = 480;
 
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));
@@ -252,21 +256,21 @@ const Skel_HostStatBlock = styled(Skel_Base)`
 
 const Skel_BookingCard = styled.div`
   background: white;
-  border-radius: 12px;
-  border: 1px solid #e8e8e8;
-  padding: 1.25rem;
-  box-shadow: 0px 7px 12px 4px #0000000a;
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 `;
 
 const Skel_Disclaimer = styled(Skel_Base)`
-  height: 48px;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  height: 44px;
+  border-radius: 9999px;
+  width: 55%;
+  margin-bottom: 4px;
 `;
 
 const Skel_Price = styled(Skel_Base)`
-  height: 36px;
-  width: 120px;
+  height: 20px;
+  width: 80px;
   margin-bottom: 1rem;
 `;
 
@@ -310,24 +314,38 @@ const Skel_FooterBtn = styled(Skel_Base)`
 const ContentWrapper = styled.div`
   max-width: 1360px;
   margin: 0 auto;
-  padding: 0 20px;
-  overflow-x: hidden;
+  /* Match hero row horizontal inset (ClassPageImagesTitle HeroDesktopRow) */
+  padding: 0 clamp(12px, 2.5vw, 28px);
+  /*
+   * overflow-x: hidden makes overflow-y compute to auto, which creates a
+   * scroll container and breaks viewport position: sticky on the booking sidebar.
+   * Desktop: let sticky work (minor horizontal bleed is acceptable).
+   * Mobile: keep clipping as before.
+   */
+  @media (min-width: 1025px) {
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+  @media (max-width: 1024px) {
+    overflow-x: hidden;
+  }
   @media (max-width: 768px) {
     padding: 0;
   }
 `;
 
 const MainContentLayout = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  align-items: start;
-  gap: 5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  /* Same gap as hero image / title split */
+  gap: clamp(8px, 1.2vw, 18px);
   padding: 0 0 4rem 0;
   position: relative;
   z-index: 5;
 
   @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 0.5rem;
     padding-bottom: 3rem;
     padding-top: 0;
@@ -340,6 +358,15 @@ const PrimaryContentArea = styled.main`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Match hero photo column (ClassPageImagesTitle HeroPhotoColumn) */
+  flex: 0 1 60%;
+  max-width: 60%;
+
+  @media (max-width: 1024px) {
+    flex: none;
+    max-width: none;
+    width: 100%;
+  }
 
   @media (max-width: 768px) {
     gap: 0.5rem;
@@ -348,15 +375,116 @@ const PrimaryContentArea = styled.main`
 
 const StickySidebar = styled.aside`
   position: sticky;
-  /* Card + bookmark sit lower to avoid overlapping hero images; bookmark sticks up ~40px */
-  top: calc(5.5rem + 0.5rem + 3.5rem);
-  padding-top: 2.25rem; /* ~100px: disclaimer + card start lower */
-  align-self: start;
+  /* Below the sticky explore header (DesktopHeaderWrapper) */
+  top: calc(5.5rem + 0.5rem);
+  padding-top: 1.5rem;
+  align-self: flex-start;
   height: fit-content;
-  max-height: calc(100vh - 6rem - 4rem);
+  /* Same column share as ClassPageImagesTitle HeroContentColumn */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 40%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   @media (max-width: 1024px) {
     display: none;
+  }
+`;
+
+/* Match HeroContentInner: booking card sits under hero title block, not full 40% width */
+const SidebarBookingInner = styled.div`
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+`;
+
+/* ── Desktop peek bar: visible at bottom of viewport when sidebar is off-screen ── */
+const PeekBar = styled.div`
+  display: none;
+
+  @media (min-width: 1025px) {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    /* left/width set via inline style from JS measurement */
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.12);
+    background: #fff;
+    padding: 14px 20px 18px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 120;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    transform: translateY(${(p) => (p.$visible ? "0" : "110%")});
+    opacity: ${(p) => (p.$visible ? 1 : 0)};
+    pointer-events: ${(p) => (p.$visible ? "auto" : "none")};
+  }
+`;
+
+const PeekPriceStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const PeekPriceLine = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 0 3px;
+  flex-wrap: wrap;
+`;
+
+const PeekPriceFrom = styled.span`
+  font-size: 20px;
+  font-weight: 400;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+`;
+
+const PeekPriceAmount = styled.span`
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+`;
+
+const PeekPriceUnit = styled.span`
+  font-size: 12px;
+  font-weight: 400;
+  color: #111;
+  align-self: flex-end;
+  padding-bottom: 2px;
+`;
+
+const PeekCancellation = styled.span`
+  font-size: 11px;
+  color: #717171;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+`;
+
+const PeekCTABtn = styled.button`
+  flex-shrink: 0;
+  background: #ff385c;
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  padding: 11px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.18s;
+  &:hover {
+    opacity: 0.88;
   }
 `;
 
@@ -380,6 +508,9 @@ const MobileBookingFooterContainer = styled.div`
     border-radius: 12px;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     z-index: 100;
+    max-width: ${MOBILE_STICKY_FOOTER_MAX_WIDTH_PX}px;
+    margin-left: auto;
+    margin-right: auto;
     transition:
       transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
       opacity 0.3s ease;
@@ -489,13 +620,12 @@ const DesktopHeaderWrapper = styled.div`
 `;
 
 const PageSectionTitle = styled.h2`
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: #000;
   margin: 0 0 1rem 0;
   line-height: 1.3;
   @media (max-width: 768px) {
-    font-size: 1.25rem;
     margin-bottom: 0.75rem;
   }
 `;
@@ -538,8 +668,9 @@ const MapInnerContainer = styled.div`
 
 const AddressDisplay = styled.p`
   text-align: center;
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
   margin-top: 1rem;
   padding: 0 1rem;
 `;
@@ -568,7 +699,7 @@ const WhenSection = styled.section`
   }
 `;
 const WhenTitle = styled.h2`
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: #000;
   margin: 0 0 1rem 0;
@@ -787,6 +918,9 @@ const ReserveFooterContainer = styled.div`
     border-radius: 14px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     z-index: 100;
+    max-width: ${MOBILE_STICKY_FOOTER_MAX_WIDTH_PX}px;
+    margin-left: auto;
+    margin-right: auto;
     &[data-hidden="true"] {
       transform: translateY(calc(100% + 2rem));
       opacity: 0;
@@ -836,7 +970,11 @@ function MobileBestPricePopUp({ visible, onComplete }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const marginPx = FOOTER_MARGIN_REM * 16;
-    const update = () => setFooterWidthPx(window.innerWidth - 2 * marginPx);
+    const update = () => {
+      const vw = window.innerWidth;
+      const raw = vw - 2 * marginPx;
+      setFooterWidthPx(Math.min(raw, MOBILE_STICKY_FOOTER_MAX_WIDTH_PX));
+    };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -894,14 +1032,16 @@ function MobileBestPricePopUp({ visible, onComplete }) {
   const isBookmark = phase === "bookmark";
   const footerBottomPx = FOOTER_BOTTOM_REM * 16;
   const footerTop = footerBottomPx + FOOTER_HEIGHT_PX;
-  const marginPx = FOOTER_MARGIN_REM * 16;
+  const vw =
+    typeof window !== "undefined" ? window.innerWidth : 400;
   /* Explicit pixel width so we never use "auto" — avoids width snap at end of animation */
   const fullWidth = footerWidthPx > 0 ? footerWidthPx : 300;
   /* Bookmark slightly narrower than footer (15px inset each side) */
   const bookmarkWidth = fullWidth - 30;
-  const bookmarkLeftPx = marginPx + 15;
-  /* Left edge when 200px card is centered (center - 100). Keeps expand/collapse in sync and symmetric. */
-  const centerLeftPx = fullWidth / 2 + marginPx - 100;
+  /* Centered sticky footer: bookmark strip aligns with footer center */
+  const bookmarkLeftPx = vw / 2 - bookmarkWidth / 2;
+  /* Left edge when 200px card is centered */
+  const centerLeftPx = vw / 2 - 100;
 
   /* Expand FROM the price: start as a small pill at the footer (centered), then grow to card. */
   const isExpanding = phase === "expanding";
@@ -1408,6 +1548,60 @@ export default function ClassPageClient({
     setIsBookingModalOpen(true);
   };
 
+  const handleDirectCheckoutFromSlot = useCallback(
+    (option, schedule) => {
+      if (!classData?.slug || !option || !schedule) return;
+      if (typeof window === "undefined") return;
+
+      try {
+        const participantCount = 1;
+        const userName =
+          currentUser
+            ? `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim()
+            : "";
+        const slot = {
+          id: schedule.id ?? schedule.instance_id ?? null,
+          date: schedule.date ?? null,
+          time: schedule.time ?? null,
+          duration: schedule.duration ?? null,
+          available_spots: schedule.available_spots ?? schedule.maxParticipants ?? null,
+          price: schedule.price ?? 0,
+          isCourse: option.booking_type === "Full Course",
+          days: schedule.days ?? undefined,
+          end_date: schedule.end_date ?? undefined,
+        };
+
+        const bookingData = {
+          selectedSlots: [slot],
+          participants: participantCount,
+          participant_details: Array.from({ length: participantCount }, () => ({
+            name: userName || "",
+          })),
+          notes: "",
+          price: parseFloat(schedule.price || 0) || 0,
+          selectedOption: option,
+          userName,
+          userEmail: currentUser?.email || "",
+          userPhone: currentUser?.phone_number || "",
+        };
+
+        sessionStorage.setItem(
+          CHECKOUT_STORAGE_KEY,
+          JSON.stringify({
+            classSlug: classData.slug,
+            classData,
+            bookingData,
+          }),
+        );
+        router.push(`/classes/${classData.slug}/checkout`);
+      } catch (error) {
+        console.error("Direct checkout redirect failed:", error);
+        message.error("Couldn't open checkout. Please try again.");
+      }
+    },
+    [classData, currentUser, router],
+  );
+
   const optionToDisplayOnCard = useMemo(() => {
     if (!classData?.options || classData.options.length === 0) return null;
     return (
@@ -1418,6 +1612,85 @@ export default function ClassPageClient({
   }, [classData]);
 
   const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
+
+  /* ── Peek bar: show price at viewport bottom when sidebar is off-screen ─────── */
+  const sidebarRef = useRef(null);   // on StickySidebar — for width/left measurement
+  const cardRef    = useRef(null);   // on SidebarBookingInner — card's top edge
+  const peekBarRef = useRef(null);   // on PeekBar — peek bar's top edge
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [peekBarPos, setPeekBarPos] = useState({ left: 0, width: 320 });
+
+  /*
+   * Hide the peek bar when the real card's top reaches the logical dock line at
+   * the bottom of the viewport (same Y as the peek bar when it sits at bottom).
+   *
+   * Do NOT use peekBarRef.getBoundingClientRect().top — when the peek is slid
+   * off-screen with transform, its rect moves with the transform and the
+   * comparison stays wrong (peek never comes back when scrolling to top).
+   */
+  useEffect(() => {
+    if (!mounted) return;
+
+    const check = () => {
+      if (!cardRef.current || !peekBarRef.current) return;
+      const cardTop = cardRef.current.getBoundingClientRect().top;
+      const peekH = peekBarRef.current.offsetHeight || 88;
+      const peekTopLogical = window.innerHeight - peekH;
+      // +2 px tolerance for subpixel rounding
+      setSidebarVisible(cardTop <= peekTopLogical + 2);
+    };
+
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [mounted, bookingOptionsLoaded, optionToDisplayOnCard?.optionId]);
+
+  /* Track sidebar column's horizontal position so the peek bar aligns perfectly */
+  useEffect(() => {
+    if (!mounted || !sidebarRef.current) return;
+
+    const update = () => {
+      if (!sidebarRef.current) return;
+      const rect = sidebarRef.current.getBoundingClientRect();
+      const cardWidth = Math.min(rect.width, 400);
+      const centerOffset = Math.max(0, (rect.width - 400) / 2);
+      setPeekBarPos({
+        left: rect.left + centerOffset,
+        width: cardWidth,
+      });
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(sidebarRef.current);
+    ro.observe(document.body);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [mounted]);
+
+  /* Price data for peek bar — mirrors ClassOptionCard's getPriceRange logic */
+  const peekPriceDisplay = useMemo(() => {
+    const schedules = optionToDisplayOnCard?.schedules || [];
+    const prices = schedules
+      .map((s) => parseFloat(s.price || 0))
+      .filter((p) => !isNaN(p) && p > 0);
+    if (!prices.length) return { amount: "Free", showFrom: false };
+    const min = Math.min(...prices);
+    const currency = classData?.currency_code || "$";
+    return { amount: `${currency}${Math.round(min)}`, showFrom: true };
+  }, [optionToDisplayOnCard, classData]);
+
+  const peekPriceUnit =
+    optionToDisplayOnCard?.booking_type === "Full Course" ? "/ course" : "/ guest";
+
+  const peekHasCancellationPolicy = !!(optionToDisplayOnCard?.cancellationPolicy);
 
   /** Deep-link query string for share / copy link (selected option + date when known). */
   const classPageShareQuery = useMemo(() => {
@@ -1620,6 +1893,7 @@ export default function ClassPageClient({
                     <PageSectionTitle>Where you&apos;ll be</PageSectionTitle>
                     <MapInnerContainer>
                       <ClassPageMap
+                        key={`class-map:${classData.slug}:${classData.coordinates}:${classData.saltLocation ? "1" : "0"}`}
                         coordinates={classData.coordinates}
                         saltLocation={classData.saltLocation}
                         businessName={
@@ -1635,6 +1909,14 @@ export default function ClassPageClient({
                   <SectionDividerAnt />
                 </>
               )}
+              <Reviews
+                slug={classData.slug}
+                initialRating={classData.average_rating || 0}
+                initialReviewCount={classData.review_count || 0}
+                platformReviewCount={classData.platform_review_count || 0}
+                serverReviews={initialReviews || null}
+              />
+              <SectionDividerAnt />
               <ClassOffers
                 features={
                   Array.isArray(classData.features) ? classData.features : []
@@ -1661,46 +1943,67 @@ export default function ClassPageClient({
                 </>
               )}
               <SectionDividerAnt />
-              <Reviews
-                slug={classData.slug}
-                initialRating={classData.average_rating || 0}
-                initialReviewCount={classData.review_count || 0}
-                platformReviewCount={classData.platform_review_count || 0}
-                serverReviews={initialReviews || null}
-              />
-              <SectionDividerAnt />
               {businessData && (
                 <HostInfo
                   businessData={businessData}
-                  onHostClick={handleBusinessClick}
-                  classReviewCount={classData.review_count ?? 0}
+                  onMessageHost={() => setContactHostOpen(true)}
                 />
               )}
             </Suspense>
           </PrimaryContentArea>
 
-          <StickySidebar>
-            {!bookingOptionsLoaded ? (
-              <Skel_BookingCard>
-                <Skel_Disclaimer />
-                <Skel_Price />
-                <Skel_Details />
-                <Skel_Schedule />
-                <Skel_Button />
-              </Skel_BookingCard>
-            ) : optionToDisplayOnCard ? (
-              <ClassOptionsContainer
-                options={[optionToDisplayOnCard]}
-                classTitle={classData.title}
-                classImages={classData.images}
-                currency={classData.currency_code || "$"}
-                onBookNow={handleOpenBookingModal}
-                businessTimeZone={classData?.business_timezone}
-              />
-            ) : null}
+          <StickySidebar ref={sidebarRef}>
+            <SidebarBookingInner ref={cardRef}>
+              {!bookingOptionsLoaded ? (
+                <Skel_BookingCard>
+                  <Skel_Disclaimer />
+                  <Skel_Price />
+                  <Skel_Details />
+                  <Skel_Schedule />
+                  <Skel_Button />
+                </Skel_BookingCard>
+              ) : optionToDisplayOnCard ? (
+                <ClassOptionsContainer
+                  options={[optionToDisplayOnCard]}
+                  classTitle={classData.title}
+                  classImages={classData.images}
+                  currency={classData.currency_code || "$"}
+                  onBookNow={handleOpenBookingModal}
+                  onSelectSlot={handleDirectCheckoutFromSlot}
+                  businessTimeZone={classData?.business_timezone}
+                />
+              ) : null}
+            </SidebarBookingInner>
           </StickySidebar>
         </MainContentLayout>
       </ContentWrapper>
+      {/* Desktop peek bar: price peeks at bottom of viewport until sidebar scrolls into view */}
+      {mounted && optionToDisplayOnCard && (
+        <PeekBar
+          ref={peekBarRef}
+          $visible={!sidebarVisible}
+          style={{ left: peekBarPos.left, width: peekBarPos.width }}
+        >
+          <PeekPriceStack>
+            <PeekPriceLine>
+              {peekPriceDisplay.showFrom && <PeekPriceFrom>From </PeekPriceFrom>}
+              <PeekPriceAmount>{peekPriceDisplay.amount}</PeekPriceAmount>
+              <PeekPriceUnit>{peekPriceUnit}</PeekPriceUnit>
+            </PeekPriceLine>
+            {peekHasCancellationPolicy && (
+              <PeekCancellation>Cancellation Policy</PeekCancellation>
+            )}
+          </PeekPriceStack>
+          <PeekCTABtn
+            onClick={() =>
+              handleOpenBookingModal(optionToDisplayOnCard.optionId)
+            }
+          >
+            Reserve
+          </PeekCTABtn>
+        </PeekBar>
+      )}
+
       {/* Render portals / overlays only after mount to avoid hydration mismatch on body append */}
       {mounted && (
         <>

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import {
   searchClasses,
-  fetchClassCollections,
+  fetchExploreCollectionLists,
 } from "@/lib/server-data-fetchers";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
@@ -243,9 +243,9 @@ async function fetchServerData({ params, searchParams }) {
 
   apiParams.page_size = 24;
 
-  const [classesResponse, collectionsList] = await Promise.all([
+  const [classesResponse, collectionLists] = await Promise.all([
     searchClasses(apiParams),
-    fetchClassCollections(),
+    fetchExploreCollectionLists(),
   ]);
 
   let locationName = "";
@@ -262,7 +262,8 @@ async function fetchServerData({ params, searchParams }) {
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
-    collections: collectionsList || [],
+    collections: collectionLists.collections || [],
+    collectionsIWant: collectionLists.collectionsIWant || [],
     locationName,
     routeParams: {
       province,
@@ -352,6 +353,7 @@ export default async function ExplorePage({ params, searchParams }) {
           initialTotalCount={serverData.totalCount}
           initialNextPageUrl={serverData.nextPageUrl}
           initialCollections={serverData.collections}
+          initialCollectionsIWant={serverData.collectionsIWant}
           routeParams={serverData.routeParams}
         />
       </Suspense>

@@ -16,6 +16,7 @@ import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService.js";
 import { saveBeforeNavigate } from "@/lib/scrollRestoration";
+import { formatCityForExploreListing, formatDurationHoursForListing } from "@/lib/formatClassLocationForListing";
 
 const HomeClassCard = ({
   classId,
@@ -35,6 +36,13 @@ const HomeClassCard = ({
   onFavoriteChange,
   priority = false,
   soonest_next_week = null,
+  /** Explore page: horizontal list (mobile) + full-width card in grid (desktop) */
+  exploreLayout = false,
+  /** When user filters by collection, show as category in meta line */
+  categoryLabel = null,
+  showPopularBadge = false,
+  /** Shortest schedule duration in minutes (public API); explore meta shows as hours */
+  listing_duration_minutes = null,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -68,6 +76,48 @@ const HomeClassCard = ({
     if (d === null || typeof d !== "number") return null;
     return d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
   };
+
+  const exploreCityOnly = useMemo(
+    () => formatCityForExploreListing({ city, state, location }),
+    [city, state, location],
+  );
+
+  const exploreMetaLine = useMemo(() => {
+    const parts = [];
+    if (categoryLabel) parts.push(categoryLabel);
+    if (exploreCityOnly) parts.push(exploreCityOnly);
+    if (distance != null && typeof distance === "number") {
+      const d = formatDistance(distance);
+      if (d) parts.push(`${d} away`);
+    }
+    const dur = formatDurationHoursForListing(listing_duration_minutes);
+    if (dur) parts.push(dur);
+    return parts.join(" · ");
+  }, [categoryLabel, exploreCityOnly, listing_duration_minutes, distance]);
+
+  const explorePrice = useMemo(() => {
+    const session =
+      min_session_price != null && min_session_price !== ""
+        ? Number(min_session_price)
+        : null;
+    const course =
+      min_course_price != null && min_course_price !== ""
+        ? Number(min_course_price)
+        : null;
+    if (session != null && !Number.isNaN(session) && course != null && !Number.isNaN(course)) {
+      if (session <= course) {
+        return { amount: session, suffix: " / guest" };
+      }
+      return { amount: course, suffix: " / course" };
+    }
+    if (session != null && !Number.isNaN(session)) {
+      return { amount: session, suffix: " / guest" };
+    }
+    if (course != null && !Number.isNaN(course)) {
+      return { amount: course, suffix: " / course" };
+    }
+    return null;
+  }, [min_session_price, min_course_price]);
 
   const identifier = slug || classId;
   const handleLinkClick = () => {
@@ -146,6 +196,106 @@ const HomeClassCard = ({
       setIsToggling(false);
     }
   };
+
+  const exploreCardContent = (
+    <>
+      <div className={styles.exploreImageWrap}>
+        {showPopularBadge && (
+          <span className={styles.explorePopularBadge}>Popular</span>
+        )}
+        <button
+          type="button"
+          className={styles.exploreFavoriteBtn}
+          onClick={toggleFavorite}
+          disabled={isToggling}
+          aria-label={isFavorite ? "Unfavorite" : "Favorite"}
+        >
+          {isToggling ? (
+            <div className={styles.spinner} />
+          ) : (
+            <Heart
+              size={20}
+              fill={isFavorite ? "#ff385c" : "none"}
+              color={isFavorite ? "#ff385c" : "#ffffff"}
+              strokeWidth={isFavorite ? 0 : 2}
+            />
+          )}
+        </button>
+
+        {imageUrl && !imageError ? (
+          <>
+            <div
+              className={`${styles.imageSkeleton} ${styles.exploreThumbSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
+              aria-hidden="true"
+            />
+            <Image
+              src={imageUrl}
+              alt={title || "Class experience"}
+              fill
+              sizes="(max-width: 1048px) min(100vw, 520px), (max-width: 1600px) 32vw, min(400px, 28vw)"
+              priority={priority}
+              className={`${styles.cardImage} ${styles.exploreThumbImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
+              onLoadingComplete={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+          </>
+        ) : imageUrl && imageError ? (
+          <div
+            className={`${styles.imageSkeleton} ${styles.exploreThumbSkeleton}`}
+            aria-hidden="true"
+          />
+        ) : (
+          <div className={styles.noImage}>No Image</div>
+        )}
+      </div>
+
+      <div className={styles.exploreCopy}>
+        <div className={styles.exploreTitleRow}>
+          <div className={styles.exploreTitle}>{title}</div>
+          {rating > 0 && (
+            <div className={styles.exploreRatingInline}>
+              <Star size={12} fill="#111111" color="#111111" />
+              <span>{Number(rating).toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+
+        {exploreMetaLine ? (
+          <p className={styles.exploreMeta}>{exploreMetaLine}</p>
+        ) : null}
+
+        {rating > 0 && (
+          <div className={styles.exploreRatingBlock}>
+            <Star size={11} fill="#111111" color="#111111" aria-hidden />
+            <span className={styles.exploreRatingNum}>
+              {Number(rating).toFixed(2)}
+            </span>
+            <span className={styles.exploreRatingSep}> · </span>
+            <span className={styles.exploreReviewCount}>
+              {Number(totalReviews).toLocaleString("en-US")} reviews
+            </span>
+          </div>
+        )}
+
+        <div className={styles.explorePriceRow}>
+          {explorePrice ? (
+            <>
+              <span className={styles.exploreFrom}>From </span>
+              <span className={styles.explorePriceAmount}>
+                $
+                {explorePrice.amount % 1 === 0
+                  ? Math.round(explorePrice.amount)
+                  : explorePrice.amount.toFixed(2)}
+              </span>
+              <span className={styles.explorePriceSuffix}>{explorePrice.suffix}</span>
+            </>
+          ) : (
+            <span className={styles.exploreFrom}>Price varies</span>
+          )}
+        </div>
+      </div>
+    </>
+  );
 
   const cardContent = (
     <>
@@ -244,21 +394,27 @@ const HomeClassCard = ({
     </>
   );
 
+  const containerClass = `${styles.cardContainer}${exploreLayout ? ` ${styles.cardContainerExplore}` : ""}`;
+
   if (!identifier) {
-    return <div className={styles.cardContainer}>{cardContent}</div>;
+    return (
+      <div className={containerClass}>
+        {exploreLayout ? exploreCardContent : cardContent}
+      </div>
+    );
   }
 
   return (
     <Link
       ref={cardRef}
       href={`/classes/${identifier}`}
-      className={styles.cardContainer}
+      className={containerClass}
       onClick={handleLinkClick}
       onMouseEnter={handlePrefetch}
       onFocus={handlePrefetch}
       prefetch={true}
     >
-      {cardContent}
+      {exploreLayout ? exploreCardContent : cardContent}
     </Link>
   );
 };

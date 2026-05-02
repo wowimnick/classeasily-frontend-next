@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   X,
   TrendingUp,
@@ -9,9 +9,6 @@ import {
   Star,
   Navigation,
   Clock,
-  Sunrise,
-  Sun,
-  Moon,
   Users,
   Minus,
   Plus,
@@ -21,6 +18,12 @@ import Slider from "@/components/explore/Slider";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import posthog from "posthog-js";
+import { exploreTimePreferencesList as timePreferencesList } from "./exploreTimePreferences";
+import {
+  priceDistributionFromClasses,
+  distanceDistributionFromClasses,
+} from "./exploreFilterHistograms";
+import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
 
 // --- Theme & Styled Components ---
 
@@ -41,7 +44,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(2px);
-  z-index: 999;
+  z-index: 1100;
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`
@@ -49,13 +52,13 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 20px 20px 0 0;
-  height: 85vh; /* Slightly shorter for better reachability */
-  max-height: 85vh;
+  height: 88vh;
+  max-height: 88vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1101;
   outline: none;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
 `;
@@ -65,7 +68,7 @@ const DrawerHandle = styled.div`
   height: 4px;
   background: #e0e0e0;
   border-radius: 2px;
-  margin: 12px auto;
+  margin: 8px auto 6px;
   flex-shrink: 0;
 `;
 
@@ -78,6 +81,13 @@ const ModalHeader = styled.div`
   align-items: center;
   position: relative;
   flex-shrink: 0;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 10px 14px;
+    border-bottom-color: #ebebeb;
+  `}
 `;
 
 const CloseButton = styled.button`
@@ -107,6 +117,8 @@ const Title = styled.h2`
   font-weight: 700;
   color: #222;
   margin: 0;
+
+  ${(p) => p.$compact && `font-size: 15px;`}
 `;
 
 const ModalBody = styled.div`
@@ -132,9 +144,12 @@ const Section = styled.div`
     border-bottom: none;
   }
 
-  @media (max-width: 768px) {
-    padding: 24px 20px;
-  }
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 12px 14px;
+    border-bottom: 1px solid #ebebeb;
+  `}
 `;
 
 const SectionTitle = styled.h3`
@@ -142,6 +157,14 @@ const SectionTitle = styled.h3`
   font-weight: 600;
   color: #222;
   margin: 0 0 20px 0;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+  `}
 `;
 
 // -- Filters --
@@ -150,6 +173,13 @@ const SortGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  `}
 `;
 
 const SortCard = styled.button`
@@ -180,6 +210,16 @@ const SortCard = styled.button`
   svg {
     color: ${(props) => (props.$selected ? PRIMARY_COLOR : "#717171")};
   }
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 10px 8px;
+    gap: 6px;
+    border-radius: 10px;
+    span { font-size: 13px; }
+    svg { width: 18px !important; height: 18px !important; }
+  `}
 `;
 
 const TimeOption = styled.button`
@@ -198,6 +238,10 @@ const TimeOption = styled.button`
 
   &:hover {
     border-color: ${PRIMARY_COLOR};
+  }
+
+  &:last-child {
+    margin-bottom: 0;
   }
 
   .icon-box {
@@ -227,10 +271,36 @@ const TimeOption = styled.button`
     font-size: 13px;
     color: #717171;
   }
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 10px 12px;
+    gap: 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .icon-box {
+      width: 32px;
+      height: 32px;
+    }
+
+    .label {
+      font-size: 14px;
+    }
+
+    .sub-label {
+      font-size: 12px;
+    }
+  `}
 `;
 
 const Footer = styled.div`
-  padding: 16px 24px;
+  padding: 22px 28px;
   border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
@@ -238,42 +308,79 @@ const Footer = styled.div`
   background: white;
   z-index: 10;
   flex-shrink: 0;
+  gap: 16px;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 18px 16px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    border-top-color: #ebebeb;
+    gap: 12px;
+  `}
 `;
 
 const ClearButton = styled.button`
   background: none;
   border: none;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
   color: #222;
-  padding: 8px 12px;
+  padding: 12px 14px;
   border-radius: 8px;
 
   &:hover {
     background: #f7f7f7;
   }
+
+  ${(p) =>
+    p.$compact &&
+    `
+    font-size: 16px;
+    padding: 10px 10px;
+  `}
 `;
 
 const ApplyButton = styled.button`
   background: ${PRIMARY_COLOR};
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 16px 36px;
+  border-radius: 10px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.1s, background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: ${PRIMARY_COLOR}; /* Keep primary color on hover */
     opacity: 0.9;
   }
-  &:active {
+  &:active:not(:disabled) {
     transform: scale(0.98);
   }
+
+  &:disabled {
+    opacity: 0.88;
+    cursor: wait;
+  }
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 14px 20px;
+    font-size: 15px;
+    border-radius: 12px;
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+  `}
 `;
 
 // --- Configuration Lists ---
@@ -287,26 +394,12 @@ const sortOptionsList = [
   { key: "newest", label: "Newest", icon: <Clock size={20} /> },
 ];
 
-const timePreferencesList = [
-  {
-    id: "Morning (6am-12pm)",
-    label: "Morning",
-    sub: "6:00 AM - 12:00 PM",
-    icon: <Sunrise size={18} />,
-  },
-  {
-    id: "Afternoon (12pm-5pm)",
-    label: "Afternoon",
-    sub: "12:00 PM - 5:00 PM",
-    icon: <Sun size={18} />,
-  },
-  {
-    id: "Evening (5pm-10pm)",
-    label: "Evening",
-    sub: "5:00 PM - 10:00 PM",
-    icon: <Moon size={18} />,
-  },
-];
+function formatShowResultsLabel(totalCount) {
+  if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
+    return "Show results";
+  }
+  return `Show ${totalCount.toLocaleString()} results`;
+}
 
 export default function FilterModal({
   isOpen,
@@ -314,10 +407,27 @@ export default function FilterModal({
   filters,
   currentSortBy,
   onApplyChanges,
+  classesForDistribution = [],
+  totalClassesCount,
+  previewFilterModalCount,
 }) {
   const [tempFilters, setTempFilters] = useState(filters);
   const [tempSortBy, setTempSortBy] = useState(currentSortBy || "relevance");
   const [isMobile, setIsMobile] = useState(false);
+  const [modalPreviewCount, setModalPreviewCount] = useState(null);
+  const [modalPreviewLoading, setModalPreviewLoading] = useState(false);
+
+  const compact = isMobile;
+
+  const priceDistribution = useMemo(
+    () => priceDistributionFromClasses(classesForDistribution, 500),
+    [classesForDistribution],
+  );
+
+  const distanceDistribution = useMemo(
+    () => distanceDistributionFromClasses(classesForDistribution, 80),
+    [classesForDistribution],
+  );
 
   useEffect(() => {
     const mq = () => window.innerWidth < 1048;
@@ -333,6 +443,47 @@ export default function FilterModal({
       setTempSortBy(currentSortBy || "relevance");
     }
   }, [filters, currentSortBy, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setModalPreviewCount(null);
+      setModalPreviewLoading(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !previewFilterModalCount) return;
+
+    setModalPreviewLoading(true);
+    const ac = new AbortController();
+    const t = setTimeout(() => {
+      (async () => {
+        try {
+          const c = await previewFilterModalCount(
+            tempFilters,
+            tempSortBy,
+            ac.signal,
+          );
+          if (!ac.signal.aborted) setModalPreviewCount(c);
+        } catch (e) {
+          if (e?.name === "AbortError" || e?.name === "CanceledError") return;
+          if (!ac.signal.aborted) setModalPreviewCount(null);
+        } finally {
+          if (!ac.signal.aborted) setModalPreviewLoading(false);
+        }
+      })();
+    }, 320);
+
+    return () => {
+      clearTimeout(t);
+      ac.abort();
+    };
+  }, [
+    isOpen,
+    tempFilters,
+    tempSortBy,
+    previewFilterModalCount,
+  ]);
 
   const handleApply = () => {
     posthog.capture("apply_filters", {
@@ -360,16 +511,15 @@ export default function FilterModal({
 
   const renderContent = () => (
     <>
-      <Section>
-        <SectionTitle>Sort by</SectionTitle>
-        <SortGrid>
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact}>Sort by</SectionTitle>
+        <SortGrid $compact={compact}>
           {sortOptionsList.map((option) => {
             const isPriceKey = option.key === "price";
             const isSelected = isPriceKey
               ? tempSortBy.startsWith("price")
               : tempSortBy === option.key;
 
-            // Determine display label for price toggle
             let label = option.label;
             if (isPriceKey && isSelected) {
               label =
@@ -379,11 +529,12 @@ export default function FilterModal({
             return (
               <SortCard
                 key={option.key}
+                $compact={compact}
                 $selected={isSelected}
                 onClick={() => {
                   if (isPriceKey) {
                     setTempSortBy(
-                      tempSortBy === "price_asc" ? "price_desc" : "price_asc"
+                      tempSortBy === "price_asc" ? "price_desc" : "price_asc",
                     );
                   } else {
                     setTempSortBy(option.key);
@@ -398,7 +549,7 @@ export default function FilterModal({
         </SortGrid>
       </Section>
 
-      <Section>
+      <Section $compact={compact}>
         <Slider
           label="Price Range"
           min={0}
@@ -414,10 +565,12 @@ export default function FilterModal({
           }}
           prefix="Up to "
           suffix={tempFilters.pricePerClass[1] >= 500 ? "+" : ""}
+          distribution={priceDistribution}
+          compact={compact}
         />
       </Section>
 
-      <Section>
+      <Section $compact={compact}>
         <Slider
           label="Max Distance"
           min={1}
@@ -427,32 +580,36 @@ export default function FilterModal({
             setTempFilters((prev) => ({ ...prev, distance: [0, val] }))
           }
           suffix=" km"
+          distribution={distanceDistribution}
+          compact={compact}
         />
       </Section>
 
-      <Section>
-        <SectionTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Users size={20} aria-hidden />
+      <Section $compact={compact}>
+        <SectionTitle
+          $compact={compact}
+          style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 8 }}
+        >
+          <Users size={compact ? 18 : 20} aria-hidden />
           Group size
         </SectionTitle>
         <p
           style={{
-            fontSize: 14,
+            fontSize: compact ? 13 : 14,
             color: "#717171",
-            marginTop: -8,
-            marginBottom: 16,
+            marginTop: compact ? -4 : -8,
+            marginBottom: compact ? 12 : 16,
             lineHeight: 1.45,
           }}
         >
-          How many spots do you need? This narrows classes when you also pick a
-          date or time of day.
+          How many people are attending?
         </p>
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 24,
+            gap: compact ? 18 : 24,
           }}
         >
           <button
@@ -469,8 +626,8 @@ export default function FilterModal({
             }
             disabled={(tempFilters.participants ?? 1) <= 1}
             style={{
-              width: 44,
-              height: 44,
+              width: compact ? 40 : 44,
+              height: compact ? 40 : 44,
               borderRadius: "50%",
               border: "1px solid #e5e7eb",
               background: "#fff",
@@ -481,11 +638,11 @@ export default function FilterModal({
               opacity: (tempFilters.participants ?? 1) <= 1 ? 0.35 : 1,
             }}
           >
-            <Minus size={18} />
+            <Minus size={compact ? 16 : 18} />
           </button>
           <span
             style={{
-              fontSize: 22,
+              fontSize: compact ? 20 : 22,
               fontWeight: 700,
               color: "#222",
               minWidth: 36,
@@ -505,8 +662,8 @@ export default function FilterModal({
             }
             disabled={(tempFilters.participants ?? 1) >= 20}
             style={{
-              width: 44,
-              height: 44,
+              width: compact ? 40 : 44,
+              height: compact ? 40 : 44,
               borderRadius: "50%",
               border: "1px solid #e5e7eb",
               background: "#fff",
@@ -517,19 +674,20 @@ export default function FilterModal({
               opacity: (tempFilters.participants ?? 1) >= 20 ? 0.35 : 1,
             }}
           >
-            <Plus size={18} />
+            <Plus size={compact ? 16 : 18} />
           </button>
         </div>
       </Section>
 
-      <Section>
-        <SectionTitle>Time of day</SectionTitle>
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact}>Time of day</SectionTitle>
         <div>
           {timePreferencesList.map((time) => {
             const isSelected = tempFilters.timePreference.includes(time.id);
             return (
               <TimeOption
                 key={time.id}
+                $compact={compact}
                 $selected={isSelected}
                 onClick={() => {
                   setTempFilters((prev) => {
@@ -562,25 +720,37 @@ export default function FilterModal({
             <StyledDrawerOverlay />
             <StyledDrawerContent>
               <DrawerHandle />
-              <ModalHeader>
-                <Title>Filters</Title>
+              <ModalHeader $compact={compact}>
+                <Title $compact={compact}>Filters</Title>
                 <CloseButton
                   type="button"
                   onClick={onClose}
                   aria-label="Close filters"
                   style={{ right: 20, left: "auto" }}
                 >
-                  <X size={20} />
+                  <X size={compact ? 18 : 20} />
                 </CloseButton>
               </ModalHeader>
 
               <ModalBody>{renderContent()}</ModalBody>
 
-              <Footer>
-                <ClearButton onClick={clearFiltersAndSort}>
+              <Footer $compact={compact}>
+                <ClearButton $compact={compact} onClick={clearFiltersAndSort}>
                   Clear all
                 </ClearButton>
-                <ApplyButton onClick={handleApply}>Show results</ApplyButton>
+                <ApplyButton
+                  $compact={compact}
+                  onClick={handleApply}
+                  disabled={modalPreviewLoading}
+                  aria-busy={modalPreviewLoading}
+                >
+                  <ExploreResultsPrimaryLabel
+                    loading={modalPreviewLoading}
+                    label={formatShowResultsLabel(
+                      modalPreviewCount ?? totalClassesCount,
+                    )}
+                  />
+                </ApplyButton>
               </Footer>
             </StyledDrawerContent>
           </Drawer.Portal>
@@ -634,7 +804,18 @@ export default function FilterModal({
 
         <Footer>
           <ClearButton onClick={clearFiltersAndSort}>Clear all</ClearButton>
-          <ApplyButton onClick={handleApply}>Show results</ApplyButton>
+          <ApplyButton
+            onClick={handleApply}
+            disabled={modalPreviewLoading}
+            aria-busy={modalPreviewLoading}
+          >
+            <ExploreResultsPrimaryLabel
+              loading={modalPreviewLoading}
+              label={formatShowResultsLabel(
+                modalPreviewCount ?? totalClassesCount,
+              )}
+            />
+          </ApplyButton>
         </Footer>
       </Modal>
     </ConfigProvider>

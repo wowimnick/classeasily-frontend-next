@@ -95,7 +95,9 @@ const DesktopHeaderBar = styled.header`
     display: flex;
     justify-content: center;
     width: 100%;
+    background: #ffffff;
     border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     height: 80px;
     position: sticky;
     top: 0;
@@ -444,6 +446,63 @@ const ParticipantsApplyButton = styled.button`
   transition: background 0.2s;
   &:hover {
     background: #e62e4e;
+  }
+`;
+
+const DesktopParticipantsModalOverlay = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+`;
+
+const DesktopParticipantsModalCard = styled(motion.div)`
+  width: min(100%, 360px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  padding: 20px;
+  box-sizing: border-box;
+`;
+
+const DesktopParticipantsModalTitle = styled.h3`
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111;
+  text-align: center;
+`;
+
+const DesktopParticipantsModalSub = styled.p`
+  margin: 0 0 12px;
+  font-size: 0.825rem;
+  color: #6b7280;
+  text-align: center;
+`;
+
+const DesktopParticipantsActions = styled.div`
+  display: flex;
+  gap: 10px;
+  padding: 0 4px;
+`;
+
+const DesktopParticipantsCancel = styled.button`
+  flex: 1;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover {
+    background: #f9fafb;
   }
 `;
 
@@ -914,7 +973,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             confirmFooter={FooterContent}
             onRequestChangeDate={isMobileView ? () => setChangeDateDrawerOpen(true) : undefined}
             onRequestChangeTime={isMobileView ? () => setChangeTimeDrawerOpen(true) : undefined}
-            onRequestChangeParticipants={isMobileView ? () => setChangeParticipantsDrawerOpen(true) : undefined}
+            onRequestChangeParticipants={() => setChangeParticipantsDrawerOpen(true)}
           />
 
           {/* Mobile Floating Footer */}
@@ -1041,46 +1100,108 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           </Drawer.Portal>
         </Drawer.Root>
 
-        <Drawer.Root
-          open={changeParticipantsDrawerOpen}
-          onOpenChange={setChangeParticipantsDrawerOpen}
-          shouldScaleBackground
-        >
-          <Drawer.Portal>
-            <ChangeParticipantsDrawerOverlay />
-            <ChangeParticipantsDrawerContent>
-              <ChangeParticipantsDrawerHandle />
-              <h3 style={{ margin: "0 1rem 0.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
-                Number of guests
-              </h3>
-              <p style={{ margin: "0 1rem 1rem", fontSize: "0.875rem", color: "#6b7280", textAlign: "center" }}>
-                Up to {changeParticipantsMax} guests for this time slot.
-              </p>
-              <ParticipantsStepperWrap>
-                <ParticipantsStepperBtn
-                  type="button"
-                  disabled={participantsDraft <= 1}
-                  onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
-                  aria-label="Decrease guests"
+        {isMobileView ? (
+          <Drawer.Root
+            open={changeParticipantsDrawerOpen}
+            onOpenChange={setChangeParticipantsDrawerOpen}
+            shouldScaleBackground
+          >
+            <Drawer.Portal>
+              <ChangeParticipantsDrawerOverlay />
+              <ChangeParticipantsDrawerContent>
+                <ChangeParticipantsDrawerHandle />
+                <h3 style={{ margin: "0 1rem 0.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
+                  Number of guests
+                </h3>
+                <p style={{ margin: "0 1rem 1rem", fontSize: "0.875rem", color: "#6b7280", textAlign: "center" }}>
+                  Up to {changeParticipantsMax} guests for this time slot.
+                </p>
+                <ParticipantsStepperWrap>
+                  <ParticipantsStepperBtn
+                    type="button"
+                    disabled={participantsDraft <= 1}
+                    onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
+                    aria-label="Decrease guests"
+                  >
+                    −
+                  </ParticipantsStepperBtn>
+                  <ParticipantsStepperValue>{participantsDraft}</ParticipantsStepperValue>
+                  <ParticipantsStepperBtn
+                    type="button"
+                    disabled={participantsDraft >= changeParticipantsMax}
+                    onClick={() => setParticipantsDraft((n) => Math.min(changeParticipantsMax, n + 1))}
+                    aria-label="Increase guests"
+                  >
+                    +
+                  </ParticipantsStepperBtn>
+                </ParticipantsStepperWrap>
+                <ParticipantsApplyButton type="button" onClick={handleChangeParticipantsApply}>
+                  Apply
+                </ParticipantsApplyButton>
+              </ChangeParticipantsDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ) : (
+          <AnimatePresence>
+            {changeParticipantsDrawerOpen && (
+              <DesktopParticipantsModalOverlay
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setChangeParticipantsDrawerOpen(false)}
+              >
+                <DesktopParticipantsModalCard
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  −
-                </ParticipantsStepperBtn>
-                <ParticipantsStepperValue>{participantsDraft}</ParticipantsStepperValue>
-                <ParticipantsStepperBtn
-                  type="button"
-                  disabled={participantsDraft >= changeParticipantsMax}
-                  onClick={() => setParticipantsDraft((n) => Math.min(changeParticipantsMax, n + 1))}
-                  aria-label="Increase guests"
-                >
-                  +
-                </ParticipantsStepperBtn>
-              </ParticipantsStepperWrap>
-              <ParticipantsApplyButton type="button" onClick={handleChangeParticipantsApply}>
-                Apply
-              </ParticipantsApplyButton>
-            </ChangeParticipantsDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
+                  <DesktopParticipantsModalTitle>
+                    Number of guests
+                  </DesktopParticipantsModalTitle>
+                  <DesktopParticipantsModalSub>
+                    Up to {changeParticipantsMax} guests for this time slot.
+                  </DesktopParticipantsModalSub>
+                  <ParticipantsStepperWrap style={{ padding: "12px 0 16px" }}>
+                    <ParticipantsStepperBtn
+                      type="button"
+                      disabled={participantsDraft <= 1}
+                      onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
+                      aria-label="Decrease guests"
+                    >
+                      −
+                    </ParticipantsStepperBtn>
+                    <ParticipantsStepperValue>{participantsDraft}</ParticipantsStepperValue>
+                    <ParticipantsStepperBtn
+                      type="button"
+                      disabled={participantsDraft >= changeParticipantsMax}
+                      onClick={() => setParticipantsDraft((n) => Math.min(changeParticipantsMax, n + 1))}
+                      aria-label="Increase guests"
+                    >
+                      +
+                    </ParticipantsStepperBtn>
+                  </ParticipantsStepperWrap>
+                  <DesktopParticipantsActions>
+                    <DesktopParticipantsCancel
+                      type="button"
+                      onClick={() => setChangeParticipantsDrawerOpen(false)}
+                    >
+                      Cancel
+                    </DesktopParticipantsCancel>
+                    <ParticipantsApplyButton
+                      type="button"
+                      onClick={handleChangeParticipantsApply}
+                      style={{ margin: 0, flex: 1 }}
+                    >
+                      Apply
+                    </ParticipantsApplyButton>
+                  </DesktopParticipantsActions>
+                </DesktopParticipantsModalCard>
+              </DesktopParticipantsModalOverlay>
+            )}
+          </AnimatePresence>
+        )}
     </PageWrapper>
   );
 }

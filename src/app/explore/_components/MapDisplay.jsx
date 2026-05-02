@@ -404,6 +404,25 @@ function MapController({ bounds, onMapReady }) {
     if (onMapReady) onMapReady(map);
   }, [map, onMapReady]);
 
+  const fitToBounds = useCallback(() => {
+    if (!bounds || !map) return;
+    try {
+      const southWest = L.latLng(bounds.sw.lat, bounds.sw.lng);
+      const northEast = L.latLng(bounds.ne.lat, bounds.ne.lng);
+      const leafletBounds = L.latLngBounds(southWest, northEast);
+
+      if (leafletBounds.isValid()) {
+        map.fitBounds(leafletBounds, {
+          padding: [80, 80],
+          maxZoom: 15,
+          animate: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating map bounds:", error);
+    }
+  }, [bounds, map]);
+
   useEffect(() => {
     if (bounds && map) {
       try {
@@ -413,7 +432,7 @@ function MapController({ bounds, onMapReady }) {
 
         if (leafletBounds.isValid()) {
           map.fitBounds(leafletBounds, {
-            padding: [80, 80], // Increased padding for better view
+            padding: [80, 80],
             maxZoom: 15,
             animate: true,
             duration: 0.8,
@@ -425,26 +444,65 @@ function MapController({ bounds, onMapReady }) {
     }
   }, [bounds, map]);
 
+  // After invalidateSize (desktop panel opening, etc.), Leaflet fires 'resize'.
+  // Re-fit so padding/maxZoom use the real container size — avoids wrong extent / gray tiles.
+  useEffect(() => {
+    if (!map) return;
+    let timeoutId;
+    const onMapResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fitToBounds(), 80);
+    };
+    map.on("resize", onMapResize);
+    return () => {
+      clearTimeout(timeoutId);
+      map.off("resize", onMapResize);
+    };
+  }, [map, fitToBounds]);
+
   return null;
 }
 
-// Helper component for resizing
-function InvalidateSizeOnShow({ isVisible }) {
+/**
+ * Leaflet caches container dimensions at init. When the explore map opens inside a
+ * grid column that animates from 0 → ~40% width (desktop) or full-screen (mobile),
+ * we must invalidate after the real size is known or most tiles stay gray / wrong area.
+ */
+function MapResizeInvalidator() {
   const map = useMap();
 
   useEffect(() => {
-    if (
-      isVisible &&
-      map &&
-      typeof window !== "undefined" &&
-      window.innerWidth <= 1048
-    ) {
-      const timer = setTimeout(() => {
-        map.invalidateSize();
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, map]);
+    if (!map) return;
+    const container = map.getContainer();
+    if (!container || typeof ResizeObserver === "undefined") return;
+
+    const invalidate = () => {
+      map.invalidateSize({ animate: false });
+    };
+
+    invalidate();
+    let raf2;
+    const raf1 = requestAnimationFrame(() => {
+      invalidate();
+      raf2 = requestAnimationFrame(invalidate);
+    });
+
+    const ro = new ResizeObserver(() => {
+      invalidate();
+    });
+    ro.observe(container);
+
+    const settleTimers = [80, 200, 480, 520].map((ms) =>
+      setTimeout(invalidate, ms),
+    );
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2 != null) cancelAnimationFrame(raf2);
+      settleTimers.forEach(clearTimeout);
+      ro.disconnect();
+    };
+  }, [map]);
 
   return null;
 }
@@ -709,7 +767,7 @@ const MapDisplay = ({
             />
 
             <MapController bounds={mapBounds} />
-            <InvalidateSizeOnShow isVisible={showMap} />
+            <MapResizeInvalidator />
 
             <MarkerClusterGroup
               chunkedLoading

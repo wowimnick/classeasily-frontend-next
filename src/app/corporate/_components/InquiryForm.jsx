@@ -1,10 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Form, Input, Select, Button, Alert, Typography, Checkbox, Popover, Grid } from "antd";
 import styled from "styled-components";
 import confetti from "canvas-confetti";
-import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { corporateService } from "@/services/apiService";
 import CustomCalendar from "@/app/(homepage)/_components/CustomCalendar";
@@ -61,12 +60,12 @@ const LayoutCard = styled.div`
 const FormPanel = styled.div`
   background: #fff;
   border-radius: 20px;
-  padding: 28px;
+  padding: 24px;
   @media (max-width: 1024px) {
-    padding: 34px 28px;
+    padding: 28px 24px;
   }
   @media (max-width: 640px) {
-    padding: 26px 16px;
+    padding: 20px 16px;
     border-radius: 14px;
   }
 `;
@@ -75,23 +74,9 @@ const FormHeader = styled.div`
   margin-bottom: 1.1rem;
 `;
 
-const FormStepper = styled.div`
-  display: flex;
-  gap: 0.55rem;
-  margin-top: 1rem;
-`;
-
-const StepDot = styled.span`
-  flex: 1;
-  height: 5px;
-  border-radius: 999px;
-  background: ${(p) => (p.$on ? "#111827" : "#e5e7eb")};
-  transition: background 0.25s ease;
-`;
-
 const StyledForm = styled(Form)`
   .ant-form-item {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
 
   .ant-form-item-label > label {
@@ -116,7 +101,7 @@ const StyledForm = styled(Form)`
   .ant-input::placeholder,
   .ant-input-textarea textarea::placeholder,
   .ant-select-selection-placeholder {
-    color:rgb(220, 223, 228);
+    color: rgb(220, 223, 228);
   }
 
   .ant-select-arrow {
@@ -162,11 +147,11 @@ const SplitFields = styled.div`
   }
 `;
 
-const UseCaseGroup = styled(Checkbox.Group)`
+const ActivityGroup = styled(Checkbox.Group)`
   width: 100%;
 `;
 
-const UseCaseGrid = styled.div`
+const ActivityGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
@@ -175,7 +160,7 @@ const UseCaseGrid = styled.div`
   }
 `;
 
-const UseCaseOption = styled(Checkbox)`
+const ActivityOption = styled(Checkbox)`
   &.ant-checkbox-wrapper {
     margin-inline-start: 0 !important;
     width: 100%;
@@ -203,9 +188,9 @@ const UseCaseOption = styled(Checkbox)`
 const ActionFooter = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.75rem;
-  margin-top: 1.45rem;
+  margin-top: 1.25rem;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
   @media (max-width: 480px) {
@@ -236,10 +221,7 @@ const ActionFooter = styled.div`
 `;
 
 const FooterSpacer = styled.div`
-  min-width: 80px;
-  @media (max-width: 480px) {
-    display: none;
-  }
+  flex: 1;
 `;
 
 const VisualPanel = styled.div`
@@ -247,11 +229,8 @@ const VisualPanel = styled.div`
   border-radius: 20px;
   padding: 14px;
   display: flex;
-  height: 750px;
+  height: 620px;
   align-self: start;
-  @media (max-width: 1200px) {
-    height: 680px;
-  }
   @media (max-width: 1024px) {
     display: none;
   }
@@ -343,55 +322,29 @@ const GutterHorizontalBottomLeft = styled.span`
   border-radius: 999px;
 `;
 
-const USE_CASES = [
-  { id: "offsite", label: "Team offsite" },
-  { id: "holiday_party", label: "Holiday / celebration" },
-  { id: "client_event", label: "Client entertaining" },
-  { id: "erg", label: "ERG / affinity group" },
-  { id: "leadership", label: "Leadership retreat" },
-  { id: "onboarding", label: "Onboarding week" },
+const ACTIVITY_INTERESTS = [
+  { id: "food_drink", label: "Food & drink" },
+  { id: "arts_crafts", label: "Arts & crafts" },
+  { id: "wellness", label: "Wellness & mindfulness" },
+  { id: "active_outdoor", label: "Active & outdoor" },
+  { id: "music_performance", label: "Music & performance" },
+  { id: "games", label: "Games & competitions" },
+  { id: "learning", label: "Learning & skill-building" },
+  { id: "open", label: "Open to suggestions" },
+];
+
+const GROUP_SIZE_OPTIONS = [
+  { value: "1-10", label: "1–10" },
+  { value: "11-25", label: "11–25" },
+  { value: "26-50", label: "26–50" },
+  { value: "51-100", label: "51–100" },
+  { value: "101-250", label: "101–250" },
+  { value: "250+", label: "250+" },
 ];
 
 const IMAGE_A_SRC = IMAGE_A_FILE.src;
 const IMAGE_B_SRC = IMAGE_B_FILE.src;
 const IMAGE_C_SRC = IMAGE_C_FILE.src;
-
-const useElementSize = () => {
-  const ref = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-
-    const observer = new ResizeObserver(([entry]) => {
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    });
-
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, size];
-};
-
-const AnimatedStepContent = ({ children }) => {
-  const [ref, { height }] = useElementSize();
-
-  return (
-    <motion.div
-      animate={{ height: height || "auto" }}
-      style={{ overflow: "hidden" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-    >
-      <div ref={ref}>
-        <div style={{ border: "1px solid transparent", margin: "-1px" }}>{children}</div>
-      </div>
-    </motion.div>
-  );
-};
 
 const CorporateDateField = ({ value, onChange }) => {
   const screens = Grid.useBreakpoint();
@@ -436,12 +389,10 @@ const CorporateDateField = ({ value, onChange }) => {
 
 export default function InquiryForm() {
   const [form] = Form.useForm();
-  const [step, setStep] = useState(0);
   const [status, setStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /** Build API payload. Multistep form: step-0 fields unmount on step 1, so `onFinish` values omit them — merge full store. */
   const buildInquiryPayload = (values) => {
     const v = values || {};
     const company = typeof v.company_name === "string" ? v.company_name.trim() : v.company_name;
@@ -456,7 +407,7 @@ export default function InquiryForm() {
       message: typeof v.message === "string" ? v.message.trim() : v.message || "",
       meta: {
         source: "corporate_page",
-        use_cases: Array.isArray(v.use_cases) ? v.use_cases : [],
+        activity_interests: Array.isArray(v.activity_interests) ? v.activity_interests : [],
         preferred_date: v.preferred_date?.format?.("YYYY-MM-DD") || "",
         city: typeof v.city === "string" ? v.city.trim() : v.city || "",
       },
@@ -472,7 +423,7 @@ export default function InquiryForm() {
         contact_name: "Name",
         email: "Email",
         phone: "Phone",
-        company_size: "Company size",
+        company_size: "Group size",
         message: "Message",
         meta: "Details",
         non_field_errors: "",
@@ -509,7 +460,6 @@ export default function InquiryForm() {
         /* optional */
       }
       form.resetFields();
-      setStep(0);
     } catch (e) {
       const data = e?.response?.data;
       const apiDetail = typeof data?.detail === "string" ? data.detail : "";
@@ -531,38 +481,6 @@ export default function InquiryForm() {
     }
   };
 
-  const next = async () => {
-    try {
-      await form.validateFields([
-        "company_name",
-        "company_size",
-        "city",
-        "preferred_date",
-      ]);
-      setStep(1);
-    } catch {
-      /* validation messages shown by antd */
-    }
-  };
-
-  const handleFormSubmit = async (values) => {
-    if (step === 0) {
-      await next();
-      return;
-    }
-    // `onFinish` only includes mounted fields; step-0 fields are unmounted here.
-    const allValues = { ...form.getFieldsValue(true), ...values };
-    await submitInquiry(allValues);
-  };
-
-  const handlePrimaryAction = async () => {
-    if (step === 0) {
-      await next();
-      return;
-    }
-    form.submit();
-  };
-
   return (
     <Wrap id="inquiry">
       <Inner>
@@ -571,8 +489,7 @@ export default function InquiryForm() {
             Plan something your team will remember
           </Title>
           <Text style={{ color: "#475569", fontSize: "1rem", lineHeight: 1.55 }}>
-            Two quick steps — then our team follows up within two business days. Prefer
-            live alignment?{" "}
+            Tell us about your event — we&apos;ll respond within two business days. Prefer live alignment?{" "}
             <span style={{ color: "#111827", fontWeight: 700 }}>
               Ask for a 20-minute consultation
             </span>{" "}
@@ -588,10 +505,6 @@ export default function InquiryForm() {
               <Text style={{ color: "#6b7280", fontSize: 14 }}>
                 Share a few details and we will build options your team will love.
               </Text>
-              <FormStepper aria-hidden>
-                <StepDot $on={step >= 0} />
-                <StepDot $on={step >= 1} />
-              </FormStepper>
             </FormHeader>
 
             {status === "success" && (
@@ -616,113 +529,84 @@ export default function InquiryForm() {
             <StyledForm
               layout="vertical"
               form={form}
-              onFinish={handleFormSubmit}
+              onFinish={submitInquiry}
               requiredMark="optional"
-              initialValues={{ use_cases: [] }}
+              initialValues={{ activity_interests: [] }}
             >
-              <AnimatedStepContent>
-                <AnimatePresence mode="wait">
-                  {step === 0 ? (
-                    <motion.div
-                      key="s0"
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -12 }}
-                      transition={{ duration: 0.25 }}
-                    >
-                      <Form.Item
-                        label="Company"
-                        name="company_name"
-                        rules={[{ required: true, message: "Please enter your company name" }]}
-                      >
-                        <Input size="middle" placeholder="Acme Co." autoComplete="organization" />
-                      </Form.Item>
-                      <SplitFields>
-                        <Form.Item label="City / metro" name="city">
-                          <Input size="middle" placeholder="e.g. Austin" />
-                        </Form.Item>
-                        <Form.Item label="Company size" name="company_size">
-                          <Select
-                            size="middle"
-                            allowClear
-                            placeholder="Select a range"
-                            options={[
-                              { value: "1-10", label: "1–10" },
-                              { value: "11-50", label: "11–50" },
-                              { value: "51-200", label: "51–200" },
-                              { value: "201-500", label: "201–500" },
-                              { value: "501+", label: "501+" },
-                            ]}
-                          />
-                        </Form.Item>
-                      </SplitFields>
-                      <Form.Item label="Ideal date (optional)" name="preferred_date">
-                        <CorporateDateField />
-                      </Form.Item>
-                      <Form.Item label="What are you planning?" name="use_cases">
-                        <UseCaseGroup>
-                          <UseCaseGrid>
-                            {USE_CASES.map((u) => (
-                              <UseCaseOption key={u.id} value={u.id}>
-                                {u.label}
-                              </UseCaseOption>
-                            ))}
-                          </UseCaseGrid>
-                        </UseCaseGroup>
-                      </Form.Item>
-                      <Text style={{ fontSize: 12, color: "#6b7280" }}>Select any that apply.</Text>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="s1"
-                      initial={{ opacity: 0, x: 12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 12 }}
-                      transition={{ duration: 0.25 }}
-                    >
-                      <Form.Item
-                        label="Your name"
-                        name="contact_name"
-                        rules={[{ required: true, message: "Please enter your name" }]}
-                      >
-                        <Input size="middle" placeholder="Jordan Lee" autoComplete="name" />
-                      </Form.Item>
-                      <Form.Item
-                        label="Work email"
-                        name="email"
-                        rules={[
-                          { required: true, message: "Please enter your email" },
-                          { type: "email", message: "Enter a valid email" },
-                        ]}
-                      >
-                        <Input size="middle" placeholder="you@company.com" autoComplete="email" />
-                      </Form.Item>
-                      <Form.Item label="Phone (optional)" name="phone">
-                        <Input size="middle" placeholder="+1 (555) 000-0000" autoComplete="tel" />
-                      </Form.Item>
-                      <Form.Item label="Details & goals" name="message">
-                        <TextArea
-                          rows={5}
-                          maxLength={5000}
-                          showCount
-                          placeholder="Budget, accessibility, procurement, or a 20-min consult request…"
-                        />
-                      </Form.Item>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </AnimatedStepContent>
+              <SplitFields>
+                <Form.Item
+                  label="Company"
+                  name="company_name"
+                  rules={[{ required: true, message: "Please enter your company name" }]}
+                >
+                  <Input size="middle" placeholder="Acme Co." autoComplete="organization" />
+                </Form.Item>
+                <Form.Item
+                  label="Your name"
+                  name="contact_name"
+                  rules={[{ required: true, message: "Please enter your name" }]}
+                >
+                  <Input size="middle" placeholder="Jordan Lee" autoComplete="name" />
+                </Form.Item>
+              </SplitFields>
+              <SplitFields>
+                <Form.Item
+                  label="Work email"
+                  name="email"
+                  rules={[
+                    { required: true, message: "Please enter your email" },
+                    { type: "email", message: "Enter a valid email" },
+                  ]}
+                >
+                  <Input size="middle" placeholder="you@company.com" autoComplete="email" />
+                </Form.Item>
+                <Form.Item label="Phone (optional)" name="phone">
+                  <Input size="middle" placeholder="+1 (555) 000-0000" autoComplete="tel" />
+                </Form.Item>
+              </SplitFields>
+              <SplitFields>
+                <Form.Item label="City / metro" name="city">
+                  <Input size="middle" placeholder="e.g. Austin" />
+                </Form.Item>
+                <Form.Item label="Group size" name="company_size" extra={<Text type="secondary">Roughly how many people will attend?</Text>}>
+                  <Select
+                    size="middle"
+                    allowClear
+                    placeholder="Select a range"
+                    options={GROUP_SIZE_OPTIONS}
+                  />
+                </Form.Item>
+              </SplitFields>
+              <Form.Item label="Ideal date (optional)" name="preferred_date">
+                <CorporateDateField />
+              </Form.Item>
+              <Form.Item label="What kind of experiences interest your team?" name="activity_interests">
+                <ActivityGroup>
+                  <ActivityGrid>
+                    {ACTIVITY_INTERESTS.map((u) => (
+                      <ActivityOption key={u.id} value={u.id}>
+                        {u.label}
+                      </ActivityOption>
+                    ))}
+                  </ActivityGrid>
+                </ActivityGroup>
+              </Form.Item>
+              <Text style={{ fontSize: 12, color: "#6b7280", display: "block", marginTop: -8, marginBottom: 8 }}>
+                Select any that apply.
+              </Text>
+              <Form.Item label="Tell us more (optional)" name="message">
+                <TextArea
+                  rows={3}
+                  maxLength={5000}
+                  showCount
+                  placeholder="Budget, accessibility, procurement, or a 20-min consult request…"
+                />
+              </Form.Item>
 
               <ActionFooter>
-                {step === 0 ? (
-                  <FooterSpacer aria-hidden />
-                ) : (
-                  <Button htmlType="button" size="middle" onClick={() => setStep(0)}>
-                    Back
-                  </Button>
-                )}
-                <Button type="primary" htmlType="button" size="middle" loading={loading} onClick={handlePrimaryAction}>
-                  {step === 0 ? "Continue" : "Submit inquiry"}
+                <FooterSpacer aria-hidden />
+                <Button type="primary" htmlType="submit" size="middle" loading={loading}>
+                  Submit inquiry
                 </Button>
               </ActionFooter>
             </StyledForm>

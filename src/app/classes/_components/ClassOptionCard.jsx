@@ -2,452 +2,520 @@
 
 import React, { useMemo } from "react";
 import styled from "styled-components";
-import { motion } from "framer-motion";
-import { Button as AntButton } from "antd";
-import { Calendar, Tag, ArrowRight } from "lucide-react";
+import { Tooltip } from "antd";
 import dayjs from "dayjs";
 import { fromZonedTime } from "date-fns-tz";
 import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 
-const CardWrapper = styled(motion.div)`
+const CORAL = "#FF385C";
+const NEAR_BLACK = "#111111";
+const MUTED = "#717171";
+const DIVIDER = "#EBEBEB";
+const SLOT_BORDER = "#DDDDDD";
+
+/* ── Outer card ──────────────────────────────────────────────────── */
+const Card = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 18px 20px 20px;
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+/* ── Top row: price + CTA ────────────────────────────────────────── */
+const TopRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const PriceStack = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  position: relative;
-  z-index: 1;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e8e8e8;
-  padding: 1.25rem;
-  transition: all 0.2s ease;
+  gap: 4px;
 `;
 
-const Header = styled.div`
+const PriceLine = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #f0f0f0;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0 4px;
 `;
 
-const TypeBadge = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  background: ${(props) => (props.$isCourse ? "#e6f7ff" : "#f6f6f6")};
-  color: ${(props) => (props.$isCourse ? "#1890ff" : "#666")};
-  border-radius: 16px;
-  font-size: 0.75rem;
+const PriceFrom = styled.span`
+  font-size: 20px;
   font-weight: 600;
+  color: ${NEAR_BLACK};
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+`;
 
-  svg {
-    width: 12px;
-    height: 12px;
+const PriceAmount = styled.span`
+  font-size: 20px;
+  font-weight: 600;
+  color: ${NEAR_BLACK};
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 2px 0 0;
+`;
+
+const PriceUnit = styled.span`
+  font-size: 13px;
+  font-weight: 400;
+  color: ${NEAR_BLACK};
+  align-self: flex-end;
+  padding-top: 3px;
+`;
+
+const CancellationPolicyText = styled.span`
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.1; 
+  text-decoration: underline;
+  max-width: 100%;
+`;
+
+const ShowDatesBtn = styled.button`
+  flex-shrink: 0;
+  background: ${CORAL};
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.18s;
+  &:hover:not(:disabled) {
+    opacity: 0.88;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
-// Course details and schedule
-const CourseDetailsContainer = styled.div`
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid #f0f0f0;
+/* ── Divider ─────────────────────────────────────────────────────── */
+const Divider = styled.hr`
+  border: none;
+  border-top: 1px solid ${DIVIDER};
+  margin: 16px 0;
 `;
 
-const CourseDetailRow = styled.div`
+/* ── Slot list ───────────────────────────────────────────────────── */
+const SlotList = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-  color: #484848;
+  flex-direction: column;
+  gap: 10px;
+`;
 
-  &:last-child {
-    margin-bottom: 0;
+const SlotCard = styled.button`
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff;
+  border: 1px solid ${SLOT_BORDER};
+  border-radius: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  &:hover {
+    border-color: #aaa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   }
+`;
 
-  svg {
-    color: #1890ff; /* Blue for course info */
-    width: 16px;
-    height: 16px;
-    margin-top: 2px;
-    flex-shrink: 0;
+const SlotLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  align-self: flex-start;
+`;
+
+const SlotDate = styled.span`
+  font-size: 15px;
+  font-weight: 700;
+  color: ${NEAR_BLACK};
+  white-space: nowrap;
+`;
+
+const SlotTime = styled.span`
+  font-size: 13px;
+  font-weight: 400;
+  color: ${MUTED};
+  white-space: nowrap;
+`;
+
+const SlotSpots = styled.span`
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #000;
+  margin-left: 14px;
+  white-space: nowrap;
+  line-height: 1.25;
+`;
+
+/* ── Show all dates link ─────────────────────────────────────────── */
+const ShowAllLink = styled.button`
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 400;
+  color: ${MUTED};
+  text-align: center;
+  cursor: pointer;
+  padding: 4px 0;
+  &:hover {
+    color: ${NEAR_BLACK};
   }
+`;
+
+/* ── Empty / course states ───────────────────────────────────────── */
+const CourseNotice = styled.div`
+  margin-top: 12px;
+  padding: 18px 20px;
+  border: 1px solid ${SLOT_BORDER};
+  border-radius: 12px;
+  font-size: 14px;
+  color: ${MUTED};
+  line-height: 1.5;
 
   strong {
-    font-weight: 600;
-    color: #222;
-    margin-right: 4px;
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: ${NEAR_BLACK};
+    margin-bottom: 4px;
   }
 `;
 
-const ScheduleInfo = styled.div`
-  background: #f8f9fa;
-  box-shadow: 0px 0px 8px 4px #0000000c;
-  border-radius: 8px;
-  padding: 0.75rem 0.75rem 0.75rem 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.8rem;
-  position: relative;
-`;
-
-const ScheduleTitle = styled.div`
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-left: 0.3rem;
-
-  svg {
-    color: #ff385c;
-    width: 14px;
-    height: 14px;
-  }
-`;
-
-const TimelineLine = styled.div`
-  position: absolute;
-  left: 1.22rem;
-  top: 2.5rem;
-  bottom: 1.25rem;
-  width: 1px;
-  background: linear-gradient(180deg, #ff385c 0%, rgba(255, 56, 92, 0.25) 100%);
-  border-radius: 1px;
-  pointer-events: none;
-`;
-
-const ScheduleList = styled.div`
-  position: relative;
-  padding-left: 1.092rem;
-`;
-
-const ScheduleItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.35rem 0 0.35rem 0.75rem;
-  color: #666;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: -0.56rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #ff385c;
-    box-shadow: 0 0 0 2px #fff;
-  }
-
-  &:not(:last-child) {
-    margin-bottom: 0.15rem;
-  }
-`;
-
-const PricingSection = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 1rem;
-`;
-
-const PriceDisplay = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 0.25rem;
-`;
-
-const Price = styled.span`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #ff385c;
-  line-height: 1;
-`;
-
-const PriceRange = styled.span`
-  font-size: 0.75rem;
-  color: #767676;
-  line-height: 1;
-`;
-
-const ReserveButton = styled(AntButton)`
-  height: 36px !important;
-  font-size: 0.9rem !important;
-  font-weight: 700 !important;
-  border-radius: 14px !important;
-  width: fit-content;
-  padding: 1.2rem 3rem;
-`;
-
-const SelectContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-`;
+/* ─────────────────────────────────────────────────────────────────── */
 
 const ClassOptionCard = ({
   option,
-  classTitle,
-  classImages,
-  currency,
+  currency = "$",
   onBookNow,
+  onSelectSlot,
   businessTimeZone,
 }) => {
-  if (!option) {
-    return <CardWrapper>No option details available.</CardWrapper>;
-  }
+  if (!option) return null;
 
   const optionId = option.optionId;
-  const type = option.booking_type;
-  const isCourse = type === "Full Course";
+  const isCourse = option.booking_type === "Full Course";
   const schedules = Array.isArray(option.schedules) ? option.schedules : [];
-  const userTz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "Etc/UTC";
   const bizTz = businessTimeZone || "Etc/UTC";
+  const userTz =
+    typeof Intl !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : "Etc/UTC";
 
-  // Class start as UTC timestamp (date+time in business TZ). Falls back to local parse if no biz TZ.
-  const getClassStartMs = (s) => {
+  /* ── Helpers ─────────────────────────────────────────── */
+  const getStartMs = (s) => {
     if (!s?.date || !s?.time) return 0;
-    const timeParts = String(s.time).split(":");
-    const timeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${timeParts[2] || "00"}`;
-    const dateTimeStr = `${s.date}T${timeStr}`;
+    const parts = String(s.time).split(":");
+    const timeStr = `${parts[0]}:${parts[1] || "00"}:${parts[2] || "00"}`;
+    const dtStr = `${s.date}T${timeStr}`;
     if (bizTz && bizTz !== "Etc/UTC") {
-      try {
-        return fromZonedTime(dateTimeStr, bizTz).getTime();
-      } catch {
-        return dayjs(dateTimeStr).valueOf();
-      }
+      try { return fromZonedTime(dtStr, bizTz).getTime(); }
+      catch { return dayjs(dtStr).valueOf(); }
     }
-    return dayjs(dateTimeStr).valueOf();
+    return dayjs(dtStr).valueOf();
   };
 
-  // "Today" in business TZ (YYYY-MM-DD) for calendar-date comparison
   const todayInBizTz = useMemo(() => {
     if (!bizTz || bizTz === "Etc/UTC") return dayjs().format("YYYY-MM-DD");
-    try {
-      return new Date().toLocaleDateString("en-CA", { timeZone: bizTz });
-    } catch {
-      return dayjs().format("YYYY-MM-DD");
-    }
+    try { return new Date().toLocaleDateString("en-CA", { timeZone: bizTz }); }
+    catch { return dayjs().format("YYYY-MM-DD"); }
   }, [bizTz]);
-
-  const now = Date.now();
-
-  // Logic for Courses: next upcoming start (by business-local date >= today, then by time)
-  const nextCourseSchedule = isCourse
-    ? schedules
-        .filter((s) => s.date && s.date >= todayInBizTz)
-        .sort((a, b) => {
-          if (a.date !== b.date) return a.date.localeCompare(b.date);
-          return getClassStartMs(a) - getClassStartMs(b);
-        })[0]
-    : null;
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
-    try {
-      return dayjs(`2000-01-01 ${timeStr}`, "YYYY-MM-DD HH:mm:ss").format(
-        "h:mm A",
-      );
-    } catch (e) {
-      return timeStr;
-    }
+    try { return dayjs(`2000-01-01 ${timeStr}`, "YYYY-MM-DD HH:mm:ss").format("h:mm A"); }
+    catch { return timeStr; }
   };
 
-  const formatDate = (dateStr) => {
+  const formatEndTime = (timeStr, durationMins) => {
+    if (!timeStr) return "";
+    try {
+      const start = dayjs(`2000-01-01 ${timeStr}`, "YYYY-MM-DD HH:mm:ss");
+      return start.add(Number(durationMins) || 0, "minute").format("h:mm A");
+    } catch { return ""; }
+  };
+
+  const formatSlotDate = (dateStr, timeStr) => {
     if (!dateStr) return "";
-    try {
-      return dayjs(dateStr).format("ddd, MMM D");
-    } catch (e) {
-      return dateStr;
-    }
-  };
-
-  // Format session date+time for display: in user TZ when business TZ is known
-  const formatSessionDateTime = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return "";
-    if (bizTz && bizTz !== "Etc/UTC") {
+    if (bizTz && bizTz !== "Etc/UTC" && timeStr) {
       try {
-        const datePart = formatBusinessLocalToUserDisplay(
-          dateStr,
-          timeStr,
-          bizTz,
-          userTz,
-          { dateTimeFormat: "EEE, MMM d" }
-        );
-        const timePart = formatBusinessLocalToUserDisplay(
-          dateStr,
-          timeStr,
-          bizTz,
-          userTz,
-          { dateTimeFormat: "h:mm a zzz" }
-        );
-        if (datePart !== "Invalid Date" && timePart !== "Invalid Time") {
-          return `${datePart} at ${timePart}`;
-        }
-      } catch (e) {
-        // fall through to naive
-      }
+        const d = formatBusinessLocalToUserDisplay(dateStr, timeStr, bizTz, userTz, {
+          dateTimeFormat: "EEEE, MMM d",
+        });
+        if (d && d !== "Invalid Date") return d;
+      } catch {}
     }
-    return `${formatDate(dateStr)} at ${formatTime(timeStr)}`;
+    return dayjs(dateStr).format("dddd, MMM D");
   };
 
-  // Updated logic to include $0 (Free) pricing
-  const getPriceRange = () => {
-    if (!schedules.length) return { min: 0, max: 0, display: "-" };
+  const formatSlotTime = (dateStr, timeStr, duration) => {
+    if (!timeStr) return "";
+    let start = formatTime(timeStr);
+    if (bizTz && bizTz !== "Etc/UTC" && dateStr) {
+      try {
+        const t = formatBusinessLocalToUserDisplay(dateStr, timeStr, bizTz, userTz, {
+          dateTimeFormat: "h:mm a",
+        });
+        if (t && t !== "Invalid Time") start = t.replace("am", "AM").replace("pm", "PM");
+      } catch {}
+    }
+    const end = formatEndTime(timeStr, duration);
+    return end ? `${start} – ${end}` : start;
+  };
 
-    // Include 0 in the prices array
+  /* ── Price ───────────────────────────────────────────── */
+  const now = Date.now();
+  const upcomingSchedules = schedules
+    .filter((s) => {
+      if (isCourse) return s.date && s.date >= todayInBizTz;
+      return s.date && s.time && getStartMs(s) > now;
+    })
+    .sort((a, b) => {
+      if (isCourse) {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+      }
+      return getStartMs(a) - getStartMs(b);
+    });
+
+  const minPrice = useMemo(() => {
     const prices = schedules
       .map((s) => parseFloat(s.price || 0))
-      .filter((p) => !isNaN(p));
+      .filter((p) => !isNaN(p) && p > 0);
+    return prices.length ? Math.min(...prices) : 0;
+  }, [schedules]);
 
-    if (prices.length === 0) return { min: 0, max: 0, display: "-" };
+  const priceDisplay = minPrice === 0 ? "Free" : `${currency}${Math.round(minPrice)}`;
+  const priceUnit = isCourse ? "/ course" : "/ guest";
 
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
+  const cancellationPolicyDisplay = useMemo(() => {
+    const raw = option.cancellationPolicy;
+    if (!raw || String(raw).trim() === "") return null;
 
-    // Determine display string
-    let display = "";
-    if (min === 0 && max === 0) {
-      display = "Free";
-    } else if (min === 0) {
-      display = `Free - $${max}`;
-    } else if (min === max) {
-      display = `$${min}`;
+    const policy = String(raw).toLowerCase().trim();
+    const pctNum = parseFloat(option.cancellationRefundPercentage ?? 0);
+    const pctRounded = Number.isFinite(pctNum) ? Math.round(pctNum) : 0;
+    const hoursRaw = option.cancellationCustomHours;
+    const hoursNum =
+      hoursRaw != null && hoursRaw !== ""
+        ? parseFloat(String(hoursRaw).replace(/,/g, ""))
+        : NaN;
+    const hasCustomHours = Number.isFinite(hoursNum) && hoursNum > 0;
+
+    const policyTitle =
+      policy === "flexible"
+        ? "Flexible"
+        : policy === "moderate"
+          ? "Moderate"
+          : policy === "strict"
+            ? "Strict"
+            : raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+
+    const isFreeCancellation = policy === "flexible" && pctRounded >= 100;
+
+    const short = isFreeCancellation
+      ? "Free cancellation"
+      : "Cancellation Policy";
+
+    const hoursPhrase = hasCustomHours
+      ? ` For this listing, plan to cancel at least ${hoursNum} hours before the scheduled start unless checkout shows a different cutoff.`
+      : "";
+
+    /** Full tooltip copy only — no duplicate headline vs body */
+    const tooltipParagraphs = [];
+    if (policy === "flexible") {
+      if (pctRounded >= 100) {
+        tooltipParagraphs.push(
+          `You can receive a full refund when you cancel before the deadline shown at checkout and on your confirmation.${hoursPhrase}`,
+          `After that cutoff, the booking is typically non-refundable or only partly refundable, depending on how this host processes late cancellations.`,
+          `If something urgent comes up, you may still message the host through your booking—some hosts accommodate exceptions when they can.`,
+        );
+      } else {
+        tooltipParagraphs.push(
+          `This host uses a flexible cancellation policy. You may receive up to ${pctRounded}% back, depending on how far in advance you cancel—generally, the earlier you cancel, the larger the refund.`,
+          `Your checkout screen lists the exact cutoff times and refund tiers.${hoursPhrase}`,
+          `Refunds are processed to your original payment method once the cancellation is confirmed.`,
+        );
+      }
+    } else if (policy === "moderate") {
+      tooltipParagraphs.push(
+        `Moderate policies reward advance planning: you may receive up to ${pctRounded}% back when you cancel with enough notice before the session.`,
+        `Notice periods and refund tiers are spelled out at checkout so you can compare options before you pay.${hoursPhrase}`,
+        `Last-minute cancellations often qualify for a reduced refund or none—plan accordingly if your schedule is uncertain.`,
+      );
+    } else if (policy === "strict") {
+      tooltipParagraphs.push(
+        `This host applies a strict cancellation policy: refunds up to ${pctRounded}% are available only in limited situations described when you book.`,
+        `Read the terms carefully before you reserve—last-minute changes are often fully non-refundable.${hoursPhrase}`,
+        `If you believe your situation qualifies for an exception (e.g. serious emergency), contact the host through your booking to discuss options.`,
+      );
     } else {
-      display = `$${min} - $${max}`;
+      tooltipParagraphs.push(
+        `This listing follows a ${policyTitle} cancellation approach with up to ${pctRounded}% refund potential; exact rules appear at checkout.`,
+        `Always review deadlines and fees before completing payment.${hoursPhrase}`,
+      );
     }
 
-    return { min, max, display };
+    return { short, tooltipParagraphs };
+  }, [
+    option.cancellationPolicy,
+    option.cancellationRefundPercentage,
+    option.cancellationCustomHours,
+  ]);
+
+  const PREVIEW_COUNT = 5;
+  const previewSlots = upcomingSchedules.slice(0, PREVIEW_COUNT);
+  const hasMore = upcomingSchedules.length > PREVIEW_COUNT;
+
+  const handleBook = () => {
+    if (optionId && onBookNow) onBookNow(optionId);
   };
 
-  const priceInfo = getPriceRange();
-
-  // Filter generic upcoming sessions (non-course): class start (in business TZ) must be in the future
-  const upcomingSchedules = !isCourse
-    ? schedules
-        .filter((s) => s.date && s.time && getClassStartMs(s) > now)
-        .sort((a, b) => getClassStartMs(a) - getClassStartMs(b))
-        .slice(0, 3)
-    : [];
-
-  const formatSchedulePrice = (price) => {
-    const numPrice = parseFloat(price || 0);
-    return numPrice === 0 ? "Free" : `$${numPrice}`;
-  };
-
-  const handleReserveClick = () => {
-    if (optionId && onBookNow) {
-      onBookNow(optionId);
+  const handleSlotSelect = (schedule) => {
+    if (onSelectSlot) {
+      onSelectSlot(option, schedule);
+      return;
     }
+    handleBook();
   };
 
-  const isButtonDisabled = !optionId || schedules.length === 0;
+  const isDisabled = !optionId || schedules.length === 0;
 
   return (
-    <CardWrapper aria-labelledby={`option-${optionId}`}>
-      <Header>
-        <PricingSection>
-          <PriceDisplay>
-            <Price>{priceInfo.display}</Price>
-            <PriceRange>{isCourse ? "/ full course" : "/ person"}</PriceRange>
-          </PriceDisplay>
-        </PricingSection>
-      </Header>
-
-
-      {/* New Course Specific Details */}
-      {isCourse && nextCourseSchedule && (
-        <CourseDetailsContainer>
-          <CourseDetailRow>
-            <Calendar />
-            <div>
-              <strong>Next Start:</strong>
-              {formatDate(nextCourseSchedule.date)}
-            </div>
-          </CourseDetailRow>
-          {nextCourseSchedule.end_date && (
-            <CourseDetailRow>
-              <ArrowRight size={14} style={{ transform: "rotate(0deg)" }} />
-              <div>
-                <strong>Ends:</strong>
-                {formatDate(nextCourseSchedule.end_date)}
-              </div>
-            </CourseDetailRow>
+    <Card>
+      {/* ── Top row ── */}
+      <TopRow>
+        <PriceStack>
+          <PriceLine>
+            {minPrice > 0 && <PriceFrom>From </PriceFrom>}
+            <PriceAmount>{priceDisplay}</PriceAmount>
+            <PriceUnit>{priceUnit}</PriceUnit>
+          </PriceLine>
+          {cancellationPolicyDisplay && (
+            <Tooltip
+              title={
+                <div style={{ fontSize: 12, lineHeight: 1.55 }}>
+                  {cancellationPolicyDisplay.tooltipParagraphs.map((para, i, arr) => (
+                    <p
+                      key={i}
+                      style={{
+                        margin: i === arr.length - 1 ? 0 : "0 0 8px",
+                      }}
+                    >
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              }
+              placement="topLeft"
+              mouseEnterDelay={0.2}
+              arrow
+              styles={{ body: { maxWidth: 320 } }}
+            >
+              <CancellationPolicyText>
+                {cancellationPolicyDisplay.short}
+              </CancellationPolicyText>
+            </Tooltip>
           )}
-          <CourseDetailRow>
-            <Clock />
-            <div>
-              <strong>Schedule:</strong>
-              Every{" "}
-              {Array.isArray(nextCourseSchedule.days)
-                ? nextCourseSchedule.days.join(", ")
-                : "Week"}{" "}
-              at{" "}
-              {bizTz && bizTz !== "Etc/UTC" && nextCourseSchedule.date && nextCourseSchedule.time
-                ? (() => {
-                    try {
-                      const t = formatBusinessLocalToUserDisplay(
-                        nextCourseSchedule.date,
-                        nextCourseSchedule.time,
-                        bizTz,
-                        userTz,
-                        { dateTimeFormat: "h:mm a zzz" }
-                      );
-                      return t !== "Invalid Time" ? t : formatTime(nextCourseSchedule.time);
-                    } catch {
-                      return formatTime(nextCourseSchedule.time);
-                    }
-                  })()
-                : formatTime(nextCourseSchedule.time)}
-            </div>
-          </CourseDetailRow>
-        </CourseDetailsContainer>
-      )}
-
-      {/* Upcoming Sessions with timeline */}
-      {upcomingSchedules.length > 0 && (
-        <ScheduleInfo>
-          <ScheduleTitle>
-            <Calendar size={14} />
-            Upcoming Sessions
-          </ScheduleTitle>
-          {upcomingSchedules.length > 1 && <TimelineLine />}
-          <ScheduleList>
-            {upcomingSchedules.map((schedule, index) => (
-              <ScheduleItem key={schedule.id || index}>
-                <span>
-                  {formatSessionDateTime(schedule.date, schedule.time) ||
-                    `${schedule.date ? formatDate(schedule.date) : schedule.day} at ${formatTime(schedule.time)}`}
-                </span>
-                <span>{formatSchedulePrice(schedule.price)}</span>
-              </ScheduleItem>
-            ))}
-          </ScheduleList>
-        </ScheduleInfo>
-      )}
-
-      <SelectContainer>
-        <ReserveButton
-          type="primary"
-          onClick={handleReserveClick}
-          disabled={isButtonDisabled}
-          aria-label={isCourse ? "View Course Dates" : "Select Time"}
+        </PriceStack>
+        <ShowDatesBtn
+          onClick={handleBook}
+          disabled={isDisabled}
+          aria-label={isCourse ? "View course dates" : "Show available dates"}
         >
-          {isCourse ? "View Course Dates" : "Select Time"}
-        </ReserveButton>
-      </SelectContainer>
-    </CardWrapper>
+          {isCourse ? "View dates" : "Show dates"}
+        </ShowDatesBtn>
+      </TopRow>
+
+      <Divider />
+
+      {/* ── Slot list ── */}
+      {isCourse ? (
+        previewSlots.length > 0 ? (
+          <SlotList>
+            {previewSlots.map((s, i) => {
+              const spots =
+                s.available_spots != null ? s.available_spots : s.maxParticipants;
+              return (
+                <SlotCard key={s.id || i} onClick={handleBook}>
+                  <SlotLeft>
+                    <SlotDate>
+                      Starts {dayjs(s.date).format("dddd, MMM D")}
+                    </SlotDate>
+                    <SlotTime>
+                      {Array.isArray(s.days) ? `Every ${s.days.join(", ")}` : "See details"}
+                      {s.time ? ` at ${formatTime(s.time)}` : ""}
+                    </SlotTime>
+                  </SlotLeft>
+                  {spots != null && (
+                    <SlotSpots>
+                      {spots === 1 ? "1 spot left" : `${spots} spots`}
+                    </SlotSpots>
+                  )}
+                </SlotCard>
+              );
+            })}
+          </SlotList>
+        ) : (
+          <CourseNotice>
+            <strong>No upcoming courses</strong>
+            Check back soon for the next start date.
+          </CourseNotice>
+        )
+      ) : previewSlots.length > 0 ? (
+        <SlotList>
+          {previewSlots.map((s, i) => {
+            const spots =
+              s.available_spots != null ? s.available_spots : s.maxParticipants;
+            return (
+              <SlotCard key={s.id || i} onClick={() => handleSlotSelect(s)}>
+                <SlotLeft>
+                  <SlotDate>{formatSlotDate(s.date, s.time)}</SlotDate>
+                  <SlotTime>{formatSlotTime(s.date, s.time, s.duration)}</SlotTime>
+                </SlotLeft>
+                {spots != null && (
+                  <SlotSpots>
+                    {spots === 0
+                      ? "Full"
+                      : spots === 1
+                      ? "1 spot left"
+                      : `${spots} spots available`}
+                  </SlotSpots>
+                )}
+              </SlotCard>
+            );
+          })}
+        </SlotList>
+      ) : (
+        <CourseNotice>
+          <strong>No upcoming sessions</strong>
+          Check back soon for new dates.
+        </CourseNotice>
+      )}
+
+      {(hasMore || previewSlots.length > 0) && (
+        <ShowAllLink onClick={handleBook}>
+          Show all dates
+        </ShowAllLink>
+      )}
+    </Card>
   );
 };
 

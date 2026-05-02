@@ -2125,7 +2125,7 @@ export const collectionService = {
 /**
  * Public B2B / corporate inquiry form (no auth).
  * POST body: company_name, contact_name, email, phone?, company_size?, message?, meta?
- * `meta` may include: source, use_cases (string[]), preferred_date (ISO date string), city.
+ * `meta` may include: source, activity_interests (string[]), preferred_date (ISO date string), city.
  */
 export const corporateService = {
   submitInquiry: async (payload) => {

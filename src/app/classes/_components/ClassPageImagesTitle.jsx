@@ -21,10 +21,9 @@ import {
   Twitter,
   Phone,
   ArrowLeft,
+  ArrowRight,
   Sparkles,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
@@ -35,8 +34,8 @@ const HERO_MUTED = "#717171";
 const LOCATION_LORD_ICON = "https://cdn.lordicon.com/luvlauio.json";
 /** Partner & Premium pills (legacy class page). */
 const PARTNER_LORD_ICON = "https://cdn.lordicon.com/zopdjjjs.json";
-/** Business dashboard → Schedules sidebar item. */
-const SCHEDULE_LORD_ICON = "https://cdn.lordicon.com/uoljexdg.json";
+/** Reviews / schedule cue on class hero (calendar, hover-wink). */
+const SCHEDULE_LORD_ICON = "https://cdn.lordicon.com/edplgash.json";
 
 const calculateHostingDuration = (dateString) => {
   if (!dateString) return "";
@@ -86,10 +85,11 @@ const HeroDesktopRow = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: clamp(20px, 2.5vw, 36px);
+  gap: clamp(8px, 1.2vw, 18px);
   max-width: 1360px;
   margin: 0 auto;
-  padding: clamp(12px, 1.5vw, 20px) clamp(12px, 2vw, 20px) 28px;
+  padding: clamp(12px, 1.5vw, 20px) clamp(12px, 2.5vw, 28px) 28px;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -202,6 +202,7 @@ const HeroBentoWrap = styled.div`
 
   @media (min-width: 769px) {
     max-width: min(92dvh, 100%);
+    justify-content: flex-end;
   }
 `;
 
@@ -219,6 +220,13 @@ const HeroBentoGrid = styled.div`
     aspect-ratio: 1;
     height: auto;
     min-height: 0;
+  }
+
+  /* Tablet portrait / large “mobile” layout (~756px): square was nearly full-width — cap size */
+  @media (max-width: 768px) and (min-width: 540px) {
+    max-width: min(520px, calc(100vw - 32px));
+    margin-left: auto;
+    margin-right: auto;
   }
 
   @media (min-width: 769px) {
@@ -287,8 +295,12 @@ const HeroContentColumn = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 12px 24px 12px 12px;
+  padding: 12px clamp(16px, 2.2vw, 24px);
   box-sizing: border-box;
+
+  @media (min-width: 769px) {
+    padding: 12px clamp(14px, 2vw, 22px) 12px clamp(4px, 0.75vw, 11px);
+  }
 
   @media (max-width: 768px) {
     flex: none;
@@ -333,7 +345,7 @@ const HeroTitle = styled.h1`
 const HeroSummary = styled.p`
   order: 4;
   margin: 0 auto 20px;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   color: ${HERO_MUTED};
   font-weight: 400;
@@ -384,10 +396,26 @@ const IconRowDesktop = styled.div`
   justify-content: center;
   align-items: center;
   gap: 24px;
-  margin-bottom: 34px;
+  margin-bottom: 0;
 
   @media (max-width: 768px) {
     display: none;
+  }
+`;
+
+/** Desktop: below share/favorite icons + Ask the host row, before Hosted by / detail rows */
+const DividerAfterHeroActionsDesktop = styled.hr`
+  display: none;
+  border: none;
+  border-top: 1px solid #ebebeb;
+  margin: 12px 0 14px;
+  width: 100%;
+  max-width: 22rem;
+
+  @media (min-width: 769px) {
+    display: block;
+    order: 7;
+    margin-inline: auto;
   }
 `;
 
@@ -418,10 +446,10 @@ const MobileDividerBeforeDescription = styled.hr`
 `;
 
 const InfoRowsStack = styled.div`
-  order: 6;
+  order: 8;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 14px;
   width: 100%;
   text-align: left;
 
@@ -432,14 +460,14 @@ const InfoRowsStack = styled.div`
 
 const InfoRow = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
 `;
 
 const InfoRowIcon = styled.div`
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 54px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,15 +486,15 @@ const InfoRowTitle = styled.div`
 `;
 
 const InfoRowSub = styled.div`
-  font-size: 13px;
+  font-size: 15px;
   color: ${HERO_MUTED};
-  line-height: 1.45;
-  margin-top: 2px;
+  line-height: 1.1;
+  margin-top: 1px;
 `;
 
 const HostAvatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   overflow: hidden;
   border: 1px solid #eaeaea;
@@ -485,8 +513,8 @@ const HostAvatarImg = styled.img`
 `;
 
 const AskRow = styled.div`
-  order: 7;
-  margin-top: 26px;
+  order: 6;
+  margin-top: 6px;
   text-align: center;
 
   @media (max-width: 768px) {
@@ -502,8 +530,9 @@ const AskRow = styled.div`
 const AskLink = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 0;
+  justify-content: center;
+  gap: 0;
+  padding: 4px 0;
   border: none;
   background: none;
   font-size: 14px;
@@ -511,6 +540,8 @@ const AskLink = styled.button`
   color: #444;
   cursor: pointer;
   border-radius: 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   &:hover {
     color: #111;
   }
@@ -523,7 +554,7 @@ const AskLink = styled.button`
     max-width: calc(100% - 24px);
     margin: 0 auto;
     justify-content: center;
-    padding: 8px 14px;
+    padding: 6px 12px;
     min-height: 0;
     font-size: 13px;
     border: 1px solid #e8e8e8;
@@ -778,8 +809,8 @@ const MetaItem = styled.span`
 
 const HostRowButton = styled.button`
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   margin: 0;
   padding: 4px 0;
@@ -938,8 +969,17 @@ const LightboxCloseBtn = styled.button`
   }
 `;
 
-/* Nav buttons sit inline beside the image container — no position:fixed */
 const LightboxNavBtn = styled.button`
+  position: fixed;
+  top: 50%;
+  ${({ $side }) =>
+    $side === "left"
+      ? css`
+          left: clamp(8px, 2vw, 24px);
+        `
+      : css`
+          right: clamp(8px, 2vw, 24px);
+        `}
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -950,8 +990,7 @@ const LightboxNavBtn = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  flex-shrink: 0;
-  z-index: 1;
+  z-index: 10;
   transition: background 0.2s, transform 0.2s;
   ${lbUiFade}
   ${({ $busy }) =>
@@ -962,18 +1001,23 @@ const LightboxNavBtn = styled.button`
           &:hover,
           &:active {
             background: transparent;
-            transform: none;
+            transform: translateY(-50%);
           }
         `
       : css`
           &:hover {
             background: rgba(0, 0, 0, 0.08);
-            transform: scale(1.08);
+            transform: translateY(-50%) scale(1.08);
           }
           &:active {
-            transform: scale(0.95);
+            transform: translateY(-50%) scale(0.95);
           }
         `}
+  transform: translateY(-50%);
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 /* Row that holds [prev] [image] [next] side by side */
@@ -2130,7 +2174,7 @@ const ClassPageImagesTitle = React.memo(
     } else if (partnerTierName === "Premium Partner") {
       partnerBadgeLabel = "Premium Partner";
       partnerSubtitle =
-        "Premium partners receive enhanced visibility and dedicated support.";
+        "Premium partners are vetted and provide exceptional experiences.";
     }
 
     const row2Title = partnerBadgeLabel
@@ -2162,7 +2206,7 @@ const ClassPageImagesTitle = React.memo(
           }`
         : averageRating > 0
           ? `${Number(averageRating).toFixed(1)} avg rating`
-          : "You're early";
+          : "Vetted by ClassEasily";
 
     const credSubtitle =
       [
@@ -2271,18 +2315,6 @@ const ClassPageImagesTitle = React.memo(
                   <HeroSummary>{descriptionSummary}</HeroSummary>
                 ) : null}
 
-                {onContactHost && businessData ? (
-                  <AskRow>
-                    <AskLink type="button" onClick={onContactHost}>
-                      <MessageCircle
-                        size={isMobile ? 16 : 18}
-                        aria-hidden
-                      />
-                      Ask the host a question
-                    </AskLink>
-                  </AskRow>
-                ) : null}
-
                 <IconRowDesktop>
                   <StrokeIconBtn
                     type="button"
@@ -2312,6 +2344,16 @@ const ClassPageImagesTitle = React.memo(
                   </StrokeIconBtn>
                 </IconRowDesktop>
 
+                {onContactHost && businessData ? (
+                  <AskRow>
+                    <AskLink type="button" onClick={onContactHost}>
+                      Ask the host a question
+                    </AskLink>
+                  </AskRow>
+                ) : null}
+
+                <DividerAfterHeroActionsDesktop aria-hidden />
+
                 <MobileDividerAfterHero aria-hidden />
 
                 <InfoRowsStack>
@@ -2322,15 +2364,17 @@ const ClassPageImagesTitle = React.memo(
                       disabled={!businessData}
                       aria-label={`View details for ${displayBusinessName}`}
                     >
-                      {displayBusinessImage ? (
-                        <HostAvatar aria-hidden>
-                          <HostAvatarImg src={displayBusinessImage} alt="" />
-                        </HostAvatar>
-                      ) : (
-                        <HostAvatar aria-hidden>
-                          <MessageCircle size={20} color="#9ca3af" />
-                        </HostAvatar>
-                      )}
+                      <InfoRowIcon aria-hidden>
+                        {displayBusinessImage ? (
+                          <HostAvatar>
+                            <HostAvatarImg src={displayBusinessImage} alt="" />
+                          </HostAvatar>
+                        ) : (
+                          <HostAvatar>
+                            <MessageCircle size={22} color="#9ca3af" />
+                          </HostAvatar>
+                        )}
+                      </InfoRowIcon>
                       <InfoRowBody>
                         <InfoRowTitle>
                           Hosted by {displayBusinessName}
@@ -2340,15 +2384,17 @@ const ClassPageImagesTitle = React.memo(
                     </HostRowButton>
                   ) : (
                     <InfoRow>
-                      {displayBusinessImage ? (
-                        <HostAvatar aria-hidden>
-                          <HostAvatarImg src={displayBusinessImage} alt="" />
-                        </HostAvatar>
-                      ) : (
-                        <HostAvatar aria-hidden>
-                          <MessageCircle size={20} color="#9ca3af" />
-                        </HostAvatar>
-                      )}
+                      <InfoRowIcon aria-hidden>
+                        {displayBusinessImage ? (
+                          <HostAvatar>
+                            <HostAvatarImg src={displayBusinessImage} alt="" />
+                          </HostAvatar>
+                        ) : (
+                          <HostAvatar>
+                            <MessageCircle size={22} color="#9ca3af" />
+                          </HostAvatar>
+                        )}
+                      </InfoRowIcon>
                       <InfoRowBody>
                         <InfoRowTitle>
                           Hosted by {displayBusinessName}
@@ -2367,11 +2413,11 @@ const ClassPageImagesTitle = React.memo(
                           playOnLoad
                           inState="in-reveal"
                           colors="primary:#b45309,secondary:#fbbf24"
-                          size="30px"
+                          size="42px"
                         />
                       ) : (
                         <Sparkles
-                          size={20}
+                          size={30}
                           color="#d97706"
                           strokeWidth={1.75}
                         />
@@ -2389,7 +2435,7 @@ const ClassPageImagesTitle = React.memo(
                         src={LOCATION_LORD_ICON}
                         trigger="hover"
                         colors="primary:#3a3347,secondary:#e4e4e4,tertiary:#ffc738"
-                        size="32px"
+                        size="42px"
                         playOnLoad
                         inState="in-reveal"
                       />
@@ -2404,11 +2450,10 @@ const ClassPageImagesTitle = React.memo(
                     <InfoRowIcon aria-hidden>
                       <LordIcon
                         src={SCHEDULE_LORD_ICON}
-                        trigger="hover"
-                        colors="primary:#717171,secondary:#717171"
-                        size="32px"
-                        playOnLoad
-                        inState="in-calendar"
+                        trigger="in"
+                        delay="1000"
+                        state="hover-wink"
+                        size="42px"
                       />
                     </InfoRowIcon>
                     <InfoRowBody>
@@ -2733,7 +2778,7 @@ const ClassPageImagesTitle = React.memo(
                   {galleryOpen ? (
                     <><ArrowLeft size={14} /> Back</>
                   ) : (
-                    <>All images ({imagesToDisplay.length})</>
+                    <>Gallery ({imagesToDisplay.length})</>
                   )}
                 </AllImagesBtn>
               )}
@@ -2761,6 +2806,7 @@ const ClassPageImagesTitle = React.memo(
                   <LightboxNavBtn
                     type="button"
                     aria-label="Previous image"
+                    $side="left"
                     $fading={isClosingLightbox}
                     $busy={galleryInputLocked}
                     onClick={(e) => {
@@ -2768,7 +2814,7 @@ const ClassPageImagesTitle = React.memo(
                       goPrev();
                     }}
                   >
-                    <ChevronLeft size={22} />
+                    <ArrowLeft size={22} />
                   </LightboxNavBtn>
                 )}
 
@@ -2809,6 +2855,7 @@ const ClassPageImagesTitle = React.memo(
                   <LightboxNavBtn
                     type="button"
                     aria-label="Next image"
+                    $side="right"
                     $fading={isClosingLightbox}
                     $busy={galleryInputLocked}
                     onClick={(e) => {
@@ -2816,7 +2863,7 @@ const ClassPageImagesTitle = React.memo(
                       goNext();
                     }}
                   >
-                    <ChevronRight size={22} />
+                    <ArrowRight size={22} />
                   </LightboxNavBtn>
                 )}
               </LightboxRow>

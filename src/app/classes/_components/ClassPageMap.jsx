@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
+import { createPortal } from "react-dom";
+import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
 import styled, { createGlobalStyle } from "styled-components";
-import { Building, Hand } from "lucide-react";
+import { Building, Hand, Minus, Plus } from "lucide-react";
 import ReactDOMServer from "react-dom/server";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -40,6 +41,7 @@ const MapWrapper = styled.div`
   
   /* Ensure the wrapper div for the key takes up full space */
   .map-instance-wrapper {
+    position: relative;
     height: 100%;
     width: 100%;
   }
@@ -50,7 +52,88 @@ const MapWrapper = styled.div`
     width: 100%;
     font-family: "ProximaSoft", sans-serif;
   }
+
+  /* Hide Leaflet’s default attribution bar for a cleaner panel (tiles still credited in app context if needed) */
+  .leaflet-control-attribution {
+    display: none;
+  }
 `;
+
+/**
+ * White rounded zoom UI — portaled to map.getContainer() so z-index wins over
+ * Leaflet panes (tiles ~200–400, markers ~600, popups ~700). Must stay inside
+ * MapContainer subtree for useMap().
+ */
+const ZoomToolbar = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  pointer-events: auto;
+`;
+
+const ZoomToolBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  background: #ffffff;
+  color: #111111;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  &:hover {
+    background: #f5f5f5;
+  }
+  &:active {
+    background: #ebebeb;
+  }
+  &:focus-visible {
+    outline: 2px solid #111111;
+    outline-offset: -2px;
+  }
+`;
+
+const ZoomDivider = styled.div`
+  height: 1px;
+  background: #ebebeb;
+  flex-shrink: 0;
+`;
+
+function CustomMapZoomControls() {
+  const map = useMap();
+  const ui = (
+    <ZoomToolbar aria-label="Map zoom controls">
+      <ZoomToolBtn
+        type="button"
+        onClick={() => map.zoomIn()}
+        aria-label="Zoom in"
+      >
+        <Plus size={20} strokeWidth={2.25} aria-hidden />
+      </ZoomToolBtn>
+      <ZoomDivider aria-hidden />
+      <ZoomToolBtn
+        type="button"
+        onClick={() => map.zoomOut()}
+        aria-label="Zoom out"
+      >
+        <Minus size={20} strokeWidth={2.25} aria-hidden />
+      </ZoomToolBtn>
+    </ZoomToolbar>
+  );
+  if (typeof document === "undefined") return null;
+  return createPortal(ui, map.getContainer());
+}
 
 /* Mobile: overlay so page scroll doesn't move the map; tap to enable map interaction */
 const TapToActivateOverlay = styled.button`
@@ -92,31 +175,33 @@ const LocationNotice = styled.div`
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: white;
+  background: #ffffff;
   color: #222;
-  padding: 14px 14px;
+  padding: 12px 16px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   font-size: 1rem;
-  font-weight: 500;
-  z-index: 401;
+  font-weight: 600;
+  z-index: 1100;
   white-space: nowrap;
   pointer-events: none;
 `;
 
 const LocationLink = styled.a`
   position: absolute;
-  bottom: 16px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  background: white;
-  color: #222;
-  padding: 14px 14px;
+  background: #ffffff;
+  color: #111111;
+  padding: 12px 18px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   font-size: 1rem;
-  font-weight: 500;
-  z-index: 401;
+  font-weight: 600;
+  z-index: 1100;
   white-space: nowrap;
   text-decoration: none;
 
@@ -154,33 +239,39 @@ const ClassPageMap = ({
   businessName,
   fullAddress,
 }) => {
-  // State to force unique map instances and avoid "container is being reused" (Leaflet)
-  const [isMounted, setIsMounted] = useState(false);
-  const [baseMapKey, setBaseMapKey] = useState(null);
-  const [mapReady, setMapReady] = useState(false);
+  /* Leaflet + react-leaflet: the previous Map must detach from the DOM completely
+     before mounting again. RAF / single-frame deferrals still race SPA back nav,
+     Suspense remounts, and dynamic imports. We always unmount MapContainer first,
+     wait a beat, bump a stable key, then mount a fresh subtree. */
+  const [leafletMountId, setLeafletMountId] = useState(0);
+  const [mapDomAllowed, setMapDomAllowed] = useState(false);
   // Mobile: tap-to-activate so scrolling the page doesn't accidentally pan the map
   const [isMobile, setIsMobile] = useState(false);
   const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
-  useEffect(() => {
-    // Generate a base unique key so each mount gets a fresh DOM node.
-    const key = `map-instance-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    setBaseMapKey(key);
-    setIsMounted(true);
-    setMapReady(false);
+  const saltToggle = Boolean(saltLocation);
 
-    // Defer creating the map by one frame so any previous instance can fully
-    // clean up (fixes "Map container is being reused" with Strict Mode / fast remounts).
-    const rafId = requestAnimationFrame(() => {
-      setMapReady(true);
-    });
+  useEffect(() => {
+    let alive = true;
+    setMapDomAllowed(false);
+    /* Tear down MapContainer immediately, then delay before mounting again so
+       Leaflet can finish map.remove() and release the DOM (avoids reused container). */
+    const t = window.setTimeout(() => {
+      if (!alive) return;
+      setLeafletMountId((n) => n + 1);
+      setMapDomAllowed(true);
+    }, 175);
 
     return () => {
-      setIsMounted(false);
-      setMapReady(false);
-      cancelAnimationFrame(rafId);
+      alive = false;
+      window.clearTimeout(t);
+      setMapDomAllowed(false);
     };
-  }, []);
+  }, [coordinates, saltToggle]);
+
+  useEffect(() => {
+    setMapInteractionEnabled(false);
+  }, [coordinates]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(typeof window !== "undefined" && window.innerWidth <= 768);
@@ -212,13 +303,10 @@ const ClassPageMap = ({
     return "#";
   }, [saltLocation, fullAddress, position]);
 
-  // Combine the unique base ID (time) with location data.
-  // This ensures that even if you stay on the page but the props change, 
-  // the map gets destroyed and recreated properly.
-  const dynamicMapKey = useMemo(() => {
-    if (!baseMapKey || !position) return null;
-    return `${baseMapKey}-${position[0]}-${position[1]}-${saltLocation ? 's' : 'n'}`;
-  }, [baseMapKey, position, saltLocation]);
+  const leafletInstanceKey = useMemo(() => {
+    if (!position || leafletMountId < 1) return null;
+    return `leaflet-${leafletMountId}-${position[0]}-${position[1]}-${saltToggle ? "s" : "n"}`;
+  }, [leafletMountId, position, saltToggle]);
 
   if (!position) {
     return (
@@ -259,15 +347,10 @@ const ClassPageMap = ({
           Tap to move map
         </TapToActivateOverlay>
       )}
-      {/* 
-        The key={dynamicMapKey} on this div is the critical fix.
-        It forces React to tear down this div and create a new one
-        whenever the component remounts or location changes.
-      */}
-      {isMounted && mapReady && dynamicMapKey && (
-        <div key={dynamicMapKey} className="map-instance-wrapper">
+      {mapDomAllowed && leafletInstanceKey && (
+        <div key={leafletInstanceKey} className="map-instance-wrapper">
           <MapContainer
-            key={dynamicMapKey}
+            key={leafletInstanceKey}
             center={position}
             zoom={zoomLevel}
             scrollWheelZoom={true}
@@ -276,6 +359,7 @@ const ClassPageMap = ({
             aria-label={`Map showing location for ${businessName}`}
             style={{ height: "100%", width: "100%" }}
           >
+            <CustomMapZoomControls />
             <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
             {saltLocation ? (
               <Circle

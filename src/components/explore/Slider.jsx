@@ -11,7 +11,7 @@ const Container = styled.div`
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: ${(p) => (p.$compact ? "10px" : "16px")};
 `;
 
 const Header = styled.div`
@@ -21,13 +21,13 @@ const Header = styled.div`
 `;
 
 const Label = styled.span`
-  font-size: 16px;
+  font-size: ${(p) => (p.$compact ? "14px" : "16px")};
   font-weight: 500;
   color: #222222;
 `;
 
 const ValueWrapper = styled.div`
-  font-size: 16px;
+  font-size: ${(p) => (p.$compact ? "14px" : "16px")};
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   display: flex;
@@ -35,9 +35,38 @@ const ValueWrapper = styled.div`
   gap: 4px;
 `;
 
+const HistogramBars = styled.div`
+  display: flex;
+  align-items: flex-end;
+  justify-content: stretch;
+  gap: ${(p) => (p.$compact ? "1px" : "2px")};
+  height: ${(p) => (p.$compact ? "16px" : "20px")};
+  width: 100%;
+  margin-bottom: ${(p) => (p.$compact ? "4px" : "6px")};
+  pointer-events: none;
+  opacity: 0.92;
+`;
+
+const HistogramBar = styled.div`
+  flex: 1;
+  min-width: 1px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 30, 62, 0.28) 0%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  min-height: 2px;
+  transition: height 0.15s ease;
+`;
+
+const SliderStack = styled.div`
+  width: 100%;
+`;
+
 const TrackWrapper = styled.div`
   position: relative;
-  height: 32px; /* Touch target height */
+  height: ${(p) => (p.$compact ? "28px" : "32px")}; /* Touch target height */
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -64,8 +93,8 @@ const Fill = styled.div`
 
 const Thumb = styled.div`
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: ${(p) => (p.$compact ? "24px" : "28px")};
+  height: ${(p) => (p.$compact ? "24px" : "28px")};
   background: white;
   border: 1.5px solid ${PRIMARY_COLOR}; // Use primary color for border
   box-shadow: 0 4px 10px rgba(248, 30, 62, 0.2); // Adjusted shadow color
@@ -81,8 +110,8 @@ const Thumb = styled.div`
 
   &::after {
     content: "";
-    width: 6px;
-    height: 6px;
+    width: ${(p) => (p.$compact ? "5px" : "6px")};
+    height: ${(p) => (p.$compact ? "5px" : "6px")};
     background: ${PRIMARY_COLOR}; // Use primary color for internal dot
     border-radius: 50%;
   }
@@ -116,6 +145,9 @@ const Slider = ({
   format = {},
   prefix = "",
   suffix = "",
+  /** Normalized bar heights 0–1, same domain as min–max (left to right). */
+  distribution,
+  compact = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef(null);
@@ -188,11 +220,14 @@ const Slider = ({
     };
   }, [isDragging, handleMove]);
 
+  const hasDistribution =
+    Array.isArray(distribution) && distribution.length > 0;
+
   return (
-    <Container>
+    <Container $compact={compact}>
       <Header>
-        <Label>{label}</Label>
-        <ValueWrapper>
+        <Label $compact={compact}>{label}</Label>
+        <ValueWrapper $compact={compact}>
           {prefix}
           <NumberFlow
             locales="en-US"
@@ -204,20 +239,35 @@ const Slider = ({
         </ValueWrapper>
       </Header>
 
-      <TrackWrapper
-        ref={trackRef}
-        onMouseDown={(e) => handleStart(e.clientX)}
-        onTouchStart={(e) => handleStart(e.touches[0].clientX)}
-      >
-        <Track>
-          <Fill style={{ width: `${getPercentage()}%` }} />
-        </Track>
-        <Thumb
-          style={{ left: `${getPercentage()}%` }}
-          $isDragging={isDragging}
-          onClick={(e) => e.stopPropagation()}
-        />
-      </TrackWrapper>
+      <SliderStack>
+        {hasDistribution && (
+          <HistogramBars $compact={compact} aria-hidden>
+            {distribution.map((h, i) => (
+              <HistogramBar
+                key={i}
+                style={{
+                  height: `${Math.max(6, Math.round(h * 100))}%`,
+                }}
+              />
+            ))}
+          </HistogramBars>
+        )}
+        <TrackWrapper
+          ref={trackRef}
+          onMouseDown={(e) => handleStart(e.clientX)}
+          onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+        >
+          <Track>
+            <Fill style={{ width: `${getPercentage()}%` }} />
+          </Track>
+          <Thumb
+            style={{ left: `${getPercentage()}%` }}
+            $isDragging={isDragging}
+            $compact={compact}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </TrackWrapper>
+      </SliderStack>
     </Container>
   );
 };

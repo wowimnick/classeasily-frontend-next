@@ -402,33 +402,25 @@ const SkeletonClassGridWrapper = styled.div`
   flex-grow: 1;
   padding: 1.5rem 2.5rem;
   overflow: hidden;
+  background: #ffffff;
   @media (max-width: 1048px) {
-    padding: 1rem;
-  }
-  @media (max-width: 480px) {
-    padding: 0.75rem;
+    padding: 24px;
   }
 `;
 
 const SkeletonClassGrid = styled.div`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
   @media (max-width: 1400px) {
-    gap: 20px;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
   @media (max-width: 1048px) {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
-  @media (max-width: 600px) {
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  @media (max-width: 360px) {
-    grid-template-columns: 1fr;
   }
 `;
 
@@ -440,6 +432,14 @@ const SkeletonClassCard = styled.div`
   border-radius: 12px;
   border: 2px solid transparent;
   padding: 2px;
+  @media (max-width: 1048px) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+  }
 `;
 
 const SkeletonCardImageContainer = styled.div`
@@ -449,8 +449,12 @@ const SkeletonCardImageContainer = styled.div`
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
-  @media (max-width: 600px) {
-    margin-bottom: 8px;
+  @media (max-width: 1048px) {
+    width: 132px;
+    height: 132px;
+    aspect-ratio: unset;
+    flex-shrink: 0;
+    margin-bottom: 0;
   }
 `;
 
@@ -463,6 +467,8 @@ const SkeletonCardContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
 `;
 
 const SkeletonTopRow = styled.div`

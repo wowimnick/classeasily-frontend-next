@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import {
   searchClasses,
-  fetchClassCollections,
+  fetchExploreCollectionLists,
 } from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
@@ -187,9 +187,9 @@ async function fetchServerData(searchParams) {
 
   // Removed console.log for production performance
 
-  const [classesResponse, collectionsList] = await Promise.all([
+  const [classesResponse, collectionLists] = await Promise.all([
     searchClasses(apiParams),
-    fetchClassCollections(),
+    fetchExploreCollectionLists(),
   ]);
 
   return {
@@ -198,7 +198,8 @@ async function fetchServerData(searchParams) {
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
     locationName: locationDisplayNameFromUrl || "",
-    collections: collectionsList || [],
+    collections: collectionLists.collections || [],
+    collectionsIWant: collectionLists.collectionsIWant || [],
     routeParams: {
       province: null,
       city: null,
@@ -288,6 +289,7 @@ async function ExplorePageContent({ searchParams }) {
         initialTotalCount={serverData.totalCount}
         initialNextPageUrl={serverData.nextPageUrl}
         initialCollections={serverData.collections}
+        initialCollectionsIWant={serverData.collectionsIWant}
         routeParams={serverData.routeParams}
       />
     </>

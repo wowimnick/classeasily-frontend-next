@@ -21,12 +21,44 @@ const InfoWrapper = styled.section`
 const DescriptionSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
   @media (max-width: 768px) {
     padding: 0 1.25rem 0.5rem;
   }
   @media (max-width: 480px) {
     padding: 0 1.25rem 0.5rem;
+  }
+`;
+
+/** First structured section — always expanded; matches CollapsibleSection body typography */
+const WhatYoullDoBlock = styled.div`
+  padding: 10px 0 8px;
+
+  @media (max-width: 768px) {
+    padding: 14px 0 8px;
+  }
+`;
+
+const WhatYoullDoTitle = styled.h2`
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #000;
+
+  @media (max-width: 768px) {
+    margin-bottom: 12px;
+  }
+`;
+
+const WhatYoullDoBody = styled.div`
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-line;
+
+  strong {
+    font-weight: 600;
+    color: #111;
   }
 `;
 
@@ -113,6 +145,9 @@ const ClassInformation = React.memo(
       ? descriptionSections
       : [];
 
+    const moreSections =
+      sectionList.length > 1 ? sectionList.slice(1) : [];
+
     useLayoutEffect(() => {
       if (sectionList.length > 0) {
         setCanBeTruncated(false);
@@ -137,15 +172,23 @@ const ClassInformation = React.memo(
       <InfoWrapper>
         <DescriptionSection>
           {sectionList.length > 0 ? (
-            sectionList.map((sec, idx) => (
-              <CollapsibleSection
-                key={sec.id || sec.title || idx}
-                title={sec.title}
-                defaultOpen={idx === 0}
-              >
-                {sec.body}
-              </CollapsibleSection>
-            ))
+            <>
+              <WhatYoullDoBlock>
+                <WhatYoullDoTitle>What you&apos;ll do</WhatYoullDoTitle>
+                <WhatYoullDoBody>
+                  {renderTextWithBold(sectionList[0].body)}
+                </WhatYoullDoBody>
+              </WhatYoullDoBlock>
+              {moreSections.map((sec, idx) => (
+                <CollapsibleSection
+                  key={sec.id || sec.title || idx + 1}
+                  title={sec.title}
+                  defaultOpen={false}
+                >
+                  {sec.body}
+                </CollapsibleSection>
+              ))}
+            </>
           ) : (
             <>
               <Description

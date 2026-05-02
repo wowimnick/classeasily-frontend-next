@@ -11,38 +11,28 @@ const ClassOptionCard = dynamic(() => import("./ClassOptionCard"), {
   ssr: false,
 });
 
-const PriceDisclaimer = dynamic(() => import("./PricingDisclaimer"), {
-  ssr: false,
-});
 
 const Container = styled.div`
   width: 100%;
-  margin: 0 auto;
 `;
 
 const OptionsGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   width: 100%;
 `;
 
 const CardWrapper = styled.div`
-  display: flex;
-  justify-content: center;
   width: 100%;
   position: relative;
-  overflow: visible;
-  box-shadow: 0px 7px 12px 4px #0000000a;
-  border-radius: 12px;
 `;
 
 const CardSkeleton = styled.div`
   background: white;
-  border-radius: 12px;
-  border: 1px solid #e8e8e8;
+  border-radius: 16px;
   padding: 1.25rem;
-  height: 300px;
+  height: 320px;
   animation: pulse 1.5s ease-in-out infinite;
 
   @keyframes pulse {
@@ -71,6 +61,7 @@ const ClassOptionsContainer = ({
   classImages,
   currency = "$",
   onBookNow,
+  onSelectSlot,
   businessTimeZone,
 }) => {
   if (!options || options.length === 0) {
@@ -84,31 +75,18 @@ const ClassOptionsContainer = ({
     );
   }
 
-  const cancellationOption = options.find(
-    (option) => option.cancellationPolicy,
-  );
-  const cancellationPolicy = cancellationOption?.cancellationPolicy;
-  const cancellationRefundPercentage =
-    cancellationOption?.cancellationRefundPercentage;
-
   return (
     <Container>
       <OptionsGrid>
-        {options.map((option, index) => (
+        {options.map((option) => (
           <CardWrapper key={option.optionId}>
-            {index === 0 && (
-              <PriceDisclaimer
-                variant="bookmark"
-                cancellationPolicy={cancellationPolicy}
-                cancellationRefundPercentage={cancellationRefundPercentage}
-              />
-            )}
             <ClassOptionCard
               option={option}
               classTitle={classTitle}
               classImages={classImages}
               currency={currency}
               onBookNow={onBookNow}
+              onSelectSlot={onSelectSlot}
               businessTimeZone={businessTimeZone}
             />
           </CardWrapper>

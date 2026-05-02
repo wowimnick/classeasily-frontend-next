@@ -146,7 +146,7 @@ const ReviewsContainer = styled(motion.div)`
 `;
 
 const Header = styled.h2`
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: #000;
   margin-bottom: 1rem;
@@ -564,6 +564,14 @@ const Reviews = ({
     [previewReviews],
   );
 
+  const reviewsHeading = useMemo(() => {
+    const rating = Number(initialRating ?? 0);
+    const safeRating = Number.isFinite(rating) ? rating.toFixed(1) : "0.0";
+    const count = Number(initialReviewCount ?? 0);
+    const safeCount = Number.isFinite(count) ? count : 0;
+    return `⭐ ${safeRating} · ${safeCount} ${safeCount === 1 ? "review" : "reviews"}`;
+  }, [initialRating, initialReviewCount]);
+
   // --- CRITICAL FIX: SYNC STATE WITH PARENT COMPONENT ---
   useEffect(() => {
     window.dispatchEvent(
@@ -790,10 +798,7 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <HeaderTitle>What guests are saying</HeaderTitle>
-          <HeaderRating>
-            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} reviews
-          </HeaderRating>
+          <HeaderTitle>{reviewsHeading}</HeaderTitle>
         </Header>
         <ReviewsColumn>
           <ReviewSkeletonLoader />
@@ -808,8 +813,7 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} />
-          <HeaderTitle>What guests are saying</HeaderTitle>
+          <HeaderTitle>{reviewsHeading}</HeaderTitle>
         </Header>
         <EmptyState>
           <h3>No reviews yet</h3>
@@ -861,11 +865,8 @@ const Reviews = ({
         transition={{ duration: 0.3 }}
       >
         <Header>
-          <HeaderTitle>What guests are saying</HeaderTitle>
-          <HeaderRating>
-            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} review
-            {initialReviewCount !== 1 ? "s" : ""}
-          </HeaderRating>
+          <HeaderTitle>{reviewsHeading}</HeaderTitle>
+
         </Header>
 
         <ReviewsColumn>

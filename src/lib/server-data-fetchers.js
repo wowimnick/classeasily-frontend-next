@@ -163,6 +163,23 @@ export async function fetchClassCollections() {
 }
 
 /**
+ * Explore: featured collection chips + "I want…" (show_in_i_want) list for the type drawer.
+ * Single cached homepage-content request.
+ */
+export async function fetchExploreCollectionLists() {
+  try {
+    const data = await fetchHomepageContentCached();
+    return {
+      collections: data.collections || [],
+      collectionsIWant: data.collections_i_want || [],
+    };
+  } catch (error) {
+    console.error("Error fetching explore collection lists:", error);
+    return { collections: [], collectionsIWant: [] };
+  }
+}
+
+/**
  * Fetch classes by tag
  */
 export async function fetchClassesByTag(tag, additionalParams = {}) {

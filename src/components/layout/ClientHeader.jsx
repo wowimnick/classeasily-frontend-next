@@ -747,7 +747,6 @@ function ExploreHeaderContent({
   const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
   // Search Context
   const {
     searchTerm,
@@ -1240,7 +1239,6 @@ function ExploreHeaderContent({
           </>
         )}
 
-        {/* --- RIGHT USER MENU --- */}
         <RightSection>
           <div style={{ position: "relative" }}>
             <UserMenuButton
