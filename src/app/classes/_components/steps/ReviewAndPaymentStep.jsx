@@ -2363,7 +2363,6 @@ const ReviewAndPaymentStep = ({
           };
         }
       } catch (err) {
-        intentCreationAttemptedRef.current = false;
         const data = err?.response?.data || err;
         const errObj = data?.error;
         const msg =
