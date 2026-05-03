@@ -62,17 +62,17 @@ function useDesktopExploreBar() {
   return isDesktop;
 }
 
-/** Centered bar: same control style as the former Filters button (shadow + border + radius). */
+/** Recessed chrome with Explore header — only Explore uses this tone (`unifiedExploreChrome`). */
 const BarOuter = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: #ffffff;
+  background: #fafafa;
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 8px 12px;
 `;
 
@@ -113,7 +113,7 @@ const BarControlButton = styled.button`
   border: 1px solid ${(p) => (p.$active ? "#222222" : "#dddddd")};
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: #222222;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -230,7 +230,7 @@ const DropdownTypeChip = styled.button`
   line-height: 1.2;
   color: ${(p) => (p.$selected ? "#ffffff" : "#222222")};
   cursor: pointer;
-  font-weight: ${(p) => (p.$selected ? 600 : 400)};
+  font-weight: 400;
   text-align: left;
   transition:
     background 0.15s ease,
@@ -323,7 +323,7 @@ const TimeOptionText = styled.span`
 
 const TimeOptionLabel = styled.span`
   font-size: 17px;
-  font-weight: 500;
+  font-weight: 400;
   color: #000000;
   line-height: 1.25;
 `;
@@ -350,7 +350,7 @@ const DropdownClearLink = styled.button`
   background: none;
   padding: 12px 4px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
   color: #000000;
   cursor: pointer;
   flex-shrink: 0;
@@ -364,7 +364,7 @@ const DropdownPrimaryBtn = styled.button`
   background: #111111;
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
   padding: 14px 22px;
   cursor: pointer;
   line-height: 1.2;

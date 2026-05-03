@@ -20,7 +20,6 @@ import {
   X,
   ZoomIn,
   Globe,
-  Languages,
   Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -163,8 +162,8 @@ const SectionHead = styled.div`
 `;
 
 const Header = styled.h2`
-  font-size: clamp(22px, 2.2vw, 24px);
-  font-weight: 700;
+  font-size: clamp(20px, 0.95rem + 1.5vw, 23px);
+  font-weight: 600;
   color: #111111;
   margin: 0;
   line-height: 1.25;
@@ -347,29 +346,11 @@ const ShowMoreLink = styled.button`
   }
 `;
 
-const TranslationNotice = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
-  margin-bottom: 10px;
-  border-radius: 10px;
-  background: #f9fafb;
-  border: 1px solid #ececec;
-  font-size: 12px;
+const TranslationFootnote = styled.div`
+  margin: 8px 0 0;
+  font-size: 11px;
   line-height: 1.45;
-  color: #555555;
-
-  svg {
-    flex-shrink: 0;
-    margin-top: 1px;
-    color: #717171;
-  }
-`;
-
-const TranslationNoticeLabel = styled.span`
-  font-weight: 600;
-  color: #374151;
+  color: #717171;
 `;
 
 const TranslationSpinner = styled.span`
@@ -379,21 +360,6 @@ const TranslationSpinner = styled.span`
   font-size: 12px;
   color: #717171;
   margin-bottom: 8px;
-`;
-
-const ToggleOriginalLink = styled.button`
-  display: inline;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0 0 0 0.35rem;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  color: #ff385c;
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 const spinKF = keyframes`
@@ -410,7 +376,7 @@ const SpinIcon = styled(Loader2)`
 `;
 
 const ShowAllButton = styled(motion.button)`
-  background-color: #ffffff;
+  background-color:rgb(251, 251, 251);
   border: none;
   font-weight: 700;
   border-radius: 12px;
@@ -423,13 +389,8 @@ const ShowAllButton = styled(motion.button)`
   color: #111111;
   width: 100%;
   margin: 0;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: background 0.15s ease, box-shadow 0.15s ease;
-
-  &:hover:not(:disabled) {
-    background-color: #fafafa;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-  }
 `;
 
 const ReviewFooter = styled.div`
@@ -456,11 +417,11 @@ const LearnReviewsLink = styled(Link)`
 `;
 
 const BusinessResponse = styled.div`
-  background: #f9fafb;
+  background: #fff;
   border-radius: 12px;
   padding: 0.875rem 1rem;
   margin-top: 0.75rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 `;
 
 const ResponseHeader = styled.div`
@@ -694,16 +655,11 @@ function TranslatedReviewText({
   onToggleExpand,
   variant = "comment",
 }) {
-  const [showOriginal, setShowOriginal] = useState(false);
   const [tr, setTr] = useState({
     status: "idle",
     translated: null,
     sourceLanguage: null,
   });
-
-  useEffect(() => {
-    setShowOriginal(false);
-  }, [text]);
 
   useEffect(() => {
     if (!text?.trim()) {
@@ -731,21 +687,23 @@ function TranslatedReviewText({
 
   const TextEl = variant === "response" ? ResponseText : Comment;
 
-  const active =
-    tr.status === "done" && tr.translated && !showOriginal
-      ? tr.translated
-      : text;
+  const displayText =
+    tr.status === "done" && tr.translated ? tr.translated : text;
 
   const shouldTruncate =
-    Boolean(active) &&
-    active.length > 150 &&
+    Boolean(displayText) &&
+    displayText.length > 150 &&
     !isModal &&
     variant === "comment";
 
   const shown =
-    shouldTruncate && !expanded ? `${active.slice(0, 150)}...` : active;
+    shouldTruncate && !expanded
+      ? `${displayText.slice(0, 150)}...`
+      : displayText;
 
   const showSpinner = variant === "comment" && tr.status === "loading";
+  const showFootnote =
+    tr.status === "done" && tr.translated && tr.sourceLanguage;
 
   return (
     <>
@@ -755,37 +713,6 @@ function TranslatedReviewText({
           Translating…
         </TranslationSpinner>
       )}
-      {tr.status === "done" && tr.translated && !showOriginal && (
-        <TranslationNotice>
-          <Languages size={14} aria-hidden />
-          <span>
-            <TranslationNoticeLabel>Translated</TranslationNoticeLabel>
-            {" · "}
-            Automatic translation from {tr.sourceLanguage}. Machine translation
-            may be imperfect.
-            <ToggleOriginalLink
-              type="button"
-              onClick={() => setShowOriginal(true)}
-            >
-              Show original
-            </ToggleOriginalLink>
-          </span>
-        </TranslationNotice>
-      )}
-      {tr.status === "done" && tr.translated && showOriginal && (
-        <TranslationNotice>
-          <Languages size={14} aria-hidden />
-          <span>
-            Showing original ({tr.sourceLanguage}).
-            <ToggleOriginalLink
-              type="button"
-              onClick={() => setShowOriginal(false)}
-            >
-              Show translation
-            </ToggleOriginalLink>
-          </span>
-        </TranslationNotice>
-      )}
       <TextEl>
         {shown}
         {variant === "comment" && shouldTruncate && (
@@ -794,6 +721,12 @@ function TranslatedReviewText({
           </ShowMoreLink>
         )}
       </TextEl>
+      {showFootnote && (
+        <TranslationFootnote>
+          Translated from {tr.sourceLanguage}. Automatic translation may be
+          inaccurate.
+        </TranslationFootnote>
+      )}
     </>
   );
 }

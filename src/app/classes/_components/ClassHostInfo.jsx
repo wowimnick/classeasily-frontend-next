@@ -37,11 +37,11 @@ const HostSectionWrapper = styled(motion.section)`
 `;
 
 const SectionHeading = styled.h2`
-  font-size: clamp(22px, 2.5vw, 24px);
-  font-weight: 700;
+  font-size: clamp(20px, 0.95rem + 1.5vw, 23px);
+  font-weight: 600;
   color: #111111;
   margin: 0 0 22px;
-  line-height: 1.2;
+  line-height: 1.25;
   text-align: left;
 `;
 

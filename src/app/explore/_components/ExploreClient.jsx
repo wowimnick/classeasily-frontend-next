@@ -626,7 +626,8 @@ function ExploreClientContent({
 
   return (
     <PageLayout>
-      <ExploreHeader showOptionsWrapper={true} />
+      {/* unifiedExploreChrome: header + filter bar chrome — Explore only (see ClientHeader). */}
+      <ExploreHeader showOptionsWrapper unifiedExploreChrome />
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>

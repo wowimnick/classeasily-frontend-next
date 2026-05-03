@@ -34,8 +34,8 @@ const HeaderWrapper = styled.div`
   align-items: center;
   height: 80px;
   padding: 0 2rem;
-  border-bottom: 1px solid #f1f1f1;
-  background-color: #fff;
+  border-bottom: none;
+  background-color: #fafafa;
   position: relative;
   z-index: 98;
 
@@ -257,15 +257,14 @@ const SkeletonCategoriesWrapper = styled.div`
   position: sticky;
   top: 0;
   z-index: 101;
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.03);
+  background-color: #fafafa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 `;
 
 const SkeletonTopSection = styled.div`
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: #fafafa;
   position: relative;
   height: 72px;
   @media (max-width: 768px) {

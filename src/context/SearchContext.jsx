@@ -165,6 +165,17 @@ export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
   citySlug: preset.citySlug,
 }));
 
+/** Canonical default when no location is chosen (header, explore, clear). */
+export function getDefaultTorontoSearchLocation() {
+  const t = GTA_PRESETS[0];
+  return {
+    displayName: t.displayName,
+    coordinates: { lat: t.coords.lat, lng: t.coords.lng },
+    citySlug: t.citySlug,
+    provinceSlug: t.provinceSlug,
+  };
+}
+
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
   // REMOVED: usePathname and useSearchParams to prevent build errors on static pages
@@ -176,24 +187,33 @@ export const SearchProvider = ({ children }) => {
   // Search Data State — initialize from sessionStorage so search persists when closing drawer / navigating
   const [searchTerm, setSearchTerm] = useState(() => {
     const stored = getStoredSearchState();
-    return (stored && stored.searchTerm) || "";
+    if (stored && typeof stored.searchTerm === "string" && stored.searchTerm.trim()) {
+      return stored.searchTerm.trim();
+    }
+    if (
+      stored?.selectedLocation &&
+      typeof stored.selectedLocation.displayName === "string" &&
+      stored.selectedLocation.displayName.trim()
+    ) {
+      return stored.selectedLocation.displayName.trim();
+    }
+    return getDefaultTorontoSearchLocation().displayName;
   });
   const [selectedLocation, setSelectedLocation] = useState(() => {
     const stored = getStoredSearchState();
     if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
-      return {
-        displayName: stored.selectedLocation.displayName || "",
-        coordinates: stored.selectedLocation.coordinates || null,
-        citySlug: stored.selectedLocation.citySlug || null,
-        provinceSlug: stored.selectedLocation.provinceSlug || null,
-      };
+      const dn = String(stored.selectedLocation.displayName || "").trim();
+      const coords = stored.selectedLocation.coordinates;
+      if (dn && coords && typeof coords.lat === "number" && typeof coords.lng === "number") {
+        return {
+          displayName: dn,
+          coordinates: coords,
+          citySlug: stored.selectedLocation.citySlug || null,
+          provinceSlug: stored.selectedLocation.provinceSlug || null,
+        };
+      }
     }
-    return {
-      displayName: "",
-      coordinates: null,
-      citySlug: null,
-      provinceSlug: null,
-    };
+    return getDefaultTorontoSearchLocation();
   });
   const [datePickerValue, setDatePickerValue] = useState(() => {
     const stored = getStoredSearchState();
@@ -304,13 +324,9 @@ export const SearchProvider = ({ children }) => {
   }, []);
 
   const clearAll = useCallback(() => {
-    setSearchTerm("");
-    setSelectedLocation({
-      displayName: "",
-      coordinates: null,
-      citySlug: null,
-      provinceSlug: null,
-    });
+    const t = getDefaultTorontoSearchLocation();
+    setSearchTerm(t.displayName);
+    setSelectedLocation({ ...t });
     setDatePickerValue(null);
     setParticipantCount(1);
     setSelectedCollection(null);
@@ -332,7 +348,21 @@ export const SearchProvider = ({ children }) => {
   }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollection]);
 
   const performSearch = useCallback(() => {
-    const { displayName, coordinates } = selectedLocation;
+    const toronto = getDefaultTorontoSearchLocation();
+    let term = searchTerm.trim();
+    let loc = { ...selectedLocation };
+    let displayName = String(loc.displayName || "").trim();
+    let coordinates = loc.coordinates;
+
+    if (!term && !displayName) {
+      term = toronto.displayName;
+      loc = { ...toronto };
+      displayName = toronto.displayName;
+      coordinates = toronto.coordinates;
+      setSearchTerm(term);
+      setSelectedLocation(loc);
+    }
+
     const params = new URLSearchParams();
 
     // When already on explore, preserve current category/collection/filters so location change doesn't reset them
@@ -386,37 +416,17 @@ export const SearchProvider = ({ children }) => {
       }
     }
 
-    // Default fallback logic if everything is empty
-    if (!searchTerm.trim() && !displayName) {
-      if (!params.get("lat")) {
-        params.set("location", "Toronto, ON");
-        params.set("lat", "43.6532");
-        params.set("lng", "-79.3832");
-      }
+    const locationForParam = (displayName || term).trim() || toronto.displayName;
+    params.set("location", locationForParam);
 
-      const newUrl = `/explore?${params.toString()}`;
-
-      logExploreSearchFromParams(params, { searchTerm, selectedLocation });
-      setIsSearching(true);
-      router.push(newUrl);
-
-      setIsDrawerOpen(false);
-      return;
-    }
-
-    const locationForParam = displayName || searchTerm;
-    if (locationForParam) {
-      params.set("location", locationForParam);
-    }
-
-    if (coordinates) {
+    if (coordinates && typeof coordinates.lat === "number" && typeof coordinates.lng === "number") {
       params.set("lat", coordinates.lat.toString());
       params.set("lng", coordinates.lng.toString());
     }
 
     const newUrl = `/explore?${params.toString()}`;
 
-    logExploreSearchFromParams(params, { searchTerm, selectedLocation });
+    logExploreSearchFromParams(params, { searchTerm: term, selectedLocation: loc });
     // Trigger global loading state immediately
     setIsSearching(true);
     router.push(newUrl);

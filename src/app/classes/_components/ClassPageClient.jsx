@@ -620,11 +620,11 @@ const DesktopHeaderWrapper = styled.div`
 `;
 
 const PageSectionTitle = styled.h2`
-  font-size: 20px;
+  font-size: clamp(20px, 0.95rem + 1.5vw, 23px);
   font-weight: 600;
-  color: #000;
+  color: #111111;
   margin: 0 0 1rem 0;
-  line-height: 1.3;
+  line-height: 1.25;
   @media (max-width: 768px) {
     margin-bottom: 0.75rem;
   }

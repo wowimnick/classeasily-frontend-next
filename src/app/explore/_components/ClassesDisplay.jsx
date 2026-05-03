@@ -77,7 +77,7 @@ const CategoriesWrapper = styled.div`
   position: sticky;
   top: 0;
   z-index: 90;
-  background-color: #fff;
+  background-color: #fafafa;
 `;
 
 const ClassGridWrapper = styled.div`
