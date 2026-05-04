@@ -91,6 +91,9 @@ const ClassGridWrapper = styled.div`
   scrollbar-width: none;
   position: relative;
   background: #ffffff;
+  /* Size container so card columns respond to this pane (e.g. map open), not only viewport */
+  container-type: inline-size;
+  container-name: explore-cards;
   &::-webkit-scrollbar {
     display: none;
   }
@@ -100,22 +103,41 @@ const ClassGridWrapper = styled.div`
   }
 `;
 
-/* Tighter column mins so more columns fit; cards stay smaller on explore. */
+/**
+ * Equal-width columns from container inline-size (no ragged auto-fill mins).
+ * Thresholds: n × ~260px min card + (n−1) × 24px gap — columns jump only when another fits.
+ */
 const ClassGrid = styled.div`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  column-gap: 24px;
+  row-gap: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 
-  ${down(BP.EXPLORE_WIDE_GRID)} {
-    gap: 18px;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  @supports (container-type: inline-size) {
+    grid-template-columns: 1fr;
+
+    @container explore-cards (min-width: 544px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @container explore-cards (min-width: 828px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    @container explore-cards (min-width: 1112px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @container explore-cards (min-width: 1396px) {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    @container explore-cards (min-width: 1680px) {
+      grid-template-columns: repeat(6, 1fr);
+    }
   }
 
   ${down(BP.TABLET)} {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 40px;
   }
 `;
 
