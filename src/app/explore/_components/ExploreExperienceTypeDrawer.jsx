@@ -6,6 +6,7 @@ import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { ExploreBarLazyLucideIcon } from "./exploreBarLazyIcon.jsx";
 import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
 
 const Overlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -19,6 +20,7 @@ const Sheet = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
+  min-height: 42vh;
   max-height: 85vh;
   position: fixed;
   bottom: 0;
@@ -34,13 +36,14 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  padding: 24px 20px 0;
+  padding: 24px;
+  padding-top: 32px;
 `;
 
 const SheetTitle = styled.h2`
   margin: 0;
   font-size: 21px;
-  font-weight: 700;
+  font-weight: 500;
   color: #222222;
 `;
 
@@ -75,8 +78,9 @@ const TypeChip = styled.button`
   justify-content: flex-start;
   width: fit-content;
   max-width: 100%;
-  padding: 10px 16px;
-  border: 1.5px solid #111111;
+  padding: 8px 12px;
+  border: 1px solid rgb(228, 228, 228);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 24px rgba(0, 0, 0, 0.07);
   border-radius: 9999px;
   background: ${(p) => (p.$selected ? "#111111" : "#ffffff")};
   font-size: 14px;
@@ -118,28 +122,6 @@ const ClearLink = styled.button`
   line-height: 1.2;
 `;
 
-const PrimaryBtn = styled.button`
-  flex: 0 0 auto;
-  border: none;
-  border-radius: 12px;
-  background: #111111;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 14px 22px;
-  cursor: pointer;
-  line-height: 1.2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-
-  &:disabled {
-    opacity: 0.85;
-    cursor: wait;
-  }
-`;
-
 function formatShowResultsLabel(totalCount) {
   if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
     return "Show results";
@@ -151,12 +133,12 @@ export default function ExploreExperienceTypeDrawer({
   open,
   onOpenChange,
   collectionsIWant,
-  currentCollection,
+  currentCollections = [],
   onApplyCollection,
   totalClassesCount,
   previewExploreBarCount,
 }) {
-  const [draftSlug, setDraftSlug] = useState("");
+  const [draftSlugs, setDraftSlugs] = useState([]);
   const [previewCount, setPreviewCount] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -166,11 +148,9 @@ export default function ExploreExperienceTypeDrawer({
       setPreviewLoading(false);
       return;
     }
-    const match = (collectionsIWant || []).some(
-      (c) => c.slug === currentCollection,
-    );
-    setDraftSlug(match ? currentCollection : "");
-  }, [open, currentCollection, collectionsIWant]);
+    const want = new Set((collectionsIWant || []).map((c) => c.slug));
+    setDraftSlugs((currentCollections || []).filter((s) => want.has(s)));
+  }, [open, currentCollections, collectionsIWant]);
 
   useEffect(() => {
     if (!open || !previewExploreBarCount) return;
@@ -181,7 +161,7 @@ export default function ExploreExperienceTypeDrawer({
       (async () => {
         try {
           const c = await previewExploreBarCount(
-            { collectionSlug: draftSlug || "" },
+            { collectionSlugs: draftSlugs },
             ac.signal,
           );
           if (!ac.signal.aborted) setPreviewCount(c);
@@ -198,12 +178,12 @@ export default function ExploreExperienceTypeDrawer({
       clearTimeout(t);
       ac.abort();
     };
-  }, [open, draftSlug, previewExploreBarCount]);
+  }, [open, draftSlugs, previewExploreBarCount]);
 
   const list = (collectionsIWant || []).filter((c) => c.slug && !c.is_all);
 
   const handleShowResults = () => {
-    onApplyCollection(draftSlug || "");
+    onApplyCollection(draftSlugs);
     onOpenChange(false);
   };
 
@@ -227,9 +207,13 @@ export default function ExploreExperienceTypeDrawer({
               <TypeChip
                 key={c.slug}
                 type="button"
-                $selected={draftSlug === c.slug}
+                $selected={draftSlugs.includes(c.slug)}
                 onClick={() =>
-                  setDraftSlug((prev) => (prev === c.slug ? "" : c.slug))
+                  setDraftSlugs((prev) =>
+                    prev.includes(c.slug)
+                      ? prev.filter((s) => s !== c.slug)
+                      : [...prev, c.slug],
+                  )
                 }
               >
                 {c.icon_name ? (
@@ -244,10 +228,10 @@ export default function ExploreExperienceTypeDrawer({
             ))}
           </TypeChipFlow>
           <Footer>
-            <ClearLink type="button" onClick={() => setDraftSlug("")}>
+            <ClearLink type="button" onClick={() => setDraftSlugs([])}>
               Clear all
             </ClearLink>
-            <PrimaryBtn
+            <ExploreShowResultsButton
               type="button"
               onClick={handleShowResults}
               disabled={previewLoading}
@@ -257,7 +241,7 @@ export default function ExploreExperienceTypeDrawer({
                 loading={previewLoading}
                 label={formatShowResultsLabel(previewCount ?? totalClassesCount)}
               />
-            </PrimaryBtn>
+            </ExploreShowResultsButton>
           </Footer>
         </Sheet>
       </Drawer.Portal>

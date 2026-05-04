@@ -6,6 +6,7 @@ import { Drawer } from "vaul";
 import { X, Check } from "lucide-react";
 import { exploreTimePreferencesList } from "./exploreTimePreferences";
 import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
 
 const Overlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -19,6 +20,7 @@ const Sheet = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
+  min-height: 42vh;
   max-height: 85vh;
   position: fixed;
   bottom: 0;
@@ -162,28 +164,6 @@ const ClearLink = styled.button`
   line-height: 1.2;
 `;
 
-const PrimaryBtn = styled.button`
-  flex: 0 0 auto;
-  border: none;
-  border-radius: 12px;
-  background: #111111;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 14px 22px;
-  cursor: pointer;
-  line-height: 1.2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-
-  &:disabled {
-    opacity: 0.85;
-    cursor: wait;
-  }
-`;
-
 function formatShowResultsLabel(totalCount) {
   if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
     return "Show results";
@@ -292,7 +272,7 @@ export default function ExploreTimeOfDayDrawer({
             <ClearLink type="button" onClick={() => setDraft([])}>
               Clear all
             </ClearLink>
-            <PrimaryBtn
+            <ExploreShowResultsButton
               type="button"
               onClick={handleShowResults}
               disabled={previewLoading}
@@ -302,7 +282,7 @@ export default function ExploreTimeOfDayDrawer({
                 loading={previewLoading}
                 label={formatShowResultsLabel(previewCount ?? totalClassesCount)}
               />
-            </PrimaryBtn>
+            </ExploreShowResultsButton>
           </Footer>
         </Sheet>
       </Drawer.Portal>

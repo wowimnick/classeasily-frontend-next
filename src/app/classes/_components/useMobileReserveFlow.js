@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { scheduleService } from "@/services/apiService";
 import posthog from "posthog-js";
+import { BP } from "@/styles/breakpoints";
 
 /** Breakpoint (px) below which mobile reserve flow is shown */
-export const MOBILE_RESERVE_BREAKPOINT = 1024;
+export const MOBILE_RESERVE_BREAKPOINT = BP.TABLET;
 
 /** Delay (ms) between closing one drawer and opening another to avoid overlap */
 export const DRAWER_TRANSITION_MS = 150;

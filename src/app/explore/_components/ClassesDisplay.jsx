@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -23,6 +23,7 @@ import {
 } from "./ExplorePageSkeleton.jsx";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
+import { BP, down, up } from "@/styles/breakpoints";
 
 // Lazy load map component with significant delay to prevent map tiles from becoming LCP
 const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
@@ -49,13 +50,13 @@ const GridContainer = styled.div`
      class card grid on every frame while the map also slides — feels broken.
      Layout snaps; only the map panel uses motion (slide in/out). */
 
-  @media (max-width: 1100px) {
+  ${down(BP.EXPLORE_NARROW)} {
     grid-template-columns: ${({ $isMapVisible }) =>
       $isMapVisible
         ? "minmax(0, 1fr) minmax(200px, 35%)"
         : "minmax(0, 1fr) minmax(0, 0fr)"};
   }
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     grid-template-columns: 1fr;
     height: calc(100vh - 60px);
   }
@@ -77,7 +78,8 @@ const CategoriesWrapper = styled.div`
   position: sticky;
   top: 0;
   z-index: 90;
-  background-color: #fafafa;
+  background-color: #ffffff;
+  transition: background-color 0.35s ease;
 `;
 
 const ClassGridWrapper = styled.div`
@@ -92,7 +94,7 @@ const ClassGridWrapper = styled.div`
     display: none;
   }
 
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     padding: 24px;
   }
 `;
@@ -104,12 +106,12 @@ const ClassGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
 
-  @media (max-width: 1400px) {
+  ${down(BP.EXPLORE_WIDE_GRID)} {
     gap: 18px;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -137,24 +139,16 @@ const MapContainer = styled.div`
   box-sizing: border-box;
   min-width: 0;
 
-  @media (min-width: 1049px) {
+  ${up(BP.TABLET)} {
     display: block;
     opacity: ${({ $isMapVisible }) => ($isMapVisible ? 1 : 0)};
     pointer-events: ${({ $isMapVisible }) => ($isMapVisible ? "auto" : "none")};
     transition: opacity 0.25s ease;
   }
 
-  @media (max-width: 1048px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    padding: 0;
-    visibility: ${(props) => (props.$showMap ? "visible" : "hidden")};
-    opacity: ${(props) => (props.$showMap ? 1 : 0)};
-    transition: opacity 0.2s, visibility 0.2s;
+  ${down(BP.TABLET)} {
+    /* Mobile map mounts in a dedicated motion shell (shared layout with FAB). */
+    display: none;
   }
 `;
 
@@ -166,11 +160,7 @@ const LoadingContainer = styled.div`
   width: 100%;
 `;
 
-const MobileMapToggle = styled.button`
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+const mobileExploreMapFabBase = css`
   padding: 10px 20px;
   background: rgba(255, 255, 255, 0.75);
   color: #222;
@@ -183,18 +173,62 @@ const MobileMapToggle = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  display: none;
   align-items: center;
   gap: 8px;
-  z-index: 1001;
   &:hover {
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
   }
-  @media (max-width: 1048px) {
+`;
+
+const MobileMapToggle = styled.button`
+  ${mobileExploreMapFabBase}
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  z-index: 1001;
+  display: none;
+  isolation: isolate;
+  ${down(BP.TABLET)} {
     display: inline-flex;
   }
 `;
+
+/** Same chrome as the FAB; sits inside the fullscreen map shell (absolute, not fixed). */
+const MobileMapListFab = styled.button`
+  ${mobileExploreMapFabBase}
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  z-index: 2;
+  display: inline-flex;
+`;
+
+const MobileMapFullscreenShell = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+  border-radius: 0;
+  will-change: transform;
+`;
+
+const exploreMobileMapMorphTransition = {
+  type: "spring",
+  stiffness: 440,
+  damping: 40,
+};
 
 // --- New No Results Styled Components (without framer-motion for better performance) ---
 
@@ -273,7 +307,7 @@ const ClassesDisplay = ({
   userLocation,
   filters,
   onFiltersChange,
-  currentCollection,
+  currentCollections = [],
   onCollectionChange,
   currentSortBy,
   onApplyModalChanges,
@@ -315,12 +349,17 @@ const ClassesDisplay = ({
     !isMobile && (isMapVisible || holdDesktopMapSlot);
 
   const collectionDisplayName = useMemo(() => {
-    if (!currentCollection) return null;
-    const fromFeatured = collections?.find((c) => c.slug === currentCollection);
-    if (fromFeatured?.name) return fromFeatured.name;
-    const fromWant = collectionsIWant?.find((c) => c.slug === currentCollection);
-    return fromWant?.name ?? null;
-  }, [currentCollection, collections, collectionsIWant]);
+    const slugs = (currentCollections || []).filter(Boolean);
+    if (!slugs.length) return null;
+    const labels = slugs.map((slug) => {
+      const fromFeatured = collections?.find((c) => c.slug === slug);
+      if (fromFeatured?.name) return fromFeatured.name;
+      const fromWant = collectionsIWant?.find((c) => c.slug === slug);
+      return fromWant?.name ?? slug;
+    });
+    if (labels.length === 1) return labels[0];
+    return `${labels.slice(0, 2).join(" · ")}${labels.length > 2 ? ` +${labels.length - 2}` : ""}`;
+  }, [currentCollections, collections, collectionsIWant]);
 
   useEffect(() => {
     const unregister = registerScrollGetter(
@@ -343,11 +382,11 @@ const ClassesDisplay = ({
   // Scroll list back to top when collection selection changes
   useEffect(() => {
     gridWrapperRef.current?.scrollTo(0, 0);
-  }, [currentCollection]);
+  }, [currentCollections.join("|")]);
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth <= 1048;
+      const mobile = window.innerWidth <= BP.TABLET;
       setIsMobile(mobile);
       if (!mobile) {
         setShowMap(false);
@@ -581,7 +620,7 @@ const ClassesDisplay = ({
             collectionsIWant={collectionsIWant}
             filters={filters}
             onFiltersChange={onFiltersChange}
-            currentCollection={currentCollection}
+            currentCollections={currentCollections}
             onCollectionChange={onCollectionChange}
             currentSortBy={currentSortBy}
             onApplyModalChanges={onApplyModalChanges}
@@ -593,7 +632,10 @@ const ClassesDisplay = ({
             isMapVisible={
               isMobile ? isMapVisible : isMapVisible || holdDesktopMapSlot
             }
-            onShowMap={() => setIsMapVisible(true)}
+            onShowMap={() => {
+              setIsMapVisible(true);
+              setShowMap(true);
+            }}
             totalClassesCount={totalClassesCount}
             previewExploreBarCount={previewExploreBarCount}
             previewFilterModalCount={previewFilterModalCount}
@@ -617,30 +659,7 @@ const ClassesDisplay = ({
         </ClassGridWrapper>
       </LeftContainer>
 
-      <MapContainer
-        $isMapVisible={desktopMapUsesGridSlot}
-        $showMap={isMobile && showMap}
-      >
-        {shouldLoadMap && isMobile && showMap && (
-          <motion.div
-            key="explore-map-mobile"
-            style={{ height: "100%", width: "100%" }}
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 34 }}
-          >
-            <MapDisplay
-              key={mapKey}
-              markers={mapMarkers}
-              selectedClassId={selectedClassId}
-              onMarkerClick={handleMarkerClick}
-              userLocation={ipLocation || userLocation}
-              showMap={showMap}
-              onHideMap={() => setIsMapVisible(false)}
-              isMobile={isMobile}
-            />
-          </motion.div>
-        )}
+      <MapContainer $isMapVisible={desktopMapUsesGridSlot}>
         {shouldLoadMap && !isMobile && (
           <AnimatePresence
             mode="wait"
@@ -683,19 +702,86 @@ const ClassesDisplay = ({
         )}
       </MapContainer>
 
-      {isMobile && !isFilterModalOpen && (
-        <MobileMapToggle onClick={() => setShowMap(!showMap)}>
-          {showMap ? (
-            <>
-              <List size={16} /> Show List
-            </>
-          ) : (
-            <>
-              <MapIcon size={16} /> Show Map
-            </>
-          )}
-        </MobileMapToggle>
-      )}
+      <AnimatePresence initial={false}>
+        {isMobile && !isFilterModalOpen && !showMap && (
+          <MobileMapToggle
+            key="explore-map-fab"
+            type="button"
+            onClick={() => setShowMap(true)}
+            aria-label="Show map"
+          >
+            <motion.span
+              key="fab-label"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <MapIcon size={16} aria-hidden /> Show Map
+            </motion.span>
+          </MobileMapToggle>
+        )}
+        {isMobile && showMap && (
+          <motion.div
+            key="explore-map-fullscreen"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={exploreMobileMapMorphTransition}
+            style={{ position: "fixed", inset: 0, zIndex: 1000 }}
+          >
+            <MobileMapFullscreenShell>
+              {shouldLoadMap ? (
+                <motion.div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                    position: "relative",
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.06, duration: 0.22, ease: "easeOut" }}
+                >
+                  <MapDisplay
+                    key={mapKey}
+                    markers={mapMarkers}
+                    selectedClassId={selectedClassId}
+                    onMarkerClick={handleMarkerClick}
+                    userLocation={ipLocation || userLocation}
+                    showMap={showMap}
+                    onHideMap={() => {
+                      setShowMap(false);
+                      setIsMapVisible(false);
+                    }}
+                    isMobile={isMobile}
+                  />
+                </motion.div>
+              ) : (
+                <LoadingContainer
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                  }}
+                >
+                  <GlobalLoaderWithoutInlineStyles />
+                </LoadingContainer>
+              )}
+              {!isFilterModalOpen && (
+                <MobileMapListFab
+                  type="button"
+                  onClick={() => setShowMap(false)}
+                  aria-label="Show list"
+                >
+                  <List size={16} aria-hidden /> Show List
+                </MobileMapListFab>
+              )}
+            </MobileMapFullscreenShell>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </GridContainer>
   );
 };

@@ -8,6 +8,7 @@ import { Modal } from "antd";
 import { Drawer } from "vaul";
 import message from "@/lib/message";
 import styled, { css, keyframes } from "styled-components";
+import { BP, down, up, between } from "@/styles/breakpoints";
 import {
   Heart,
   Share2,
@@ -88,14 +89,14 @@ const HeroFullBleed = styled.section`
 const HeroDesktopRow = styled.div`
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: clamp(8px, 1.2vw, 18px);
   max-width: 1360px;
   margin: 0 auto;
   padding: clamp(12px, 1.5vw, 20px) clamp(12px, 2.5vw, 28px) 28px;
   box-sizing: border-box;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     flex-direction: column;
     align-items: stretch;
     gap: 0;
@@ -111,13 +112,13 @@ const HeroPhotoColumn = styled.div`
   max-width: 60%;
   position: relative;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     display: flex;
     align-items: center;
     justify-content: flex-start;
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     flex: none;
     width: 100%;
     max-width: 100%;
@@ -126,7 +127,7 @@ const HeroPhotoColumn = styled.div`
 
 const MobileTopNav = styled.nav`
   display: none;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -206,11 +207,11 @@ const HeroBentoWrap = styled.div`
   justify-content: flex-start;
   box-sizing: border-box;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     padding: 0 16px 12px;
   }
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     max-width: min(92dvh, 100%);
     justify-content: flex-end;
   }
@@ -225,7 +226,7 @@ const HeroBentoGrid = styled.div`
   box-sizing: border-box;
   border-radius: 26px;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     border-radius: 22px;
     aspect-ratio: 1;
     height: auto;
@@ -233,13 +234,13 @@ const HeroBentoGrid = styled.div`
   }
 
   /* Tablet portrait / large “mobile” layout (~756px): square was nearly full-width — cap size */
-  @media (max-width: 768px) and (min-width: 540px) {
+  ${between(540, BP.MOBILE)} {
     max-width: min(520px, calc(100vw - 32px));
     margin-left: auto;
     margin-right: auto;
   }
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     width: min(92dvh, 100%);
     aspect-ratio: 1;
     height: auto;
@@ -287,7 +288,7 @@ const BentoCell = styled.div`
   border-radius: 8px;
   cursor: pointer;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     border-radius: 9px;
   }
 `;
@@ -308,11 +309,11 @@ const HeroContentColumn = styled.div`
   padding: 12px clamp(16px, 2.2vw, 24px);
   box-sizing: border-box;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     padding: 12px clamp(14px, 2vw, 22px) 12px clamp(4px, 0.75vw, 11px);
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     flex: none;
     width: 100%;
     max-width: 100%;
@@ -329,7 +330,7 @@ const HeroContentInner = styled.div`
   margin: 0 auto;
   text-align: center;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     max-width: none;
     margin: 0;
     text-align: center;
@@ -345,7 +346,7 @@ const HeroTitle = styled.h1`
   line-height: 1.12;
   letter-spacing: -0.02em;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     font-size: clamp(26px, 7vw, 30px);
     margin: 0 0 12px;
     text-align: center;
@@ -361,7 +362,7 @@ const HeroSummary = styled.p`
   font-weight: 400;
   max-width: 20rem;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     order: 3;
     margin: 0 auto 10px;
     max-width: 22rem;
@@ -376,7 +377,7 @@ const TagsRowDesktop = styled.p`
   color: ${HERO_MUTED};
   line-height: 1.4;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
@@ -394,7 +395,7 @@ const HeroPremiumRatingStrip = styled.div`
   color: ${HERO_MUTED};
   line-height: 1.3;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     order: 2;
     margin: 0 auto 10px;
   }
@@ -412,7 +413,7 @@ const HeroTagsDivider = styled.hr`
   width: 100%;
   max-width: 20rem;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     display: block;
     order: 3;
   }
@@ -431,7 +432,7 @@ const IconRowDesktop = styled.div`
   gap: 24px;
   margin-bottom: 0;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
@@ -445,7 +446,7 @@ const DividerAfterHeroActionsDesktop = styled.hr`
   width: 100%;
   max-width: 22rem;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     display: block;
     order: 7;
     margin-inline: auto;
@@ -458,7 +459,7 @@ const MobileDividerAfterHero = styled.hr`
   border-top: 1px solid #ebebeb;
   margin: 22px 0 20px;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: block;
     order: 5;
     margin: 16px 0 18px;
@@ -471,7 +472,7 @@ const MobileDividerBeforeDescription = styled.hr`
   border-top: 1px solid #ebebeb;
   margin: 22px 0 20px;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: block;
     order: 7;
     margin: 20px 0 0;
@@ -486,7 +487,7 @@ const InfoRowsStack = styled.div`
   width: 100%;
   text-align: left;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     order: 6;
   }
 `;
@@ -566,7 +567,7 @@ const AskRow = styled.div`
   margin-top: 6px;
   text-align: center;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     order: 4;
     margin-top: 0;
     margin-bottom: 4px;
@@ -598,7 +599,7 @@ const AskLink = styled.button`
     outline: 2px solid ${CLASSEASILY_RED_ACCESSIBLE};
     outline-offset: 2px;
   }
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     width: fit-content;
     max-width: calc(100% - 24px);
     margin: 0 auto;
@@ -629,7 +630,7 @@ const ActionButton = styled.button`
   text-decoration: underline;
   text-underline-offset: 2px;
   span {
-    @media (max-width: 768px) {
+    ${down(BP.MOBILE)} {
       display: none;
     }
   }
@@ -1084,7 +1085,7 @@ const LightboxNavBtn = styled.button`
     ${iconDropShadow}
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
@@ -1219,7 +1220,7 @@ const GalleryScrollArea = styled.div`
   z-index: 2;
   background: #ffffff;
 
-  @media (min-width: 769px) {
+  ${up(BP.MOBILE)} {
     padding: 76px 24px 48px;
   }
 
@@ -1399,7 +1400,7 @@ const BentoGridInner = React.memo(
                         : `Class image ${index + 1}`
                     }
                     fill
-                    sizes="(max-width: 768px) 50vw, 42vw"
+                    sizes={`(max-width: ${BP.MOBILE}px) 50vw, 42vw`}
                     priority={isLcp}
                     style={{ objectFit: "cover" }}
                   />
@@ -1501,7 +1502,7 @@ const ClassPageImagesTitle = React.memo(
     }, [shareUrlQueryString]);
     useEffect(() => {
       const check = () => {
-        setIsMobile(window.innerWidth <= 768);
+        setIsMobile(window.innerWidth <= BP.MOBILE);
         setWindowDim({ w: window.innerWidth, h: window.innerHeight });
       };
       check();
@@ -3078,7 +3079,14 @@ const ClassPageImagesTitle = React.memo(
                       : "none",
                   }}
                 >
-                  <img src={openingFlipProxy.src} alt="" />
+                  <Image
+                    src={openingFlipProxy.src}
+                    alt=""
+                    width={Math.max(1, Math.round(openingFlipProxy.width || 1))}
+                    height={Math.max(1, Math.round(openingFlipProxy.height || 1))}
+                    unoptimized
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
                 </OpeningFlipProxy>
               )}
             </LightboxOverlay>,

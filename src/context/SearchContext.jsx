@@ -38,7 +38,7 @@ function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
     const cur = new URLSearchParams(window.location.search);
     keyword =
       cur.get("keyword") ||
-      cur.get("collection") ||
+      (cur.getAll("collection").filter(Boolean)[0] ?? "") ||
       cur.get("category") ||
       "";
   }
@@ -110,7 +110,35 @@ export const ICON_PALETTE = [
   { bg: "#faf5ff", icon: "#9333ea" }, // Purple
 ];
 
-/** Title-style label from API name or slug (never show raw slug casing in UI). */
+/** Short label for header pill / mobile meta from 0..n collection picks. */
+export function summarizeCollectionsForPill(collections) {
+  const list = Array.isArray(collections) ? collections.filter((c) => c?.slug) : [];
+  if (!list.length) return "Any experience";
+  if (list.length === 1) {
+    return formatCollectionDisplayName(list[0].name || list[0].slug);
+  }
+  const labels = list.map((c) => formatCollectionDisplayName(c.name || c.slug));
+  if (labels.length === 2) return `${labels[0]} · ${labels[1]}`;
+  return `${labels[0]} · +${labels.length - 1}`;
+}
+
+function normalizeStoredCollections(stored) {
+  if (stored?.selectedCollections && Array.isArray(stored.selectedCollections)) {
+    return stored.selectedCollections.filter(
+      (c) => c && typeof c.slug === "string" && String(c.slug).trim(),
+    );
+  }
+  if (stored?.selectedCollection?.slug) {
+    return [
+      {
+        slug: stored.selectedCollection.slug,
+        name: stored.selectedCollection.name || stored.selectedCollection.slug,
+      },
+    ];
+  }
+  return [];
+}
+
 export function formatCollectionDisplayName(raw) {
   if (raw == null) return "";
   const s = String(raw).trim();
@@ -227,15 +255,9 @@ export const SearchProvider = ({ children }) => {
     }
     return 1;
   });
-  const [selectedCollection, setSelectedCollection] = useState(() => {
+  const [selectedCollections, setSelectedCollections] = useState(() => {
     const stored = getStoredSearchState();
-    if (stored?.selectedCollection?.slug) {
-      return {
-        slug: stored.selectedCollection.slug,
-        name: stored.selectedCollection.name || stored.selectedCollection.slug,
-      };
-    }
-    return null;
+    return normalizeStoredCollections(stored);
   });
 
   // Geocoding State
@@ -329,7 +351,7 @@ export const SearchProvider = ({ children }) => {
     setSelectedLocation({ ...t });
     setDatePickerValue(null);
     setParticipantCount(1);
-    setSelectedCollection(null);
+    setSelectedCollections([]);
     setGeocodedAddressResults([]);
     try {
       if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
@@ -343,9 +365,9 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
-      selectedCollection,
+      selectedCollections,
     });
-  }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollection]);
+  }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollections]);
 
   const performSearch = useCallback(() => {
     const toronto = getDefaultTorontoSearchLocation();
@@ -375,7 +397,6 @@ export const SearchProvider = ({ children }) => {
       const preserveKeys = [
         "category",
         "subcategory",
-        "collection",
         "tag",
         "sort_by",
         "keyword",
@@ -397,11 +418,10 @@ export const SearchProvider = ({ children }) => {
       current.getAll("days").forEach((v) => params.append("days", v));
     }
 
-    if (selectedCollection?.slug) {
-      params.set("collection", selectedCollection.slug);
-    } else {
-      params.delete("collection");
-    }
+    params.delete("collection");
+    (selectedCollections || []).forEach((c) => {
+      if (c?.slug) params.append("collection", c.slug);
+    });
 
     // HANDLE DATE (Range or Single)
     if (datePickerValue) {
@@ -424,7 +444,15 @@ export const SearchProvider = ({ children }) => {
       params.set("lng", coordinates.lng.toString());
     }
 
-    const newUrl = `/explore?${params.toString()}`;
+    let path = "/explore";
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p.startsWith("/explore/") && p.length > "/explore/".length) {
+        path = p;
+      }
+    }
+
+    const newUrl = `${path}?${params.toString()}`;
 
     logExploreSearchFromParams(params, { searchTerm: term, selectedLocation: loc });
     // Trigger global loading state immediately
@@ -432,7 +460,7 @@ export const SearchProvider = ({ children }) => {
     router.push(newUrl);
 
     setIsDrawerOpen(false);
-  }, [selectedLocation, searchTerm, datePickerValue, selectedCollection, router]);
+  }, [selectedLocation, searchTerm, datePickerValue, selectedCollections, router]);
 
   const debouncedPrefetchExplore = useMemo(
     () =>
@@ -469,16 +497,16 @@ export const SearchProvider = ({ children }) => {
         params.set("date", datePickerValue);
       }
     }
-    if (selectedCollection?.slug) {
-      params.set("collection", selectedCollection.slug);
-    }
+    (selectedCollections || []).forEach((c) => {
+      if (c?.slug) params.append("collection", c.slug);
+    });
     const exploreUrl = `/explore?${params.toString()}`;
     debouncedPrefetchExplore(exploreUrl);
   }, [
     selectedLocation,
     searchTerm,
     datePickerValue,
-    selectedCollection,
+    selectedCollections,
     debouncedPrefetchExplore,
   ]);
 
@@ -496,8 +524,8 @@ export const SearchProvider = ({ children }) => {
       setDatePickerValue,
       participantCount,
       setParticipantCount,
-      selectedCollection,
-      setSelectedCollection,
+      selectedCollections,
+      setSelectedCollections,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,
@@ -512,7 +540,7 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
-      selectedCollection,
+      selectedCollections,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,

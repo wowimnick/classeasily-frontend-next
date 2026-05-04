@@ -22,6 +22,13 @@ import {
 import { exploreTimePreferencesList } from "./exploreTimePreferences";
 import { ExploreBarLazyLucideIcon } from "./exploreBarLazyIcon.jsx";
 import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { useIsDesktopOrWider } from "@/styles/breakpoints-hooks";
+import { BP, down } from "@/styles/breakpoints";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
+import {
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
 
 const FilterModal = dynamic(() => import("./FilterModal"), { ssr: false });
 
@@ -49,31 +56,25 @@ function useClickOutside(ref, handler) {
   }, [ref, handler]);
 }
 
-function useDesktopExploreBar() {
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(min-width: 769px)");
-    const fn = () => setIsDesktop(mq.matches);
-    fn();
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, []);
-  return isDesktop;
-}
-
-/** Recessed chrome with Explore header — only Explore uses this tone (`unifiedExploreChrome`). */
+/** Explore filter bar — matches ClientHeader #fafafa when map is hidden on desktop; white when map is open */
 const BarOuter = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: #fafafa;
+  background: ${(p) => (p.$desktopMapHidden ? "#fafafa" : "#ffffff")};
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 10px 12px;
+  transition:
+    border-color 0.35s ease,
+    background-color 0.25s ease;
+
+  ${down(BP.MOBILE)} {
+    border-bottom: none;
+  }
 `;
 
 const BarCluster = styled.div`
@@ -85,12 +86,12 @@ const BarCluster = styled.div`
   max-width: 100%;
   width: 100%;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     flex-wrap: nowrap;
     justify-content: center;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 2px;
+    padding-bottom: 12px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 
@@ -128,7 +129,7 @@ const BarControlButton = styled.button`
     white-space: nowrap;
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     height: 38px;
     padding: 0 12px;
     font-size: 13px;
@@ -158,7 +159,7 @@ const ChevronTriggerWrap = styled.span`
 `;
 
 const ShowMapOnDesktop = styled(BarControlButton)`
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     display: none;
   }
 `;
@@ -172,14 +173,14 @@ const BarDivider = styled.span`
   flex-shrink: 0;
   align-self: center;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     height: 22px;
   }
 `;
 
 /** Before Map control — Map is desktop-only; hide rule on narrow screens (avoids stray divider on mobile). */
 const BarDividerBeforeMapDesktop = styled(BarDivider)`
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     display: none;
   }
 `;
@@ -200,45 +201,6 @@ const ExploreDropdownPanel = styled.div`
 
   &[data-variant="type"] {
     max-height: min(560px, calc(100vh - 96px));
-  }
-`;
-
-const DropdownTypeChipFlow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 8px;
-  padding: 20px 22px 12px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-`;
-
-const DropdownTypeChip = styled.button`
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-start;
-  width: fit-content;
-  max-width: 100%;
-  padding: 10px 16px;
-  border: 1.5px solid #111111;
-  border-radius: 9999px;
-  background: ${(p) => (p.$selected ? "#111111" : "#ffffff")};
-  font-size: 14px;
-  line-height: 1.2;
-  color: ${(p) => (p.$selected ? "#ffffff" : "#222222")};
-  cursor: pointer;
-  font-weight: 400;
-  text-align: left;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-
-  svg {
-    flex-shrink: 0;
-    color: ${(p) => (p.$selected ? "#ffffff" : "inherit")};
   }
 `;
 
@@ -357,28 +319,6 @@ const DropdownClearLink = styled.button`
   line-height: 1.2;
 `;
 
-const DropdownPrimaryBtn = styled.button`
-  flex: 0 0 auto;
-  border: none;
-  border-radius: 12px;
-  background: #111111;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 400;
-  padding: 14px 22px;
-  cursor: pointer;
-  line-height: 1.2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-
-  &:disabled {
-    opacity: 0.85;
-    cursor: wait;
-  }
-`;
-
 function sortCollectionsByOrder(list) {
   return [...(list || [])].sort(
     (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999),
@@ -409,9 +349,10 @@ function ExploreCategoriesContent({
   collections = [],
   collectionsIWant = [],
   classes = [],
-  currentCollection,
+  currentCollections = [],
   onCollectionChange,
   filters,
+  onFiltersChange,
   currentSortBy,
   onApplyModalChanges,
   isFilterModalOpen,
@@ -425,7 +366,7 @@ function ExploreCategoriesContent({
 }) {
   const [typeDrawerOpen, setTypeDrawerOpen] = useState(false);
   const [timeDrawerOpen, setTimeDrawerOpen] = useState(false);
-  const isDesktopBar = useDesktopExploreBar();
+  const isDesktopBar = useIsDesktopOrWider();
 
   const [barPreviewCount, setBarPreviewCount] = useState(null);
   const [barPreviewLoading, setBarPreviewLoading] = useState(false);
@@ -440,7 +381,7 @@ function ExploreCategoriesContent({
     width: 360,
   });
 
-  const [typeDraftSlug, setTypeDraftSlug] = useState("");
+  const [typeDraftSlugs, setTypeDraftSlugs] = useState([]);
   const [timeDraft, setTimeDraft] = useState([]);
 
   const sortedIWant = useMemo(
@@ -455,18 +396,20 @@ function ExploreCategoriesContent({
   const originalsSlug = originalsRow?.slug;
 
   const originalsActive =
-    originalsSlug && currentCollection === originalsSlug;
-  const typeFilterActive = sortedIWant.some(
-    (c) => c.slug === currentCollection,
+    originalsSlug &&
+    currentCollections.length === 1 &&
+    currentCollections[0] === originalsSlug;
+  const typeFilterActive = sortedIWant.some((c) =>
+    currentCollections.includes(c.slug),
   );
   const timeFilterActive = (filters?.timePreference?.length || 0) > 0;
 
   const toggleOriginals = () => {
     if (!originalsSlug) return;
-    if (currentCollection === originalsSlug) {
-      onCollectionChange("");
+    if (currentCollections.length === 1 && currentCollections[0] === originalsSlug) {
+      onCollectionChange([]);
     } else {
-      onCollectionChange(originalsSlug);
+      onCollectionChange([originalsSlug]);
     }
   };
 
@@ -488,9 +431,10 @@ function ExploreCategoriesContent({
 
   useEffect(() => {
     if (activeDropdown !== "type") return;
-    const match = sortedIWant.some((c) => c.slug === currentCollection);
-    setTypeDraftSlug(match ? currentCollection : "");
-  }, [activeDropdown, currentCollection, sortedIWant]);
+    const wantSlugs = new Set(sortedIWant.map((c) => c.slug));
+    const next = (currentCollections || []).filter((s) => wantSlugs.has(s));
+    setTypeDraftSlugs(next);
+  }, [activeDropdown, currentCollections, sortedIWant]);
 
   useEffect(() => {
     if (activeDropdown !== "time") return;
@@ -517,7 +461,7 @@ function ExploreCategoriesContent({
         try {
           const overrides =
             activeDropdown === "type"
-              ? { collectionSlug: typeDraftSlug || "" }
+              ? { collectionSlugs: typeDraftSlugs }
               : { timePreferenceIds: timeDraft };
           const c = await previewExploreBarCount(overrides, ac.signal);
           if (!ac.signal.aborted) setBarPreviewCount(c);
@@ -538,7 +482,7 @@ function ExploreCategoriesContent({
     previewExploreBarCount,
     isDesktopBar,
     activeDropdown,
-    typeDraftSlug,
+    typeDraftSlugs,
     timeDraft,
   ]);
 
@@ -597,7 +541,7 @@ function ExploreCategoriesContent({
   const typeList = sortedIWant.filter((c) => c.slug && !c.is_all);
 
   const applyTypeDesktop = () => {
-    onCollectionChange(typeDraftSlug || "");
+    onCollectionChange(typeDraftSlugs);
     closeDropdowns();
   };
 
@@ -619,9 +563,12 @@ function ExploreCategoriesContent({
     ? activeDropdown === "time"
     : timeDrawerOpen;
 
+  /** Single-column / map closed: same strip as unified explore header (#fafafa). */
+  const desktopMapHidden = isDesktopBar && !isMapVisible;
+
   return (
     <>
-      <BarOuter ref={barRootRef}>
+      <BarOuter ref={barRootRef} $desktopMapHidden={desktopMapHidden}>
         <BarCluster>
           {originalsSlug ? (
             <BarControlButton
@@ -708,15 +655,17 @@ function ExploreCategoriesContent({
               width: dropdownPos.width,
             }}
           >
-            <DropdownTypeChipFlow>
+            <ExploreDropdownTypeChipFlow>
               {typeList.map((c) => (
-                <DropdownTypeChip
+                <ExploreDropdownTypeChip
                   key={c.slug}
                   type="button"
-                  $selected={typeDraftSlug === c.slug}
+                  $selected={typeDraftSlugs.includes(c.slug)}
                   onClick={() =>
-                    setTypeDraftSlug((prev) =>
-                      prev === c.slug ? "" : c.slug,
+                    setTypeDraftSlugs((prev) =>
+                      prev.includes(c.slug)
+                        ? prev.filter((s) => s !== c.slug)
+                        : [...prev, c.slug],
                     )
                   }
                 >
@@ -728,17 +677,17 @@ function ExploreCategoriesContent({
                     />
                   ) : null}
                   <span>{c.name}</span>
-                </DropdownTypeChip>
+                </ExploreDropdownTypeChip>
               ))}
-            </DropdownTypeChipFlow>
+            </ExploreDropdownTypeChipFlow>
             <DropdownFooter>
               <DropdownClearLink
                 type="button"
-                onClick={() => setTypeDraftSlug("")}
+                onClick={() => setTypeDraftSlugs([])}
               >
                 Clear all
               </DropdownClearLink>
-              <DropdownPrimaryBtn
+              <ExploreShowResultsButton
                 type="button"
                 onClick={applyTypeDesktop}
                 disabled={barPreviewLoading}
@@ -748,7 +697,7 @@ function ExploreCategoriesContent({
                   loading={barPreviewLoading}
                   label={formatShowResultsLabel(showResultsCount)}
                 />
-              </DropdownPrimaryBtn>
+              </ExploreShowResultsButton>
             </DropdownFooter>
           </ExploreDropdownPanel>
         )}
@@ -797,7 +746,7 @@ function ExploreCategoriesContent({
               <DropdownClearLink type="button" onClick={() => setTimeDraft([])}>
                 Clear all
               </DropdownClearLink>
-              <DropdownPrimaryBtn
+              <ExploreShowResultsButton
                 type="button"
                 onClick={applyTimeDesktop}
                 disabled={barPreviewLoading}
@@ -807,7 +756,7 @@ function ExploreCategoriesContent({
                   loading={barPreviewLoading}
                   label={formatShowResultsLabel(showResultsCount)}
                 />
-              </DropdownPrimaryBtn>
+              </ExploreShowResultsButton>
             </DropdownFooter>
           </ExploreDropdownPanel>
         )}
@@ -828,7 +777,7 @@ function ExploreCategoriesContent({
         open={!isDesktopBar && typeDrawerOpen}
         onOpenChange={setTypeDrawerOpen}
         collectionsIWant={sortedIWant}
-        currentCollection={currentCollection}
+        currentCollections={currentCollections}
         onApplyCollection={onCollectionChange}
         totalClassesCount={totalClassesCount}
         previewExploreBarCount={previewExploreBarCount}

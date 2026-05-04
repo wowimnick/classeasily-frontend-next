@@ -16,7 +16,7 @@ const Container = styled.div`
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: ${(p) => (p.$hideLabel ? "flex-end" : "space-between")};
   align-items: center;
 `;
 
@@ -142,6 +142,10 @@ const Slider = ({
   min = 0,
   max = 100,
   label = "",
+  /** When true, the top label is omitted (use an external section title + subtitle). */
+  hideLabel = false,
+  /** Optional id of a visible heading that names this control (with `hideLabel`). */
+  "aria-labelledby": ariaLabelledBy,
   format = {},
   prefix = "",
   suffix = "",
@@ -224,9 +228,15 @@ const Slider = ({
     Array.isArray(distribution) && distribution.length > 0;
 
   return (
-    <Container $compact={compact}>
-      <Header>
-        <Label $compact={compact}>{label}</Label>
+    <Container
+      $compact={compact}
+      role={ariaLabelledBy ? "group" : undefined}
+      aria-labelledby={ariaLabelledBy || undefined}
+    >
+      <Header $hideLabel={hideLabel}>
+        {!hideLabel && label ? (
+          <Label $compact={compact}>{label}</Label>
+        ) : null}
         <ValueWrapper $compact={compact}>
           {prefix}
           <NumberFlow

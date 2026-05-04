@@ -6,9 +6,6 @@ import React, {
   useLayoutEffect,
   useEffect,
   useCallback,
-  lazy,
-  memo,
-  Suspense,
 } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import {
@@ -28,8 +25,15 @@ import {
   useSearch,
   SUGGESTED_AREAS,
   formatCollectionDisplayName,
+  summarizeCollectionsForPill,
 } from "@/context/SearchContext";
 import { collectionService } from "@/services/apiService";
+import {
+  exploreSearchDropdownPanelCss,
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
+import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 import CustomCalendar from "./CustomCalendar";
 
 // --- HELPER HOOKS ---
@@ -190,13 +194,9 @@ const SearchButton = styled(motion.button)`
 const UnifiedPopupContainer = styled(motion.div)`
   position: absolute;
   top: 115%;
-  background: white;
-  border-radius: 32px;
+  z-index: 200;
   padding: 0;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  z-index: 100;
+  ${exploreSearchDropdownPanelCss}
 `;
 
 const SearchModeStage = styled.div`
@@ -217,7 +217,13 @@ const SearchModeHeightAnimator = styled(motion.div)`
 const POPUP_CONTENT_PADDING = 16;
 
 const PopupContentPadding = styled.div`
-  padding: ${POPUP_CONTENT_PADDING}px;
+  padding: ${(p) => (p.$noPad ? "0" : `${POPUP_CONTENT_PADDING}px`)};
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 `;
 
 const LocationInput = styled.input`
@@ -278,73 +284,6 @@ const IconBox = styled.div`
   color: ${(props) => props.$iconColor ?? "#374151"};
   flex-shrink: 0;
 `;
-
-const collectionIconCache = new Map();
-
-const IconFallback = ({ size = 20, strokeWidth = 2.5 }) => (
-  <Box size={size} strokeWidth={strokeWidth} />
-);
-
-const normalizeCollectionIconExportName = (raw) => {
-  const value = String(raw ?? "").trim();
-  if (!value) return "";
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[-_]+/g, " ")
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join("");
-};
-
-const getLazyCollectionIcon = (iconName) => {
-  const exportName = normalizeCollectionIconExportName(iconName);
-  if (!exportName) return null;
-  if (!collectionIconCache.has(exportName)) {
-    collectionIconCache.set(
-      exportName,
-      lazy(async () => {
-        try {
-          const module = await import("lucide-react");
-          return { default: module[exportName] || Box };
-        } catch {
-          return { default: Box };
-        }
-      }),
-    );
-  }
-  return collectionIconCache.get(exportName);
-};
-
-const CollectionIcon = memo(({ iconName, size = 20, strokeWidth = 2.5 }) => {
-  const LazyIcon = getLazyCollectionIcon(iconName);
-  if (!LazyIcon) return <IconFallback size={size} strokeWidth={strokeWidth} />;
-  return (
-    <Suspense fallback={<IconFallback size={size} strokeWidth={strokeWidth} />}>
-      <LazyIcon size={size} strokeWidth={strokeWidth} />
-    </Suspense>
-  );
-});
-
-const resolveCollectionTheme = (hexColor) => {
-  const normalized = String(hexColor ?? "").trim();
-  const validHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(normalized)
-    ? normalized
-    : null;
-  if (!validHex) {
-    return { bg: "#f3f4f6", icon: "#374151" };
-  }
-  const short = validHex.length === 4;
-  const toInt = (index) =>
-    parseInt(short ? validHex[index] + validHex[index] : validHex.slice(index, index + 2), 16);
-  const r = toInt(1);
-  const g = toInt(short ? 2 : 3);
-  const b = toInt(short ? 3 : 5);
-  return {
-    bg: `rgba(${r}, ${g}, ${b}, 0.14)`,
-    icon: validHex,
-  };
-};
 
 // --- MOBILE COMPONENTS ---
 const StaticSearchPill = styled(motion.button)`
@@ -642,8 +581,8 @@ export default function BannerSearchClient({ mode }) {
     searchTerm,
     datePickerValue,
     setDatePickerValue,
-    selectedCollection,
-    setSelectedCollection,
+    selectedCollections,
+    setSelectedCollections,
     geocodedAddressResults,
     handleLocationChange,
     handleLocationSelect,
@@ -782,11 +721,14 @@ export default function BannerSearchClient({ mode }) {
     return () => observer.disconnect();
   }, [activeField]);
 
-  const collectionDisplay = selectedCollection
-    ? formatCollectionDisplayName(
-        selectedCollection.name || selectedCollection.slug,
-      )
-    : "Anything";
+  const collectionDisplay = (() => {
+    const list = selectedCollections || [];
+    if (!list.length) return "Anything";
+    if (list.length === 1) {
+      return formatCollectionDisplayName(list[0].name || list[0].slug);
+    }
+    return summarizeCollectionsForPill(list);
+  })();
 
   const getDateDisplay = () => {
     if (!datePickerValue) return "Any date";
@@ -1015,15 +957,7 @@ export default function BannerSearchClient({ mode }) {
           parts.push(dayjs(datePickerValue).format("MMM D"));
         }
       } else parts.push("Any week");
-      if (selectedCollection?.slug) {
-        parts.push(
-          formatCollectionDisplayName(
-            selectedCollection.name || selectedCollection.slug,
-          ),
-        );
-      } else {
-        parts.push("Any experience");
-      }
+      parts.push(summarizeCollectionsForPill(selectedCollections));
       return parts.join(" • ");
     };
     return (
@@ -1130,7 +1064,7 @@ export default function BannerSearchClient({ mode }) {
                     />
                   )}
                   <Label>I want…</Label>
-                  <ValueDisplay $hasValue={!!selectedCollection}>
+                  <ValueDisplay $hasValue={(selectedCollections || []).length > 0}>
                     {collectionDisplay}
                   </ValueDisplay>
                 </SectionButton>
@@ -1172,7 +1106,7 @@ export default function BannerSearchClient({ mode }) {
                         scale: { duration: 0.25 },
                       }}
                     >
-                      <PopupContentPadding>
+                      <PopupContentPadding $noPad={activeField === "collection"}>
                         <AnimatePresence mode="popLayout">
                           <motion.div
                             key={activeField}
@@ -1182,9 +1116,8 @@ export default function BannerSearchClient({ mode }) {
                             animate="center"
                             exit="exit"
                             style={{
-                              width:
-                                (POPUP_SIZES[activeField] || 400) -
-                                POPUP_CONTENT_PADDING * 2,
+                              width: "100%",
+                              boxSizing: "border-box",
                             }}
                           >
                             <FrozenContent
@@ -1207,94 +1140,65 @@ export default function BannerSearchClient({ mode }) {
                                 />
                               )}
                               renderCollectionPicker={() => (
-                                <>
-                                  <PopupSectionLabel>
-                                    SUGGESTED
-                                  </PopupSectionLabel>
-                                  <LocationList>
-                                    <LocationOption
-                                      key="__any__"
-                                      onClick={() => {
-                                        setSelectedCollection(null);
-                                        setActiveField(null);
-                                        setIsSwitching(false);
-                                      }}
-                                    >
-                                      <IconBox $bgColor="#f3f4f6" $iconColor="#374151">
-                                        <Box size={20} strokeWidth={2.5} />
-                                      </IconBox>
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          flexDirection: "column",
-                                          textAlign: "left",
+                                <ExploreDropdownTypeChipFlow>
+                                  <ExploreDropdownTypeChip
+                                    type="button"
+                                    $selected={(selectedCollections || []).length === 0}
+                                    onClick={() => {
+                                      setSelectedCollections([]);
+                                      setActiveField(null);
+                                      setIsSwitching(false);
+                                    }}
+                                  >
+                                    <Box size={16} strokeWidth={2} aria-hidden />
+                                    <span>Any experience</span>
+                                  </ExploreDropdownTypeChip>
+                                  {iWantCollections.map((c) => {
+                                    const title = formatCollectionDisplayName(
+                                      c.name || c.slug,
+                                    );
+                                    const isSelected = (selectedCollections || []).some(
+                                      (x) => x.slug === c.slug,
+                                    );
+                                    return (
+                                      <ExploreDropdownTypeChip
+                                        key={c.id ?? c.slug}
+                                        type="button"
+                                        $selected={isSelected}
+                                        onClick={() => {
+                                          setSelectedCollections((prev) => {
+                                            const exists = prev.some(
+                                              (x) => x.slug === c.slug,
+                                            );
+                                            if (exists) {
+                                              return prev.filter(
+                                                (x) => x.slug !== c.slug,
+                                              );
+                                            }
+                                            return [
+                                              ...prev,
+                                              {
+                                                slug: c.slug,
+                                                name: c.name || title,
+                                                icon_name: c.icon_name || "",
+                                                color: c.color || "",
+                                              },
+                                            ];
+                                          });
                                         }}
                                       >
-                                        <span
-                                          style={{ fontWeight: 600, color: "#111" }}
-                                        >
-                                          Any experience
-                                        </span>
-                                        <span style={{ fontSize: 13, color: "#717171" }}>
-                                          Show all categories
-                                        </span>
-                                      </div>
-                                    </LocationOption>
-                                    {iWantCollections.map((c) => {
-                                      const title = formatCollectionDisplayName(
-                                        c.name || c.slug,
-                                      );
-                                      const theme = resolveCollectionTheme(c.color);
-                                      const secondary =
-                                        (c.description && String(c.description).trim()) ||
-                                        "Curated experiences";
-                                      return (
-                                        <LocationOption
-                                          key={c.id ?? c.slug}
-                                          onClick={() => {
-                                            setSelectedCollection({
-                                              slug: c.slug,
-                                              name: c.name || title,
-                                              icon_name: c.icon_name || "",
-                                              color: c.color || "",
-                                            });
-                                            setActiveField(null);
-                                            setIsSwitching(false);
-                                          }}
-                                        >
-                                          <IconBox
-                                            $bgColor={theme.bg}
-                                            $iconColor={theme.icon}
-                                          >
-                                            <CollectionIcon
-                                              iconName={c.icon_name}
-                                              size={20}
-                                              strokeWidth={2.5}
-                                            />
-                                          </IconBox>
-                                          <div
-                                            style={{
-                                              display: "flex",
-                                              flexDirection: "column",
-                                              textAlign: "left",
-                                            }}
-                                          >
-                                            <span
-                                              style={{ fontWeight: 600, color: "#111" }}
-                                            >
-                                              {title}
-                                            </span>
-                                            <span
-                                              style={{ fontSize: 13, color: "#717171" }}
-                                            >
-                                              {secondary}
-                                            </span>
-                                          </div>
-                                        </LocationOption>
-                                      );
-                                    })}
-                                  </LocationList>
-                                </>
+                                        {c.icon_name ? (
+                                          <ExploreBarLazyLucideIcon
+                                            iconName={c.icon_name}
+                                            size={16}
+                                            strokeWidth={1.5}
+                                          />
+                                        ) : null}
+                                        <span>{title}</span>
+                                      </ExploreDropdownTypeChip>
+                                    );
+                                  })}
+                                </ExploreDropdownTypeChipFlow>
                               )}
                             />
                           </motion.div>

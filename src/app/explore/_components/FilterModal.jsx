@@ -9,9 +9,9 @@ import {
   Star,
   Navigation,
   Clock,
-  Users,
   Minus,
   Plus,
+  Check,
 } from "lucide-react";
 import { ConfigProvider, Modal } from "antd";
 import Slider from "@/components/explore/Slider";
@@ -24,6 +24,7 @@ import {
   distanceDistributionFromClasses,
 } from "./exploreFilterHistograms";
 import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
 
 // --- Theme & Styled Components ---
 
@@ -74,7 +75,7 @@ const DrawerHandle = styled.div`
 
 // Desktop Components
 const ModalHeader = styled.div`
-  padding: 16px 24px;
+  padding: 22px 24px 18px;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: center;
@@ -85,7 +86,8 @@ const ModalHeader = styled.div`
   ${(p) =>
     p.$compact &&
     `
-    padding: 10px 14px;
+    padding: 24px;
+    padding-top: 22px;
     border-bottom-color: #ebebeb;
   `}
 `;
@@ -147,7 +149,7 @@ const Section = styled.div`
   ${(p) =>
     p.$compact &&
     `
-    padding: 12px 14px;
+    padding: ${p.$groupTight ? "8px 14px" : "12px 14px"};
     border-bottom: 1px solid #ebebeb;
   `}
 `;
@@ -156,15 +158,24 @@ const SectionTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: #222;
-  margin: 0 0 20px 0;
+  margin: 0;
 
   ${(p) =>
     p.$compact &&
     `
     font-size: 15px;
     font-weight: 600;
-    margin: 0 0 10px 0;
   `}
+`;
+
+/** Shared supporting line under every section title */
+const SectionSub = styled.p`
+  margin: 0;
+  margin-top: ${(p) => (p.$compact ? "4px" : "6px")};
+  margin-bottom: ${(p) => (p.$compact ? "10px" : "14px")};
+  font-size: ${(p) => (p.$compact ? "12px" : "13px")};
+  line-height: 1.45;
+  color: #717171;
 `;
 
 // -- Filters --
@@ -222,86 +233,126 @@ const SortCard = styled.button`
   `}
 `;
 
-const TimeOption = styled.button`
+/** Compact variant of explore bar time dropdown (label + range + square checkbox). */
+const FilterTimeOptionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => (p.$compact ? "10px" : "12px")};
+`;
+
+const FilterTimeOptionRow = styled.button`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid
-    ${(props) => (props.$selected ? PRIMARY_COLOR : themeToken.borderDefault)};
-  border-radius: 12px;
-  background: ${(props) => (props.$selected ? themeToken.bgSelected : "white")};
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 12px;
+  min-height: ${(p) => (p.$compact ? "42px" : "46px")};
+`;
 
-  &:hover {
-    border-color: ${PRIMARY_COLOR};
+const FilterTimeOptionText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+`;
+
+const FilterTimeOptionLabel = styled.span`
+  font-size: ${(p) => (p.$compact ? "15px" : "16px")};
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.25;
+`;
+
+const FilterTimeOptionSub = styled.span`
+  font-size: ${(p) => (p.$compact ? "13px" : "14px")};
+  font-weight: 300;
+  color: #000000;
+  line-height: 1.35;
+`;
+
+const FilterTimeRowCheckbox = styled.span`
+  flex-shrink: 0;
+  width: ${(p) => (p.$compact ? "20px" : "22px")};
+  height: ${(p) => (p.$compact ? "20px" : "22px")};
+  border-radius: 5px;
+  border: 1px solid #0a0a0a;
+  background: ${({ $checked }) => ($checked ? "#000000" : "#ffffff")};
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.07);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  ${({ $checked }) =>
+    $checked
+      ? `
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.14),
+      0 4px 10px rgba(0, 0, 0, 0.16);
+  `
+      : ""}
+`;
+
+const GroupSizeHint = styled(SectionSub)`
+  margin-top: ${(p) => (p.$compact ? "2px" : "4px")};
+  margin-bottom: ${(p) => (p.$compact ? "6px" : "10px")};
+`;
+
+const GroupSizeStepper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${(p) => (p.$compact ? "8px" : "14px")};
+`;
+
+const GroupSizeStepBtn = styled.button`
+  width: ${(p) => (p.$compact ? 30 : 36)}px;
+  height: ${(p) => (p.$compact ? 30 : 36)}px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #222;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #f9fafb;
   }
-
-  &:last-child {
-    margin-bottom: 0;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
   }
+`;
 
-  .icon-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${PRIMARY_COLOR};
-  }
-
-  .text-content {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .label {
-    font-size: 15px;
-    font-weight: 600;
-    color: #222;
-  }
-
-  .sub-label {
-    font-size: 13px;
-    color: #717171;
-  }
-
-  ${(p) =>
-    p.$compact &&
-    `
-    padding: 10px 12px;
-    gap: 10px;
-    margin-bottom: 8px;
-    border-radius: 10px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    .icon-box {
-      width: 32px;
-      height: 32px;
-    }
-
-    .label {
-      font-size: 14px;
-    }
-
-    .sub-label {
-      font-size: 12px;
-    }
-  `}
+const GroupSizeValue = styled.span`
+  font-size: ${(p) => (p.$compact ? "15px" : "18px")};
+  font-weight: 700;
+  color: #222;
+  min-width: 24px;
+  text-align: center;
+  line-height: 1;
 `;
 
 const Footer = styled.div`
-  padding: 22px 28px;
-  border-top: 1px solid #f0f0f0;
+  padding: 20px 22px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid #ebebeb;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -309,78 +360,23 @@ const Footer = styled.div`
   z-index: 10;
   flex-shrink: 0;
   gap: 16px;
-
-  ${(p) =>
-    p.$compact &&
-    `
-    padding: 18px 16px;
-    padding-bottom: max(18px, env(safe-area-inset-bottom));
-    border-top-color: #ebebeb;
-    gap: 12px;
-  `}
 `;
 
 const ClearButton = styled.button`
-  background: none;
   border: none;
-  font-size: 17px;
-  font-weight: 600;
-  text-decoration: underline;
+  background: none;
+  padding: 12px 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000;
   cursor: pointer;
-  color: #222;
-  padding: 12px 14px;
+  flex-shrink: 0;
+  line-height: 1.2;
   border-radius: 8px;
 
   &:hover {
     background: #f7f7f7;
   }
-
-  ${(p) =>
-    p.$compact &&
-    `
-    font-size: 16px;
-    padding: 10px 10px;
-  `}
-`;
-
-const ApplyButton = styled.button`
-  background: ${PRIMARY_COLOR};
-  color: white;
-  border: none;
-  padding: 16px 36px;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-
-  &:hover:not(:disabled) {
-    background: ${PRIMARY_COLOR}; /* Keep primary color on hover */
-    opacity: 0.9;
-  }
-  &:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  &:disabled {
-    opacity: 0.88;
-    cursor: wait;
-  }
-
-  ${(p) =>
-    p.$compact &&
-    `
-    padding: 14px 20px;
-    font-size: 15px;
-    border-radius: 12px;
-    flex: 1;
-    min-width: 0;
-    min-height: 48px;
-  `}
 `;
 
 // --- Configuration Lists ---
@@ -512,7 +508,12 @@ export default function FilterModal({
   const renderContent = () => (
     <>
       <Section $compact={compact}>
-        <SectionTitle $compact={compact}>Sort by</SectionTitle>
+        <SectionTitle $compact={compact} id="filter-sort-heading">
+          Sort by
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Choose how results are ordered.
+        </SectionSub>
         <SortGrid $compact={compact}>
           {sortOptionsList.map((option) => {
             const isPriceKey = option.key === "price";
@@ -550,8 +551,16 @@ export default function FilterModal({
       </Section>
 
       <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-price-heading">
+          Price range
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Cap the typical price shown for each experience.
+        </SectionSub>
         <Slider
-          label="Price Range"
+          hideLabel
+          aria-labelledby="filter-price-heading"
+          label=""
           min={0}
           max={500}
           value={tempFilters.pricePerClass[1]}
@@ -571,8 +580,16 @@ export default function FilterModal({
       </Section>
 
       <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-distance-heading">
+          Max distance
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Show classes within this driving distance.
+        </SectionSub>
         <Slider
-          label="Max Distance"
+          hideLabel
+          aria-labelledby="filter-distance-heading"
+          label=""
           min={1}
           max={80}
           value={tempFilters.distance[1] > 0 ? tempFilters.distance[1] : 50}
@@ -585,75 +602,35 @@ export default function FilterModal({
         />
       </Section>
 
-      <Section $compact={compact}>
-        <SectionTitle
-          $compact={compact}
-          style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 8 }}
-        >
-          <Users size={compact ? 18 : 20} aria-hidden />
+      <Section $compact={compact} $groupTight={compact}>
+        <SectionTitle $compact={compact} id="filter-group-heading">
           Group size
         </SectionTitle>
-        <p
-          style={{
-            fontSize: compact ? 13 : 14,
-            color: "#717171",
-            marginTop: compact ? -4 : -8,
-            marginBottom: compact ? 12 : 16,
-            lineHeight: 1.45,
-          }}
-        >
-          How many people are attending?
-        </p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: compact ? 18 : 24,
-          }}
-        >
-          <button
+        <GroupSizeHint $compact={compact}>
+          Number of seats or tickets you need.
+        </GroupSizeHint>
+        <GroupSizeStepper $compact={compact}>
+          <GroupSizeStepBtn
             type="button"
             aria-label="Decrease group size"
+            $compact={compact}
             onClick={() =>
               setTempFilters((prev) => ({
                 ...prev,
-                participants: Math.max(
-                  1,
-                  (prev.participants ?? 1) - 1,
-                ),
+                participants: Math.max(1, (prev.participants ?? 1) - 1),
               }))
             }
             disabled={(tempFilters.participants ?? 1) <= 1}
-            style={{
-              width: compact ? 40 : 44,
-              height: compact ? 40 : 44,
-              borderRadius: "50%",
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: (tempFilters.participants ?? 1) <= 1 ? "not-allowed" : "pointer",
-              opacity: (tempFilters.participants ?? 1) <= 1 ? 0.35 : 1,
-            }}
           >
-            <Minus size={compact ? 16 : 18} />
-          </button>
-          <span
-            style={{
-              fontSize: compact ? 20 : 22,
-              fontWeight: 700,
-              color: "#222",
-              minWidth: 36,
-              textAlign: "center",
-            }}
-          >
+            <Minus size={compact ? 14 : 16} />
+          </GroupSizeStepBtn>
+          <GroupSizeValue $compact={compact}>
             {tempFilters.participants ?? 1}
-          </span>
-          <button
+          </GroupSizeValue>
+          <GroupSizeStepBtn
             type="button"
             aria-label="Increase group size"
+            $compact={compact}
             onClick={() =>
               setTempFilters((prev) => ({
                 ...prev,
@@ -661,34 +638,28 @@ export default function FilterModal({
               }))
             }
             disabled={(tempFilters.participants ?? 1) >= 20}
-            style={{
-              width: compact ? 40 : 44,
-              height: compact ? 40 : 44,
-              borderRadius: "50%",
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: (tempFilters.participants ?? 1) >= 20 ? "not-allowed" : "pointer",
-              opacity: (tempFilters.participants ?? 1) >= 20 ? 0.35 : 1,
-            }}
           >
-            <Plus size={compact ? 16 : 18} />
-          </button>
-        </div>
+            <Plus size={compact ? 14 : 16} />
+          </GroupSizeStepBtn>
+        </GroupSizeStepper>
       </Section>
 
       <Section $compact={compact}>
-        <SectionTitle $compact={compact}>Time of day</SectionTitle>
-        <div>
+        <SectionTitle $compact={compact} id="filter-time-heading">
+          Time of day
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Choose when you&apos;d like to take a class. You can pick more than
+          one.
+        </SectionSub>
+        <FilterTimeOptionList $compact={compact}>
           {timePreferencesList.map((time) => {
             const isSelected = tempFilters.timePreference.includes(time.id);
             return (
-              <TimeOption
+              <FilterTimeOptionRow
                 key={time.id}
+                type="button"
                 $compact={compact}
-                $selected={isSelected}
                 onClick={() => {
                   setTempFilters((prev) => {
                     const newPrefs = prev.timePreference.includes(time.id)
@@ -698,15 +669,21 @@ export default function FilterModal({
                   });
                 }}
               >
-                <div className="icon-box">{time.icon}</div>
-                <div className="text-content">
-                  <span className="label">{time.label}</span>
-                  <span className="sub-label">{time.sub}</span>
-                </div>
-              </TimeOption>
+                <FilterTimeOptionText>
+                  <FilterTimeOptionLabel $compact={compact}>
+                    {time.label}
+                  </FilterTimeOptionLabel>
+                  <FilterTimeOptionSub $compact={compact}>{time.sub}</FilterTimeOptionSub>
+                </FilterTimeOptionText>
+                <FilterTimeRowCheckbox $compact={compact} $checked={isSelected} aria-hidden>
+                  {isSelected ? (
+                    <Check size={compact ? 12 : 14} strokeWidth={3} aria-hidden />
+                  ) : null}
+                </FilterTimeRowCheckbox>
+              </FilterTimeOptionRow>
             );
           })}
-        </div>
+        </FilterTimeOptionList>
       </Section>
     </>
   );
@@ -734,12 +711,12 @@ export default function FilterModal({
 
               <ModalBody>{renderContent()}</ModalBody>
 
-              <Footer $compact={compact}>
-                <ClearButton $compact={compact} onClick={clearFiltersAndSort}>
+              <Footer>
+                <ClearButton type="button" onClick={clearFiltersAndSort}>
                   Clear all
                 </ClearButton>
-                <ApplyButton
-                  $compact={compact}
+                <ExploreShowResultsButton
+                  type="button"
                   onClick={handleApply}
                   disabled={modalPreviewLoading}
                   aria-busy={modalPreviewLoading}
@@ -750,7 +727,7 @@ export default function FilterModal({
                       modalPreviewCount ?? totalClassesCount,
                     )}
                   />
-                </ApplyButton>
+                </ExploreShowResultsButton>
               </Footer>
             </StyledDrawerContent>
           </Drawer.Portal>
@@ -803,8 +780,11 @@ export default function FilterModal({
         <ModalBody>{renderContent()}</ModalBody>
 
         <Footer>
-          <ClearButton onClick={clearFiltersAndSort}>Clear all</ClearButton>
-          <ApplyButton
+          <ClearButton type="button" onClick={clearFiltersAndSort}>
+            Clear all
+          </ClearButton>
+          <ExploreShowResultsButton
+            type="button"
             onClick={handleApply}
             disabled={modalPreviewLoading}
             aria-busy={modalPreviewLoading}
@@ -815,7 +795,7 @@ export default function FilterModal({
                 modalPreviewCount ?? totalClassesCount,
               )}
             />
-          </ApplyButton>
+          </ExploreShowResultsButton>
         </Footer>
       </Modal>
     </ConfigProvider>

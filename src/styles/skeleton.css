@@ -1,0 +1,26 @@
+:root {
+  --ce-skeleton-bg: #f0f0f0;
+  --ce-skeleton-highlight: #f8f8f8;
+  --ce-skeleton-radius: 8px;
+}
+
+@keyframes ce-skeleton-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.ce-skel {
+  background: linear-gradient(
+    90deg,
+    var(--ce-skeleton-bg) 0%,
+    var(--ce-skeleton-highlight) 50%,
+    var(--ce-skeleton-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: ce-skeleton-shimmer 2s infinite linear;
+  border-radius: var(--ce-skeleton-radius);
+}

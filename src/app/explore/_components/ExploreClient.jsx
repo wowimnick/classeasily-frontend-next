@@ -18,9 +18,12 @@ import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
+import { BP, down } from "@/styles/breakpoints";
+
+import { ClassesContentSkeleton } from "./ExploreCardsSkeletonClient";
 
 const ClassesDisplay = dynamic(() => import("./ClassesDisplay"), {
-  loading: () => null,
+  loading: () => <ClassesContentSkeleton />,
 });
 
 const PageLayout = styled.div`
@@ -58,7 +61,7 @@ const BreadcrumbContainer = styled.div`
   white-space: nowrap;
   border: 0;
 
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     padding: 0 1rem;
   }
 `;
@@ -79,8 +82,12 @@ function buildApiParamsFromSearchParams(sp) {
   }
   if (location) apiParams.location_search = location;
 
-  const collection = sp.get("collection");
-  if (collection) apiParams.collection = collection;
+  const collectionSlugs = sp.getAll("collection").filter(Boolean);
+  if (collectionSlugs.length === 1) {
+    apiParams.collection = collectionSlugs[0];
+  } else if (collectionSlugs.length > 1) {
+    apiParams.collection = collectionSlugs;
+  }
 
   const tag = sp.get("tag");
   if (tag) apiParams.tag = tag;
@@ -242,7 +249,10 @@ function ExploreClientContent({
   }, []);
 
   // --- DERIVED DATA FROM URL ---
-  const currentCollection = searchParams.get("collection") || "";
+  const currentCollections = useMemo(
+    () => [...searchParams.getAll("collection")].filter(Boolean),
+    [searchParams],
+  );
   const tag = searchParams.get("tag") || "";
   const currentSortBy = searchParams.get("sort_by") || "relevance";
 
@@ -371,12 +381,10 @@ function ExploreClientContent({
       return;
     }
 
-    // Collection change is handled by server navigation, skip.
-    const currentObj = Object.fromEntries(searchParams.entries());
-    const prevObj = Object.fromEntries(
-      new URLSearchParams(prevStr).entries(),
-    );
-    if (currentObj.collection !== prevObj.collection) {
+    const collectionKeyFromSp = (sp) =>
+      [...sp.getAll("collection").filter(Boolean)].sort().join("\u0001");
+
+    if (collectionKeyFromSp(searchParams) !== collectionKeyFromSp(new URLSearchParams(prevStr))) {
       previousSearchParamsRef.current = currentStr;
       return;
     }
@@ -456,7 +464,7 @@ function ExploreClientContent({
   }, [searchParams]);
 
   const handleCollectionChange = useCallback(
-    (collectionSlug) => {
+    (collectionSlugOrSlugs) => {
       setIsNavigating(true);
       const currentQuery = getCurrentSearchString();
       const newParams = new URLSearchParams(currentQuery);
@@ -480,11 +488,13 @@ function ExploreClientContent({
       newParams.delete("subcategory");
       newParams.delete("sub");
 
-      if (collectionSlug) {
-        newParams.set("collection", collectionSlug);
-      } else {
-        newParams.delete("collection");
-      }
+      newParams.delete("collection");
+      const slugList = Array.isArray(collectionSlugOrSlugs)
+        ? collectionSlugOrSlugs.filter(Boolean)
+        : collectionSlugOrSlugs
+          ? [collectionSlugOrSlugs]
+          : [];
+      slugList.forEach((slug) => newParams.append("collection", slug));
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
@@ -523,10 +533,14 @@ function ExploreClientContent({
       const sp = new URLSearchParams(searchParams.toString());
       sp.delete("explore_page");
 
-      if (overrides.collectionSlug !== undefined) {
-        if (overrides.collectionSlug)
-          sp.set("collection", overrides.collectionSlug);
-        else sp.delete("collection");
+      if (overrides.collectionSlugs !== undefined) {
+        sp.delete("collection");
+        (overrides.collectionSlugs || []).forEach((s) => {
+          if (s) sp.append("collection", s);
+        });
+      } else if (overrides.collectionSlug !== undefined) {
+        sp.delete("collection");
+        if (overrides.collectionSlug) sp.append("collection", overrides.collectionSlug);
       }
       if (overrides.timePreferenceIds !== undefined) {
         sp.delete("time_preference");
@@ -578,7 +592,7 @@ function ExploreClientContent({
       userLocation,
       filters: currentFilters,
       onFiltersChange: () => {},
-      currentCollection,
+      currentCollections,
       onCollectionChange: handleCollectionChange,
       currentSortBy,
       onApplyModalChanges: handleApplyModalChanges,
@@ -604,7 +618,7 @@ function ExploreClientContent({
       isNavigating,
       userLocation,
       currentFilters,
-      currentCollection,
+      currentCollections,
       handleCollectionChange,
       currentSortBy,
       handleApplyModalChanges,

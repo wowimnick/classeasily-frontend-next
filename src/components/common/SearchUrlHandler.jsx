@@ -14,7 +14,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
-    setSelectedCollection,
+    setSelectedCollections,
   } = useSearch();
 
   // We use a ref to track the last URL string we processed.
@@ -50,7 +50,6 @@ const SearchUrlHandler = () => {
     const endDateParam = searchParams.get("end_date");
 
     const participantsParam = searchParams.get("participants");
-    const collectionParam = searchParams.get("collection");
 
     // Only sync "missing param → clear context" on flat /explore (query-driven).
     // Slug routes like /explore/ontario/toronto often have no location in the query.
@@ -105,13 +104,16 @@ const SearchUrlHandler = () => {
       setParticipantCount(1);
     }
 
-    if (collectionParam) {
-      setSelectedCollection({
-        slug: collectionParam,
-        name: formatCollectionDisplayName(collectionParam),
-      });
+    const collectionSlugs = searchParams.getAll("collection").filter(Boolean);
+    if (collectionSlugs.length) {
+      setSelectedCollections(
+        collectionSlugs.map((slug) => ({
+          slug,
+          name: formatCollectionDisplayName(slug),
+        })),
+      );
     } else if (isFlatExplore) {
-      setSelectedCollection(null);
+      setSelectedCollections([]);
     }
   }, [
     pathname,
@@ -120,7 +122,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
-    setSelectedCollection,
+    setSelectedCollections,
   ]);
 
   return null;

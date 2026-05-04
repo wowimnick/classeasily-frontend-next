@@ -1,0 +1,156 @@
+.page {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.header {
+  height: 80px;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .header {
+    height: 60px;
+  }
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.titleDesktop {
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .titleDesktop {
+    display: none;
+  }
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.heroDesktop {
+  display: flex;
+  gap: 8px;
+  height: 500px;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .heroDesktop {
+    display: none;
+  }
+}
+
+.heroMobile {
+  display: none;
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width: 768px) {
+  .heroMobile {
+    display: block;
+    margin-bottom: 0;
+  }
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 4rem;
+  padding: 2rem 0;
+}
+
+@media (max-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.mobileTitle {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .mobileTitle {
+    display: flex;
+  }
+}
+
+.section {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.map {
+  height: 450px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .map {
+    height: 350px;
+    border-radius: 12px;
+  }
+}
+
+.sidebar {
+  order: 0;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    order: -1;
+  }
+}
+
+.bookingCard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  padding: 1.25rem;
+  box-shadow: 0px 7px 12px 4px #0000000a;
+}
+
+.peek {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid #eee;
+  z-index: 50;
+}
+
+@media (max-width: 1024px) {
+  .peek {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+}

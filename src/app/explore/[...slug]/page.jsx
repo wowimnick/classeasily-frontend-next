@@ -1,10 +1,35 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import {
   searchClasses,
   fetchExploreCollectionLists,
 } from "@/lib/server-data-fetchers";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
+import {
+  exploreSearchParamsToString,
+  getDefaultOgImageUrl,
+  getExploreAbsoluteUrl,
+  getExplorePathFromSlug,
+  getSiteUrl,
+  normalizeExploreCollectionSlugs,
+  toSchemaPriceCurrency,
+} from "@/lib/seo";
+import { connection } from "next/server";
+
+/** Do not call `connection()` inside `generateMetadata` — it can reject once prerender completes. */
+
+/**
+ * Prime a few slug paths for SSG under `cacheComponents` (pairs with `generateMetadata` cache).
+ * Other paths still render at request time (`dynamicParams` defaults to true).
+ */
+export function generateStaticParams() {
+  return [
+    { slug: ["ontario", "toronto"] },
+    { slug: ["british-columbia", "vancouver"] },
+    { slug: ["alberta", "calgary"] },
+  ];
+}
 
 const unslugify = (slug) => {
   if (!slug) return "";
@@ -12,6 +37,7 @@ const unslugify = (slug) => {
 };
 
 function generateStructuredData(routeParams, classes, locationName) {
+  const site = getSiteUrl();
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -31,7 +57,7 @@ function generateStructuredData(routeParams, classes, locationName) {
           "@type": "Organization",
           name: classItem.business_name || "ClassEasily Host",
         },
-        url: `https://classeasily.com/classes/${classItem.slug}`,
+        url: `${site}/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {
           aggregateRating: {
             "@type": "AggregateRating",
@@ -43,7 +69,9 @@ function generateStructuredData(routeParams, classes, locationName) {
           offers: {
             "@type": "Offer",
             price: classItem.min_session_price,
-            priceCurrency: "USD",
+            priceCurrency: toSchemaPriceCurrency(
+              classItem.currency_code || classItem.currency,
+            ),
           },
         }),
       },
@@ -51,9 +79,17 @@ function generateStructuredData(routeParams, classes, locationName) {
   };
 }
 
-export async function generateMetadata({ params, searchParams }) {
+/**
+ * Path-based metadata only: under `cacheComponents`, `await searchParams` rejects once
+ * prerender completes. Query-driven context stays in JSON-LD + visible page content.
+ * `"use cache"` + `cacheLife` keeps `await params` prerender-safe (next-prerender-dynamic-metadata).
+ */
+export async function generateMetadata({ params }) {
+  "use cache";
+  cacheLife("homepage");
   try {
-    const { slug = [] } = params;
+    const resolvedParams = await params;
+    const { slug = [] } = resolvedParams;
     const [first, second] = slug;
 
     let province = null;
@@ -71,52 +107,24 @@ export async function generateMetadata({ params, searchParams }) {
       }
     }
 
-    const collectionSlug = searchParams.collection || "";
-    const tag = searchParams.tag || "";
-    const locationParam = searchParams.location;
-
-    const cityText = unslugify(
-      city || (identifier && !collectionSlug ? identifier : ""),
-    );
+    const cityText = unslugify(city || (identifier ? identifier : ""));
     const provinceText = unslugify(province);
     const locationText = cityText
       ? `${cityText}${provinceText ? `, ${provinceText}` : ""}`
-      : locationParam
-        ? unslugify(locationParam)
-        : "";
-    const tagText = unslugify(tag);
-    const collectionText = unslugify(collectionSlug);
+      : "";
 
     let title = "Explore Experiences Near You | ClassEasily";
     let description =
       "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
-    if (tagText && locationText) {
-      title = `${tagText} Experiences in ${locationText} | ClassEasily`;
-      description = `Discover the best ${tagText.toLowerCase()} experiences and activities in ${locationText}. Book your spot on ClassEasily.`;
-    } else if (collectionText && locationText) {
-      title = `${collectionText} Experiences in ${locationText} | ClassEasily`;
-      description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in ${locationText}.`;
-    } else if (locationText) {
+    if (locationText) {
       title = `Experiences and Activities in ${locationText} | ClassEasily`;
       description = `Explore a wide variety of experiences in ${locationText}. From art to cooking, find your next great memory.`;
-    } else if (collectionText) {
-      title = `Explore ${collectionText} Experiences | ClassEasily`;
-      description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in your area.`;
     }
 
-    const url = `/explore/${slug.join("/")}`;
-    const plainSearchParams = {};
-    for (const [key, value] of Object.entries(searchParams)) {
-      plainSearchParams[key] = value;
-    }
-    const queryString = new URLSearchParams(plainSearchParams).toString();
+    const fullUrl = getExploreAbsoluteUrl(slug, {});
 
-    const fullUrl = `https://classeasily.com${url}${
-      queryString ? `?${queryString}` : ""
-    }`;
-
-    const defaultOgImage = "https://i.imgur.com/biTTckW.png";
+    const defaultOgImage = getDefaultOgImageUrl();
 
     return {
       title,
@@ -219,13 +227,16 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.location_search = unslugify(identifier);
   }
 
-  const collection = searchParams.collection;
-  if (collection) {
-    apiParams.collection = collection;
+  const collectionSlugs = normalizeExploreCollectionSlugs(searchParams.collection);
+  if (collectionSlugs.length) {
+    apiParams.collection =
+      collectionSlugs.length === 1 ? collectionSlugs[0] : collectionSlugs;
   }
 
   if (searchParams.tag) apiParams.tag = searchParams.tag;
   if (searchParams.keyword) apiParams.keyword = searchParams.keyword;
+  if (searchParams.price_min)
+    apiParams.price_min = parseInt(searchParams.price_min, 10);
   if (searchParams.price_max)
     apiParams.price_max = parseInt(searchParams.price_max, 10);
   if (searchParams.radius) apiParams.radius = parseInt(searchParams.radius, 10);
@@ -239,6 +250,18 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.participants = parseInt(searchParams.participants, 10);
   if (searchParams.sort_by && searchParams.sort_by !== "relevance") {
     apiParams.sort_by = searchParams.sort_by;
+  }
+
+  const timePrefs = searchParams.time_preference;
+  if (timePrefs) {
+    apiParams.time_preference = Array.isArray(timePrefs)
+      ? timePrefs
+      : [timePrefs];
+  }
+
+  const days = searchParams.days;
+  if (days) {
+    apiParams.days = Array.isArray(days) ? days : [days];
   }
 
   apiParams.page_size = 24;
@@ -273,41 +296,95 @@ async function fetchServerData({ params, searchParams }) {
   };
 }
 
-function buildExploreBreadcrumbSchema(searchParams, locationName) {
-  const base = "https://classeasily.com";
+function buildExploreBreadcrumbSchema(slug, searchParams, locationName) {
+  const site = getSiteUrl();
+  const slugArr = Array.isArray(slug) ? slug : [];
+  const sp = searchParams && typeof searchParams === "object" ? { ...searchParams } : {};
+  const explorePath = getExplorePathFromSlug(slugArr);
   const items = [
-    { position: 1, name: "Home", item: `${base}/` },
-    { position: 2, name: "Explore", item: `${base}/explore` },
+    { position: 1, name: "Home", item: `${site}/` },
+    { position: 2, name: "Explore", item: `${site}/explore` },
   ];
   let position = 3;
-  const location = searchParams?.location || locationName;
-  const collection = searchParams?.collection;
-  const tag = searchParams?.tag;
-  const params = new URLSearchParams();
-  if (location) params.set("location", location);
-  if (location) {
+  const [first, second] = slugArr;
+  const isCategoryRoute = first === "category";
+  let province = null;
+  let city = null;
+  let identifier = null;
+  if (!isCategoryRoute) {
+    if (slugArr.length === 1) identifier = first;
+    else if (slugArr.length >= 2) {
+      province = first;
+      city = second;
+    }
+  }
+
+  const locationDisplay = sp.location || locationName || "";
+  const collectionSlugs = normalizeExploreCollectionSlugs(sp.collection);
+  const tag = sp.tag;
+
+  const stripGeoFromQuery = (p) => {
+    const next = { ...p };
+    delete next.location;
+    delete next.lat;
+    delete next.lng;
+    return next;
+  };
+
+  if (!isCategoryRoute && province && city) {
+    const locLabel = String(
+      locationName || `${unslugify(city)}, ${unslugify(province)}`,
+    )
+      .split(",")[0]
+      .trim();
     items.push({
       position: position++,
-      name: typeof location === "string" ? location.split(",")[0].trim() : location,
-      item: `${base}/explore?${params.toString()}`,
+      name: locLabel,
+      item: getExploreAbsoluteUrl([province, city], stripGeoFromQuery(sp)),
+    });
+  } else if (!isCategoryRoute && identifier && slugArr.length === 1) {
+    items.push({
+      position: position++,
+      name: unslugify(identifier),
+      item: getExploreAbsoluteUrl([identifier], stripGeoFromQuery(sp)),
+    });
+  } else if (locationDisplay) {
+    const p = { ...sp };
+    p.location = String(locationDisplay);
+    items.push({
+      position: position++,
+      name: String(locationDisplay).split(",")[0].trim(),
+      item: `${site}${explorePath}${exploreSearchParamsToString(p)}`,
     });
   }
-  if (collection) {
-    if (location) params.set("location", location);
-    params.set("collection", collection);
+
+  if (collectionSlugs.length) {
+    const p = { ...sp };
+    p.collection =
+      collectionSlugs.length === 1 ? collectionSlugs[0] : collectionSlugs;
+    const fmt = (s) =>
+      String(s)
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const name =
+      collectionSlugs.length === 1
+        ? fmt(collectionSlugs[0])
+        : `${fmt(collectionSlugs[0])} · +${collectionSlugs.length - 1}`;
     items.push({
       position: position++,
-      name: collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      item: `${base}/explore?${params.toString()}`,
+      name,
+      item: `${site}${explorePath}${exploreSearchParamsToString(p)}`,
     });
   }
-  if (tag && !collection) {
-    if (location) params.set("location", location);
-    params.set("tag", tag);
+  if (tag && !collectionSlugs.length) {
+    const p = { ...sp };
+    p.tag = tag;
     items.push({
       position: position++,
-      name: tag.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      item: `${base}/explore?${params.toString()}`,
+      name: String(tag)
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${site}${explorePath}${exploreSearchParamsToString(p)}`,
     });
   }
   return {
@@ -323,14 +400,23 @@ function buildExploreBreadcrumbSchema(searchParams, locationName) {
 }
 
 export default async function ExplorePage({ params, searchParams }) {
-  const resolvedSearchParams = typeof searchParams?.then === "function" ? await searchParams : searchParams;
-  const serverData = await fetchServerData({ params, searchParams: resolvedSearchParams });
+  await connection();
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const serverData = await fetchServerData({
+    params: resolvedParams,
+    searchParams: resolvedSearchParams,
+  });
   const structuredData = generateStructuredData(
     serverData.routeParams,
     serverData.initialClasses,
     serverData.locationName,
   );
-  const breadcrumbSchema = buildExploreBreadcrumbSchema(resolvedSearchParams, serverData.locationName);
+  const breadcrumbSchema = buildExploreBreadcrumbSchema(
+    resolvedParams.slug || [],
+    resolvedSearchParams,
+    serverData.locationName,
+  );
 
   return (
     <>

@@ -10,6 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import styled, { createGlobalStyle } from "styled-components";
@@ -21,7 +22,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
+  ArrowLeft,
+  Box,
 } from "lucide-react";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -30,8 +32,17 @@ import {
   SUGGESTED_AREAS,
   ICON_PALETTE,
   formatCollectionDisplayName,
+  summarizeCollectionsForPill,
 } from "@/context/SearchContext";
+import { BP, down } from "@/styles/breakpoints";
+import { useIsMobile } from "@/styles/breakpoints-hooks";
 import { collectionService } from "@/services/apiService";
+import {
+  exploreSearchDropdownPanelCss,
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
+import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 
 // Dynamic Imports
 const CustomUserMenu = dynamic(
@@ -86,43 +97,96 @@ const GlobalStyles = createGlobalStyle`
 
 const HeaderWrapper = styled(motion.header)`
   box-sizing: border-box;
-  align-items: flex-start;
   padding: 18px 2rem 18px;
-  background-color: ${({ $unifiedExploreChrome }) =>
-    $unifiedExploreChrome ? "#fafafa" : "#fff"};
-  border-bottom: ${({ $unifiedExploreChrome }) =>
-    $unifiedExploreChrome ? "none" : "1px solid #f1f1f1"};
+  background-color: ${({ $unifiedExploreChrome, $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? "#ffffff"
+      : $unifiedExploreChrome
+        ? "#fafafa"
+        : "#fff"};
+  border-bottom: ${({ $unifiedExploreChrome, $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? "1px solid rgba(0, 0, 0, 0.06)"
+      : $unifiedExploreChrome
+        ? "none"
+        : "1px solid #f1f1f1"};
   position: ${({ $isFixed }) => ($isFixed ? "sticky" : "relative")};
   top: ${({ $isFixed }) => ($isFixed ? "0" : "auto")};
   transition: background-color 0.3s, border-bottom 0.3s;
   z-index: 100;
   overflow: visible;
 
-  ${({ $unifiedExploreChrome }) =>
+  ${({ $unifiedExploreChrome, $exploreMobileUnified }) =>
     $unifiedExploreChrome
       ? `
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: stretch;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
     gap: 0.75rem;
 
     & > a {
+      justify-self: start;
       align-self: start;
     }
-    & > form {
+    & > .explore-mobile-back {
+      display: none;
+    }
+    & > .header-search-pill-slot {
+      justify-self: center;
       align-self: center;
+      min-width: 0;
+    }
+
+    ${
+      $exploreMobileUnified
+        ? `
+      ${down(BP.MOBILE)} {
+        align-items: center;
+        gap: 0.5rem;
+        & > a {
+          display: none;
+        }
+        & > .explore-mobile-back {
+          display: inline-flex;
+          justify-self: start;
+          align-self: center;
+        }
+        & > .header-search-pill-slot {
+          justify-self: center;
+          width: auto;
+          max-width: min(100%, calc(100vw - 108px));
+          min-width: 0;
+        }
+        & > .header-right-section {
+          justify-self: end;
+          align-self: center;
+        }
+      }
+    `
+        : ""
     }
   `
       : `
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
   `}
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     padding: 12px 1rem 12px;
     gap: 0.5rem;
     z-index: 90;
+    border-bottom: none;
   }
+
+  ${({ $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? `
+    ${down(BP.MOBILE)} {
+      padding: 10px 1rem;
+    }
+  `
+      : ""}
 `;
 
 const LogoContainer = styled.div`
@@ -134,7 +198,7 @@ const LogoContainer = styled.div`
     width: 40px;
     height: 40px;
   }
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     padding-right: 0.5rem;
     svg {
       width: 32px;
@@ -143,13 +207,19 @@ const LogoContainer = styled.div`
   }
 `;
 
-const RightSection = styled.div`
+const RightSection = styled.div.attrs({ className: "header-right-section" })`
   display: flex;
   align-items: center;
   padding-left: 1rem;
   flex-shrink: 0;
-  ${(p) => (p.$pinTopInUnifiedGrid ? "align-self: start;" : "")}
-  @media (max-width: 768px) {
+  ${(p) =>
+    p.$pinTopInUnifiedGrid
+      ? `
+    align-self: start;
+    justify-self: end;
+  `
+      : ""}
+  ${down(BP.MOBILE)} {
     padding-left: 0;
   }
 `;
@@ -162,7 +232,7 @@ const UserMenuButton = styled(motion.button)`
   justify-content: center;
   padding: 4px 8px 4px 14px;
   border-radius: 28px;
-  background-color: transparent;
+  background-color: #ffffff;
   cursor: pointer;
   overflow: hidden;
   color: #222;
@@ -172,6 +242,28 @@ const UserMenuButton = styled(motion.button)`
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  ${(p) =>
+    p.$compactExplore
+      ? `
+    height: 40px;
+    min-width: 40px;
+    padding: 0 5px 0 7px;
+    gap: 3px;
+    border-radius: 9999px;
+    border: 1px solid rgb(136, 136, 136);
+    color: #000000;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 14px rgba(0, 0, 0, 0.07);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    &:hover {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 6px 18px rgba(0, 0, 0, 0.09);
+    }
+  `
+      : ""}
 `;
 
 // --- BACKDROP ---
@@ -187,9 +279,28 @@ const SearchBackdrop = styled(motion.div)`
   cursor: pointer;
 `;
 
+// --- SEARCH PILL SLOT (centers pill; keeps transform off motion.form for Framer) ---
+
+const SearchPillSlot = styled.div.attrs({ className: "header-search-pill-slot" })`
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+
+  ${({ $flexFill }) =>
+    $flexFill
+      ? `
+    flex: 1 1 0;
+  `
+      : ""}
+`;
+
 // --- SEARCH FORM WRAPPER (the pill shell) ---
 
 const SearchFormWrapper = styled(motion.form)`
+  box-sizing: border-box;
+  position: relative;
   display: flex;
   align-items: center;
   background-color: #ffffff;
@@ -199,24 +310,7 @@ const SearchFormWrapper = styled(motion.form)`
   z-index: 101;
   will-change: width, height, box-shadow;
 
-  ${({ $unifiedExploreChrome }) =>
-    $unifiedExploreChrome
-      ? `
-    position: relative;
-    left: auto;
-    right: auto;
-    transform: none;
-    justify-self: center;
-    align-self: center;
-  `
-      : `
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  `}
-
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
@@ -242,34 +336,54 @@ const PillLayer = styled(motion.div)`
 
 // --- COMPACT PILL ---
 
+/** Shrinks to mini-pill content; capped so the bar never runs off the viewport. */
+const CompactMeasureShell = styled.div`
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(calc(100vw - 120px), 960px);
+  height: 100%;
+  flex-shrink: 0;
+`;
+
 const CompactRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: max-content;
   height: 100%;
-  padding: 0 8px;
+  /* Tighter on the right so the search circle sits near the pill edge; more room on the left for the shop icon */
+  padding: 6px 5px 6px 16px;
 `;
 
 const CompactMagnifier = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 0;
-  color: #374151;
-  margin-right: 9px;
   flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #374151;
 
-  svg {
+  img {
     display: block;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
   }
 `;
 
 const CompactFieldZone = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  height: 100%;
-  padding: 0 6px;
+  justify-content: center;
+  margin: 0;
+  padding: 4px 8px;
+  line-height: 1;
   cursor: pointer;
   border: none;
   background: transparent;
@@ -284,39 +398,43 @@ const CompactFieldZone = styled.button`
 `;
 
 const CompactFieldText = styled.span`
-  font-size: 15px;
+  display: block;
+  font-size: 16px;
   font-weight: 600;
   color: #111111;
   white-space: nowrap;
-  max-width: 108px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1;
+  flex-shrink: 0;
 `;
 
 const CompactDot = styled.span`
-  font-size: 16px;
-  color: #d1d5db;
-  margin: 0 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  user-select: none;
+  width: 10px;
+  height: 18px;
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1;
+  color: #d1d5db;
+  user-select: none;
 `;
 
 const SmallSearchCircle = styled(motion.button)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 32px;
+  height: 32px;
   line-height: 0;
   background: #ff385c;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
   cursor: pointer;
-  flex-shrink: 0;
-  margin-left: 6px;
   box-shadow: 0 2px 8px rgba(255, 56, 92, 0.35);
   font-family: inherit;
 
@@ -449,17 +567,18 @@ const InlineInput = styled.input`
 
 const UnifiedPopupContainer = styled(motion.div)`
   position: fixed;
-  background: white;
-  border-radius: 32px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  /* above backdrop (99) and header (100) */
-  z-index: 200;
+  z-index: 2600;
+  ${exploreSearchDropdownPanelCss}
 `;
 
 const PopupContentPadding = styled.div`
-  padding: 24px;
+  padding: ${(p) => (p.$noPad ? "0" : "20px 22px 22px")};
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 `;
 
 // --- CALENDAR ---
@@ -789,14 +908,6 @@ const LocationOption = styled.div`
   }
 `;
 
-const ExploreCollectionSectionLabel = styled.div`
-  font-size: 12px;
-  font-weight: 700;
-  color: #999;
-  margin-bottom: 8px;
-  text-align: left;
-`;
-
 const IconBox = styled.div`
   width: 38px;
   height: 38px;
@@ -810,28 +921,94 @@ const IconBox = styled.div`
   color: ${(p) => p.$iconColor ?? "#374151"};
 `;
 
-const MobileSearchTrigger = styled.div`
+const MobileExploreBackBtn = styled.button`
   display: none;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
+    display: inline-flex;
+  }
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+`;
+
+const MobileExploreSearchPill = styled.button`
+  display: none;
+  ${down(BP.MOBILE)} {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 40px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    cursor: pointer;
-    flex: 1;
-    min-width: 0;
-    p {
-      margin: 0;
-      font-size: 14px;
-      color: #595959;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
+  }
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 36px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid rgb(219, 219, 219);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.05);
+  color: #000000;
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.05),
+      0 6px 18px rgba(0, 0, 0, 0.09);
+  }
+`;
+
+const MobileExplorePillLine1 = styled.span`
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+/** Second row: day · I want (location is only on line 1) */
+const MobileExplorePillMetaRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .meta-sep {
+    color: #000000;
+    font-weight: 400;
+    user-select: none;
+    flex-shrink: 0;
   }
 `;
 
@@ -843,15 +1020,18 @@ const POPUP_SIZES = {
   collection: 400,
 };
 
-// Compact pill: 360×44  |  Expanded pill: 660×68 (slightly smaller than homepage 720×76)
-const COMPACT_W = 360;
+const TORONTO_PRESET_DISPLAY = SUGGESTED_AREAS[0]?.displayName ?? "Toronto, ON";
+
+// Mini pill: width = measured content (+ border); expanded pill stays fixed below.
 const EXPANDED_W = 660;
 const COMPACT_H = 44;
 const EXPANDED_H = 68;
+/** Minimum width before first layout measure (Framer needs a number). */
+const COMPACT_W_FALLBACK = 260;
 
 /** Total header height (must match backdrop `top` and spring `animate.height`). */
 const HEADER_H_COMPACT = 80;
-const HEADER_H_EXPANDED = 150;
+const HEADER_H_EXPANDED = 180;
 
 const contentVariants = {
   enter: { opacity: 0, scale: 0.98 },
@@ -863,7 +1043,33 @@ const contentVariants = {
   exit: { opacity: 0, transition: { duration: 0 } },
 };
 
-// ------------------------------------------------------------------------
+function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
+  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
+  if (!raw) return "Experiences near you";
+  const city = raw.split(",")[0].trim();
+  return `Experiences in ${city}`;
+}
+
+function formatMobileExploreDateSummary(datePickerValue) {
+  if (!datePickerValue) return "Anytime";
+  if (datePickerValue.start && datePickerValue.end) {
+    const a = dayjs(datePickerValue.start);
+    const b = dayjs(datePickerValue.end);
+    if (a.isValid() && b.isValid()) {
+      if (a.isSame(b, "day")) return a.format("MMM D");
+      return `${a.format("MMM D")} – ${b.format("MMM D")}`;
+    }
+  }
+  if (typeof datePickerValue?.format === "function") {
+    return datePickerValue.format("MMM D");
+  }
+  if (typeof datePickerValue === "string" && datePickerValue) {
+    const d = dayjs(datePickerValue);
+    return d.isValid() ? d.format("MMM D") : "Anytime";
+  }
+  return "Anytime";
+}
+
 //  MAIN COMPONENT
 // ------------------------------------------------------------------------
 
@@ -885,8 +1091,9 @@ function ExploreHeaderContent({
     setSearchTerm,
     datePickerValue,
     setDatePickerValue,
-    selectedCollection,
-    setSelectedCollection,
+    selectedLocation,
+    selectedCollections,
+    setSelectedCollections,
     geocodedAddressResults,
     handleLocationChange,
     handleLocationSelect,
@@ -911,8 +1118,62 @@ function ExploreHeaderContent({
 
   activeFieldRef.current = activeField;
 
+  const isMobileView = useIsMobile();
+  const exploreMobileChrome = unifiedExploreChrome && isMobileView;
+  const exploreMobileLight = exploreMobileChrome;
+  const exploreMobileUnified = exploreMobileChrome;
+
+  const handleMobileBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
   // Derived
   const isExpanded = activeField !== null;
+
+  const compactMeasureRef = useRef(null);
+  /** Measured mini-pill width (px) for Framer — from content, not a fixed layout width. */
+  const [compactShellWidth, setCompactShellWidth] = useState(null);
+
+  const getCompactLocationDisplay = useCallback(() => {
+    const raw = (searchTerm || "").trim();
+    if (!raw) return "Located in Toronto";
+    const norm = raw.replace(/\s+/g, " ").trim();
+    if (norm === TORONTO_PRESET_DISPLAY || /^toronto, ?ON$/i.test(norm)) {
+      return "Located in Toronto";
+    }
+    return raw;
+  }, [searchTerm]);
+
+  useLayoutEffect(() => {
+    if (isExpanded) return;
+    const el = compactMeasureRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const measure = () => {
+      const node = compactMeasureRef.current;
+      if (!node) return;
+      const inner = Math.ceil(node.getBoundingClientRect().width);
+      const total = Math.max(inner + 2, COMPACT_W_FALLBACK);
+      setCompactShellWidth((prev) => (prev === total ? prev : total));
+    };
+
+    measure();
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(measure);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [
+    isExpanded,
+    searchTerm,
+    datePickerValue,
+    (selectedCollections || []).map((c) => c.slug).join("|"),
+    getCompactLocationDisplay,
+  ]);
+
+  const miniPillMotionWidth = isExpanded
+    ? EXPANDED_W
+    : Math.max(compactShellWidth ?? COMPACT_W_FALLBACK, COMPACT_W_FALLBACK);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1074,8 +1335,12 @@ function ExploreHeaderContent({
   };
 
   const getCollectionDisplay = () => {
-    if (!selectedCollection) return "Anything";
-    return formatCollectionDisplayName(selectedCollection.name || selectedCollection.slug);
+    const list = selectedCollections || [];
+    if (!list.length) return "Anything";
+    if (list.length === 1) {
+      return formatCollectionDisplayName(list[0].name || list[0].slug);
+    }
+    return summarizeCollectionsForPill(list);
   };
 
   const renderLocationSuggestions = () => {
@@ -1163,41 +1428,53 @@ function ExploreHeaderContent({
       <HeaderWrapper
         $isFixed={isFixed}
         $unifiedExploreChrome={unifiedExploreChrome}
+        $exploreMobileLight={exploreMobileLight}
+        $exploreMobileUnified={exploreMobileUnified}
         animate={{ height: isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT }}
         initial={{ height: HEADER_H_COMPACT }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <Link
-          href="/"
-          style={{
-            textDecoration: "none",
-            color: "inherit",
-            ...(unifiedExploreChrome ? { alignSelf: "start" } : {}),
-          }}
-        >
-          <LogoContainer>
-            <LogoIcon size={"2.5rem"} restingColor="#ff385c" />
-          </LogoContainer>
-        </Link>
+        {exploreMobileChrome ? (
+          <MobileExploreBackBtn
+            type="button"
+            className="explore-mobile-back"
+            onClick={handleMobileBack}
+            aria-label="Go back"
+          >
+            <ArrowLeft size={22} strokeWidth={1.5} aria-hidden />
+          </MobileExploreBackBtn>
+        ) : (
+          <Link
+            href="/"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              ...(unifiedExploreChrome ? { alignSelf: "start" } : {}),
+            }}
+          >
+            <LogoContainer>
+              <LogoIcon size={"2.5rem"} restingColor="#ff385c" />
+            </LogoContainer>
+          </Link>
+        )}
 
         {showOptionsWrapper && (
-          <>
+          <SearchPillSlot $flexFill={!unifiedExploreChrome}>
             {/* --- DESKTOP SEARCH PILL --- */}
             <SearchFormWrapper
               ref={formRef}
               onSubmit={handleSearchSubmit}
-              $unifiedExploreChrome={unifiedExploreChrome}
               animate={{
-                width: isExpanded ? EXPANDED_W : COMPACT_W,
+                width: miniPillMotionWidth,
                 height: isExpanded ? EXPANDED_H : COMPACT_H,
                 backgroundColor:
                   isExpanded && activeField ? "#ebebeb" : "#ffffff",
                 boxShadow: isExpanded
                   ? "0 8px 32px rgba(0, 0, 0, 0.22)"
-                  : "0 2px 8px rgba(0, 0, 0, 0.08)",
+                  : "0 2px 8px rgba(0, 0, 0, 0.1)",
               }}
               initial={{
-                width: COMPACT_W,
+                width: COMPACT_W_FALLBACK,
                 height: COMPACT_H,
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
               }}
@@ -1209,7 +1486,7 @@ function ExploreHeaderContent({
               onAnimationComplete={handlePillLayoutAnimationComplete}
               style={{
                 visibility: isMounted ? "visible" : "hidden",
-                border: `1px solid ${isExpanded ? "#d1d5db" : "#e5e7eb"}`,
+                border: `1px solid ${isExpanded ? "#d1d5db" : "rgb(213 213 213)"}`,
               }}
             >
               {/* Pill content — overflow:hidden here, not on the form itself */}
@@ -1224,9 +1501,17 @@ function ExploreHeaderContent({
                       animate="center"
                       exit="exit"
                     >
-                      <CompactRow>
+                      <CompactMeasureShell ref={compactMeasureRef}>
+                        <CompactRow>
                         <CompactMagnifier aria-hidden>
-                          <Search size={14} strokeWidth={2.5} />
+                          <Image
+                            src="/icons/shop.png"
+                            alt=""
+                            width={20}
+                            height={20}
+                            decoding="async"
+                            style={{ display: "block" }}
+                          />
                         </CompactMagnifier>
 
                         <CompactFieldZone
@@ -1234,7 +1519,7 @@ function ExploreHeaderContent({
                           onClick={() => handleFieldClick("location")}
                           aria-label="Search location"
                         >
-                          <CompactFieldText>{searchTerm || "Where"}</CompactFieldText>
+                          <CompactFieldText>{getCompactLocationDisplay()}</CompactFieldText>
                         </CompactFieldZone>
 
                         <CompactDot aria-hidden>·</CompactDot>
@@ -1267,6 +1552,7 @@ function ExploreHeaderContent({
                           <Search size={13} strokeWidth={3} />
                         </SmallSearchCircle>
                       </CompactRow>
+                      </CompactMeasureShell>
                     </PillLayer>
                   ) : (
                     /* ── EXPANDED STATE ── */
@@ -1346,7 +1632,7 @@ function ExploreHeaderContent({
                             />
                           )}
                           <FieldLabel>I want…</FieldLabel>
-                          <ValueDisplay $hasValue={!!selectedCollection}>
+                          <ValueDisplay $hasValue={(selectedCollections || []).length > 0}>
                             {getCollectionDisplay()}
                           </ValueDisplay>
                         </SectionButton>
@@ -1390,7 +1676,7 @@ function ExploreHeaderContent({
                     }}
                     style={{ top: popupConfig.top }}
                   >
-                    <PopupContentPadding>
+                    <PopupContentPadding $noPad={activeField === "collection"}>
                       <AnimatePresence mode="popLayout">
                         <motion.div
                           key={activeField}
@@ -1399,7 +1685,7 @@ function ExploreHeaderContent({
                           initial="enter"
                           animate="center"
                           exit="exit"
-                          style={{ width: (POPUP_SIZES[activeField] || 360) - 48 }}
+                          style={{ width: "100%", boxSizing: "border-box" }}
                         >
                           {activeField === "location" && (
                             <LocationList>{renderLocationSuggestions()}</LocationList>
@@ -1412,44 +1698,50 @@ function ExploreHeaderContent({
                             />
                           )}
                           {activeField === "collection" && (
-                            <>
-                              <ExploreCollectionSectionLabel>SUGGESTED</ExploreCollectionSectionLabel>
-                              <LocationList>
-                                <LocationOption
-                                  $isActive={!selectedCollection}
-                                  onClick={() => { setSelectedCollection(null); closeActiveField(); }}
-                                >
-                                  <IconBox $bgColor={ICON_PALETTE[0].bg} $iconColor={ICON_PALETTE[0].icon}>
-                                    <Sparkles size={18} strokeWidth={2.5} />
-                                  </IconBox>
-                                  <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-                                    <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>Any experience</span>
-                                    <span style={{ fontSize: 12, color: "#717171" }}>Show all categories</span>
-                                  </div>
-                                </LocationOption>
-                                {iWantCollections.map((c, idx) => {
-                                  const active = selectedCollection?.slug === c.slug;
-                                  const title = formatCollectionDisplayName(c.name || c.slug);
-                                  const theme = ICON_PALETTE[idx % ICON_PALETTE.length];
-                                  const secondary = (c.description && String(c.description).trim()) || "Curated experiences";
-                                  return (
-                                    <LocationOption
-                                      key={c.id ?? c.slug}
-                                      $isActive={active}
-                                      onClick={() => { setSelectedCollection({ slug: c.slug, name: c.name || title }); closeActiveField(); }}
-                                    >
-                                      <IconBox $bgColor={theme.bg} $iconColor={theme.icon}>
-                                        <Sparkles size={18} strokeWidth={2.5} />
-                                      </IconBox>
-                                      <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-                                        <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>{title}</span>
-                                        <span style={{ fontSize: 12, color: "#717171" }}>{secondary}</span>
-                                      </div>
-                                    </LocationOption>
-                                  );
-                                })}
-                              </LocationList>
-                            </>
+                            <ExploreDropdownTypeChipFlow>
+                              <ExploreDropdownTypeChip
+                                type="button"
+                                $selected={(selectedCollections || []).length === 0}
+                                onClick={() => {
+                                  setSelectedCollections([]);
+                                  closeActiveField();
+                                }}
+                              >
+                                <Box size={16} strokeWidth={2} aria-hidden />
+                                <span>Any experience</span>
+                              </ExploreDropdownTypeChip>
+                              {iWantCollections.map((c) => {
+                                const active = (selectedCollections || []).some(
+                                  (x) => x.slug === c.slug,
+                                );
+                                const title = formatCollectionDisplayName(c.name || c.slug);
+                                return (
+                                  <ExploreDropdownTypeChip
+                                    key={c.id ?? c.slug}
+                                    type="button"
+                                    $selected={active}
+                                    onClick={() => {
+                                      setSelectedCollections((prev) => {
+                                        const exists = prev.some((x) => x.slug === c.slug);
+                                        if (exists) {
+                                          return prev.filter((x) => x.slug !== c.slug);
+                                        }
+                                        return [...prev, { slug: c.slug, name: c.name || title }];
+                                      });
+                                    }}
+                                  >
+                                    {c.icon_name ? (
+                                      <ExploreBarLazyLucideIcon
+                                        iconName={c.icon_name}
+                                        size={16}
+                                        strokeWidth={1.5}
+                                      />
+                                    ) : null}
+                                    <span>{title}</span>
+                                  </ExploreDropdownTypeChip>
+                                );
+                              })}
+                            </ExploreDropdownTypeChipFlow>
                           )}
                         </motion.div>
                       </AnimatePresence>
@@ -1460,31 +1752,48 @@ function ExploreHeaderContent({
             </SearchFormWrapper>
 
             {/* --- MOBILE SEARCH TRIGGER --- */}
-            <MobileSearchTrigger
+            <MobileExploreSearchPill
+              type="button"
               onClick={() => setIsDrawerOpen(true)}
               style={{ visibility: isMounted ? "visible" : "hidden" }}
+              aria-label="Edit search"
             >
-              <Search size={20} color="#ff385c" />
-              <p>{searchTerm || "Start your search"}</p>
-            </MobileSearchTrigger>
-          </>
+              <MobileExplorePillLine1>
+                {getMobileExploreLocationTitle(selectedLocation, searchTerm)}
+              </MobileExplorePillLine1>
+              <MobileExplorePillMetaRow>
+                <span>{formatMobileExploreDateSummary(datePickerValue)}</span>
+                <span className="meta-sep" aria-hidden>
+                  ·
+                </span>
+                <span>{summarizeCollectionsForPill(selectedCollections)}</span>
+              </MobileExplorePillMetaRow>
+            </MobileExploreSearchPill>
+          </SearchPillSlot>
         )}
 
-        <RightSection $pinTopInUnifiedGrid={unifiedExploreChrome}>
+        <RightSection
+          $pinTopInUnifiedGrid={unifiedExploreChrome && !exploreMobileChrome}
+        >
           <div style={{ position: "relative" }}>
             <UserMenuButton
               ref={menuTriggerRef}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              $compactExplore={exploreMobileChrome && unifiedExploreChrome}
             >
-              <Menu strokeWidth={2.5} size={18} style={{ color: "inherit" }} />
+              <Menu
+                strokeWidth={2.25}
+                size={exploreMobileChrome ? 16 : 18}
+                style={{ color: "inherit", flexShrink: 0 }}
+              />
               {currentUser?.avatar_url ? (
-                <UserAvatar size={28} />
+                <UserAvatar size={exploreMobileChrome ? 24 : 28} />
               ) : (
                 <img
                   src="/icons/explore/user-circle.svg"
                   alt="User"
-                  width={28}
-                  height={28}
+                  width={exploreMobileChrome ? 24 : 28}
+                  height={exploreMobileChrome ? 24 : 28}
                 />
               )}
             </UserMenuButton>

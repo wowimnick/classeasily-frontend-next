@@ -5,16 +5,26 @@ import {
   fetchExploreCollectionLists,
 } from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
+import {
+  exploreSearchParamsToString,
+  getDefaultOgImageUrl,
+  getSiteUrl,
+  normalizeExploreCollectionSlugs,
+  toSchemaPriceCurrency,
+} from "@/lib/seo";
 
 function getExploreMeta(resolvedSearchParams) {
-  const collection = resolvedSearchParams?.collection;
+  const collectionSlugs = normalizeExploreCollectionSlugs(
+    resolvedSearchParams?.collection,
+  );
   const location = resolvedSearchParams?.location;
   let title = "Explore Experiences Near You | ClassEasily";
   let description =
     "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
-  const collectionText = collection
-    ? collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  const primarySlug = collectionSlugs[0];
+  const collectionText = primarySlug
+    ? primarySlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : "";
   if (collectionText && location) {
     title = `${collectionText} Experiences in ${location} | ClassEasily`;
@@ -30,40 +40,52 @@ function getExploreMeta(resolvedSearchParams) {
 }
 
 function buildExploreBreadcrumbSchema(searchParams) {
-  const base = "https://classeasily.com";
+  const site = getSiteUrl();
+  const sp = searchParams && typeof searchParams === "object" ? { ...searchParams } : {};
   const items = [
-    { position: 1, name: "Home", item: `${base}/` },
-    { position: 2, name: "Explore", item: `${base}/explore` },
+    { position: 1, name: "Home", item: `${site}/` },
+    { position: 2, name: "Explore", item: `${site}/explore` },
   ];
   let position = 3;
-  const location = searchParams?.location;
-  const collection = searchParams?.collection;
-  const tag = searchParams?.tag;
-  const params = new URLSearchParams();
-  if (location) params.set("location", location);
+  const location = sp?.location;
+  const collectionSlugs = normalizeExploreCollectionSlugs(sp?.collection);
+  const tag = sp?.tag;
   if (location) {
+    const p = { ...sp };
+    p.location = location;
     items.push({
       position: position++,
-      name: location.split(",")[0].trim(),
-      item: `${base}/explore?${params.toString()}`,
+      name: String(location).split(",")[0].trim(),
+      item: `${site}/explore${exploreSearchParamsToString(p)}`,
     });
   }
-  if (collection) {
-    if (location) params.set("location", location);
-    params.set("collection", collection);
+  if (collectionSlugs.length) {
+    const p = { ...sp };
+    p.collection =
+      collectionSlugs.length === 1 ? collectionSlugs[0] : collectionSlugs;
+    const fmt = (s) =>
+      String(s)
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const name =
+      collectionSlugs.length === 1
+        ? fmt(collectionSlugs[0])
+        : `${fmt(collectionSlugs[0])} · +${collectionSlugs.length - 1}`;
     items.push({
       position: position++,
-      name: collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      item: `${base}/explore?${params.toString()}`,
+      name,
+      item: `${site}/explore${exploreSearchParamsToString(p)}`,
     });
   }
-  if (tag && !collection) {
-    if (location) params.set("location", location);
-    params.set("tag", tag);
+  if (tag && !collectionSlugs.length) {
+    const p = { ...sp };
+    p.tag = tag;
     items.push({
       position: position++,
-      name: tag.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      item: `${base}/explore?${params.toString()}`,
+      name: String(tag)
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${site}/explore${exploreSearchParamsToString(p)}`,
     });
   }
   return {
@@ -82,13 +104,18 @@ export async function generateMetadata({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const { title, description } = getExploreMeta(resolvedSearchParams);
 
-  const collection = resolvedSearchParams?.collection;
+  const site = getSiteUrl();
+  const collectionSlugs = normalizeExploreCollectionSlugs(
+    resolvedSearchParams?.collection,
+  );
   const location = resolvedSearchParams?.location;
   const canonicalParams = new URLSearchParams();
-  if (collection) canonicalParams.set("collection", collection);
+  collectionSlugs.forEach((c) => canonicalParams.append("collection", c));
   if (location) canonicalParams.set("location", location);
   const queryString = canonicalParams.toString();
-  const canonicalUrl = `https://classeasily.com/explore${queryString ? `?${queryString}` : ""}`;
+  const canonicalUrl = `${site}/explore${queryString ? `?${queryString}` : ""}`;
+
+  const ogImage = getDefaultOgImageUrl();
 
   return {
     title,
@@ -104,7 +131,7 @@ export async function generateMetadata({ searchParams }) {
       siteName: "ClassEasily",
       images: [
         {
-          url: "https://i.imgur.com/biTTckW.png",
+          url: ogImage,
           width: 1200,
           height: 630,
           alt: "ClassEasily - Discover Local Experiences",
@@ -115,7 +142,7 @@ export async function generateMetadata({ searchParams }) {
       card: "summary_large_image",
       title,
       description,
-      images: ["https://i.imgur.com/biTTckW.png"],
+      images: [ogImage],
     },
     robots: {
       index: true,
@@ -147,9 +174,10 @@ async function fetchServerData(searchParams) {
     apiParams.location_search = locationDisplayNameFromUrl;
   }
 
-  const collection = searchParams.collection;
-  if (collection) {
-    apiParams.collection = collection;
+  const collectionSlugs = normalizeExploreCollectionSlugs(searchParams.collection);
+  if (collectionSlugs.length) {
+    apiParams.collection =
+      collectionSlugs.length === 1 ? collectionSlugs[0] : collectionSlugs;
   }
 
   // Handle all other search params
@@ -185,7 +213,7 @@ async function fetchServerData(searchParams) {
     apiParams.days = Array.isArray(days) ? days : [days];
   }
 
-  // Removed console.log for production performance
+  apiParams.page_size = 24;
 
   const [classesResponse, collectionLists] = await Promise.all([
     searchClasses(apiParams),
@@ -209,6 +237,7 @@ async function fetchServerData(searchParams) {
 }
 
 function generateStructuredData(classes, locationName) {
+  const site = getSiteUrl();
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -228,7 +257,7 @@ function generateStructuredData(classes, locationName) {
           "@type": "Organization",
           name: classItem.business_name || "ClassEasily Host",
         },
-        url: `https://classeasily.com/classes/${classItem.slug}`,
+        url: `${site}/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {
           aggregateRating: {
             "@type": "AggregateRating",
@@ -240,7 +269,9 @@ function generateStructuredData(classes, locationName) {
           offers: {
             "@type": "Offer",
             price: classItem.min_session_price,
-            priceCurrency: "USD",
+            priceCurrency: toSchemaPriceCurrency(
+              classItem.currency_code || classItem.currency,
+            ),
           },
         }),
       },

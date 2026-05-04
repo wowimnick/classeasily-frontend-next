@@ -10,13 +10,14 @@ import {
   useMap,
   Marker,
   Popup,
-  ZoomControl,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import styled, { createGlobalStyle } from "styled-components";
 import { Star, Navigation, MapPin } from "lucide-react";
+import { LeafletCustomZoomControls } from "@/components/maps/LeafletCustomZoomControls";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { BP, up } from "@/styles/breakpoints";
 
 // --- STYLES ---
 
@@ -95,42 +96,6 @@ const LeafletMarkerStyles = createGlobalStyle`
     height: 100%;
     width: 100%;
   }
-
-  /* --- ZOOM CONTROL STYLES --- */
-  .leaflet-control-zoom {
-    border: none !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-    margin-top: 12px !important;
-    margin-right: 12px !important;
-  }
-
-  .leaflet-control-zoom a {
-    background: white !important;
-    color: #222 !important;
-    border-bottom: 1px solid #f0f0f0 !important;
-    width: 36px !important;
-    height: 36px !important;
-    line-height: 36px !important;
-    font-size: 18px !important;
-    font-weight: 400 !important;
-    transition: background-color 0.2s;
-  }
-
-  .leaflet-control-zoom a:hover {
-    background: #f7f7f7 !important;
-    color: #f81e3e !important;
-  }
-
-  .leaflet-control-zoom a:first-child {
-    border-top-left-radius: 8px !important;
-    border-top-right-radius: 8px !important;
-  }
-
-  .leaflet-control-zoom a:last-child {
-    border-bottom-left-radius: 8px !important;
-    border-bottom-right-radius: 8px !important;
-    border-bottom: none !important;
-  }
 `;
 
 const MapWrapper = styled.div`
@@ -166,7 +131,7 @@ const MapWrapper = styled.div`
 
 const HideMapButton = styled.button`
   display: none;
-  @media (min-width: 1049px) {
+  ${up(BP.TABLET)} {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -759,7 +724,7 @@ const MapDisplay = ({
             zoomControl={false}
             style={{ height: "100%", width: "100%" }}
           >
-            <ZoomControl position="topright" />
+            <LeafletCustomZoomControls />
 
             <TileLayer
               attribution='© <a href="https://carto.com/">CARTO</a> contributors'

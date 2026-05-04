@@ -12,7 +12,7 @@ import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Menu, Search } from "lucide-react";
 import dayjs from "dayjs";
-import { useSearch, formatCollectionDisplayName } from "@/context/SearchContext";
+import { useSearch, summarizeCollectionsForPill } from "@/context/SearchContext";
 
 // --- DYNAMIC IMPORTS ---
 const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
@@ -440,7 +440,7 @@ const HeaderContent = ({
   const {
     searchTerm,
     datePickerValue,
-    selectedCollection,
+    selectedCollections,
     setIsDrawerOpen,
   } = useSearch();
 
@@ -645,11 +645,7 @@ const HeaderContent = ({
                 <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
                 <NotchSubtitle>
                   {getNotchDateDisplay()} •{" "}
-                  {selectedCollection
-                    ? formatCollectionDisplayName(
-                        selectedCollection.name || selectedCollection.slug,
-                      )
-                    : "Any experience"}
+                  {summarizeCollectionsForPill(selectedCollections)}
                 </NotchSubtitle>
               </NotchText>
               <NotchIcon>

@@ -9,7 +9,7 @@ import React, {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
@@ -21,12 +21,14 @@ import ExploreHeader from "@/components/explore/ExploreHeader";
 import ClassPageImagesTitle from "./ClassPageImagesTitle";
 import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
-import { Alert, Button as AntButton, Divider } from "antd";
+import { Alert, Button as AntButton, Divider, Modal } from "antd";
 import message from "@/lib/message";
 import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
+import { formatMoneyCompact } from "@/lib/seo";
 import MiniCalendar from "./MiniCalendar";
-import { getDurationText } from "./steps/utils";
+import { getDurationText, getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
+import { BP, down, up } from "@/styles/breakpoints";
 
 /** Max width for fixed glass footers (tablet / iPad — avoids full-bleed bars) */
 const MOBILE_STICKY_FOOTER_MAX_WIDTH_PX = 480;
@@ -77,238 +79,10 @@ function safeDisplayPart(v) {
   return s;
 }
 
-// Skeleton loader styles (ORIGINAL)
-const shimmer = keyframes`
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
-`;
-
-const Skel_Base = styled.div`
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 2000px 100%;
-  animation: ${shimmer} 2s infinite linear;
-  border-radius: ${(props) => props.$radius || "8px"};
-`;
-
-const Skel_MapSection = styled.div`
-  background: white;
-  border-radius: 14px;
-  overflow: hidden;
-  height: 400px;
-
-  @media (max-width: 768px) {
-    height: 300px;
-    border-radius: 12px;
-    padding: 1rem;
-  }
-`;
-
-const Skel_Map = styled(Skel_Base)`
-  width: 100%;
-  height: 100%;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-
-  @media (max-width: 768px) {
-    border-radius: 12px;
-  }
-`;
-
-const Skel_FeaturesSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 1rem;
-  @media (max-width: 768px) {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-`;
-
-const Skel_FeatureTitle = styled(Skel_Base)`
-  height: 32px;
-  width: 300px;
-  margin-bottom: 1.5rem;
-`;
-
-const Skel_FeaturesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-`;
-
-const Skel_FeatureTag = styled(Skel_Base)`
-  height: 56px;
-  border-radius: 12px;
-`;
-
-const Skel_ReviewsSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 1rem;
-  @media (max-width: 768px) {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-`;
-
-const Skel_ReviewsTitle = styled(Skel_Base)`
-  height: 32px;
-  width: 200px;
-  margin-bottom: 1.5rem;
-`;
-
-const Skel_ReviewCard = styled.div`
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-`;
-
-const Skel_ReviewHeader = styled.div`
-  display: flex;
-  gap: 0.875rem;
-  margin-bottom: 0.75rem;
-`;
-
-const Skel_ReviewAvatar = styled(Skel_Base)`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  flex-shrink: 0;
-`;
-
-const Skel_ReviewInfo = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Skel_ReviewName = styled(Skel_Base)`
-  height: 18px;
-  width: 150px;
-`;
-
-const Skel_ReviewRating = styled(Skel_Base)`
-  height: 14px;
-  width: 100px;
-`;
-
-const Skel_ReviewComment = styled(Skel_Base)`
-  height: 60px;
-  margin-bottom: 0.5rem;
-`;
-
-const Skel_HostSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 1rem;
-  @media (max-width: 768px) {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-`;
-
-const Skel_HostHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
-`;
-
-const Skel_HostAvatar = styled(Skel_Base)`
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  flex-shrink: 0;
-`;
-
-const Skel_HostDetails = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Skel_HostName = styled(Skel_Base)`
-  height: 24px;
-  width: 200px;
-`;
-
-const Skel_HostSubtext = styled(Skel_Base)`
-  height: 16px;
-  width: 150px;
-`;
-
-const Skel_HostStatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-`;
-
-const Skel_HostStatBlock = styled(Skel_Base)`
-  height: 80px;
-  border-radius: 12px;
-`;
-
-const Skel_BookingCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px 20px 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-`;
-
-const Skel_Disclaimer = styled(Skel_Base)`
-  height: 44px;
-  border-radius: 9999px;
-  width: 55%;
-  margin-bottom: 4px;
-`;
-
-const Skel_Price = styled(Skel_Base)`
-  height: 20px;
-  width: 80px;
-  margin-bottom: 1rem;
-`;
-
-const Skel_Details = styled(Skel_Base)`
-  height: 40px;
-  margin-bottom: 1rem;
-`;
-
-const Skel_Schedule = styled(Skel_Base)`
-  height: 120px;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-`;
-
-const Skel_Button = styled(Skel_Base)`
-  height: 48px;
-  border-radius: 14px;
-`;
-
-/* Footer specific skeletons */
-const Skel_FooterPriceLine = styled(Skel_Base)`
-  height: 18px;
-  width: 100px;
-  border-radius: 4px;
-  margin-bottom: 4px;
-`;
-
-const Skel_FooterSubLine = styled(Skel_Base)`
-  height: 12px;
-  width: 70px;
-  border-radius: 4px;
-`;
-
-const Skel_FooterBtn = styled(Skel_Base)`
-  height: 44px;
-  width: 96px;
-  border-radius: 8px;
-`;
+import ClassPageDeferredSkeleton, {
+  ClassSidebarBookingSkeleton,
+  MobileBookingFooterSkeletonBlocks,
+} from "./skeletons/ClassPageDeferredSkeleton";
 
 // Styled Components (original)
 const ContentWrapper = styled.div`
@@ -322,14 +96,14 @@ const ContentWrapper = styled.div`
    * Desktop: let sticky work (minor horizontal bleed is acceptable).
    * Mobile: keep clipping as before.
    */
-  @media (min-width: 1025px) {
+  ${up(BP.TABLET)} {
     overflow-x: visible;
     overflow-y: visible;
   }
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     overflow-x: hidden;
   }
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     padding: 0;
   }
 `;
@@ -344,7 +118,7 @@ const MainContentLayout = styled.div`
   position: relative;
   z-index: 5;
 
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     flex-direction: column;
     gap: 0.5rem;
     padding-bottom: 3rem;
@@ -362,13 +136,13 @@ const PrimaryContentArea = styled.main`
   flex: 0 1 60%;
   max-width: 60%;
 
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     flex: none;
     max-width: none;
     width: 100%;
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     gap: 0.5rem;
   }
 `;
@@ -389,7 +163,7 @@ const StickySidebar = styled.aside`
   flex-direction: column;
   align-items: center;
 
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     display: none;
   }
 `;
@@ -406,7 +180,7 @@ const SidebarBookingInner = styled.div`
 const PeekBar = styled.div`
   display: none;
 
-  @media (min-width: 1025px) {
+  ${up(BP.TABLET)} {
     display: flex;
     position: fixed;
     bottom: 0;
@@ -464,11 +238,25 @@ const PeekPriceUnit = styled.span`
   padding-bottom: 2px;
 `;
 
-const PeekCancellation = styled.span`
+const PeekCancellation = styled.button`
   font-size: 11px;
   color: #717171;
   text-decoration: underline;
   text-underline-offset: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  &:hover {
+    color: #111;
+  }
+  &:focus-visible {
+    outline: 2px solid #ff385c;
+    outline-offset: 2px;
+  }
 `;
 
 const PeekCTABtn = styled.button`
@@ -491,7 +279,7 @@ const PeekCTABtn = styled.button`
 const MobileBookingFooterContainer = styled.div`
   display: none;
 
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -549,7 +337,7 @@ const easeCurveOut = [0.4, 0, 0.2, 1];
 /* Mobile-only: Best Price disclaimer — expands from footer toward lower center, then collapses to bookmark */
 const MobileBestPricePopUpWrapper = styled(motion.div)`
   display: none;
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -614,7 +402,7 @@ const DesktopHeaderWrapper = styled.div`
   position: sticky;
   top: 0;
   z-index: 100;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
@@ -625,7 +413,7 @@ const PageSectionTitle = styled.h2`
   color: #111111;
   margin: 0 0 1rem 0;
   line-height: 1.25;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     margin-bottom: 0.75rem;
   }
 `;
@@ -638,7 +426,7 @@ const MapSectionWrapper = styled.section.attrs({ className: "map-section-wrapper
     padding: 0;
   }
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     &.map-section-wrapper {
       padding: 1rem;
       margin-top: 0;
@@ -649,7 +437,7 @@ const MapSectionWrapper = styled.section.attrs({ className: "map-section-wrapper
 
 const SectionDividerAnt = styled(Divider)`
   margin: 2rem 0 !important;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     margin: 0.5rem 0 !important;
   }
 `;
@@ -661,7 +449,7 @@ const MapInnerContainer = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
 
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     height: 300px;
   }
 `;
@@ -692,7 +480,7 @@ const letterVariants = {
 const WhenSection = styled.section`
   display: none;
   
-  @media (max-width: 1024px) {
+  ${down(BP.TABLET)} {
     display: block;
     margin-bottom: 1.5rem;
     padding: 0 1rem;
@@ -1274,11 +1062,7 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
 
 const MobileBookingFooterSkeleton = ({ hidden }) => (
   <MobileBookingFooterContainer data-hidden={hidden}>
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <Skel_FooterPriceLine />
-      <Skel_FooterSubLine />
-    </div>
-    <Skel_FooterBtn />
+    <MobileBookingFooterSkeletonBlocks />
   </MobileBookingFooterContainer>
 );
 
@@ -1336,6 +1120,12 @@ export default function ClassPageClient({
 
     const tick = async () => {
       if (cancelled || attempts >= maxAttempts) return;
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
       attempts += 1;
       try {
         const fresh = await classService.fetchClassDetail(classData.slug);
@@ -1686,14 +1476,39 @@ export default function ClassPageClient({
       .filter((p) => !isNaN(p) && p > 0);
     if (!prices.length) return { amount: "Free", showFrom: false };
     const min = Math.min(...prices);
-    const currency = classData?.currency_code || "$";
-    return { amount: `${currency}${Math.round(min)}`, showFrom: true };
+    const { text } = formatMoneyCompact(min, classData?.currency_code);
+    return { amount: text, showFrom: true };
   }, [optionToDisplayOnCard, classData]);
 
   const peekPriceUnit =
     optionToDisplayOnCard?.booking_type === "Full Course" ? "/ course" : "/ guest";
 
   const peekHasCancellationPolicy = !!(optionToDisplayOnCard?.cancellationPolicy);
+
+  const showPeekCancellationPolicy = useCallback(() => {
+    const opt = optionToDisplayOnCard;
+    if (!opt?.cancellationPolicy) return;
+    const slot = mobileReserve.mobileSelectedSlot;
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const text = getCancellationPolicyText(
+      opt.cancellationPolicy,
+      opt.cancellationRefundPercentage,
+      opt.cancellationCustomHours,
+      slot?.date && slot?.time ? `${slot.date}T${slot.time}` : null,
+      userTz,
+      classData?.business_timezone || null,
+    );
+    Modal.info({
+      title: "Cancellation Policy",
+      content: text,
+      okText: "Close",
+      width: 440,
+    });
+  }, [
+    optionToDisplayOnCard,
+    mobileReserve.mobileSelectedSlot,
+    classData?.business_timezone,
+  ]);
 
   /** Deep-link query string for share / copy link (selected option + date when known). */
   const classPageShareQuery = useMemo(() => {
@@ -1841,55 +1656,7 @@ export default function ClassPageClient({
             <SectionDividerAnt />
 
             {/* Suspense fallback for client-heavy components */}
-            <Suspense
-              fallback={
-                <>
-                  <Skel_MapSection>
-                    <Skel_Map $radius="14px" />
-                  </Skel_MapSection>
-                  <Skel_FeaturesSection>
-                    <Skel_FeatureTitle />
-                    <Skel_FeaturesGrid>
-                      <Skel_FeatureTag />
-                      <Skel_FeatureTag />
-                      <Skel_FeatureTag />
-                      <Skel_FeatureTag />
-                      <Skel_FeatureTag />
-                      <Skel_FeatureTag />
-                    </Skel_FeaturesGrid>
-                  </Skel_FeaturesSection>
-                  <Skel_ReviewsSection>
-                    <Skel_ReviewsTitle />
-                    {[1, 2, 3].map((i) => (
-                      <Skel_ReviewCard key={i}>
-                        <Skel_ReviewHeader>
-                          <Skel_ReviewAvatar />
-                          <Skel_ReviewInfo>
-                            <Skel_ReviewName />
-                            <Skel_ReviewRating />
-                          </Skel_ReviewInfo>
-                        </Skel_ReviewHeader>
-                        <Skel_ReviewComment />
-                      </Skel_ReviewCard>
-                    ))}
-                  </Skel_ReviewsSection>
-                  <Skel_HostSection>
-                    <Skel_HostHeader>
-                      <Skel_HostAvatar />
-                      <Skel_HostDetails>
-                        <Skel_HostName />
-                        <Skel_HostSubtext />
-                      </Skel_HostDetails>
-                    </Skel_HostHeader>
-                    <Skel_HostStatsGrid>
-                      <Skel_HostStatBlock />
-                      <Skel_HostStatBlock />
-                      <Skel_HostStatBlock />
-                    </Skel_HostStatsGrid>
-                  </Skel_HostSection>
-                </>
-              }
-            >
+            <Suspense fallback={<ClassPageDeferredSkeleton />}>
               {classData.coordinates && (
                 <>
                   <MapSectionWrapper>
@@ -1958,13 +1725,7 @@ export default function ClassPageClient({
           <StickySidebar ref={sidebarRef}>
             <SidebarBookingInner ref={cardRef}>
               {!bookingOptionsLoaded ? (
-                <Skel_BookingCard>
-                  <Skel_Disclaimer />
-                  <Skel_Price />
-                  <Skel_Details />
-                  <Skel_Schedule />
-                  <Skel_Button />
-                </Skel_BookingCard>
+                <ClassSidebarBookingSkeleton />
               ) : optionToDisplayOnCard ? (
                 <ClassOptionsContainer
                   options={[optionToDisplayOnCard]}
@@ -1994,7 +1755,13 @@ export default function ClassPageClient({
               <PeekPriceUnit>{peekPriceUnit}</PeekPriceUnit>
             </PeekPriceLine>
             {peekHasCancellationPolicy && (
-              <PeekCancellation>Cancellation Policy</PeekCancellation>
+              <PeekCancellation
+                type="button"
+                aria-label="View cancellation policy"
+                onClick={showPeekCancellationPolicy}
+              >
+                Cancellation Policy
+              </PeekCancellation>
             )}
           </PeekPriceStack>
           <PeekCTABtn
@@ -2037,9 +1804,17 @@ export default function ClassPageClient({
                   <ReserveFooterSummary>
                     <ReserveFooterPrice>
                       {mobileReserve.mobileSelectedSlot.price != null && parseFloat(mobileReserve.mobileSelectedSlot.price) > 0
-                        ? `$${parseFloat(mobileReserve.mobileSelectedSlot.price).toFixed(0)}`
+                        ? formatMoneyCompact(
+                            parseFloat(mobileReserve.mobileSelectedSlot.price),
+                            classData?.currency_code,
+                          ).text
                         : "Free"}
-                      <span style={{ fontWeight: 400, color: "#6b7280", fontSize: "0.8rem" }}> / person</span>
+                      <span style={{ fontWeight: 400, color: "#6b7280", fontSize: "0.8rem" }}>
+                        {" "}
+                        {optionToDisplayOnCard?.booking_type === "Full Course"
+                          ? "/ course"
+                          : "/ guest"}
+                      </span>
                     </ReserveFooterPrice>
                     <ReserveFooterMeta>
                       {formatNaiveDate(mobileReserve.mobileSelectedSlot.date, "EEE, MMM d")} ·{" "}
