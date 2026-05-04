@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   X,
   Loader2,
-  Box,
 } from "lucide-react";
 import { collectionService } from "@/services/apiService";
 import dayjs from "dayjs";
@@ -720,19 +719,8 @@ export default function SearchFullScreen() {
                         exit={{ opacity: 0, height: 0 }}
                         transition={contentTransition}
                       >
-                        <ScrollableContent style={{ padding: "12px 16px 20px" }}>
-                          <ExploreDropdownTypeChipFlow style={{ padding: "4px 0 0" }}>
-                            <ExploreDropdownTypeChip
-                              type="button"
-                              $selected={(selectedCollections || []).length === 0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCollections([]);
-                              }}
-                            >
-                              <Box size={16} strokeWidth={2} aria-hidden />
-                              <span>Any experience</span>
-                            </ExploreDropdownTypeChip>
+                        <ScrollableContent style={{ padding: 0 }}>
+                          <ExploreDropdownTypeChipFlow>
                             {iWantCollections.map((c) => {
                               const active = (selectedCollections || []).some(
                                 (x) => x.slug === c.slug,

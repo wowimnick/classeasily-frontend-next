@@ -205,7 +205,7 @@ const ExploreDropdownPanel = styled.div`
 `;
 
 const TimeDropdownIntro = styled.div`
-  padding: 18px 22px 4px;
+  padding: 16px 20px 8px;
 `;
 
 const TimeDropdownTitle = styled.div`
@@ -226,7 +226,7 @@ const TimeOptionList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 0 22px 12px;
+  padding: 0 20px 12px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -299,20 +299,20 @@ const TimeOptionSub = styled.span`
 
 const DropdownFooter = styled.div`
   border-top: 1px solid #ebebeb;
-  padding: 20px 22px;
+  padding: 12px 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   flex-shrink: 0;
 `;
 
 const DropdownClearLink = styled.button`
   border: none;
   background: none;
-  padding: 12px 4px;
-  font-size: 16px;
-  font-weight: 400;
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 500;
   color: #000000;
   cursor: pointer;
   flex-shrink: 0;
@@ -472,7 +472,7 @@ function ExploreCategoriesContent({
           if (!ac.signal.aborted) setBarPreviewLoading(false);
         }
       })();
-    }, 300);
+    }, 120);
 
     return () => {
       clearTimeout(t);
@@ -689,6 +689,7 @@ function ExploreCategoriesContent({
               </DropdownClearLink>
               <ExploreShowResultsButton
                 type="button"
+                $compact
                 onClick={applyTypeDesktop}
                 disabled={barPreviewLoading}
                 aria-busy={barPreviewLoading}
@@ -748,6 +749,7 @@ function ExploreCategoriesContent({
               </DropdownClearLink>
               <ExploreShowResultsButton
                 type="button"
+                $compact
                 onClick={applyTimeDesktop}
                 disabled={barPreviewLoading}
                 aria-busy={barPreviewLoading}

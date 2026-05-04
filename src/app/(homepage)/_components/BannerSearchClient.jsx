@@ -14,7 +14,6 @@ import {
   Star,
   ArrowRight,
   ChevronRight,
-  Box,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
@@ -1141,18 +1140,6 @@ export default function BannerSearchClient({ mode }) {
                               )}
                               renderCollectionPicker={() => (
                                 <ExploreDropdownTypeChipFlow>
-                                  <ExploreDropdownTypeChip
-                                    type="button"
-                                    $selected={(selectedCollections || []).length === 0}
-                                    onClick={() => {
-                                      setSelectedCollections([]);
-                                      setActiveField(null);
-                                      setIsSwitching(false);
-                                    }}
-                                  >
-                                    <Box size={16} strokeWidth={2} aria-hidden />
-                                    <span>Any experience</span>
-                                  </ExploreDropdownTypeChip>
                                   {iWantCollections.map((c) => {
                                     const title = formatCollectionDisplayName(
                                       c.name || c.slug,

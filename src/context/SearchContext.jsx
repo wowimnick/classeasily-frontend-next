@@ -117,9 +117,8 @@ export function summarizeCollectionsForPill(collections) {
   if (list.length === 1) {
     return formatCollectionDisplayName(list[0].name || list[0].slug);
   }
-  const labels = list.map((c) => formatCollectionDisplayName(c.name || c.slug));
-  if (labels.length === 2) return `${labels[0]} · ${labels[1]}`;
-  return `${labels[0]} · +${labels.length - 1}`;
+  const first = formatCollectionDisplayName(list[0].name || list[0].slug);
+  return `${first} · +${list.length - 1}`;
 }
 
 function normalizeStoredCollections(stored) {
@@ -143,17 +142,22 @@ export function formatCollectionDisplayName(raw) {
   if (raw == null) return "";
   const s = String(raw).trim();
   if (!s) return "";
-  const looksSlugLike = /[-_]/.test(s);
-  if (!looksSlugLike) {
-    // Preserve editorial casing (e.g., DIY, 2SLGBTQ+, iPhone) for admin-provided names.
-    return s.replace(/\s+/g, " ");
+  const hasSlugSeparators = /[-_]/.test(s);
+  /** One all-lowercase URL slug token (e.g. `wellness`) — hyphenated slugs use the branch above */
+  const singleLowercaseSlugToken = /^[a-z][a-z0-9]*$/.test(s);
+  if (hasSlugSeparators) {
+    return s
+      .replace(/[-_]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
   }
-  return s
-    .replace(/[-_]+/g, " ")
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+  if (singleLowercaseSlugToken) {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+  // Preserve editorial casing (e.g., DIY, 2SLGBTQ+, iPhone) for admin-provided names.
+  return s.replace(/\s+/g, " ");
 }
 
 // Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner).

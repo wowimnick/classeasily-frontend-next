@@ -212,7 +212,7 @@ export default function ExploreTimeOfDayDrawer({
           if (!ac.signal.aborted) setPreviewLoading(false);
         }
       })();
-    }, 300);
+    }, 120);
 
     return () => {
       clearTimeout(t);
@@ -275,7 +275,6 @@ export default function ExploreTimeOfDayDrawer({
             <ExploreShowResultsButton
               type="button"
               onClick={handleShowResults}
-              disabled={previewLoading}
               aria-busy={previewLoading}
             >
               <ExploreResultsPrimaryLabel

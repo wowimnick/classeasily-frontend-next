@@ -550,7 +550,7 @@ function ExploreClientContent({
       }
 
       const apiParams = buildApiParamsFromSearchParams(sp);
-      const response = await classService.searchClasses(
+      const response = await classService.searchClassesCount(
         { ...apiParams, page: 1 },
         signal,
       );
@@ -569,7 +569,7 @@ function ExploreClientContent({
       );
       merged.delete("explore_page");
       const apiParams = buildApiParamsFromSearchParams(merged);
-      const response = await classService.searchClasses(
+      const response = await classService.searchClassesCount(
         { ...apiParams, page: 1 },
         signal,
       );

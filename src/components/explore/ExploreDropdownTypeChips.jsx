@@ -17,19 +17,19 @@ export const exploreSearchDropdownPanelCss = css`
   max-height: min(560px, calc(100vh - 96px));
 `;
 
-/** Matches ExploreCategories `DropdownTypeChipFlow` — wrap + scroll */
+/** Wrap + scroll — equal horizontal and vertical inset so panels align cleanly */
 export const ExploreDropdownTypeChipFlow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 8px;
-  padding: 20px 22px 12px;
+  padding: 16px 20px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
 `;
 
-/** Matches ExploreCategories `DropdownTypeChip` — black pill selection */
+/** Outline chips: gray border default, black border when selected; white fill always */
 export const ExploreDropdownTypeChip = styled.button`
   box-sizing: border-box;
   display: inline-flex;
@@ -39,21 +39,19 @@ export const ExploreDropdownTypeChip = styled.button`
   width: fit-content;
   max-width: 100%;
   padding: 10px 16px;
-  border: 1.5px solid #111111;
+  border: 1px solid ${(p) => (p.$selected ? "#111111" : "#e5e7eb")};
   border-radius: 9999px;
-  background: ${(p) => (p.$selected ? "#111111" : "#ffffff")};
-  font-size: 14px;
+  background: #ffffff;
+  font-size: 13px;
   line-height: 1.2;
-  color: ${(p) => (p.$selected ? "#ffffff" : "#222222")};
+  color: #222222;
   cursor: pointer;
   font-weight: ${(p) => (p.$selected ? 600 : 400)};
   text-align: left;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: border-color 0.15s ease;
 
   svg {
     flex-shrink: 0;
-    color: ${(p) => (p.$selected ? "#ffffff" : "inherit")};
+    color: inherit;
   }
 `;

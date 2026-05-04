@@ -24,8 +24,9 @@ import {
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { BP, down, up } from "@/styles/breakpoints";
+import { formatCollectionDisplayName } from "@/context/SearchContext";
 
-// Lazy load map component with significant delay to prevent map tiles from becoming LCP
+// Lazy load map component
 const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
   ssr: false,
   loading: () => (
@@ -355,7 +356,8 @@ const ClassesDisplay = ({
       const fromFeatured = collections?.find((c) => c.slug === slug);
       if (fromFeatured?.name) return fromFeatured.name;
       const fromWant = collectionsIWant?.find((c) => c.slug === slug);
-      return fromWant?.name ?? slug;
+      if (fromWant?.name) return fromWant.name;
+      return formatCollectionDisplayName(slug);
     });
     if (labels.length === 1) return labels[0];
     return `${labels.slice(0, 2).join(" · ")}${labels.length > 2 ? ` +${labels.length - 2}` : ""}`;

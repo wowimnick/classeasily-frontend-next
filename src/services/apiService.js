@@ -2276,6 +2276,36 @@ export const classService = {
     }
   },
 
+  /** Same filters as searchClasses; API returns only `{ count }` (no result rows). */
+  searchClassesCount: async (params = {}, signal) => {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append("count_only", "1");
+      Object.entries(params).forEach(([key, value]) => {
+        if (key === "count_only") return;
+        if (Array.isArray(value)) {
+          value.forEach((v) => queryParams.append(key, v));
+        } else if (value !== null && value !== undefined && value !== "") {
+          queryParams.append(key, value);
+        }
+      });
+      const url = `${
+        API_ENDPOINTS.PUBLIC_CLASSES
+      }search/?${queryParams.toString()}`;
+      const response = await axiosInstance.get(url, { signal });
+      return response.data;
+    } catch (error) {
+      if (error.name === "AbortError" || error.name === "CanceledError") {
+        throw error;
+      }
+      console.error(
+        "Error fetching class search count:",
+        error.response?.data || error,
+      );
+      throw error.response?.data || error;
+    }
+  },
+
   fetchClassReviewsPaginated: async (classId, page = 1, pageSize = 10) => {
     try {
       const response = await axiosInstance.get(

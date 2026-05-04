@@ -172,7 +172,7 @@ export default function ExploreExperienceTypeDrawer({
           if (!ac.signal.aborted) setPreviewLoading(false);
         }
       })();
-    }, 300);
+    }, 120);
 
     return () => {
       clearTimeout(t);
@@ -234,7 +234,6 @@ export default function ExploreExperienceTypeDrawer({
             <ExploreShowResultsButton
               type="button"
               onClick={handleShowResults}
-              disabled={previewLoading}
               aria-busy={previewLoading}
             >
               <ExploreResultsPrimaryLabel

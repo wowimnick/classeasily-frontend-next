@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Box,
 } from "lucide-react";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -399,7 +398,7 @@ const CompactFieldZone = styled.button`
 
 const CompactFieldText = styled.span`
   display: block;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111111;
   white-space: nowrap;
@@ -407,17 +406,12 @@ const CompactFieldText = styled.span`
   flex-shrink: 0;
 `;
 
-const CompactDot = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+const CompactDivider = styled.span`
+  display: inline-block;
   flex-shrink: 0;
-  width: 10px;
+  width: 1px;
   height: 18px;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1;
-  color: #d1d5db;
+  background: #d1d5db;
   user-select: none;
 `;
 
@@ -1522,7 +1516,7 @@ function ExploreHeaderContent({
                           <CompactFieldText>{getCompactLocationDisplay()}</CompactFieldText>
                         </CompactFieldZone>
 
-                        <CompactDot aria-hidden>·</CompactDot>
+                        <CompactDivider aria-hidden />
 
                         <CompactFieldZone
                           type="button"
@@ -1532,7 +1526,7 @@ function ExploreHeaderContent({
                           <CompactFieldText>{getDateDisplay()}</CompactFieldText>
                         </CompactFieldZone>
 
-                        <CompactDot aria-hidden>·</CompactDot>
+                        <CompactDivider aria-hidden />
 
                         <CompactFieldZone
                           type="button"
@@ -1699,17 +1693,6 @@ function ExploreHeaderContent({
                           )}
                           {activeField === "collection" && (
                             <ExploreDropdownTypeChipFlow>
-                              <ExploreDropdownTypeChip
-                                type="button"
-                                $selected={(selectedCollections || []).length === 0}
-                                onClick={() => {
-                                  setSelectedCollections([]);
-                                  closeActiveField();
-                                }}
-                              >
-                                <Box size={16} strokeWidth={2} aria-hidden />
-                                <span>Any experience</span>
-                              </ExploreDropdownTypeChip>
                               {iWantCollections.map((c) => {
                                 const active = (selectedCollections || []).some(
                                   (x) => x.slug === c.slug,
