@@ -478,8 +478,13 @@ export const SearchProvider = ({ children }) => {
     return () => debouncedPrefetchExplore.cancel();
   }, [debouncedPrefetchExplore]);
 
-  // Prefetch explore page when user has a location (debounced to avoid storms while typing)
+  // Prefetch explore page when user has a location (debounced to avoid storms while typing).
+  // Corporate shortlist/checkout uses the header without the search pill — skip prefetch so we
+  // do not warm the explore RSC (and homepage-content fetches) on those routes.
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/corporate/shortlist")) {
+      return;
+    }
     const { displayName, coordinates } = selectedLocation;
     const hasLocation = (displayName || searchTerm.trim()) && coordinates;
     if (!hasLocation) return;

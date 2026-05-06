@@ -213,17 +213,8 @@ const SearchModeHeightAnimator = styled(motion.div)`
   overflow: visible;
 `;
 
-const POPUP_CONTENT_PADDING = 16;
 
-const PopupContentPadding = styled.div`
-  padding: ${(p) => (p.$noPad ? "0" : `${POPUP_CONTENT_PADDING}px`)};
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-`;
+const POPUP_CONTENT_PADDING = 16;
 
 const LocationInput = styled.input`
   width: 100%;
@@ -1105,92 +1096,95 @@ export default function BannerSearchClient({ mode }) {
                         scale: { duration: 0.25 },
                       }}
                     >
-                      <PopupContentPadding $noPad={activeField === "collection"}>
-                        <AnimatePresence mode="popLayout">
-                          <motion.div
-                            key={activeField}
-                            layout="position"
-                            variants={contentVariants}
-                            initial="enter"
-                            animate="center"
-                            exit="exit"
-                            style={{
-                              width: "100%",
-                              boxSizing: "border-box",
-                            }}
-                          >
-                            <FrozenContent
-                              field={activeField}
-                              renderLocation={() => (
-                                <>
-                                  <PopupSectionLabel>
-                                    SUGGESTED
-                                  </PopupSectionLabel>
-                                  <LocationList>
-                                    {renderLocationSuggestions()}
-                                  </LocationList>
-                                </>
-                              )}
-                              renderDate={() => (
-                                <CustomCalendar
-                                  value={datePickerValue}
-                                  onChange={setDatePickerValue}
-                                  onClose={() => setActiveField(null)}
-                                />
-                              )}
-                              renderCollectionPicker={() => (
-                                <ExploreDropdownTypeChipFlow>
-                                  {iWantCollections.map((c) => {
-                                    const title = formatCollectionDisplayName(
-                                      c.name || c.slug,
-                                    );
-                                    const isSelected = (selectedCollections || []).some(
-                                      (x) => x.slug === c.slug,
-                                    );
-                                    return (
-                                      <ExploreDropdownTypeChip
-                                        key={c.id ?? c.slug}
-                                        type="button"
-                                        $selected={isSelected}
-                                        onClick={() => {
-                                          setSelectedCollections((prev) => {
-                                            const exists = prev.some(
-                                              (x) => x.slug === c.slug,
+                      <AnimatePresence mode="popLayout">
+                        <motion.div
+                          key={activeField}
+                          layout="position"
+                          variants={contentVariants}
+                          initial="enter"
+                          animate="center"
+                          exit="exit"
+                          style={{
+                            width: POPUP_SIZES[activeField] || 400,
+                            padding: activeField === "collection" ? 0 : POPUP_CONTENT_PADDING,
+                            boxSizing: "border-box",
+                            display: "flex",
+                            flexDirection: "column",
+                            flex: 1,
+                            minHeight: 0
+                          }}
+                        >
+                          <FrozenContent
+                            field={activeField}
+                            renderLocation={() => (
+                              <>
+                                <PopupSectionLabel>
+                                  SUGGESTED
+                                </PopupSectionLabel>
+                                <LocationList>
+                                  {renderLocationSuggestions()}
+                                </LocationList>
+                              </>
+                            )}
+                            renderDate={() => (
+                              <CustomCalendar
+                                value={datePickerValue}
+                                onChange={setDatePickerValue}
+                                onClose={() => setActiveField(null)}
+                              />
+                            )}
+                            renderCollectionPicker={() => (
+                              <ExploreDropdownTypeChipFlow>
+                                {iWantCollections.map((c) => {
+                                  const title = formatCollectionDisplayName(
+                                    c.name || c.slug,
+                                  );
+                                  const isSelected = (selectedCollections || []).some(
+                                    (x) => x.slug === c.slug,
+                                  );
+                                  return (
+                                    <ExploreDropdownTypeChip
+                                      key={c.id ?? c.slug}
+                                      type="button"
+                                      $selected={isSelected}
+                                      onClick={() => {
+                                        setSelectedCollections((prev) => {
+                                          const exists = prev.some(
+                                            (x) => x.slug === c.slug,
+                                          );
+                                          if (exists) {
+                                            return prev.filter(
+                                              (x) => x.slug !== c.slug,
                                             );
-                                            if (exists) {
-                                              return prev.filter(
-                                                (x) => x.slug !== c.slug,
-                                              );
-                                            }
-                                            return [
-                                              ...prev,
-                                              {
-                                                slug: c.slug,
-                                                name: c.name || title,
-                                                icon_name: c.icon_name || "",
-                                                color: c.color || "",
-                                              },
-                                            ];
-                                          });
-                                        }}
-                                      >
-                                        {c.icon_name ? (
-                                          <ExploreBarLazyLucideIcon
-                                            iconName={c.icon_name}
-                                            size={16}
-                                            strokeWidth={1.5}
-                                          />
-                                        ) : null}
-                                        <span>{title}</span>
-                                      </ExploreDropdownTypeChip>
-                                    );
-                                  })}
-                                </ExploreDropdownTypeChipFlow>
-                              )}
-                            />
-                          </motion.div>
-                        </AnimatePresence>
-                      </PopupContentPadding>
+                                          }
+                                          return [
+                                            ...prev,
+                                            {
+                                              slug: c.slug,
+                                              name: c.name || title,
+                                              icon_name: c.icon_name || "",
+                                              color: c.color || "",
+                                            },
+                                          ];
+                                        });
+                                      }}
+                                    >
+                                      {c.icon_name ? (
+                                        <ExploreBarLazyLucideIcon
+                                          iconName={c.icon_name}
+                                          size={16}
+                                          strokeWidth={1.5}
+                                        />
+                                      ) : null}
+                                      <span>{title}</span>
+                                    </ExploreDropdownTypeChip>
+                                  );
+                                })}
+                              </ExploreDropdownTypeChipFlow>
+                            )}
+                          />
+                        </motion.div>
+                      </AnimatePresence>
                     </UnifiedPopupContainer>
                   )}
                 </AnimatePresence>

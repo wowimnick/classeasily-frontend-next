@@ -1,5 +1,5 @@
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterSmart from "@/components/homepage/FooterSmart";
 
 export default function ConfirmedLoading() {
   return (
@@ -31,7 +31,7 @@ export default function ConfirmedLoading() {
           style={{ height: 20, width: "40%", borderRadius: 6, margin: "0 auto" }}
         />
       </div>
-      <Footer />
+      <FooterSmart />
     </div>
   );
 }

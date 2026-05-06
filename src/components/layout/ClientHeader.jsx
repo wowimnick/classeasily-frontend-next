@@ -564,15 +564,6 @@ const UnifiedPopupContainer = styled(motion.div)`
   ${exploreSearchDropdownPanelCss}
 `;
 
-const PopupContentPadding = styled.div`
-  padding: ${(p) => (p.$noPad ? "0" : "20px 22px 22px")};
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-`;
 
 // --- CALENDAR ---
 
@@ -1006,6 +997,21 @@ const MobileExplorePillMetaRow = styled.span`
 `;
 
 // --- CONSTANTS ---
+
+// --- FIX: FrozenContent Component ---
+const FrozenContent = ({
+  field,
+  renderLocation,
+  renderDate,
+  renderCollectionPicker,
+}) => {
+  const [frozenField] = useState(field);
+
+  if (frozenField === "location") return renderLocation();
+  if (frozenField === "date") return renderDate();
+  if (frozenField === "collection") return renderCollectionPicker();
+  return null;
+};
 
 const POPUP_SIZES = {
   location: 380,
@@ -1669,28 +1675,37 @@ function ExploreHeaderContent({
                     }}
                     style={{ top: popupConfig.top }}
                   >
-                    <PopupContentPadding $noPad={activeField === "collection"}>
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={activeField}
-                          layout="position"
-                          variants={contentVariants}
-                          initial="enter"
-                          animate="center"
-                          exit="exit"
-                          style={{ width: "100%", boxSizing: "border-box" }}
-                        >
-                          {activeField === "location" && (
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={activeField}
+                        layout="position"
+                        variants={contentVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        style={{ 
+                          width: POPUP_SIZES[activeField] || 380,
+                          padding: activeField === "collection" ? 0 : "20px 22px 22px",
+                          boxSizing: "border-box",
+                          display: "flex",
+                          flexDirection: "column",
+                          flex: 1,
+                          minHeight: 0
+                        }}
+                      >
+                        <FrozenContent
+                          field={activeField}
+                          renderLocation={() => (
                             <LocationList>{renderLocationSuggestions()}</LocationList>
                           )}
-                          {activeField === "date" && (
+                          renderDate={() => (
                             <CustomCalendar
                               value={datePickerValue}
                               onChange={setDatePickerValue}
                               onClose={closeActiveField}
                             />
                           )}
-                          {activeField === "collection" && (
+                          renderCollectionPicker={() => (
                             <ExploreDropdownTypeChipFlow>
                               {iWantCollections.map((c) => {
                                 const active = (selectedCollections || []).some(
@@ -1725,9 +1740,9 @@ function ExploreHeaderContent({
                               })}
                             </ExploreDropdownTypeChipFlow>
                           )}
-                        </motion.div>
-                      </AnimatePresence>
-                    </PopupContentPadding>
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </UnifiedPopupContainer>
                 )}
               </AnimatePresence>

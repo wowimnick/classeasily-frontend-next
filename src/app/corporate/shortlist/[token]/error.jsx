@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterSmart from "@/components/homepage/FooterSmart";
 import { ACCENT_DARK, BRAND_RED, HERO_MUTED } from "@/components/corporate/tokens";
 
 export default function ShortlistSegmentError({ error, reset }) {
@@ -41,7 +41,7 @@ export default function ShortlistSegmentError({ error, reset }) {
           Try again
         </button>
       </div>
-      <Footer />
+      <FooterSmart />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import ShortlistPageClient from "./ShortlistPageClient";
 
 export const metadata = {
@@ -7,35 +6,11 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-function ShortlistFallback() {
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#64748b",
-      }}
-    >
-      Loading…
-    </div>
-  );
-}
-
-async function ShortlistWithParams({ params }) {
+export default async function CorporateShortlistPage({ params }) {
   const resolved = await params;
   const token = resolved?.token;
   if (!token) {
     return null;
   }
   return <ShortlistPageClient token={token} />;
-}
-
-export default function CorporateShortlistPage({ params }) {
-  return (
-    <Suspense fallback={<ShortlistFallback />}>
-      <ShortlistWithParams params={params} />
-    </Suspense>
-  );
 }

@@ -1,5 +1,5 @@
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterSmart from "@/components/homepage/FooterSmart";
 
 export default function CheckoutLoading() {
   return (
@@ -17,7 +17,7 @@ export default function CheckoutLoading() {
         <div className="ce-skel" style={{ height: 120, borderRadius: 12 }} />
         <div className="ce-skel" style={{ height: 48, borderRadius: 12, marginTop: 24, width: "100%" }} />
       </div>
-      <Footer />
+      <FooterSmart />
     </div>
   );
 }

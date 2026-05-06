@@ -6,7 +6,7 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { corporateBookingService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterSmart from "@/components/homepage/FooterSmart";
 import { BP, down, up } from "@/components/corporate/tokens";
 import ShortlistLandingIntro from "@/components/corporate/shortlist/ShortlistLandingIntro";
 import ShortlistHero from "./_components/ShortlistHero";
@@ -14,6 +14,7 @@ import ShortlistComparisonTable from "./_components/ShortlistComparisonTable";
 import ChooseFlow from "./_components/ChooseFlow";
 import BookingStatusPanel from "./_components/BookingStatusPanel";
 import JourneyStepper from "./_components/JourneyStepper";
+import { ShortlistMainSkeleton } from "./_components/ShortlistMainSkeleton";
 
 const PageWrap = styled.div`
   min-height: 100dvh;
@@ -171,6 +172,22 @@ export default function ShortlistPageClient({ token }) {
     load();
   }, [load]);
 
+  /* Warm the intro chunk when this visit may show the landing walkthrough (first time or forced hosts). */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const forceIntro = shouldAlwaysShowIntro();
+    let seen = false;
+    if (!forceIntro) {
+      try {
+        seen = window.localStorage.getItem(introStorageKey(token)) === "1";
+      } catch {
+        seen = false;
+      }
+    }
+    if (!(forceIntro || !seen)) return;
+    void import("@/components/corporate/shortlist/ShortlistLandingIntro");
+  }, [token]);
+
   useEffect(() => {
     if (introChecked) return;
     if (loading) return;
@@ -239,18 +256,10 @@ export default function ShortlistPageClient({ token }) {
     return (
       <PageWrap>
         <ExploreHeader showOptionsWrapper={false} />
-        <MainContent>
-          <Container>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <p style={{ color: "#000000", fontSize: "1.125rem", fontWeight: 400 }}>Preparing your curated collection...</p>
-            </motion.div>
-          </Container>
+        <MainContent aria-busy="true" aria-live="polite">
+          <ShortlistMainSkeleton />
         </MainContent>
-        <Footer />
+        <FooterSmart />
       </PageWrap>
     );
   }
@@ -267,7 +276,7 @@ export default function ShortlistPageClient({ token }) {
             </motion.div>
           </Container>
         </MainContent>
-        <Footer />
+        <FooterSmart />
       </PageWrap>
     );
   }
@@ -283,7 +292,7 @@ export default function ShortlistPageClient({ token }) {
             </ErrorBanner>
           </Container>
         </MainContent>
-        <Footer />
+        <FooterSmart />
       </PageWrap>
     );
   }
@@ -291,11 +300,11 @@ export default function ShortlistPageClient({ token }) {
   if (data && !introChecked) {
     return (
       <PageWrap>
-        <MainContent>
-          <Container>
-            <p style={{ color: "#000000", fontSize: "1.125rem", fontWeight: 400 }}>Preparing your curated collection...</p>
-          </Container>
+        <ExploreHeader showOptionsWrapper={false} />
+        <MainContent aria-busy="true" aria-live="polite">
+          <ShortlistMainSkeleton />
         </MainContent>
+        <FooterSmart />
       </PageWrap>
     );
   }
@@ -397,7 +406,7 @@ export default function ShortlistPageClient({ token }) {
         </Container>
       </MainContent>
 
-      <Footer />
+      <FooterSmart />
     </PageWrap>
   );
 }
