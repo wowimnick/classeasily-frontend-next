@@ -2,6 +2,7 @@
 
 import styled from "styled-components";
 import { motion } from "framer-motion";
+import { BP, down } from "@/styles/breakpoints";
 import {
   SHORTLIST_BOOKING_FLOW,
   SHORTLIST_LEAD,
@@ -9,6 +10,10 @@ import {
 
 const HeroShell = styled(motion.section)`
   padding: 0.25rem 0 1.75rem;
+
+  ${down(BP.MOBILE)} {
+    padding: 0.15rem 0 1.25rem;
+  }
 `;
 
 const HeroPanel = styled(motion.div)`
@@ -28,6 +33,8 @@ const HeroPanel = styled(motion.div)`
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
     align-items: start;
+    border-radius: 20px;
+    padding: clamp(0.85rem, 3vw, 1.25rem);
   }
 `;
 
@@ -35,16 +42,21 @@ const CopyColumn = styled.div`
   position: relative;
   z-index: 1;
   max-width: 760px;
+  min-width: 0;
 `;
 
 const Title = styled(motion.h1)`
-  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.55rem, 4.2vw, 2.5rem);
   font-weight: 650;
   letter-spacing: -0.02em;
-  line-height: 1.06;
+  line-height: 1.08;
   color: #000000;
   margin: 0;
   max-width: 680px;
+
+  ${down(BP.MOBILE)} {
+    line-height: 1.12;
+  }
 `;
 
 const Lead = styled(motion.p)`
@@ -62,7 +74,7 @@ const ProcessCard = styled(motion.aside)`
   align-self: stretch;
   display: flex;
   flex-direction: column;
-  padding: 0.9rem;
+  padding: 0.85rem 0.9rem;
   border: 1px solid rgba(34, 34, 34, 0.1);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.72);
@@ -70,38 +82,10 @@ const ProcessCard = styled(motion.aside)`
   backdrop-filter: blur(18px);
 `;
 
-const ProcessHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.65rem;
-  border-bottom: 1px solid #eeeeee;
-`;
-
-const ProcessKicker = styled.span`
-  color: #000000;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-`;
-
-const ProcessStatus = styled.span`
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.3rem 0.5rem;
-  background: #f7f7f7;
-  color: #000000;
-  font-size: 0.73rem;
-  font-weight: 650;
-`;
-
 const FlowList = styled(motion.div)`
   display: grid;
   gap: 0.65rem;
-  margin-top: 0.75rem;
+  margin-top: 0;
 `;
 
 const FlowItem = styled(motion.div)`
@@ -251,16 +235,12 @@ export default function ShortlistHero({ companyName }) {
       <HeroPanel variants={panelReveal}>
         <CopyColumn>
           <Title variants={titleReveal}>
-            Handpicked experiences for {companyName || "your team"}
+            Experiences for {companyName || "your team"}
           </Title>
           <Lead variants={softBloom}>{SHORTLIST_LEAD}</Lead>
         </CopyColumn>
 
         <ProcessCard variants={cardReveal}>
-          <ProcessHeader>
-            <ProcessKicker>How it works</ProcessKicker>
-            <ProcessStatus>No obligation yet</ProcessStatus>
-          </ProcessHeader>
           <FlowList variants={flowStagger}>
             {SHORTLIST_BOOKING_FLOW.map((item, index) => (
               <FlowItem key={item.title} variants={flowItemReveal}>

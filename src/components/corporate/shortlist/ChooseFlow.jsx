@@ -10,6 +10,8 @@ const Layout = styled.div`
   display: flex;
   gap: 4rem;
   align-items: flex-start;
+  max-width: 100%;
+  min-width: 0;
 
   @media (max-width: 992px) {
     flex-direction: column-reverse;
@@ -20,6 +22,7 @@ const Layout = styled.div`
 const FormColumn = styled.div`
   flex: 1;
   max-width: 540px;
+  min-width: 0;
 `;
 
 const SummaryColumn = styled.div`

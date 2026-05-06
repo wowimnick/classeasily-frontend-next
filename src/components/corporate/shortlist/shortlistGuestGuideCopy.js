@@ -2,19 +2,19 @@
  * Guest-facing copy for the corporate shortlist hero (not editable in admin).
  */
 export const SHORTLIST_LEAD =
-  "We pulled together a few strong fits for your team. Each option includes the essentials you need to compare format, location, timing, inclusions, and budget before choosing what you want us to hold.";
+  "This page brings your options together so you can compare them in one place. When you pick one, you will confirm a few details and pay a deposit to hold it.";
 
 export const SHORTLIST_BOOKING_FLOW = [
   {
-    title: "Review",
-    text: "Use the comparison below to scan format, area, inclusions, dates, and pricing.",
+    title: "Compare",
+    text: "Review location, timing, what is included, and price for each option.",
   },
   {
-    title: "Choose",
-    text: "Pick the experience that feels right. We collect the essentials next.",
+    title: "Select",
+    text: "Choose the experience you want. We will collect the details we need next.",
   },
   {
-    title: "Confirm",
-    text: "Pay the deposit securely. We coordinate final timing and invoice the balance.",
+    title: "Reserve",
+    text: "Pay the deposit to secure the booking. We confirm timing with you, then invoice the balance before the event.",
   },
 ];

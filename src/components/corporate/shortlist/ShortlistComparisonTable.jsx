@@ -129,6 +129,7 @@ const CompareBundle = styled.div`
 const PlanCompareScroll = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   width: 100%;
   min-width: 0;
 `;
@@ -276,17 +277,17 @@ const PcTdMarkInnerLeft = styled.span`
   min-height: 22px;
 `;
 
-const SectionHeadCell = styled.td`
-  padding: ${(p) => (p.$band === "pricing" ? "14px 14px 12px 18px" : "12px 14px 11px 18px")};
+/** Full-width section band — same treatment for every block (Experience, Pricing, …). */
+const SectionHeadCell = styled.th`
+  padding: 12px 14px 11px 18px;
   font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: ${(p) => (p.$band === "pricing" ? "#111827" : "#374151")};
-  border-top: ${(p) =>
-    p.$band === "pricing" ? `2px solid ${T.border}` : `1px solid ${T.rowLine}`};
+  color: ${T.text};
+  background: ${T.bgMuted};
+  border-top: 2px solid ${T.border};
   border-bottom: 1px solid ${T.border};
-  background: ${(p) => (p.$band === "pricing" ? T.bgMuted : T.white)};
   text-align: left;
 `;
 
@@ -607,7 +608,9 @@ export default function ShortlistComparisonTable({
             </MotionThead>
             <MotionTbody variants={tbodyOrchestra} initial="hidden" animate="visible">
               <MotionTr variants={sectionBandReveal}>
-                <SectionHeadCell colSpan={n + 1}>Experience</SectionHeadCell>
+                <SectionHeadCell colSpan={n + 1} scope="colgroup">
+                  Experience
+                </SectionHeadCell>
               </MotionTr>
             <MotionTr variants={tableRowReveal}>
               <PcTdFeature>Host</PcTdFeature>
@@ -747,21 +750,8 @@ export default function ShortlistComparisonTable({
               </MotionTr>
             ) : null}
 
-            <tr aria-hidden="true">
-              <td
-                colSpan={n + 1}
-                style={{
-                  height: 14,
-                  padding: 0,
-                  border: "none",
-                  background: "#ffffff",
-                  lineHeight: 0,
-                  fontSize: 0,
-                }}
-              />
-            </tr>
             <MotionTr variants={sectionBandReveal}>
-              <SectionHeadCell colSpan={n + 1} $band="pricing">
+              <SectionHeadCell colSpan={n + 1} scope="colgroup">
                 Pricing
               </SectionHeadCell>
             </MotionTr>

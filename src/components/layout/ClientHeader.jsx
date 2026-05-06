@@ -52,10 +52,9 @@ const CustomUserMenu = dynamic(
 const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
   ssr: false,
   loading: () => (
-    <img
-      src="/icons/explore/user-circle.svg"
-      alt="User"
-      style={{ width: "28px", height: "28px", borderRadius: "50%" }}
+    <div
+      style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f0f0f0" }}
+      aria-hidden
     />
   ),
 });
@@ -1777,6 +1776,9 @@ function ExploreHeaderContent({
                   alt="User"
                   width={exploreMobileChrome ? 24 : 28}
                   height={exploreMobileChrome ? 24 : 28}
+                  referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                 />
               )}
             </UserMenuButton>

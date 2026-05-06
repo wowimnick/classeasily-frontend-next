@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { corporateBookingService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import Footer from "@/components/homepage/Footer";
-import { BP, down } from "@/components/corporate/tokens";
+import { BP, down, up } from "@/components/corporate/tokens";
 import ShortlistLandingIntro from "@/components/corporate/shortlist/ShortlistLandingIntro";
 import ShortlistHero from "./_components/ShortlistHero";
 import ShortlistComparisonTable from "./_components/ShortlistComparisonTable";
@@ -16,24 +16,59 @@ import BookingStatusPanel from "./_components/BookingStatusPanel";
 import JourneyStepper from "./_components/JourneyStepper";
 
 const PageWrap = styled.div`
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #ffffff;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 `;
 
 const MainContent = styled.main`
   flex: 1;
+  min-width: 0;
+`;
+
+/**
+ * Thin progress rail under the site header. `top` approximates sticky `ClientHeader`
+ * height so this bar does not slide underneath it while scrolling.
+ */
+const StepperTrack = styled.div`
+  position: sticky;
+  z-index: 40;
+  top: 52px;
+  background: #ffffff;
+  border-bottom: 1px solid #ebebeb;
+  box-sizing: border-box;
+  width: 100%;
+
+  ${up(BP.MOBILE)} {
+    top: 68px;
+  }
+`;
+
+const StepperTrackInner = styled.div`
+  box-sizing: border-box;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0.35rem max(1.25rem, env(safe-area-inset-left, 0px)) 0.35rem
+    max(1.25rem, env(safe-area-inset-right, 0px));
+
+  ${down(BP.MOBILE)} {
+    padding: 0.3rem max(1rem, env(safe-area-inset-left, 0px)) 0.3rem max(1rem, env(safe-area-inset-right, 0px));
+  }
 `;
 
 const Container = styled.div`
-  width: min(1440px, 100% - 3rem);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 1rem 0 6rem;
+  padding: 1rem max(1.25rem, env(safe-area-inset-left, 0px)) 6rem
+    max(1.25rem, env(safe-area-inset-right, 0px));
 
   ${down(BP.MOBILE)} {
-    width: min(100%, 100% - 2rem);
-    padding: 0.75rem 0 4rem;
+    padding: 0.75rem max(1rem, env(safe-area-inset-left, 0px)) max(4rem, env(safe-area-inset-bottom, 0px))
+      max(1rem, env(safe-area-inset-right, 0px));
   }
 `;
 
@@ -279,10 +314,13 @@ export default function ShortlistPageClient({ token }) {
     <PageWrap>
       <ExploreHeader showOptionsWrapper={false} />
       <MainContent>
+        <StepperTrack>
+          <StepperTrackInner>
+            <JourneyStepper currentStep={journeyStep} />
+          </StepperTrackInner>
+        </StepperTrack>
         <Container>
           <ShortlistHero companyName={inquiry?.company_name} />
-
-          <JourneyStepper currentStep={journeyStep} />
 
           <AnimatePresence>
             {error && (
