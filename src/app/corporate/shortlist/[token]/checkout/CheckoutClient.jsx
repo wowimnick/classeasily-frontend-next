@@ -8,7 +8,10 @@ import styled from "styled-components";
 import { corporateBookingService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import Footer from "@/components/homepage/Footer";
-import { formatMoney } from "../_components/formatMoney";
+import { formatMoney } from "@/components/corporate/shortlist/formatMoney";
+import JourneyStepper from "@/components/corporate/shortlist/JourneyStepper";
+import BookingStatusPanel from "@/components/corporate/shortlist/BookingStatusPanel";
+import { ACCENT_DARK, BRAND_RED, HERO_MUTED, TEXT_BODY } from "@/components/corporate/tokens";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "");
 
@@ -16,13 +19,66 @@ const Wrap = styled.div`
   min-height: 100vh;
   background: #fff;
 `;
+
 const Inner = styled.div`
-  width: min(520px, 100% - 2rem);
+  width: min(640px, 100% - 2rem);
   margin: 0 auto;
   padding: 2rem 0 4rem;
 `;
 
-function PayForm({ clientSecret, booking, currency, token, bookingId }) {
+const Title = styled.h1`
+  color: ${ACCENT_DARK};
+  font-size: 1.75rem;
+  margin: 0 0 1.25rem;
+`;
+
+const Lead = styled.p`
+  color: ${TEXT_BODY};
+  margin: 0 0 1rem;
+  line-height: 1.5;
+`;
+
+const PayButton = styled.button`
+  margin-top: 20px;
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: ${BRAND_RED};
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${BRAND_RED};
+    outline-offset: 2px;
+  }
+`;
+
+const ErrText = styled.p`
+  color: #b91c1c;
+  margin-top: 12px;
+`;
+
+function PaymentSkeleton() {
+  return (
+    <div>
+      <div className="ce-skel" style={{ height: 160, borderRadius: 16, marginBottom: 16 }} />
+      <div className="ce-skel" style={{ height: 44, borderRadius: 10, marginBottom: 8 }} />
+      <div className="ce-skel" style={{ height: 44, borderRadius: 10, marginBottom: 8 }} />
+      <div className="ce-skel" style={{ height: 48, borderRadius: 12, width: "100%" }} />
+    </div>
+  );
+}
+
+function PayForm({ booking, currency, token, bookingId }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -54,32 +110,15 @@ function PayForm({ clientSecret, booking, currency, token, bookingId }) {
 
   return (
     <div>
-      <p style={{ color: "#334155", marginBottom: 16 }}>
+      <Lead>
         Pay <strong>{formatMoney(booking.deposit_cents, currency)}</strong> deposit for{" "}
         <strong>{booking.reference}</strong>
-      </p>
+      </Lead>
       <PaymentElement />
-      {err ? (
-        <p style={{ color: "#b91c1c", marginTop: 12 }}>{err}</p>
-      ) : null}
-      <button
-        type="button"
-        onClick={handlePay}
-        disabled={loading || !stripe}
-        style={{
-          marginTop: 20,
-          width: "100%",
-          border: "none",
-          borderRadius: 12,
-          padding: "0.85rem",
-          background: "#0f172a",
-          color: "#fff",
-          fontWeight: 700,
-          cursor: "pointer",
-        }}
-      >
+      {err ? <ErrText>{err}</ErrText> : null}
+      <PayButton type="button" onClick={handlePay} disabled={loading || !stripe}>
         {loading ? "Processing…" : "Pay deposit"}
-      </button>
+      </PayButton>
     </div>
   );
 }
@@ -121,33 +160,54 @@ function CheckoutInner({ token }) {
   }, [token, bookingId]);
 
   if (!bookingId) {
-    return <p style={{ color: "#b91c1c" }}>Invalid link.</p>;
+    return <ErrText>Invalid link.</ErrText>;
   }
 
   if (error) {
-    return <p style={{ color: "#b91c1c" }}>{error}</p>;
+    return <ErrText>{error}</ErrText>;
   }
 
   if (!booking || !clientSecret) {
-    return <p style={{ color: "#64748b" }}>Preparing secure checkout…</p>;
+    return (
+      <div>
+        <p style={{ color: HERO_MUTED, marginBottom: 16 }}>Preparing secure checkout…</p>
+        <PaymentSkeleton />
+      </div>
+    );
   }
 
+  const cur = booking.currency || "usd";
+
   return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        clientSecret,
-        appearance: { theme: "stripe" },
-      }}
-    >
-      <PayForm
-        clientSecret={clientSecret}
-        booking={booking}
-        currency={booking.currency || "usd"}
-        token={token}
-        bookingId={bookingId}
-      />
-    </Elements>
+    <>
+      <BookingStatusPanel booking={booking} token={token} currency={cur} />
+      <Title style={{ marginTop: "1.5rem" }}>Pay deposit</Title>
+      <Elements
+        stripe={stripePromise}
+        options={{
+          clientSecret,
+          appearance: {
+            theme: "stripe",
+            variables: {
+              colorPrimary: BRAND_RED,
+              borderRadius: "12px",
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            },
+          },
+        }}
+      >
+        <PayForm booking={booking} currency={cur} token={token} bookingId={bookingId} />
+      </Elements>
+    </>
+  );
+}
+
+function CheckoutSuspenseFallback() {
+  return (
+    <div>
+      <div className="ce-skel" style={{ height: 140, borderRadius: 16, marginBottom: 20 }} />
+      <PaymentSkeleton />
+    </div>
   );
 }
 
@@ -156,8 +216,8 @@ export default function CheckoutClient({ token }) {
     <Wrap>
       <ExploreHeader showOptionsWrapper={false} />
       <Inner>
-        <h1 style={{ color: "#0f172a" }}>Pay deposit</h1>
-        <Suspense fallback={<p>Loading…</p>}>
+        <JourneyStepper currentStep="pay" />
+        <Suspense fallback={<CheckoutSuspenseFallback />}>
           <CheckoutInner token={token} />
         </Suspense>
       </Inner>

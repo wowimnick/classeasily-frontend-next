@@ -1,0 +1,53 @@
+.page {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.inner {
+  width: min(1160px, 100% - 2rem);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  width: 120px;
+  height: 12px;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  max-width: 70%;
+  height: clamp(2rem, 5vw, 3.25rem);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.sub {
+  max-width: 40%;
+  height: 14px;
+  border-radius: 6px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.card {
+  min-height: 360px;
+  border-radius: 24px;
+}
+
+.aside {
+  max-width: 400px;
+  height: 140px;
+  border-radius: 16px;
+  margin-top: 2rem;
+}
