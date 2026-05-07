@@ -5,14 +5,10 @@ import { searchClasses } from '@/lib/server-data-fetchers';
 
 export async function searchClassesAction(params) {
   'use server';
-  
-  console.log('[Server Action] Searching classes with params:', params);
-  
+
   try {
     const result = await searchClasses(params);
-    
-    console.log('[Server Action] Found', result.results?.length || 0, 'classes');
-    
+
     return {
       success: true,
       results: result.results || [],

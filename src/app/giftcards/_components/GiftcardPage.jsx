@@ -1644,8 +1644,8 @@ export default function GiftCardsPage() {
                   textAlign: "center",
                 }}
               >
-                Have more burning questions? Visit the{" "}
-                <StyledLink href="/help-center">Help Center</StyledLink>.
+                Have more burning questions? Visit{" "}
+                <StyledLink href="/my-tickets">Contact us</StyledLink>.
               </motion.div>
             </motion.div>
           </FAQSection>

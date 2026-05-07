@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { normalizeExploreCollectionSlugs } from "@/lib/seo";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -14,9 +15,10 @@ const HOMEPAGE_CONTENT_TAGS = ["homepage-content", "collections"];
 function generateSearchCacheTags(params) {
   const tags = ["classes-search"];
 
-  if (params.collection) {
-    tags.push(`collection-${params.collection}`);
-  }
+  const collectionSlugs = normalizeExploreCollectionSlugs(params.collection);
+  collectionSlugs.forEach((slug) => {
+    tags.push(`collection-${slug}`);
+  });
 
   // Add location-based tags if coordinates provided
   if (params.lat && params.lng) {
@@ -67,13 +69,14 @@ export async function searchClasses(params = {}) {
     const cacheTags = generateSearchCacheTags(params);
 
     // No location/keyword/tag/collection and no date/participant filters: cache for instant explore page
+    const collectionSlugsForCache = normalizeExploreCollectionSlugs(params.collection);
     const hasNoGeoOrFilters =
       !params.lat &&
       !params.lng &&
       !params.location_search &&
       !params.keyword &&
       !params.tag &&
-      !params.collection;
+      collectionSlugsForCache.length === 0;
     const hasNoExtraFilters =
       !params.date &&
       !params.start_date &&
@@ -159,6 +162,23 @@ export async function fetchClassCollections() {
   } catch (error) {
     console.error("Error fetching collections:", error);
     return [];
+  }
+}
+
+/**
+ * Explore: featured collection chips + "I want…" (show_in_i_want) list for the type drawer.
+ * Single cached homepage-content request.
+ */
+export async function fetchExploreCollectionLists() {
+  try {
+    const data = await fetchHomepageContentCached();
+    return {
+      collections: data.collections || [],
+      collectionsIWant: data.collections_i_want || [],
+    };
+  } catch (error) {
+    console.error("Error fetching explore collection lists:", error);
+    return { collections: [], collectionsIWant: [] };
   }
 }
 

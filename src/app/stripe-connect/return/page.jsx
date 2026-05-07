@@ -1,7 +1,7 @@
 import StripeReturnClient from "./_components/StripeReturnClient";
 
 export const metadata = {
-  title: "Processing Stripe Setup | Classeasily",
+  title: "Processing Stripe Setup | ClassEasily",
   description: "Finalizing your Stripe account setup.",
 };
 

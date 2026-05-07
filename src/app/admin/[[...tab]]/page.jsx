@@ -48,8 +48,8 @@ const ClassListings = dynamic(
   () => import("../_components/class-management/ClassListings"),
   { ssr: false }
 );
-const ClassCategories = dynamic(
-  () => import("../_components/class-management/ClassCategories"),
+const CollectionsManagement = dynamic(
+  () => import("../_components/class-management/CollectionsManagement"),
   { ssr: false }
 );
 const ClassReviews = dynamic(
@@ -74,6 +74,10 @@ const PlatformOverview = dynamic(
 );
 const PaymentManagement = dynamic(
   () => import("../_components/payment-management/PaymentManagement"),
+  { ssr: false }
+);
+const CorporateInquiriesTab = dynamic(
+  () => import("../_components/corporate/CorporateInquiriesTab"),
   { ssr: false }
 );
 
@@ -177,6 +181,9 @@ export default function AdminPage() {
       case "all-bookings":
         content = <BookingsList />;
         break;
+      case "corporate-inquiries":
+        content = <CorporateInquiriesTab />;
+        break;
       case "business-listings":
         content = <BusinessListings />;
         break;
@@ -190,7 +197,7 @@ export default function AdminPage() {
         content = <ClassListings />;
         break;
       case "collections":
-        content = <ClassCategories />;
+        content = <CollectionsManagement />;
         break;
       case "class-reviews":
         content = <ClassReviews />;

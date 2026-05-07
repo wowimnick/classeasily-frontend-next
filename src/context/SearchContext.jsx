@@ -38,7 +38,7 @@ function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
     const cur = new URLSearchParams(window.location.search);
     keyword =
       cur.get("keyword") ||
-      cur.get("collection") ||
+      (cur.getAll("collection").filter(Boolean)[0] ?? "") ||
       cur.get("category") ||
       "";
   }
@@ -110,6 +110,56 @@ export const ICON_PALETTE = [
   { bg: "#faf5ff", icon: "#9333ea" }, // Purple
 ];
 
+/** Short label for header pill / mobile meta from 0..n collection picks. */
+export function summarizeCollectionsForPill(collections) {
+  const list = Array.isArray(collections) ? collections.filter((c) => c?.slug) : [];
+  if (!list.length) return "Any experience";
+  if (list.length === 1) {
+    return formatCollectionDisplayName(list[0].name || list[0].slug);
+  }
+  const first = formatCollectionDisplayName(list[0].name || list[0].slug);
+  return `${first} · +${list.length - 1}`;
+}
+
+function normalizeStoredCollections(stored) {
+  if (stored?.selectedCollections && Array.isArray(stored.selectedCollections)) {
+    return stored.selectedCollections.filter(
+      (c) => c && typeof c.slug === "string" && String(c.slug).trim(),
+    );
+  }
+  if (stored?.selectedCollection?.slug) {
+    return [
+      {
+        slug: stored.selectedCollection.slug,
+        name: stored.selectedCollection.name || stored.selectedCollection.slug,
+      },
+    ];
+  }
+  return [];
+}
+
+export function formatCollectionDisplayName(raw) {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  const hasSlugSeparators = /[-_]/.test(s);
+  /** One all-lowercase URL slug token (e.g. `wellness`) — hyphenated slugs use the branch above */
+  const singleLowercaseSlugToken = /^[a-z][a-z0-9]*$/.test(s);
+  if (hasSlugSeparators) {
+    return s
+      .replace(/[-_]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+  if (singleLowercaseSlugToken) {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+  // Preserve editorial casing (e.g., DIY, 2SLGBTQ+, iPhone) for admin-provided names.
+  return s.replace(/\s+/g, " ");
+}
+
 // Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner).
 // Keep displayName values in sync with backend quickstart/constants/search_location_presets.py (admin search analytics).
 export const GTA_PRESETS = [
@@ -147,6 +197,17 @@ export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
   citySlug: preset.citySlug,
 }));
 
+/** Canonical default when no location is chosen (header, explore, clear). */
+export function getDefaultTorontoSearchLocation() {
+  const t = GTA_PRESETS[0];
+  return {
+    displayName: t.displayName,
+    coordinates: { lat: t.coords.lat, lng: t.coords.lng },
+    citySlug: t.citySlug,
+    provinceSlug: t.provinceSlug,
+  };
+}
+
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
   // REMOVED: usePathname and useSearchParams to prevent build errors on static pages
@@ -158,24 +219,33 @@ export const SearchProvider = ({ children }) => {
   // Search Data State — initialize from sessionStorage so search persists when closing drawer / navigating
   const [searchTerm, setSearchTerm] = useState(() => {
     const stored = getStoredSearchState();
-    return (stored && stored.searchTerm) || "";
+    if (stored && typeof stored.searchTerm === "string" && stored.searchTerm.trim()) {
+      return stored.searchTerm.trim();
+    }
+    if (
+      stored?.selectedLocation &&
+      typeof stored.selectedLocation.displayName === "string" &&
+      stored.selectedLocation.displayName.trim()
+    ) {
+      return stored.selectedLocation.displayName.trim();
+    }
+    return getDefaultTorontoSearchLocation().displayName;
   });
   const [selectedLocation, setSelectedLocation] = useState(() => {
     const stored = getStoredSearchState();
     if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
-      return {
-        displayName: stored.selectedLocation.displayName || "",
-        coordinates: stored.selectedLocation.coordinates || null,
-        citySlug: stored.selectedLocation.citySlug || null,
-        provinceSlug: stored.selectedLocation.provinceSlug || null,
-      };
+      const dn = String(stored.selectedLocation.displayName || "").trim();
+      const coords = stored.selectedLocation.coordinates;
+      if (dn && coords && typeof coords.lat === "number" && typeof coords.lng === "number") {
+        return {
+          displayName: dn,
+          coordinates: coords,
+          citySlug: stored.selectedLocation.citySlug || null,
+          provinceSlug: stored.selectedLocation.provinceSlug || null,
+        };
+      }
     }
-    return {
-      displayName: "",
-      coordinates: null,
-      citySlug: null,
-      provinceSlug: null,
-    };
+    return getDefaultTorontoSearchLocation();
   });
   const [datePickerValue, setDatePickerValue] = useState(() => {
     const stored = getStoredSearchState();
@@ -188,6 +258,10 @@ export const SearchProvider = ({ children }) => {
       return Math.min(20, stored.participantCount);
     }
     return 1;
+  });
+  const [selectedCollections, setSelectedCollections] = useState(() => {
+    const stored = getStoredSearchState();
+    return normalizeStoredCollections(stored);
   });
 
   // Geocoding State
@@ -276,15 +350,12 @@ export const SearchProvider = ({ children }) => {
   }, []);
 
   const clearAll = useCallback(() => {
-    setSearchTerm("");
-    setSelectedLocation({
-      displayName: "",
-      coordinates: null,
-      citySlug: null,
-      provinceSlug: null,
-    });
+    const t = getDefaultTorontoSearchLocation();
+    setSearchTerm(t.displayName);
+    setSelectedLocation({ ...t });
     setDatePickerValue(null);
     setParticipantCount(1);
+    setSelectedCollections([]);
     setGeocodedAddressResults([]);
     try {
       if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
@@ -298,11 +369,26 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
+      selectedCollections,
     });
-  }, [searchTerm, selectedLocation, datePickerValue, participantCount]);
+  }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollections]);
 
   const performSearch = useCallback(() => {
-    const { displayName, coordinates } = selectedLocation;
+    const toronto = getDefaultTorontoSearchLocation();
+    let term = searchTerm.trim();
+    let loc = { ...selectedLocation };
+    let displayName = String(loc.displayName || "").trim();
+    let coordinates = loc.coordinates;
+
+    if (!term && !displayName) {
+      term = toronto.displayName;
+      loc = { ...toronto };
+      displayName = toronto.displayName;
+      coordinates = toronto.coordinates;
+      setSearchTerm(term);
+      setSelectedLocation(loc);
+    }
+
     const params = new URLSearchParams();
 
     // When already on explore, preserve current category/collection/filters so location change doesn't reset them
@@ -315,7 +401,6 @@ export const SearchProvider = ({ children }) => {
       const preserveKeys = [
         "category",
         "subcategory",
-        "collection",
         "tag",
         "sort_by",
         "keyword",
@@ -327,6 +412,7 @@ export const SearchProvider = ({ children }) => {
         "date",
         "start_date",
         "end_date",
+        "participants",
       ];
       preserveKeys.forEach((key) => {
         const value = current.get(key);
@@ -335,6 +421,11 @@ export const SearchProvider = ({ children }) => {
       current.getAll("time_preference").forEach((v) => params.append("time_preference", v));
       current.getAll("days").forEach((v) => params.append("days", v));
     }
+
+    params.delete("collection");
+    (selectedCollections || []).forEach((c) => {
+      if (c?.slug) params.append("collection", c.slug);
+    });
 
     // HANDLE DATE (Range or Single)
     if (datePickerValue) {
@@ -349,51 +440,31 @@ export const SearchProvider = ({ children }) => {
       }
     }
 
-    params.set("participants", participantCount.toString());
+    const locationForParam = (displayName || term).trim() || toronto.displayName;
+    params.set("location", locationForParam);
 
-    // Default fallback logic if everything is empty
-    if (!searchTerm.trim() && !displayName) {
-      if (!params.get("lat")) {
-        params.set("location", "Toronto, ON");
-        params.set("lat", "43.6532");
-        params.set("lng", "-79.3832");
-      }
-
-      const newUrl = `/explore?${params.toString()}`;
-
-      logExploreSearchFromParams(params, { searchTerm, selectedLocation });
-      setIsSearching(true);
-      router.push(newUrl);
-
-      setIsDrawerOpen(false);
-      return;
-    }
-
-    const locationForParam = displayName || searchTerm;
-    if (locationForParam) {
-      params.set("location", locationForParam);
-    }
-
-    if (coordinates) {
+    if (coordinates && typeof coordinates.lat === "number" && typeof coordinates.lng === "number") {
       params.set("lat", coordinates.lat.toString());
       params.set("lng", coordinates.lng.toString());
     }
 
-    const newUrl = `/explore?${params.toString()}`;
+    let path = "/explore";
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p.startsWith("/explore/") && p.length > "/explore/".length) {
+        path = p;
+      }
+    }
 
-    logExploreSearchFromParams(params, { searchTerm, selectedLocation });
+    const newUrl = `${path}?${params.toString()}`;
+
+    logExploreSearchFromParams(params, { searchTerm: term, selectedLocation: loc });
     // Trigger global loading state immediately
     setIsSearching(true);
     router.push(newUrl);
 
     setIsDrawerOpen(false);
-  }, [
-    selectedLocation,
-    searchTerm,
-    datePickerValue,
-    participantCount,
-    router,
-  ]);
+  }, [selectedLocation, searchTerm, datePickerValue, selectedCollections, router]);
 
   const debouncedPrefetchExplore = useMemo(
     () =>
@@ -407,8 +478,13 @@ export const SearchProvider = ({ children }) => {
     return () => debouncedPrefetchExplore.cancel();
   }, [debouncedPrefetchExplore]);
 
-  // Prefetch explore page when user has a location (debounced to avoid storms while typing)
+  // Prefetch explore page when user has a location (debounced to avoid storms while typing).
+  // Corporate shortlist/checkout uses the header without the search pill — skip prefetch so we
+  // do not warm the explore RSC (and homepage-content fetches) on those routes.
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/corporate/shortlist")) {
+      return;
+    }
     const { displayName, coordinates } = selectedLocation;
     const hasLocation = (displayName || searchTerm.trim()) && coordinates;
     if (!hasLocation) return;
@@ -420,7 +496,6 @@ export const SearchProvider = ({ children }) => {
     );
     params.set("lat", coordinates.lat.toString());
     params.set("lng", coordinates.lng.toString());
-    params.set("participants", participantCount.toString());
     if (datePickerValue) {
       if (datePickerValue.start && datePickerValue.end) {
         params.set("start_date", datePickerValue.start);
@@ -431,13 +506,16 @@ export const SearchProvider = ({ children }) => {
         params.set("date", datePickerValue);
       }
     }
+    (selectedCollections || []).forEach((c) => {
+      if (c?.slug) params.append("collection", c.slug);
+    });
     const exploreUrl = `/explore?${params.toString()}`;
     debouncedPrefetchExplore(exploreUrl);
   }, [
     selectedLocation,
     searchTerm,
-    participantCount,
     datePickerValue,
+    selectedCollections,
     debouncedPrefetchExplore,
   ]);
 
@@ -455,6 +533,8 @@ export const SearchProvider = ({ children }) => {
       setDatePickerValue,
       participantCount,
       setParticipantCount,
+      selectedCollections,
+      setSelectedCollections,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,
@@ -469,6 +549,7 @@ export const SearchProvider = ({ children }) => {
       selectedLocation,
       datePickerValue,
       participantCount,
+      selectedCollections,
       geocoding,
       geocodedAddressResults,
       handleLocationChange,

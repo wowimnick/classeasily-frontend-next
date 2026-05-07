@@ -5,14 +5,16 @@ import Script from "next/script";
 import ClientProviders from "./ClientProviders";
 import FacebookPixel from "@/components/FacebookPixel";
 import { OrganizationSchema, WebsiteSchema } from "./StructuredData";
+import { getDefaultOgImageUrl, getSiteUrl } from "@/lib/seo";
 import "./globals.css";
+import "@/styles/skeleton.css";
 import { Suspense } from "react";
 
 export const metadata = {
-  metadataBase: new URL("https://classeasily.com"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "Classeasily - Discover Fun Local Experiences",
-    template: "%s | Classeasily",
+    default: "ClassEasily - Discover Fun Local Experiences",
+    template: "%s | ClassEasily",
   },
   description:
     "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
@@ -28,47 +30,47 @@ export const metadata = {
     "adventures",
     "learn new skills",
   ],
-  authors: [{ name: "Classeasily" }],
-  creator: "Classeasily",
-  publisher: "Classeasily",
+  authors: [{ name: "ClassEasily" }],
+  creator: "ClassEasily",
+  publisher: "ClassEasily",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "Classeasily - Discover Unique Local Experiences",
+    title: "ClassEasily - Discover Unique Local Experiences",
     description:
       "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
     images: [
       {
-        url: "https://i.imgur.com/biTTckW.png",
+        url: getDefaultOgImageUrl(),
         width: 1200,
         height: 630,
-        alt: "Classeasily - Discover Local Experiences",
+        alt: "ClassEasily - Discover Local Experiences",
       },
     ],
-    url: "https://classeasily.com",
-    siteName: "Classeasily",
+    url: getSiteUrl(),
+    siteName: "ClassEasily",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Classeasily - Discover Unique Local Experiences",
+    title: "ClassEasily - Discover Unique Local Experiences",
     description:
       "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
-    images: ["https://i.imgur.com/biTTckW.png"],
+    images: [getDefaultOgImageUrl()],
     creator: "@classeasily",
   },
   manifest: "/favicon/site.webmanifest",
   appleWebApp: {
-    title: "Classeasily",
+    title: "ClassEasily",
     statusBarStyle: "default",
     capable: true,
   },
   alternates: {
-    canonical: "https://classeasily.com",
+    canonical: getSiteUrl(),
   },
   robots: {
     index: true,
@@ -119,6 +121,7 @@ export default function RootLayout({ children }) {
           body{margin:0;padding:0;font-family:var(--font-proxima-soft),system-ui,-apple-system,sans-serif}
           .homepage-style{background-color:#fff;min-height:100vh}
           .main-content{display:flex;flex-direction:column;padding:0}
+          :root{--ce-bp-xs:375px;--ce-bp-mobile:768px;--ce-bp-tablet:1024px;--ce-bp-desktop:1440px;--ce-bp-wide:1920px}
         `,
           }}
         />

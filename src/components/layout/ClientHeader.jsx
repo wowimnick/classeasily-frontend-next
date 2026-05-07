@@ -10,6 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import styled, { createGlobalStyle } from "styled-components";
@@ -21,12 +22,26 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Minus,
-  Plus,
+  ArrowLeft,
 } from "lucide-react";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useSearch, SUGGESTED_AREAS, ICON_PALETTE } from "@/context/SearchContext";
+import {
+  useSearch,
+  SUGGESTED_AREAS,
+  ICON_PALETTE,
+  formatCollectionDisplayName,
+  summarizeCollectionsForPill,
+} from "@/context/SearchContext";
+import { BP, down } from "@/styles/breakpoints";
+import { useIsMobile } from "@/styles/breakpoints-hooks";
+import { collectionService } from "@/services/apiService";
+import {
+  exploreSearchDropdownPanelCss,
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
+import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 
 // Dynamic Imports
 const CustomUserMenu = dynamic(
@@ -37,10 +52,9 @@ const CustomUserMenu = dynamic(
 const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
   ssr: false,
   loading: () => (
-    <img
-      src="/icons/explore/user-circle.svg"
-      alt="User"
-      style={{ width: "28px", height: "28px", borderRadius: "50%" }}
+    <div
+      style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f0f0f0" }}
+      aria-hidden
     />
   ),
 });
@@ -69,7 +83,7 @@ function useClickOutside(ref, handler) {
   }, [ref, handler]);
 }
 
-// --- GLOBAL & LAYOUT STYLES ---
+// --- GLOBAL STYLES ---
 
 const GlobalStyles = createGlobalStyle`
   .header-search-container {
@@ -77,28 +91,100 @@ const GlobalStyles = createGlobalStyle`
   }
 `;
 
-const HeaderWrapper = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #fff;
-  border-bottom: 1px solid #f1f1f1;
+// --- LAYOUT ---
+
+const HeaderWrapper = styled(motion.header)`
+  box-sizing: border-box;
+  padding: 18px 2rem 18px;
+  background-color: ${({ $unifiedExploreChrome, $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? "#ffffff"
+      : $unifiedExploreChrome
+        ? "#fafafa"
+        : "#fff"};
+  border-bottom: ${({ $unifiedExploreChrome, $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? "1px solid rgba(0, 0, 0, 0.06)"
+      : $unifiedExploreChrome
+        ? "none"
+        : "1px solid #f1f1f1"};
   position: ${({ $isFixed }) => ($isFixed ? "sticky" : "relative")};
   top: ${({ $isFixed }) => ($isFixed ? "0" : "auto")};
-  height: 80px;
-  padding: 0 2rem;
-  transition:
-    background-color 0.3s,
-    border-bottom 0.3s;
+  transition: background-color 0.3s, border-bottom 0.3s;
   z-index: 100;
   overflow: visible;
 
-  @media (max-width: 768px) {
-    height: 60px;
-    padding: 0 1rem;
+  ${({ $unifiedExploreChrome, $exploreMobileUnified }) =>
+    $unifiedExploreChrome
+      ? `
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    gap: 0.75rem;
+
+    & > a {
+      justify-self: start;
+      align-self: start;
+    }
+    & > .explore-mobile-back {
+      display: none;
+    }
+    & > .header-search-pill-slot {
+      justify-self: center;
+      align-self: center;
+      min-width: 0;
+    }
+
+    ${
+      $exploreMobileUnified
+        ? `
+      ${down(BP.MOBILE)} {
+        align-items: center;
+        gap: 0.5rem;
+        & > a {
+          display: none;
+        }
+        & > .explore-mobile-back {
+          display: inline-flex;
+          justify-self: start;
+          align-self: center;
+        }
+        & > .header-search-pill-slot {
+          justify-self: center;
+          width: auto;
+          max-width: min(100%, calc(100vw - 108px));
+          min-width: 0;
+        }
+        & > .header-right-section {
+          justify-self: end;
+          align-self: center;
+        }
+      }
+    `
+        : ""
+    }
+  `
+      : `
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  `}
+
+  ${down(BP.MOBILE)} {
+    padding: 12px 1rem 12px;
     gap: 0.5rem;
     z-index: 90;
+    border-bottom: none;
   }
+
+  ${({ $exploreMobileLight }) =>
+    $exploreMobileLight
+      ? `
+    ${down(BP.MOBILE)} {
+      padding: 10px 1rem;
+    }
+  `
+      : ""}
 `;
 
 const LogoContainer = styled.div`
@@ -110,7 +196,7 @@ const LogoContainer = styled.div`
     width: 40px;
     height: 40px;
   }
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     padding-right: 0.5rem;
     svg {
       width: 32px;
@@ -119,12 +205,19 @@ const LogoContainer = styled.div`
   }
 `;
 
-const RightSection = styled.div`
+const RightSection = styled.div.attrs({ className: "header-right-section" })`
   display: flex;
   align-items: center;
   padding-left: 1rem;
   flex-shrink: 0;
-  @media (max-width: 768px) {
+  ${(p) =>
+    p.$pinTopInUnifiedGrid
+      ? `
+    align-self: start;
+    justify-self: end;
+  `
+      : ""}
+  ${down(BP.MOBILE)} {
     padding-left: 0;
   }
 `;
@@ -137,55 +230,233 @@ const UserMenuButton = styled(motion.button)`
   justify-content: center;
   padding: 4px 8px 4px 14px;
   border-radius: 28px;
-  background-color: transparent;
+  background-color: #ffffff;
   cursor: pointer;
   overflow: hidden;
   color: #222;
   gap: 10px;
-  padding-left: 14px;
   transition: box-shadow 0.2s ease-in-out;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  ${(p) =>
+    p.$compactExplore
+      ? `
+    height: 40px;
+    min-width: 40px;
+    padding: 0 5px 0 7px;
+    gap: 3px;
+    border-radius: 9999px;
+    border: 1px solid rgb(136, 136, 136);
+    color: #000000;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 14px rgba(0, 0, 0, 0.07);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    &:hover {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 6px 18px rgba(0, 0, 0, 0.09);
+    }
+  `
+      : ""}
 `;
 
-// ------------------------------------------------------------------------
-//  COMPACT SEARCH PILL COMPONENTS
-// ------------------------------------------------------------------------
+// --- BACKDROP ---
+
+const SearchBackdrop = styled(motion.div)`
+  position: fixed;
+  top: ${(p) => p.$top}px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 99;
+  cursor: pointer;
+`;
+
+// --- SEARCH PILL SLOT (centers pill; keeps transform off motion.form for Framer) ---
+
+const SearchPillSlot = styled.div.attrs({ className: "header-search-pill-slot" })`
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+
+  ${({ $flexFill }) =>
+    $flexFill
+      ? `
+    flex: 1 1 0;
+  `
+      : ""}
+`;
+
+// --- SEARCH FORM WRAPPER (the pill shell) ---
 
 const SearchFormWrapper = styled(motion.form)`
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  box-sizing: border-box;
+  position: relative;
   display: flex;
   align-items: center;
   background-color: #ffffff;
-  border: 1px solid #e5e7eb;
   border-radius: 100px;
-  padding: 0;
-  height: 56px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  width: auto;
-  z-index: 50;
+  overflow: visible;
+  /* z-index must beat the backdrop (99) and sit below any portal modals */
+  z-index: 101;
+  will-change: width, height, box-shadow;
 
-  &:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  }
-
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
     display: none;
   }
 `;
 
+/*
+ * Clips the compact/expanded content layers without clipping the dropdown popup.
+ * The popup is rendered as a sibling OUTSIDE this div.
+ */
+const PillContentArea = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  overflow: hidden;
+`;
+
+const PillLayer = styled(motion.div)`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+`;
+
+// --- COMPACT PILL ---
+
+/** Shrinks to mini-pill content; capped so the bar never runs off the viewport. */
+const CompactMeasureShell = styled.div`
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(calc(100vw - 120px), 960px);
+  height: 100%;
+  flex-shrink: 0;
+`;
+
+const CompactRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: max-content;
+  height: 100%;
+  /* Tighter on the right so the search circle sits near the pill edge; more room on the left for the shop icon */
+  padding: 6px 5px 6px 16px;
+`;
+
+const CompactMagnifier = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #374151;
+
+  img {
+    display: block;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+`;
+
+const CompactFieldZone = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 4px 8px;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: 100px;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  font-family: inherit;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const CompactFieldText = styled.span`
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+`;
+
+const CompactDivider = styled.span`
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  background: #d1d5db;
+  user-select: none;
+`;
+
+const SmallSearchCircle = styled(motion.button)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  line-height: 0;
+  background: #ff385c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 56, 92, 0.35);
+  font-family: inherit;
+
+  svg {
+    display: block;
+  }
+`;
+
+// --- EXPANDED PILL ---
+
+const ExpandedRow = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  overflow: hidden;
+`;
+
+/* Matches BannerSearchClient ActivePill exactly */
 const ActivePillBackground = styled(motion.div)`
   position: absolute;
-  top: 2px;
-  bottom: 2px;
+  top: 0;
   left: 0;
   right: 0;
-  background: #f3f4f6;
-  border-radius: 100px;
+  bottom: 0;
+  background: #ffffff;
+  border-radius: 64px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   z-index: 0;
 `;
 
@@ -200,8 +471,8 @@ const SectionButton = styled.div.attrs({
   align-items: flex-start;
   text-align: left;
   height: 100%;
-  padding: 0 20px;
-  border-radius: 32px;
+  padding: 0 24px;
+  border-radius: 64px;
   cursor: pointer;
   background-color: transparent;
   isolation: isolate;
@@ -210,8 +481,8 @@ const SectionButton = styled.div.attrs({
 
   &:hover {
     background-color: ${(props) =>
-      props.$isActive ? "transparent" : "#f9fafb"};
-    border-radius: 32px;
+      props.$isActive ? "transparent" : "#f3f4f6"};
+    border-radius: 64px;
   }
 
   &:focus-visible {
@@ -221,31 +492,30 @@ const SectionButton = styled.div.attrs({
 
 const Divider = styled.div`
   width: 1px;
-  height: 24px;
+  height: 28px;
   background-color: #e5e7eb;
-  margin: 0;
   flex-shrink: 0;
   opacity: ${(props) => (props.$isHidden ? 0 : 1)};
   transition: opacity 0.2s;
 `;
 
 const FieldLabel = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #374151;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   position: relative;
   z-index: 1;
 `;
 
 const ValueDisplay = styled.div`
-  font-size: 14px;
-  color: ${(props) => (props.$hasValue ? "#111" : "#6b7280")};
+  font-size: 15px;
+  color: ${(props) => (props.$hasValue ? "#111" : "#9ca3af")};
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 180px;
   position: relative;
   z-index: 1;
   line-height: 1.2;
@@ -255,25 +525,26 @@ const SearchCircleButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${(props) => props.theme.token.colorPrimary || "#ff385c"};
+  background: linear-gradient(135deg, #ff385c 0%, #e11d48 100%);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  margin-right: 8px;
-  margin-left: 8px;
+  width: 48px;
+  height: 48px;
+  margin-right: 10px;
+  margin-left: 4px;
   cursor: pointer;
   flex-shrink: 0;
+  align-self: center;
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(255, 56, 92, 0.2);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
 `;
 
 const InlineInput = styled.input`
   width: 100%;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   background: transparent;
   color: #111;
@@ -281,29 +552,20 @@ const InlineInput = styled.input`
   position: relative;
   z-index: 2;
   &::placeholder {
-    color: #6b7280;
+    color: #9ca3af;
   }
 `;
 
-// --- POPUP COMPONENTS ---
+// --- POPUP (position: fixed so it escapes all stacking contexts) ---
 
 const UnifiedPopupContainer = styled(motion.div)`
-  position: absolute;
-  top: 70px;
-  background: white;
-  border-radius: 32px;
-  padding: 0;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  z-index: 110;
+  position: fixed;
+  z-index: 2600;
+  ${exploreSearchDropdownPanelCss}
 `;
 
-const PopupContentPadding = styled.div`
-  padding: 24px;
-`;
 
-// --- CALENDAR CUSTOM COMPONENTS ---
+// --- CALENDAR ---
 
 const CalendarWrapper = styled.div`
   width: 100%;
@@ -433,7 +695,8 @@ const QuickPill = styled.button`
   }
 `;
 
-// --- CustomCalendar Component ---
+// --- CALENDAR COMPONENT ---
+
 const CustomCalendar = ({ value, onChange, onClose }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
@@ -455,7 +718,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   const applyPreset = (type) => {
     let start, end;
     const today = dayjs();
-
     switch (type) {
       case "weekend":
         if (today.day() === 0) {
@@ -482,7 +744,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         start = today;
         end = null;
     }
-
     onChange({
       start: start.format("YYYY-MM-DD"),
       end: end ? end.format("YYYY-MM-DD") : null,
@@ -515,11 +776,9 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
             const s = selectedStart.startOf("day");
             const e = selectedEnd.startOf("day");
             const t = thisDate.startOf("day");
-
             isRangeStart = t.isSame(s);
             isRangeEnd = t.isSame(e);
             isInRange = t.isAfter(s) && t.isBefore(e);
-
             if (isRangeStart && isRangeEnd) {
               isSingle = true;
               isRangeStart = false;
@@ -527,28 +786,16 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
             }
           }
 
-          const hasSelection =
-            isSingle || isRangeStart || isRangeEnd || isInRange;
-
+          const hasSelection = isSingle || isRangeStart || isRangeEnd || isInRange;
           const primaryColor = "#ff385c";
           const faintColor = "#ff385c15";
-
           let bgRadius = "0";
           let bgColor = "transparent";
 
-          if (isSingle) {
-            bgRadius = "50%";
-            bgColor = primaryColor;
-          } else if (isRangeStart) {
-            bgRadius = "50% 0 0 50%";
-            bgColor = primaryColor;
-          } else if (isRangeEnd) {
-            bgRadius = "0 50% 50% 0";
-            bgColor = primaryColor;
-          } else if (isInRange) {
-            bgRadius = "0";
-            bgColor = faintColor;
-          }
+          if (isSingle) { bgRadius = "50%"; bgColor = primaryColor; }
+          else if (isRangeStart) { bgRadius = "50% 0 0 50%"; bgColor = primaryColor; }
+          else if (isRangeEnd) { bgRadius = "0 50% 50% 0"; bgColor = primaryColor; }
+          else if (isInRange) { bgRadius = "0"; bgColor = faintColor; }
 
           return (
             <DayBtn
@@ -593,7 +840,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           <ChevronRight size={20} />
         </NavBtn>
       </CalendarHeader>
-
       <DoubleMonthGrid>
         <MonthSection>
           <WeekGrid>
@@ -603,7 +849,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           </WeekGrid>
           {renderMonthGrid(currentDate)}
         </MonthSection>
-
         <MonthSection>
           <WeekGrid>
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
@@ -613,94 +858,18 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           {renderMonthGrid(nextMonthDate)}
         </MonthSection>
       </DoubleMonthGrid>
-
       <QuickSelectGrid>
-        <QuickPill type="button" onClick={() => applyPreset("weekend")}>
-          This Weekend
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
-          Next Weekend
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("this_week")}>
-          This Week
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("next_week")}>
-          Next Week
-        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("weekend")}>This Weekend</QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>Next Weekend</QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("this_week")}>This Week</QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_week")}>Next Week</QuickPill>
       </QuickSelectGrid>
     </CalendarWrapper>
   );
 };
 
-// 2. Participants
-const ParticipantRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 8px 0;
-`;
-const CounterBtn = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid #d1d5db;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #374151;
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  &:hover:not(:disabled) {
-    border-color: #111;
-    color: #111;
-  }
-`;
+// --- LOCATION / COLLECTION LISTS ---
 
-const CustomParticipant = ({ count, onChange }) => (
-  <ParticipantRow>
-    <div
-      style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
-    >
-      <span style={{ fontWeight: 600, color: "#111", fontSize: 16 }}>
-        Participants
-      </span>
-      <span style={{ fontSize: 13, color: "#717171" }}>Join the class</span>
-    </div>
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <CounterBtn
-        type="button"
-        disabled={count <= 1}
-        onClick={() => onChange(Math.max(1, count - 1))}
-      >
-        <Minus size={16} />
-      </CounterBtn>
-      <span
-        style={{
-          width: 24,
-          textAlign: "center",
-          fontWeight: 600,
-          fontSize: 16,
-        }}
-      >
-        {count}
-      </span>
-      <CounterBtn
-        type="button"
-        disabled={count >= 20}
-        onClick={() => onChange(count + 1)}
-      >
-        <Plus size={16} />
-      </CounterBtn>
-    </div>
-  </ParticipantRow>
-);
-
-// 3. Location List
 const LocationList = styled.div`
   display: flex;
   flex-direction: column;
@@ -708,17 +877,21 @@ const LocationList = styled.div`
   overflow-y: auto;
   width: 100%;
 `;
+
 const LocationOption = styled.div`
   display: flex;
   align-items: center;
   padding: 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  background: ${(p) => (p.$isActive ? "#fff0f0" : "transparent")};
+  box-shadow: ${(p) => (p.$isActive ? "inset 0 0 0 2px #f81e3e" : "none")};
   &:hover {
-    background: #f3f4f6;
+    background: ${(p) => (p.$isActive ? "#fff0f0" : "#f3f4f6")};
   }
 `;
+
 const IconBox = styled.div`
   width: 38px;
   height: 38px;
@@ -732,66 +905,194 @@ const IconBox = styled.div`
   color: ${(p) => p.$iconColor ?? "#374151"};
 `;
 
-const MobileSearchTrigger = styled.div`
+const MobileExploreBackBtn = styled.button`
   display: none;
-  @media (max-width: 768px) {
+  ${down(BP.MOBILE)} {
+    display: inline-flex;
+  }
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+`;
+
+const MobileExploreSearchPill = styled.button`
+  display: none;
+  ${down(BP.MOBILE)} {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 40px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    cursor: pointer;
-    flex: 1;
-    min-width: 0;
-    p {
-      margin: 0;
-      font-size: 14px;
-      color: #595959;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
+  }
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 36px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid rgb(219, 219, 219);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.05);
+  color: #000000;
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.05),
+      0 6px 18px rgba(0, 0, 0, 0.09);
+  }
+`;
+
+const MobileExplorePillLine1 = styled.span`
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+/** Second row: day · I want (location is only on line 1) */
+const MobileExplorePillMetaRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .meta-sep {
+    color: #000000;
+    font-weight: 400;
+    user-select: none;
+    flex-shrink: 0;
   }
 `;
 
 // --- CONSTANTS ---
+
+// --- FIX: FrozenContent Component ---
+const FrozenContent = ({
+  field,
+  renderLocation,
+  renderDate,
+  renderCollectionPicker,
+}) => {
+  const [frozenField] = useState(field);
+
+  if (frozenField === "location") return renderLocation();
+  if (frozenField === "date") return renderDate();
+  if (frozenField === "collection") return renderCollectionPicker();
+  return null;
+};
+
 const POPUP_SIZES = {
   location: 380,
   date: 660,
-  participants: 340,
+  collection: 400,
 };
+
+const TORONTO_PRESET_DISPLAY = SUGGESTED_AREAS[0]?.displayName ?? "Toronto, ON";
+
+// Mini pill: width = measured content (+ border); expanded pill stays fixed below.
+const EXPANDED_W = 660;
+const COMPACT_H = 44;
+const EXPANDED_H = 68;
+/** Minimum width before first layout measure (Framer needs a number). */
+const COMPACT_W_FALLBACK = 260;
+
+/** Total header height (must match backdrop `top` and spring `animate.height`). */
+const HEADER_H_COMPACT = 80;
+const HEADER_H_EXPANDED = 180;
 
 const contentVariants = {
   enter: { opacity: 0, scale: 0.98 },
-  center: { opacity: 1, scale: 1, transition: { delay: 0.1, duration: 0.2 } },
+  center: {
+    opacity: 1,
+    scale: 1,
+    transition: { delay: 0.1, duration: 0.3, ease: "easeOut" },
+  },
   exit: { opacity: 0, transition: { duration: 0 } },
 };
 
-// ------------------------------------------------------------------------
+function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
+  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
+  if (!raw) return "Experiences near you";
+  const city = raw.split(",")[0].trim();
+  return `Experiences in ${city}`;
+}
+
+function formatMobileExploreDateSummary(datePickerValue) {
+  if (!datePickerValue) return "Anytime";
+  if (datePickerValue.start && datePickerValue.end) {
+    const a = dayjs(datePickerValue.start);
+    const b = dayjs(datePickerValue.end);
+    if (a.isValid() && b.isValid()) {
+      if (a.isSame(b, "day")) return a.format("MMM D");
+      return `${a.format("MMM D")} – ${b.format("MMM D")}`;
+    }
+  }
+  if (typeof datePickerValue?.format === "function") {
+    return datePickerValue.format("MMM D");
+  }
+  if (typeof datePickerValue === "string" && datePickerValue) {
+    const d = dayjs(datePickerValue);
+    return d.isValid() ? d.format("MMM D") : "Anytime";
+  }
+  return "Anytime";
+}
+
 //  MAIN COMPONENT
 // ------------------------------------------------------------------------
 
-function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
+function ExploreHeaderContent({
+  showOptionsWrapper = true,
+  isFixed = true,
+  unifiedExploreChrome = false,
+}) {
   const router = useRouter();
   const { user: currentUser } = useAuthUser();
   const menuTriggerRef = useRef(null);
 
-  // State
   const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Search Context
   const {
     searchTerm,
     setSearchTerm,
     datePickerValue,
     setDatePickerValue,
-    participantCount,
-    setParticipantCount,
+    selectedLocation,
+    selectedCollections,
+    setSelectedCollections,
     geocodedAddressResults,
     handleLocationChange,
     handleLocationSelect,
@@ -799,66 +1100,212 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     setIsDrawerOpen,
   } = useSearch();
 
-  // Search Interaction State
   const [activeField, setActiveField] = useState(null);
-  const [popupConfig, setPopupConfig] = useState({ left: 0, width: 360 });
-  const containerRef = useRef(null);
+  /** Dropdown mounts only after compact→expanded pill animation (or fallback timeout). */
+  const [searchDropdownVisible, setSearchDropdownVisible] = useState(false);
+  const [iWantCollections, setIWantCollections] = useState([]);
+  const [popupConfig, setPopupConfig] = useState({ top: 96, left: 0, width: 360 });
+
+  const formRef = useRef(null);
   const locationRef = useRef(null);
   const dateRef = useRef(null);
-  const participantsRef = useRef(null);
+  const collectionRef = useRef(null);
+  const activeFieldRef = useRef(null);
+  /** True only when opening a field from the compact pill; cleared when dropdown may show. */
+  const deferSearchDropdownUntilExpandedRef = useRef(false);
+  const dropdownRevealFallbackTimerRef = useRef(null);
+
+  activeFieldRef.current = activeField;
+
+  const isMobileView = useIsMobile();
+  const exploreMobileChrome = unifiedExploreChrome && isMobileView;
+  const exploreMobileLight = exploreMobileChrome;
+  const exploreMobileUnified = exploreMobileChrome;
+
+  const handleMobileBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  // Derived
+  const isExpanded = activeField !== null;
+
+  const compactMeasureRef = useRef(null);
+  /** Measured mini-pill width (px) for Framer — from content, not a fixed layout width. */
+  const [compactShellWidth, setCompactShellWidth] = useState(null);
+
+  const getCompactLocationDisplay = useCallback(() => {
+    const raw = (searchTerm || "").trim();
+    if (!raw) return "Located in Toronto";
+    const norm = raw.replace(/\s+/g, " ").trim();
+    if (norm === TORONTO_PRESET_DISPLAY || /^toronto, ?ON$/i.test(norm)) {
+      return "Located in Toronto";
+    }
+    return raw;
+  }, [searchTerm]);
+
+  useLayoutEffect(() => {
+    if (isExpanded) return;
+    const el = compactMeasureRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const measure = () => {
+      const node = compactMeasureRef.current;
+      if (!node) return;
+      const inner = Math.ceil(node.getBoundingClientRect().width);
+      const total = Math.max(inner + 2, COMPACT_W_FALLBACK);
+      setCompactShellWidth((prev) => (prev === total ? prev : total));
+    };
+
+    measure();
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(measure);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [
+    isExpanded,
+    searchTerm,
+    datePickerValue,
+    (selectedCollections || []).map((c) => c.slug).join("|"),
+    getCompactLocationDisplay,
+  ]);
+
+  const miniPillMotionWidth = isExpanded
+    ? EXPANDED_W
+    : Math.max(compactShellWidth ?? COMPACT_W_FALLBACK, COMPACT_W_FALLBACK);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const closeActiveField = useCallback(() => setActiveField(null), []);
-
-  useClickOutside(containerRef, closeActiveField);
-
-  // Position Logic
-  useLayoutEffect(() => {
-    if (!activeField || !containerRef.current) return;
-
-    const updatePosition = () => {
-      const refs = {
-        location: locationRef,
-        date: dateRef,
-        participants: participantsRef,
-      };
-      const targetRef = refs[activeField];
-
-      if (targetRef?.current && containerRef.current) {
-        const buttonRect = targetRef.current.getBoundingClientRect();
-        const containerRect = containerRef.current.getBoundingClientRect();
-
-        const width = POPUP_SIZES[activeField] || 360;
-
-        let left =
-          buttonRect.left -
-          containerRect.left +
-          buttonRect.width / 2 -
-          width / 2;
-
-        const absoluteLeft = containerRect.left + left;
-        const windowWidth = window.innerWidth;
-
-        if (absoluteLeft + width > windowWidth - 20) {
-          left -= absoluteLeft + width - (windowWidth - 20);
-        }
-        if (absoluteLeft < 20) {
-          left += 20 - absoluteLeft;
-        }
-
-        setPopupConfig({ left, width });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await collectionService.listByPlacement("i_want");
+        if (!cancelled) setIWantCollections(rows);
+      } catch {
+        if (!cancelled) setIWantCollections([]);
       }
-    };
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    return () => window.removeEventListener("resize", updatePosition);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Compute popup position using fixed coordinates from the button's screen rect
+  const updatePopupPosition = useCallback(() => {
+    if (!activeField) return;
+    const refs = { location: locationRef, date: dateRef, collection: collectionRef };
+    const targetRef = refs[activeField];
+    const panelWidth = POPUP_SIZES[activeField] || 360;
+
+    if (targetRef?.current) {
+      const rect = targetRef.current.getBoundingClientRect();
+      let left = rect.left + rect.width / 2 - panelWidth / 2;
+      left = Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12));
+      setPopupConfig({ top: rect.bottom + 10, left, width: panelWidth });
+    }
   }, [activeField]);
 
+  const revealSearchDropdown = useCallback(() => {
+    if (dropdownRevealFallbackTimerRef.current) {
+      clearTimeout(dropdownRevealFallbackTimerRef.current);
+      dropdownRevealFallbackTimerRef.current = null;
+    }
+    deferSearchDropdownUntilExpandedRef.current = false;
+    if (!activeFieldRef.current) return;
+    setSearchDropdownVisible(true);
+    requestAnimationFrame(() => {
+      updatePopupPosition();
+    });
+  }, [updatePopupPosition]);
+
+  const handlePillLayoutAnimationComplete = useCallback(() => {
+    if (!activeFieldRef.current) return;
+    if (!deferSearchDropdownUntilExpandedRef.current) return;
+    revealSearchDropdown();
+  }, [revealSearchDropdown]);
+
+  useEffect(() => {
+    if (!activeField) {
+      if (dropdownRevealFallbackTimerRef.current) {
+        clearTimeout(dropdownRevealFallbackTimerRef.current);
+        dropdownRevealFallbackTimerRef.current = null;
+      }
+      deferSearchDropdownUntilExpandedRef.current = false;
+      setSearchDropdownVisible(false);
+      return;
+    }
+    if (!deferSearchDropdownUntilExpandedRef.current) {
+      if (dropdownRevealFallbackTimerRef.current) {
+        clearTimeout(dropdownRevealFallbackTimerRef.current);
+        dropdownRevealFallbackTimerRef.current = null;
+      }
+      setSearchDropdownVisible(true);
+      requestAnimationFrame(() => {
+        updatePopupPosition();
+      });
+      return;
+    }
+    setSearchDropdownVisible(false);
+    if (dropdownRevealFallbackTimerRef.current) {
+      clearTimeout(dropdownRevealFallbackTimerRef.current);
+    }
+    dropdownRevealFallbackTimerRef.current = setTimeout(() => {
+      dropdownRevealFallbackTimerRef.current = null;
+      if (activeFieldRef.current && deferSearchDropdownUntilExpandedRef.current) {
+        revealSearchDropdown();
+      }
+    }, 140);
+    return () => {
+      if (dropdownRevealFallbackTimerRef.current) {
+        clearTimeout(dropdownRevealFallbackTimerRef.current);
+        dropdownRevealFallbackTimerRef.current = null;
+      }
+    };
+  }, [activeField, revealSearchDropdown, updatePopupPosition]);
+
+  const closeActiveField = useCallback(() => {
+    if (dropdownRevealFallbackTimerRef.current) {
+      clearTimeout(dropdownRevealFallbackTimerRef.current);
+      dropdownRevealFallbackTimerRef.current = null;
+    }
+    deferSearchDropdownUntilExpandedRef.current = false;
+    setSearchDropdownVisible(false);
+    setActiveField(null);
+  }, []);
+
+  useClickOutside(formRef, closeActiveField);
+
+  // Run immediately after the expanded content mounts so refs are available
+  useLayoutEffect(() => {
+    if (!activeField || !searchDropdownVisible) return;
+    const id = requestAnimationFrame(updatePopupPosition);
+    return () => cancelAnimationFrame(id);
+  }, [activeField, searchDropdownVisible, updatePopupPosition]);
+
+  useEffect(() => {
+    if (!activeField || !searchDropdownVisible) return;
+    window.addEventListener("resize", updatePopupPosition);
+    window.addEventListener("scroll", updatePopupPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePopupPosition);
+      window.removeEventListener("scroll", updatePopupPosition, true);
+    };
+  }, [activeField, searchDropdownVisible, updatePopupPosition]);
+
   const handleFieldClick = (field) => {
-    setActiveField(activeField === field ? null : field);
+    setActiveField((prev) => {
+      if (prev === field) {
+        deferSearchDropdownUntilExpandedRef.current = false;
+        return null;
+      }
+      if (prev === null) {
+        deferSearchDropdownUntilExpandedRef.current = true;
+      } else {
+        deferSearchDropdownUntilExpandedRef.current = false;
+      }
+      return field;
+    });
   };
 
   const handleSectionButtonKeyDown = (e, field) => {
@@ -871,32 +1318,32 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     performSearch();
-    setActiveField(null);
+    closeActiveField();
   };
 
   const getDateDisplay = () => {
-    if (!datePickerValue) return "Any week";
-
+    if (!datePickerValue) return "Anytime";
     if (datePickerValue.start && datePickerValue.end) {
       const s = dayjs(datePickerValue.start);
       const e = dayjs(datePickerValue.end);
-      if (s.month() === e.month()) {
-        return `${s.format("MMM D")} - ${e.format("D")}`;
-      }
-      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
+      if (s.month() === e.month()) return `${s.format("MMM D")} – ${e.format("D")}`;
+      return `${s.format("MMM D")} – ${e.format("MMM D")}`;
     }
+    if (dayjs.isDayjs(datePickerValue)) return datePickerValue.format("MMM DD");
+    return "Anytime";
+  };
 
-    if (dayjs.isDayjs(datePickerValue)) {
-      return datePickerValue.format("MMM DD");
+  const getCollectionDisplay = () => {
+    const list = selectedCollections || [];
+    if (!list.length) return "Anything";
+    if (list.length === 1) {
+      return formatCollectionDisplayName(list[0].name || list[0].slug);
     }
-
-    return "Any week";
+    return summarizeCollectionsForPill(list);
   };
 
   const renderLocationSuggestions = () => {
-    const safeResults = Array.isArray(geocodedAddressResults)
-      ? geocodedAddressResults
-      : [];
+    const safeResults = Array.isArray(geocodedAddressResults) ? geocodedAddressResults : [];
     if (searchTerm && safeResults.length > 0) {
       return safeResults.map((result, idx) => {
         const colorTheme = ICON_PALETTE[idx % ICON_PALETTE.length];
@@ -909,27 +1356,19 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 citySlug: result.citySlug,
                 provinceSlug: result.provinceSlug,
               });
-              setActiveField(null);
+              closeActiveField();
             }}
           >
             <IconBox $bgColor={colorTheme.bg} $iconColor={colorTheme.icon}>
               <MapPin size={18} strokeWidth={2.5} />
             </IconBox>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              textAlign: "left",
-            }}
-          >
-            <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
-              {result.displayName.split(",")[0]}
-            </span>
-            <span style={{ fontSize: 12, color: "#717171" }}>
-              {result.displayName}
-            </span>
-          </div>
-        </LocationOption>
+            <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+              <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
+                {result.displayName.split(",")[0]}
+              </span>
+              <span style={{ fontSize: 12, color: "#717171" }}>{result.displayName}</span>
+            </div>
+          </LocationOption>
         );
       });
     }
@@ -945,7 +1384,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
               citySlug: area.citySlug,
               provinceSlug: area.provinceSlug,
             });
-            setActiveField(null);
+            closeActiveField();
           }}
         >
           <IconBox
@@ -954,21 +1393,13 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           >
             {isToronto ? area.icon : <MapPin size={18} strokeWidth={2.5} />}
           </IconBox>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            textAlign: "left",
-          }}
-        >
-          <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
-            {area.displayName || area.name}
-          </span>
-          <span style={{ fontSize: 12, color: "#717171" }}>
-            {area.description}
-          </span>
-        </div>
-      </LocationOption>
+          <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
+              {area.displayName || area.name}
+            </span>
+            <span style={{ fontSize: 12, color: "#717171" }}>{area.description}</span>
+          </div>
+        </LocationOption>
       );
     });
   };
@@ -976,219 +1407,401 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   return (
     <>
       <GlobalStyles />
-      <HeaderWrapper $isFixed={isFixed}>
-        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
-          <LogoContainer>
-            <LogoIcon size={"2.5rem"} restingColor="#ff385c" />
-          </LogoContainer>
-        </Link>
+
+      {/* Backdrop — renders below header (z-index 99 < header z-index 100) */}
+      <AnimatePresence>
+        {isExpanded && (
+          <SearchBackdrop
+            key="search-backdrop"
+            $top={isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            onClick={closeActiveField}
+            aria-hidden
+          />
+        )}
+      </AnimatePresence>
+
+      <HeaderWrapper
+        $isFixed={isFixed}
+        $unifiedExploreChrome={unifiedExploreChrome}
+        $exploreMobileLight={exploreMobileLight}
+        $exploreMobileUnified={exploreMobileUnified}
+        animate={{ height: isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT }}
+        initial={{ height: HEADER_H_COMPACT }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        {exploreMobileChrome ? (
+          <MobileExploreBackBtn
+            type="button"
+            className="explore-mobile-back"
+            onClick={handleMobileBack}
+            aria-label="Go back"
+          >
+            <ArrowLeft size={22} strokeWidth={1.5} aria-hidden />
+          </MobileExploreBackBtn>
+        ) : (
+          <Link
+            href="/"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              ...(unifiedExploreChrome ? { alignSelf: "start" } : {}),
+            }}
+          >
+            <LogoContainer>
+              <LogoIcon size={"2.5rem"} restingColor="#ff385c" />
+            </LogoContainer>
+          </Link>
+        )}
 
         {showOptionsWrapper && (
-          <>
+          <SearchPillSlot $flexFill={!unifiedExploreChrome}>
             {/* --- DESKTOP SEARCH PILL --- */}
             <SearchFormWrapper
-              ref={containerRef}
+              ref={formRef}
               onSubmit={handleSearchSubmit}
-              layout
-              style={{ visibility: isMounted ? "visible" : "hidden" }}
+              animate={{
+                width: miniPillMotionWidth,
+                height: isExpanded ? EXPANDED_H : COMPACT_H,
+                backgroundColor:
+                  isExpanded && activeField ? "#ebebeb" : "#ffffff",
+                boxShadow: isExpanded
+                  ? "0 8px 32px rgba(0, 0, 0, 0.22)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.1)",
+              }}
+              initial={{
+                width: COMPACT_W_FALLBACK,
+                height: COMPACT_H,
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+              }}
+              onAnimationComplete={handlePillLayoutAnimationComplete}
+              style={{
+                visibility: isMounted ? "visible" : "hidden",
+                border: `1px solid ${isExpanded ? "#d1d5db" : "rgb(213 213 213)"}`,
+              }}
             >
-              {/* 1. LOCATION */}
-              <SectionButton
-                ref={locationRef}
-                $isActive={activeField === "location"}
-                onClick={() => handleFieldClick("location")}
-                onKeyDown={(e) => handleSectionButtonKeyDown(e, "location")}
-                style={{ width: 220, paddingLeft: 24 }}
-              >
-                {activeField === "location" && (
-                  <ActivePillBackground
-                    layoutId="header-pill"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <FieldLabel>Where</FieldLabel>
-                {activeField === "location" ? (
-                  <InlineInput
-                    autoFocus
-                    value={searchTerm}
-                    onChange={(e) => handleLocationChange(e.target.value)}
-                    placeholder="Search destination"
-                  />
-                ) : (
-                  <ValueDisplay $hasValue={!!searchTerm}>
-                    {searchTerm || "Search destination"}
-                  </ValueDisplay>
-                )}
-              </SectionButton>
+              {/* Pill content — overflow:hidden here, not on the form itself */}
+              <PillContentArea>
+                <AnimatePresence initial={false} mode="sync">
+                  {!isExpanded ? (
+                    /* ── COMPACT STATE ── */
+                    <PillLayer
+                      key="compact"
+                      variants={contentVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <CompactMeasureShell ref={compactMeasureRef}>
+                        <CompactRow>
+                        <CompactMagnifier aria-hidden>
+                          <Image
+                            src="/icons/shop.png"
+                            alt=""
+                            width={20}
+                            height={20}
+                            decoding="async"
+                            style={{ display: "block" }}
+                          />
+                        </CompactMagnifier>
 
-              <Divider
-                $isHidden={activeField === "location" || activeField === "date"}
-              />
+                        <CompactFieldZone
+                          type="button"
+                          onClick={() => handleFieldClick("location")}
+                          aria-label="Search location"
+                        >
+                          <CompactFieldText>{getCompactLocationDisplay()}</CompactFieldText>
+                        </CompactFieldZone>
 
-              {/* 2. DATE */}
-              <SectionButton
-                ref={dateRef}
-                $isActive={activeField === "date"}
-                onClick={() => handleFieldClick("date")}
-                onKeyDown={(e) => handleSectionButtonKeyDown(e, "date")}
-                style={{ width: 150 }}
-              >
-                {activeField === "date" && (
-                  <ActivePillBackground
-                    layoutId="header-pill"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <FieldLabel>Date</FieldLabel>
-                <ValueDisplay $hasValue={!!datePickerValue}>
-                  {getDateDisplay()}
-                </ValueDisplay>
-              </SectionButton>
+                        <CompactDivider aria-hidden />
 
-              <Divider
-                $isHidden={
-                  activeField === "date" || activeField === "participants"
-                }
-              />
+                        <CompactFieldZone
+                          type="button"
+                          onClick={() => handleFieldClick("date")}
+                          aria-label="Search date"
+                        >
+                          <CompactFieldText>{getDateDisplay()}</CompactFieldText>
+                        </CompactFieldZone>
 
-              {/* 3. WHO */}
-              <SectionButton
-                ref={participantsRef}
-                $isActive={activeField === "participants"}
-                onClick={() => handleFieldClick("participants")}
-                onKeyDown={(e) => handleSectionButtonKeyDown(e, "participants")}
-                style={{ width: 130 }}
-              >
-                {activeField === "participants" && (
-                  <ActivePillBackground
-                    layoutId="header-pill"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <FieldLabel>Who</FieldLabel>
-                <ValueDisplay $hasValue={true}>
-                  {participantCount === 1
-                    ? "1 Person"
-                    : `${participantCount} People`}
-                </ValueDisplay>
-              </SectionButton>
+                        <CompactDivider aria-hidden />
 
-              {/* SEARCH BUTTON */}
-              <SearchCircleButton
-                type="submit"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                layout
-              >
-                <Search size={18} strokeWidth={3} />
-              </SearchCircleButton>
+                        <CompactFieldZone
+                          type="button"
+                          onClick={() => handleFieldClick("collection")}
+                          aria-label="Search experience type"
+                        >
+                          <CompactFieldText>{getCollectionDisplay()}</CompactFieldText>
+                        </CompactFieldZone>
 
-              {/* --- POPUP CONTAINER --- */}
+                        <SmallSearchCircle
+                          type="submit"
+                          aria-label="Search"
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.92 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Search size={13} strokeWidth={3} />
+                        </SmallSearchCircle>
+                      </CompactRow>
+                      </CompactMeasureShell>
+                    </PillLayer>
+                  ) : (
+                    /* ── EXPANDED STATE ── */
+                    <PillLayer
+                      key="expanded"
+                      variants={contentVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <ExpandedRow>
+                        {/* 1. LOCATION */}
+                        <SectionButton
+                          ref={locationRef}
+                          $isActive={activeField === "location"}
+                          onClick={() => handleFieldClick("location")}
+                          onKeyDown={(e) => handleSectionButtonKeyDown(e, "location")}
+                          style={{ width: 240, paddingLeft: 28 }}
+                        >
+                          {activeField === "location" && (
+                            <ActivePillBackground
+                              layoutId="header-pill-bg"
+                              transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                            />
+                          )}
+                          <FieldLabel>Where</FieldLabel>
+                          {activeField === "location" ? (
+                            <InlineInput
+                              autoFocus
+                              value={searchTerm}
+                              onChange={(e) => handleLocationChange(e.target.value)}
+                              placeholder="Search destination"
+                            />
+                          ) : (
+                            <ValueDisplay $hasValue={!!searchTerm}>
+                              {searchTerm || "Search destination"}
+                            </ValueDisplay>
+                          )}
+                        </SectionButton>
+
+                        <Divider $isHidden={activeField === "location" || activeField === "date"} />
+
+                        {/* 2. DATE */}
+                        <SectionButton
+                          ref={dateRef}
+                          $isActive={activeField === "date"}
+                          onClick={() => handleFieldClick("date")}
+                          onKeyDown={(e) => handleSectionButtonKeyDown(e, "date")}
+                          style={{ width: 160 }}
+                        >
+                          {activeField === "date" && (
+                            <ActivePillBackground
+                              layoutId="header-pill-bg"
+                              transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                            />
+                          )}
+                          <FieldLabel>Date</FieldLabel>
+                          <ValueDisplay $hasValue={!!datePickerValue}>
+                            {getDateDisplay()}
+                          </ValueDisplay>
+                        </SectionButton>
+
+                        <Divider $isHidden={activeField === "date" || activeField === "collection"} />
+
+                        {/* 3. I want… */}
+                        <SectionButton
+                          ref={collectionRef}
+                          $isActive={activeField === "collection"}
+                          onClick={() => handleFieldClick("collection")}
+                          onKeyDown={(e) => handleSectionButtonKeyDown(e, "collection")}
+                          style={{ flex: 1 }}
+                        >
+                          {activeField === "collection" && (
+                            <ActivePillBackground
+                              layoutId="header-pill-bg"
+                              transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                            />
+                          )}
+                          <FieldLabel>I want…</FieldLabel>
+                          <ValueDisplay $hasValue={(selectedCollections || []).length > 0}>
+                            {getCollectionDisplay()}
+                          </ValueDisplay>
+                        </SectionButton>
+
+                        {/* SEARCH BUTTON */}
+                        <SearchCircleButton
+                          type="submit"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Search size={20} strokeWidth={2.5} />
+                        </SearchCircleButton>
+                      </ExpandedRow>
+                    </PillLayer>
+                  )}
+                </AnimatePresence>
+              </PillContentArea>
+
+              {/* Dropdown popup — position: fixed, escapes all overflow/stacking contexts */}
               <AnimatePresence>
-                {activeField && (
+                {isExpanded && activeField && searchDropdownVisible && (
                   <UnifiedPopupContainer
-                    key="popup"
-                    initial={{
-                      opacity: 0,
-                      y: 10,
-                      left: popupConfig.left,
-                      width: popupConfig.width,
-                    }}
+                    key="header-popup"
+                    layout
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{
                       opacity: 1,
                       y: 0,
+                      scale: 1,
                       left: popupConfig.left,
                       width: popupConfig.width,
                     }}
-                    exit={{ opacity: 0, y: 5 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      left: { duration: 0.2 },
-                      width: { duration: 0.2 },
+                      layout: { duration: 0.4, ease: "easeInOut" },
+                      left: { duration: 0.4, ease: "easeInOut" },
+                      width: { duration: 0.4, ease: "easeInOut" },
+                      opacity: { duration: 0.25 },
+                      scale: { duration: 0.25 },
+                      y: { duration: 0.25 },
                     }}
+                    style={{ top: popupConfig.top }}
                   >
-                    <PopupContentPadding>
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={activeField}
-                          layout="position"
-                          variants={contentVariants}
-                          initial="enter"
-                          animate="center"
-                          exit="exit"
-                          style={{
-                            width: (POPUP_SIZES[activeField] || 360) - 48,
-                          }}
-                        >
-                          {activeField === "location" && (
-                            <LocationList>
-                              {renderLocationSuggestions()}
-                            </LocationList>
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={activeField}
+                        layout="position"
+                        variants={contentVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        style={{ 
+                          width: POPUP_SIZES[activeField] || 380,
+                          padding: activeField === "collection" ? 0 : "20px 22px 22px",
+                          boxSizing: "border-box",
+                          display: "flex",
+                          flexDirection: "column",
+                          flex: 1,
+                          minHeight: 0
+                        }}
+                      >
+                        <FrozenContent
+                          field={activeField}
+                          renderLocation={() => (
+                            <LocationList>{renderLocationSuggestions()}</LocationList>
                           )}
-                          {activeField === "date" && (
+                          renderDate={() => (
                             <CustomCalendar
                               value={datePickerValue}
                               onChange={setDatePickerValue}
-                              onClose={() => handleFieldClick("participants")}
+                              onClose={closeActiveField}
                             />
                           )}
-                          {activeField === "participants" && (
-                            <CustomParticipant
-                              count={Math.max(1, participantCount)}
-                              onChange={setParticipantCount}
-                            />
+                          renderCollectionPicker={() => (
+                            <ExploreDropdownTypeChipFlow>
+                              {iWantCollections.map((c) => {
+                                const active = (selectedCollections || []).some(
+                                  (x) => x.slug === c.slug,
+                                );
+                                const title = formatCollectionDisplayName(c.name || c.slug);
+                                return (
+                                  <ExploreDropdownTypeChip
+                                    key={c.id ?? c.slug}
+                                    type="button"
+                                    $selected={active}
+                                    onClick={() => {
+                                      setSelectedCollections((prev) => {
+                                        const exists = prev.some((x) => x.slug === c.slug);
+                                        if (exists) {
+                                          return prev.filter((x) => x.slug !== c.slug);
+                                        }
+                                        return [...prev, { slug: c.slug, name: c.name || title }];
+                                      });
+                                    }}
+                                  >
+                                    {c.icon_name ? (
+                                      <ExploreBarLazyLucideIcon
+                                        iconName={c.icon_name}
+                                        size={16}
+                                        strokeWidth={1.5}
+                                      />
+                                    ) : null}
+                                    <span>{title}</span>
+                                  </ExploreDropdownTypeChip>
+                                );
+                              })}
+                            </ExploreDropdownTypeChipFlow>
                           )}
-                        </motion.div>
-                      </AnimatePresence>
-                    </PopupContentPadding>
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </UnifiedPopupContainer>
                 )}
               </AnimatePresence>
             </SearchFormWrapper>
 
             {/* --- MOBILE SEARCH TRIGGER --- */}
-            <MobileSearchTrigger
+            <MobileExploreSearchPill
+              type="button"
               onClick={() => setIsDrawerOpen(true)}
               style={{ visibility: isMounted ? "visible" : "hidden" }}
+              aria-label="Edit search"
             >
-              <Search size={20} color="#ff385c" />
-              <p>{searchTerm || "Start your search"}</p>
-            </MobileSearchTrigger>
-          </>
+              <MobileExplorePillLine1>
+                {getMobileExploreLocationTitle(selectedLocation, searchTerm)}
+              </MobileExplorePillLine1>
+              <MobileExplorePillMetaRow>
+                <span>{formatMobileExploreDateSummary(datePickerValue)}</span>
+                <span className="meta-sep" aria-hidden>
+                  ·
+                </span>
+                <span>{summarizeCollectionsForPill(selectedCollections)}</span>
+              </MobileExplorePillMetaRow>
+            </MobileExploreSearchPill>
+          </SearchPillSlot>
         )}
 
-        {/* --- RIGHT USER MENU --- */}
-        <RightSection>
+        <RightSection
+          $pinTopInUnifiedGrid={unifiedExploreChrome && !exploreMobileChrome}
+        >
           <div style={{ position: "relative" }}>
             <UserMenuButton
               ref={menuTriggerRef}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              $compactExplore={exploreMobileChrome && unifiedExploreChrome}
             >
-              <Menu strokeWidth={2.5} size={18} style={{ color: "inherit" }} />
+              <Menu
+                strokeWidth={2.25}
+                size={exploreMobileChrome ? 16 : 18}
+                style={{ color: "inherit", flexShrink: 0 }}
+              />
               {currentUser?.avatar_url ? (
-                <UserAvatar size={28} />
+                <UserAvatar size={exploreMobileChrome ? 24 : 28} />
               ) : (
                 <img
                   src="/icons/explore/user-circle.svg"
                   alt="User"
-                  width={28}
-                  height={28}
+                  width={exploreMobileChrome ? 24 : 28}
+                  height={exploreMobileChrome ? 24 : 28}
+                  referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                 />
               )}
             </UserMenuButton>
             <CustomUserMenu
               isOpen={isMenuOpen}
               onClose={() => setIsMenuOpen(false)}
-              onNavigate={(path) => {
-                setIsMenuOpen(false);
-                router.push(path);
-              }}
-              onShowSettings={() => {
-                setIsMenuOpen(false);
-                setSettingsDrawerVisible(true);
-              }}
+              onNavigate={(path) => { setIsMenuOpen(false); router.push(path); }}
+              onShowSettings={() => { setIsMenuOpen(false); setSettingsDrawerVisible(true); }}
               triggerRef={menuTriggerRef}
             />
           </div>

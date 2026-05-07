@@ -1,7 +1,7 @@
 import MyClassesClient from "./_components/MyClassesClient";
 
 export const metadata = {
-  title: "My Bookings | Classeasily",
+  title: "My Bookings | ClassEasily",
   description:
     "Manage your upcoming classes, review completed sessions, and track your learning journey.",
   robots: {

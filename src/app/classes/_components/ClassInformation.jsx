@@ -1,349 +1,67 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
-import styled, { keyframes } from "styled-components";
-import { Button, Typography, Tooltip, Divider } from "antd";
-import { Share2, Heart, Star, MessageCircle } from "lucide-react";
-import { LordIcon } from "@/services/ReactUtils";
+import React, { useState, useRef, useLayoutEffect } from "react";
+import styled from "styled-components";
+import { Button, Typography } from "antd";
+import CollapsibleSection from "./CollapsibleSection";
+import { renderTextWithBold } from "./formatDescriptionText";
 
-const { Paragraph, Title } = Typography;
+const { Paragraph } = Typography;
 
-const CLASSEASILY_RED = "#FF385C";
 const COLLAPSED_MAX_HEIGHT_PX = 200;
 
-// LordIcon only for Partner / Premium badges
-const partnerLordIcon = "https://cdn.lordicon.com/zopdjjjs.json";
-
-// --- Animations ---
-
-// Slower, smoother pop without z-index thrashing.
-// We use translateZ to pop it visually on top without changing stacking context context abruptly.
-const popAndSettle = keyframes`
-  0% { transform: scale(0) translateZ(0); opacity: 0; }
-  40% { transform: scale(2.5) translateZ(0); opacity: 1; } 
-  75% { transform: scale(1) translateZ(0); }
-  100% { transform: scale(1) translateZ(0); opacity: 1; }
-`;
-
-// Delayed text slide-out
-const slideReveal = keyframes`
-  0% { opacity: 0; transform: translateX(-20px); max-width: 0; margin-left: 0; }
-  50% { opacity: 0; transform: translateX(-20px); max-width: 0; margin-left: 0; }
-  100% { opacity: 1; transform: translateX(0); max-width: 200px; margin-left: 8px; }
-`;
-
-// --- Styled Components ---
-
-const MobileHeaderSection = styled.div`
-  display: none;
-  @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 0 0.75rem;
-    order: -1;
-  }
-  @media (max-width: 480px) {
-    padding: 0 0.5rem;
-  }
-`;
-const MobileTitleRow = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  gap: 1rem;
-`;
-const MobileStyledTitle = styled(Title)`
-  &.ant-typography {
-    font-size: clamp(1.2rem, 6vw, 1.3rem);
-    font-weight: 700;
-    color: #000;
-    margin-bottom: 0 !important;
-    line-height: 1.3;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    min-width: 0;
-    flex-grow: 1;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-const MobileActionsWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-`;
-const MobileActionButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 48px;
-  min-width: 48px;
-  &:hover:not(:disabled) {
-    background: #f7f7f7;
-    transform: translateY(-1px);
-  }
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-  svg {
-    flex-shrink: 0;
-  }
-`;
 const InfoWrapper = styled.section`
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 1rem;
-  padding-top: 0;
-  background: white;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  /* Removed gap to allow Divider to control spacing */
-
-  @media (max-width: 768px) {
-    padding-top: 1rem;
-  }
-`;
-const BusinessAndAskRow = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  /* Padding only in the viewport where option card has disappeared but layout isn't full mobile yet (769px–1024px) */
-  @media (min-width: 769px) and (max-width: 1024px) {
-    padding-top: 1.25rem;
-  }
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-    padding-top: 0;
-  }
-`;
-const BusinessSection = styled.div`
-  padding: 0;
-  min-width: 0;
-  flex: 1;
-  @media (max-width: 768px) {
-    padding: 0 1rem;
-    display: flex;
-    justify-content: center;
-    flex: none;
-  }
-  @media (max-width: 480px) {
-    padding: 0 1rem;
-  }
-`;
-const BusinessInfo = styled.button`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  cursor: pointer;
-  padding: 0.5rem 0.75rem;
-  border-radius: 16px;
-  transition: background-color 0.2s ease;
-  border: none;
-  background-color: transparent;
-  text-align: left;
-  margin-left: -0.75rem;
-  width: calc(100% + 1.5rem);
-
-  &:hover:not(:disabled) {
-    background-color: #f5f5f5;
-  }
-  &:focus-visible {
-    outline: 2px solid ${CLASSEASILY_RED};
-    outline-offset: 2px;
-  }
-  &:disabled {
-    cursor: default;
-    background-color: transparent;
-    opacity: 0.7;
-  }
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
-  @media (max-width: 480px) {
-    gap: 0.6rem;
-    padding: 0.4rem 0.6rem;
-    margin-left: -0.6rem;
-    width: calc(100% + 1.2rem);
-  }
-`;
-const BusinessAvatar = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid #eaeaea;
-  background-color: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #767676;
-  @media (max-width: 480px) {
-    width: 42px;
-    height: 42px;
-  }
-`;
-const HostImg = styled.img`
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-const BusinessName = styled.span`
-  display: block;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #000;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-  @media (max-width: 480px) {
-    font-size: 0.95rem;
-  }
-`;
-const BusinessMetaWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.875rem;
-  color: #717171;
-  line-height: 1.4;
-`;
-const MetaItem = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-`;
-const MetaSeparator = styled.span`
-  margin: 0 2px;
-  color: #717171;
-  font-size: 0.6rem;
-  opacity: 0.7;
-`;
-const HostingMeta = styled.span`
-  @media (max-width: 768px) {
-    display: none;
-  }
+  background: #ffffff;
+  padding-top: 0.25rem;
 `;
 
-// --- New Categories/Pills Section (hidden on mobile to reduce lag) ---
-const CategoriesBlock = styled.div`
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-const HeaderSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  /* Removed border-bottom and padding-bottom */
-  @media (max-width: 768px) {
-    padding: 0 0.75rem;
-  }
-  @media (max-width: 480px) {
-    padding: 0 0.5rem;
-  }
-`;
-
-const CategoriesGrid = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-start;
-  @media (max-width: 480px) {
-    gap: 8px;
-  }
-`;
-
-const CategoryPill = styled.div`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px 6px 10px;
-  background: #fdfdfd;
-  border: 1px solid #e8e8e8;
-  border-radius: 100px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
-  overflow: visible;
-
-  @media (max-width: 480px) {
-    padding: 5px 12px 5px 8px;
-  }
-`;
-
-const AnimatedIconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-
-  will-change: transform;
-  backface-visibility: hidden;
-  animation: ${popAndSettle} 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-  animation-delay: ${(props) => props.$delay || "0ms"};
-
-  svg,
-  lord-icon {
-    width: 100%;
-    height: 100%;
-  }
-
-  @media (max-width: 480px) {
-    width: 24px;
-    height: 24px;
-  }
-`;
-
-const AnimatedTextWrapper = styled.span`
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #333;
-  white-space: nowrap;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  animation: ${slideReveal} 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-  animation-delay: ${(props) => props.$delay || "0ms"};
-
-  @media (max-width: 480px) {
-    font-size: 0.85rem;
-  }
-`;
-
-// --- Description Section ---
 const DescriptionSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   @media (max-width: 768px) {
-    padding: 0 0.75rem;
+    padding: 0 1.25rem 0.5rem;
   }
   @media (max-width: 480px) {
-    padding: 0 0.5rem;
+    padding: 0 1.25rem 0.5rem;
   }
 `;
+
+/** First structured section — always expanded; matches CollapsibleSection body typography */
+const WhatYoullDoBlock = styled.div`
+  padding: 10px 0 8px;
+
+  @media (max-width: 768px) {
+    padding: 14px 0 8px;
+  }
+`;
+
+const WhatYoullDoTitle = styled.h2`
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #000;
+
+  @media (max-width: 768px) {
+    margin-bottom: 12px;
+  }
+`;
+
+const WhatYoullDoBody = styled.div`
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-line;
+
+  strong {
+    font-weight: 600;
+    color: #111;
+  }
+`;
+
 const Description = styled(Paragraph)`
   &.ant-typography {
     font-size: 1rem;
@@ -352,6 +70,11 @@ const Description = styled(Paragraph)`
     margin-bottom: 0 !important;
     word-wrap: break-word;
     white-space: pre-line;
+
+    strong {
+      font-weight: 600;
+      color: #111;
+    }
     max-height: ${(props) =>
       props.$canBeTruncated && !props.$expanded
         ? `${COLLAPSED_MAX_HEIGHT_PX}px`
@@ -390,6 +113,7 @@ const Description = styled(Paragraph)`
     }
   }
 `;
+
 const ShowMoreButton = styled(Button)`
   align-self: flex-start;
   color: #ff385c !important;
@@ -411,97 +135,24 @@ const ShowMoreButton = styled(Button)`
   }
 `;
 
-const calculateHostingDuration = (dateString) => {
-  if (!dateString) return "";
-  const startDate = new Date(dateString);
-  const now = new Date();
-  if (isNaN(startDate.getTime()) || startDate > now) return "";
-  const years = now.getFullYear() - startDate.getFullYear();
-  const months = now.getMonth() - startDate.getMonth();
-  const totalMonths =
-    years * 12 + months + (now.getDate() < startDate.getDate() ? -1 : 0);
-  if (totalMonths >= 12) {
-    const totalYears = Math.floor(totalMonths / 12);
-    return `${totalYears} year${totalYears > 1 ? "s" : ""}`;
-  }
-  if (totalMonths > 0)
-    return `${totalMonths} month${totalMonths > 1 ? "s" : ""}`;
-  const totalDays = Math.max(
-    1,
-    Math.floor((now - startDate) / (1000 * 3600 * 24)),
-  );
-  return `${totalDays} day${totalDays > 1 ? "s" : ""}`;
-};
-
-const AskQuestionRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  padding: 0 0.25rem;
-  @media (max-width: 768px) {
-    justify-content: stretch;
-    padding: 0 0.75rem;
-  }
-  @media (max-width: 480px) {
-    padding: 0 0.5rem;
-  }
-`;
-
-const AskQuestionButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #555;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  cursor: pointer;
-  padding: 10px 18px;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
-  border-radius: 8px;
-  &:hover {
-    background: #f7f7f7;
-    border-color: #d0d0d0;
-    color: #333;
-  }
-  &:focus-visible {
-    outline: 2px solid ${CLASSEASILY_RED};
-    outline-offset: 2px;
-  }
-  @media (max-width: 768px) {
-    width: 100%;
-    padding: 14px 1rem;
-    font-size: 15px;
-    min-height: 48px;
-  }
-  @media (max-width: 480px) {
-    padding: 12px 1rem;
-    font-size: 13px;
-  }
-`;
-
 const ClassInformation = React.memo(
-  ({
-    title,
-    description,
-    reviewCount = 0,
-    averageRating = 0,
-    businessData,
-    onBusinessClick,
-    onContactHost,
-    partnerTierName,
-    isFavorite,
-    isTogglingFavorite,
-    onFavoriteClick,
-    onShareClick,
-  }) => {
+  ({ description, descriptionSections }) => {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [canBeTruncated, setCanBeTruncated] = useState(false);
     const descriptionRef = useRef(null);
 
+    const sectionList = Array.isArray(descriptionSections)
+      ? descriptionSections
+      : [];
+
+    const moreSections =
+      sectionList.length > 1 ? sectionList.slice(1) : [];
+
     useLayoutEffect(() => {
+      if (sectionList.length > 0) {
+        setCanBeTruncated(false);
+        return;
+      }
       const checkTruncation = () => {
         if (descriptionRef.current) {
           setCanBeTruncated(
@@ -512,167 +163,53 @@ const ClassInformation = React.memo(
       checkTruncation();
       window.addEventListener("resize", checkTruncation);
       return () => window.removeEventListener("resize", checkTruncation);
-    }, [description]);
+    }, [description, sectionList.length]);
 
     const toggleDescription = () =>
       setIsDescriptionExpanded(!isDescriptionExpanded);
 
-    const shouldShowTopRated = averageRating >= 4.5 && reviewCount >= 5;
-    const displayBusinessName = businessData?.businessName || "Business";
-    const displayBusinessImage =
-      businessData?.business_image_medium_url || null;
-    const hostingDuration = calculateHostingDuration(businessData?.createdAt);
-
-    let partnerBadgeText = null;
-    if (partnerTierName === "Founding Partner") partnerBadgeText = "Partner";
-    else if (partnerTierName === "Premium Partner")
-      partnerBadgeText = "Premium";
-
     return (
       <InfoWrapper>
-        <MobileHeaderSection>
-          <MobileTitleRow>
-            <MobileStyledTitle level={1}>{title}</MobileStyledTitle>
-          </MobileTitleRow>
-        </MobileHeaderSection>
-
-        <BusinessAndAskRow>
-          <BusinessSection>
-            <BusinessInfo
-              onClick={onBusinessClick}
-              disabled={!businessData}
-              aria-label={
-                businessData
-                  ? `View details for ${displayBusinessName}`
-                  : "Business information unavailable"
-              }
-              title={
-                businessData
-                  ? `View details for ${displayBusinessName}`
-                  : "Business information unavailable"
-              }
-            >
-              <BusinessAvatar aria-hidden="true">
-                {displayBusinessImage ? (
-                  <HostImg src={displayBusinessImage} alt="" />
-                ) : (
-                  <LordIcon
-                    src="https://cdn.lordicon.com/bhfjfgqz.json"
-                    trigger="in"
-                    state="in-reveal"
-                    colors="primary:#767676"
-                    style={{ width: 22, height: 22 }}
-                  />
-                )}
-              </BusinessAvatar>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "2px" }}
-              >
-                <BusinessName>Hosted by {displayBusinessName}</BusinessName>
-                <BusinessMetaWrapper>
-                  <HostingMeta>
-                    <MetaItem>
-                      {hostingDuration && `${hostingDuration} hosting`}
-                    </MetaItem>
-                    {reviewCount > 0 && <MetaSeparator>•</MetaSeparator>}
-                  </HostingMeta>
-
-                  {reviewCount > 0 && (
-                    <MetaItem style={{ fontWeight: "500", color: "#000" }}>
-                      <Star size={12} fill="#000" strokeWidth={0} />
-                      {reviewCount} review{reviewCount !== 1 ? "s" : ""}
-                    </MetaItem>
-                  )}
-
-                  {shouldShowTopRated && (
-                    <>
-                      <MetaSeparator>•</MetaSeparator>
-                      <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
-                        <Star size={12} fill="#FF385C" strokeWidth={0} />
-                        {" "}Top Rated
-                      </MetaItem>
-                    </>
-                  )}
-                </BusinessMetaWrapper>
-              </div>
-            </BusinessInfo>
-          </BusinessSection>
-
-          {onContactHost && (
-            <AskQuestionRow>
-              <AskQuestionButton
-                type="button"
-                onClick={onContactHost}
-                aria-label="Ask the host a question"
-              >
-                <MessageCircle size={18} aria-hidden />
-                Ask a question
-              </AskQuestionButton>
-            </AskQuestionRow>
-          )}
-        </BusinessAndAskRow>
-
-        {(partnerBadgeText || shouldShowTopRated) && (
-          <>
-            <Divider style={{ margin: "12px 0" }} />
-            <CategoriesBlock>
-              <HeaderSection>
-                <CategoriesGrid>
-                  {partnerBadgeText && (
-                    <CategoryPill>
-                      <AnimatedIconWrapper $delay="0ms">
-                        <LordIcon
-                          src={partnerLordIcon}
-                          trigger="in"
-                          state="in-reveal"
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      </AnimatedIconWrapper>
-                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
-                        {partnerBadgeText}
-                      </AnimatedTextWrapper>
-                    </CategoryPill>
-                  )}
-                  {shouldShowTopRated && (
-                    <CategoryPill>
-                      <AnimatedIconWrapper $delay="0ms">
-                        <LordIcon
-                          src={partnerLordIcon}
-                          trigger="in"
-                          state="in-reveal"
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      </AnimatedIconWrapper>
-                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
-                        Highly rated
-                      </AnimatedTextWrapper>
-                    </CategoryPill>
-                  )}
-                </CategoriesGrid>
-              </HeaderSection>
-            </CategoriesBlock>
-            <Divider style={{ margin: "12px 0" }} />
-          </>
-        )}
-
         <DescriptionSection>
-          <Description
-            ref={descriptionRef}
-            $expanded={isDescriptionExpanded}
-            $canBeTruncated={canBeTruncated}
-            id="class-description"
-          >
-            {description}
-          </Description>
-          {canBeTruncated && (
-            <ShowMoreButton
-              type="link"
-              onClick={toggleDescription}
-              aria-expanded={isDescriptionExpanded}
-              aria-controls="class-description"
-            >
-              {isDescriptionExpanded ? "Show less" : "Show more"}
-            </ShowMoreButton>
+          {sectionList.length > 0 ? (
+            <>
+              <WhatYoullDoBlock>
+                <WhatYoullDoTitle>What you&apos;ll do</WhatYoullDoTitle>
+                <WhatYoullDoBody>
+                  {renderTextWithBold(sectionList[0].body)}
+                </WhatYoullDoBody>
+              </WhatYoullDoBlock>
+              {moreSections.map((sec, idx) => (
+                <CollapsibleSection
+                  key={sec.id || sec.title || idx + 1}
+                  title={sec.title}
+                  defaultOpen={false}
+                >
+                  {sec.body}
+                </CollapsibleSection>
+              ))}
+            </>
+          ) : (
+            <>
+              <Description
+                ref={descriptionRef}
+                $expanded={isDescriptionExpanded}
+                $canBeTruncated={canBeTruncated}
+                id="class-description"
+              >
+                {renderTextWithBold(description)}
+              </Description>
+              {canBeTruncated && (
+                <ShowMoreButton
+                  type="link"
+                  onClick={toggleDescription}
+                  aria-expanded={isDescriptionExpanded}
+                  aria-controls="class-description"
+                >
+                  {isDescriptionExpanded ? "Show less" : "Show more"}
+                </ShowMoreButton>
+              )}
+            </>
           )}
         </DescriptionSection>
       </InfoWrapper>

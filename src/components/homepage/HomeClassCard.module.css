@@ -262,3 +262,213 @@
     font-size: 12px;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Explore page list layout (ClassesDisplay only)                                */
+/* -------------------------------------------------------------------------- */
+
+.cardContainerExplore {
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.exploreImageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: #f7f7f7;
+  flex-shrink: 0;
+}
+
+.exploreThumbSkeleton {
+  border-radius: 12px;
+}
+
+.exploreThumbImage {
+  border-radius: 12px;
+}
+
+.explorePopularBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111111;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.exploreFavoriteBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.exploreFavoriteBtn:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.exploreCopy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.exploreTitleRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.exploreTitle {
+  margin: 0;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.exploreRatingInline {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: #111111;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.exploreMeta {
+  padding: 0;
+  color: #717171;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  /* Narrower than the title block so the meta line wraps onto multiple lines */
+  max-width: min(100%, 34ch);
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+
+.exploreRatingBlock {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.exploreRatingNum {
+  font-weight: 700;
+  color: #111111;
+}
+
+.exploreRatingSep {
+  color: #717171;
+  font-weight: 400;
+}
+
+.exploreReviewCount {
+  color: #717171;
+  font-weight: 400;
+}
+
+.explorePriceRow {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #111111;
+}
+
+.exploreFrom {
+  font-weight: 400;
+}
+
+.explorePriceAmount {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.explorePriceSuffix {
+  font-weight: 400;
+}
+
+@media (max-width: 1048px) {
+  .cardContainerExplore {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .exploreImageWrap {
+    width: 132px;
+    height: 132px;
+    aspect-ratio: unset;
+    margin-bottom: 0;
+  }
+
+  .exploreTitleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .exploreRatingInline {
+    display: none !important;
+  }
+
+  .exploreRatingBlock {
+    display: flex;
+  }
+
+  .exploreMeta {
+    font-size: 13px;
+    max-width: min(100%, 19.5ch);
+  }
+}
+
+@media (min-width: 1049px) {
+  .exploreRatingInline {
+    display: flex;
+  }
+
+  .exploreRatingBlock {
+    display: none;
+  }
+}

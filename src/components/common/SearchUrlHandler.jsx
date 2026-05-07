@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useSearch } from "@/context/SearchContext";
+import { useSearch, formatCollectionDisplayName } from "@/context/SearchContext";
 import dayjs from "dayjs";
 
 const SearchUrlHandler = () => {
@@ -14,6 +14,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
+    setSelectedCollections,
   } = useSearch();
 
   // We use a ref to track the last URL string we processed.
@@ -102,6 +103,18 @@ const SearchUrlHandler = () => {
     } else if (isFlatExplore) {
       setParticipantCount(1);
     }
+
+    const collectionSlugs = searchParams.getAll("collection").filter(Boolean);
+    if (collectionSlugs.length) {
+      setSelectedCollections(
+        collectionSlugs.map((slug) => ({
+          slug,
+          name: formatCollectionDisplayName(slug),
+        })),
+      );
+    } else if (isFlatExplore) {
+      setSelectedCollections([]);
+    }
   }, [
     pathname,
     searchParams,
@@ -109,6 +122,7 @@ const SearchUrlHandler = () => {
     setSelectedLocation,
     setDatePickerValue,
     setParticipantCount,
+    setSelectedCollections,
   ]);
 
   return null;

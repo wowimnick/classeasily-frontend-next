@@ -6,18 +6,27 @@ import styled, { keyframes } from "styled-components";
 import {
   Search,
   MapPin,
-  Minus,
-  Plus,
   ChevronDown,
-  ChevronLeft,
+  ArrowLeft,
   X,
-  Compass,
   Loader2,
 } from "lucide-react";
+import { collectionService } from "@/services/apiService";
 import dayjs from "dayjs";
 import posthog from "posthog-js";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { useSearch, GTA_PRESETS } from "@/context/SearchContext";
+import {
+  useSearch,
+  GTA_PRESETS,
+  summarizeCollectionsForPill,
+  formatCollectionDisplayName,
+} from "@/context/SearchContext";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
+import {
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
+import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 import CustomCalendar from "@/app/(homepage)/_components/CustomCalendarMobile";
 
 // --- Styled Components ---
@@ -25,7 +34,7 @@ import CustomCalendar from "@/app/(homepage)/_components/CustomCalendarMobile";
 const Overlay = styled(motion.div)`
   position: fixed;
   inset: 0;
-  background: #f7f7f7;
+  background: #fafafa;
   z-index: 9990;
   display: flex;
   flex-direction: column;
@@ -36,10 +45,13 @@ const TopBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 10px 8px;
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
   flex-shrink: 0;
-  min-height: 60px;
-  background: #f7f7f7;
+  min-height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   z-index: 50;
 `;
 
@@ -48,54 +60,65 @@ const TopBarCenter = styled(motion.div)`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-  color: #222;
+  font-weight: 500;
+  font-size: 15px;
+  color: #000000;
+  letter-spacing: -0.01em;
   position: absolute;
   left: 0;
   right: 0;
   pointer-events: none;
 `;
 
-const NavBtn = styled.button`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.05);
-  background: #fff;
-  display: flex;
+/** Matches explore mobile header: no chrome, 44px tap target, black icons */
+const TopIconBtn = styled.button`
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #000000;
   cursor: pointer;
-  color: #222;
   flex-shrink: 0;
   z-index: 51;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: all 0.2s ease;
-  &:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+`;
+
+const TopBarSpacer = styled.div`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
 `;
 
 const MainScroll = styled(motion.div)`
   flex: 1;
   min-height: 0;
-  padding: ${(p) => (p.$expanded ? "0" : "12px 20px 32px")};
+  padding: ${(p) => (p.$expanded ? "0" : "12px 16px 28px")};
   display: flex;
   flex-direction: column;
-  gap: 0; 
-  background: #f7f7f7;
+  gap: 0;
+  background: #fafafa;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transition: padding 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 `;
 
 // --- Card Logic ---
+const cardShadowRest =
+  "0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.07)";
+const cardShadowLifted = "0 -4px 24px rgba(0, 0, 0, 0.08)";
+
 const CardShell = styled(motion.div)`
-  background: #fff;
-  border-radius: 13px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e7eb !important;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: ${cardShadowRest};
+  border: 1px solid #f3f3f3;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -109,15 +132,15 @@ const CardHeader = styled(motion.button)`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background: transparent;
   border: none;
-  padding: 18px;
+  padding: 16px 18px;
   cursor: pointer;
   text-align: left;
   flex-shrink: 0;
   position: relative;
   z-index: 2;
-  background: #fff; 
+  background: #ffffff;
+  -webkit-tap-highlight-color: transparent;
 `;
 
 const WhereHeaderContainer = styled.div`
@@ -131,14 +154,19 @@ const MorphingInputBox = styled(motion.div)`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 18px;
-  background: #f3f4f6;
-  border: 1px solid transparent;
-  border-radius: ${(p) => (p.$expanded ? "18px" : "16px")};
+  padding: 12px 16px;
+  border-radius: 14px;
   width: 100%;
-  transition: all 0.2s ease;
-  box-shadow: ${(p) => (p.$expanded ? "inset 0 0 0 1px #222" : "none")}; 
-  background: ${(p) => (p.$expanded ? "#fff" : "#f3f4f6")};
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  background: ${(p) => (p.$expanded ? "#ffffff" : "#fafafa")};
+  border: 1px solid ${(p) => (p.$expanded ? "rgba(0, 0, 0, 0.1)" : "#f0f0f0")};
+  box-shadow: ${(p) =>
+    p.$expanded
+      ? "0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.06)"
+      : "none"};
 `;
 
 const RealInput = styled.input`
@@ -146,33 +174,33 @@ const RealInput = styled.input`
   border: none;
   outline: none;
   font-size: 16px;
-  font-weight: 600;
-  color: #222;
+  font-weight: 400;
+  color: #000000;
   background: transparent;
   width: 100%;
   &::placeholder {
     color: #9ca3af;
-    font-weight: 500;
+    font-weight: 400;
   }
 `;
 
 const FakeText = styled.span`
   font-size: 16px;
-  font-weight: 600;
-  color: ${(p) => (p.$hasValue ? "#222" : "#555")};
+  font-weight: 400;
+  color: ${(p) => (p.$hasValue ? "#000000" : "#717171")};
 `;
 
 const RowLabel = styled.span`
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #717171;
   margin-bottom: 2px;
 `;
 
 const RowValue = styled.span`
-  font-size: 17px;
-  color: ${(p) => (p.$hasValue ? "#222" : "#9ca3af")};
-  font-weight: 600;
+  font-size: 16px;
+  color: ${(p) => (p.$hasValue ? "#000000" : "#9ca3af")};
+  font-weight: 500;
   letter-spacing: -0.01em;
 `;
 
@@ -198,12 +226,15 @@ const DestItem = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 24px; /* More compact vertical padding */
+  padding: 12px 18px;
   cursor: pointer;
-  border-bottom: 1px solid transparent; 
-  transition: background 0.1s;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: background 0.12s ease;
+  &:last-child {
+    border-bottom: none;
+  }
   &:hover {
-    background: #f9fafb;
+    background: #f5f5f5;
   }
 `;
 
@@ -211,7 +242,7 @@ const DestItem = styled.div`
 const IconBox = styled.div`
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,99 +260,56 @@ const DestText = styled.div`
 `;
 
 const DestName = styled.span`
-  font-weight: 600;
-  font-size: 15px; /* Slightly tighter font size */
-  color: #222;
+  font-weight: 500;
+  font-size: 15px;
+  color: #000000;
 `;
 
 const DestDesc = styled.span`
   font-size: 13px;
+  font-weight: 400;
   color: #717171;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: min(260px, 72vw);
+`;
+
+const SectionHeading = styled.h3`
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin: 14px 18px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 `;
 
 const Footer = styled.div`
-  padding: 20px 24px;
-  border-top: 1px solid #ebebeb;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-shrink: 0;
-  background: #fff;
+  background: #ffffff;
   z-index: 50;
 `;
 
 const ClearLink = styled.button`
   background: none;
   border: none;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: #717171;
   text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
-  &:hover { color: #222; }
-`;
-
-const SearchBtn = styled.button`
-  flex: 1;
-  max-width: 100px;
-  height: 52px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ff385c 0%, #e11d48 100%);
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(236, 236, 236, 0.25);
-  transition: transform 0.1s ease;
-  &:active { transform: scale(0.98); }
-`;
-
-const ParticipantCard = styled.div`
-  padding: 0 24px;
-`;
-const ParticipantRow = styled.div`
-  background: #fff;
-  padding: 12px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const CountControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-const CountBtn = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #374151;
-  transition: all 0.2s;
-  &:hover:not(:disabled) { border-color: #222; color: #222; }
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
-`;
-const CountVal = styled.span`
-  width: 32px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 18px;
-  color: #222;
+  padding: 8px 4px;
+  -webkit-tap-highlight-color: transparent;
+  &:hover {
+    color: #000000;
+  }
 `;
 
 // --- Animation Config ---
@@ -364,8 +352,8 @@ export default function SearchFullScreen() {
     searchTerm,
     datePickerValue,
     setDatePickerValue,
-    participantCount,
-    setParticipantCount,
+    selectedCollections,
+    setSelectedCollections,
     geocodedAddressResults,
     geocoding,
     handleLocationChange,
@@ -374,7 +362,8 @@ export default function SearchFullScreen() {
     performSearch,
   } = useSearch();
 
-  const [expandedSection, setExpandedSection] = useState(null); 
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [iWantCollections, setIWantCollections] = useState([]);
   const locationInputRef = useRef(null);
   const mainScrollRef = useRef(null);
 
@@ -397,6 +386,21 @@ export default function SearchFullScreen() {
       return () => clearTimeout(t);
     }
   }, [expandedSection]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await collectionService.listByPlacement("i_want");
+        if (!cancelled) setIWantCollections(rows);
+      } catch {
+        if (!cancelled) setIWantCollections([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getDateDisplay = () => {
     if (!datePickerValue) return "Whenever";
@@ -427,10 +431,14 @@ export default function SearchFullScreen() {
     posthog.capture("search_performed", {
       search_term: searchTerm || null,
       has_date_filter: !!datePickerValue,
-      participants: participantCount > 1 ? participantCount : null,
+      collection_slugs: (selectedCollections || []).map((c) => c.slug).filter(Boolean),
     });
     performSearch();
     setIsDrawerOpen(false);
+  };
+
+  const handleClearAllClick = () => {
+    clearAll();
   };
 
   const renderLocationList = () => {
@@ -449,16 +457,28 @@ export default function SearchFullScreen() {
 
     if (hasTerm && !isPresetTerm && geocoding) {
       return (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 24px", color: "#717171" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "16px 18px",
+            color: "#717171",
+          }}
+        >
           <LoadingSpinnerWrap>
-            <Loader2 size={22} strokeWidth={2.5} />
+            <Loader2 size={20} strokeWidth={2} aria-hidden />
           </LoadingSpinnerWrap>
-          <span style={{ fontSize: 15 }}>Finding locations nearby…</span>
+          <span style={{ fontSize: 14, fontWeight: 400 }}>Finding locations nearby…</span>
         </div>
       );
     }
     if (hasTerm && !isPresetTerm && (!list || list.length === 0)) {
-      return <p style={{ color: "#717171", margin: "16px 24px" }}>No experiences found.</p>;
+      return (
+        <p style={{ color: "#717171", margin: "14px 18px", fontSize: 14, fontWeight: 400 }}>
+          No experiences found.
+        </p>
+      );
     }
 
     return (list || []).map((item, idx) => {
@@ -472,7 +492,7 @@ export default function SearchFullScreen() {
         <DestItem key={idx} onClick={() => onSelectLocation(item)}>
           <IconBox $bgColor={colorTheme.bg} $iconColor={colorTheme.icon}>
             {/* Use MapPin or maybe Compass for 'experience' feel */}
-            <MapPin size={18} strokeWidth={2.5} />
+            <MapPin size={18} strokeWidth={2} aria-hidden />
           </IconBox>
           <DestText>
             <DestName>{name}</DestName>
@@ -496,13 +516,13 @@ export default function SearchFullScreen() {
           >
             <TopBar>
               {expandedSection !== null ? (
-                <NavBtn onClick={() => setExpandedSection(null)}>
-                  <ChevronLeft size={22} />
-                </NavBtn>
+                <TopIconBtn type="button" onClick={() => setExpandedSection(null)} aria-label="Back">
+                  <ArrowLeft size={22} strokeWidth={1.5} aria-hidden />
+                </TopIconBtn>
               ) : (
-                <div style={{ width: 40 }} />
+                <TopBarSpacer aria-hidden />
               )}
-              
+
               <TopBarCenter
                  layoutId="topbar-title"
                  key={expandedSection || "default"}
@@ -513,23 +533,24 @@ export default function SearchFullScreen() {
                 {expandedSection === null
                   ? "Search experiences"
                   : expandedSection === "location"
-                    ? "Where to?"
+                    ? "Where?"
                     : expandedSection === "date"
                       ? "When are you free?"
-                      : "Who's joining?"}
+                      : expandedSection === "iwant"
+                        ? "What experience?"
+                        : "Search experiences"}
               </TopBarCenter>
-              
-              <NavBtn onClick={() => setIsDrawerOpen(false)}>
-                <X size={22} />
-              </NavBtn>
+
+              <TopIconBtn type="button" onClick={() => setIsDrawerOpen(false)} aria-label="Close search">
+                <X size={22} strokeWidth={1.75} aria-hidden />
+              </TopIconBtn>
             </TopBar>
 
             <LayoutGroup>
-              <MainScroll 
+              <MainScroll
                 ref={mainScrollRef}
                 $expanded={!!expandedSection}
               >
-                
                 {/* --- LOCATION CARD --- */}
                 <CardShell
                   layout="position"
@@ -537,15 +558,14 @@ export default function SearchFullScreen() {
                   transition={layoutTransition}
                   animate={{
                     flexGrow: expandedSection === "location" ? 1 : 0,
-                    flexBasis: "auto", 
+                    flexBasis: "auto",
                     height: expandedSection && expandedSection !== "location" ? 0 : "auto",
                     opacity: expandedSection && expandedSection !== "location" ? 0 : 1,
-                    marginTop: expandedSection === "location" ? 20 : 0,
-                    marginBottom: expandedSection ? 0 : 16,
-                    borderRadius: expandedSection === "location" ? "24px 24px 0 0" : "24px",
-                    boxShadow: expandedSection === "location" 
-                      ? "0 -4px 30px rgba(0,0,0,0.08)" 
-                      : "0 4px 24px rgba(0, 0, 0, 0.04)",
+                    marginTop: expandedSection === "location" ? 12 : 0,
+                    marginBottom: expandedSection ? 0 : 12,
+                    borderRadius: expandedSection === "location" ? "16px 16px 0 0" : "16px",
+                    boxShadow:
+                      expandedSection === "location" ? cardShadowLifted : cardShadowRest,
                   }}
                   style={{ flexShrink: 0 }}
                 >
@@ -560,14 +580,14 @@ export default function SearchFullScreen() {
                     <WhereHeaderContainer>
                       <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                         <RowLabel>Where</RowLabel>
-                        {!expandedSection && <ChevronDown size={20} color="#717171" />}
+                        {!expandedSection && <ChevronDown size={18} strokeWidth={2} color="#717171" aria-hidden />}
                       </div>
 
                       <MorphingInputBox
                         layoutId="location-input-box"
                         $expanded={expandedSection === "location"}
                       >
-                         <Search size={20} color={expandedSection === "location" ? "#222" : "#555"} style={{ flexShrink: 0 }} />
+                         <Search size={20} color={expandedSection === "location" ? "#000000" : "#717171"} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
                          {expandedSection === "location" ? (
                            <RealInput
                              ref={locationInputRef}
@@ -595,10 +615,8 @@ export default function SearchFullScreen() {
                         transition={contentTransition}
                       >
                         <ScrollableContent>
-                          <h3 style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", margin: "16px 24px 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            Explore nearby
-                          </h3>
-                          <div style={{ paddingBottom: 16 }}>{renderLocationList()}</div>
+                          <SectionHeading>Explore nearby</SectionHeading>
+                          <div style={{ paddingBottom: 12 }}>{renderLocationList()}</div>
                         </ScrollableContent>
                       </ExpandedBody>
                     )}
@@ -615,19 +633,20 @@ export default function SearchFullScreen() {
                     flexBasis: "auto",
                     height: expandedSection && expandedSection !== "date" ? 0 : "auto",
                     opacity: expandedSection && expandedSection !== "date" ? 0 : 1,
-                    marginTop: expandedSection === "date" ? 20 : 0,
-                    marginBottom: expandedSection ? 0 : 16,
-                    borderRadius: expandedSection === "date" ? "24px 24px 0 0" : "24px",
-                    boxShadow: expandedSection === "date" ? "0 -4px 30px rgba(0,0,0,0.08)" : "0 4px 24px rgba(0, 0, 0, 0.04)",
+                    marginTop: expandedSection === "date" ? 12 : 0,
+                    marginBottom: expandedSection ? 0 : 12,
+                    borderRadius: expandedSection === "date" ? "16px 16px 0 0" : "16px",
+                    boxShadow:
+                      expandedSection === "date" ? cardShadowLifted : cardShadowRest,
                   }}
                   style={{ flexShrink: 0 }}
                 >
-                  <CardHeader onClick={() => setExpandedSection("date")}>
+                  <CardHeader type="button" onClick={() => setExpandedSection("date")}>
                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         <RowLabel>When</RowLabel>
                         <RowValue $hasValue={!!datePickerValue}>{getDateDisplay()}</RowValue>
                      </div>
-                     {!expandedSection && <ChevronDown size={20} color="#717171" />}
+                     {!expandedSection && <ChevronDown size={18} strokeWidth={2} color="#717171" aria-hidden />}
                   </CardHeader>
                   
                   <AnimatePresence>
@@ -639,14 +658,14 @@ export default function SearchFullScreen() {
                         exit={{ opacity: 0, height: 0 }}
                         transition={contentTransition}
                       >
-                        <ScrollableContent style={{ padding: "0 20px" }}>
+                        <ScrollableContent style={{ padding: "0 16px" }}>
                            <CustomCalendar
                              value={datePickerValue}
                              onChange={setDatePickerValue}
                              onClose={() => setExpandedSection(null)}
                            />
-                           <div style={{ textAlign: "center", padding: 24 }}>
-                             <ClearLink onClick={(e) => { e.stopPropagation(); setDatePickerValue(null); }}>
+                           <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
+                             <ClearLink type="button" onClick={(e) => { e.stopPropagation(); setDatePickerValue(null); }}>
                                Clear dates
                              </ClearLink>
                            </div>
@@ -656,66 +675,90 @@ export default function SearchFullScreen() {
                   </AnimatePresence>
                 </CardShell>
 
-                {/* --- WHO CARD --- */}
+                {/* --- I WANT CARD --- */}
                 <CardShell
                   layout="position"
-                  layoutId="card-who"
+                  layoutId="card-iwant"
                   transition={layoutTransition}
                   animate={{
-                    flexGrow: expandedSection === "who" ? 1 : 0,
+                    flexGrow: expandedSection === "iwant" ? 1 : 0,
                     flexBasis: "auto",
-                    height: expandedSection && expandedSection !== "who" ? 0 : "auto",
-                    opacity: expandedSection && expandedSection !== "who" ? 0 : 1,
-                    marginTop: expandedSection === "who" ? 20 : 0,
-                    marginBottom: expandedSection ? 0 : 16,
-                    borderRadius: expandedSection === "who" ? "24px 24px 0 0" : "24px",
-                    boxShadow: expandedSection === "who" ? "0 -4px 30px rgba(0,0,0,0.08)" : "0 4px 24px rgba(0, 0, 0, 0.04)",
+                    height:
+                      expandedSection && expandedSection !== "iwant"
+                        ? 0
+                        : "auto",
+                    opacity:
+                      expandedSection && expandedSection !== "iwant" ? 0 : 1,
+                    marginTop: expandedSection === "iwant" ? 12 : 0,
+                    marginBottom: expandedSection ? 0 : 12,
+                    borderRadius:
+                      expandedSection === "iwant" ? "16px 16px 0 0" : "16px",
+                    boxShadow:
+                      expandedSection === "iwant"
+                        ? cardShadowLifted
+                        : cardShadowRest,
                   }}
                   style={{ flexShrink: 0 }}
                 >
-                  <CardHeader onClick={() => setExpandedSection("who")}>
+                  <CardHeader type="button" onClick={() => setExpandedSection("iwant")}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <RowLabel>Who</RowLabel>
-                      <RowValue $hasValue>
-                        {participantCount} guest{participantCount !== 1 ? "s" : ""}
+                      <RowLabel>I want…</RowLabel>
+                      <RowValue $hasValue={(selectedCollections || []).length > 0}>
+                        {summarizeCollectionsForPill(selectedCollections)}
                       </RowValue>
                     </div>
-                    {!expandedSection && <ChevronDown size={20} color="#717171" />}
+                    {!expandedSection && <ChevronDown size={18} strokeWidth={2} color="#717171" aria-hidden />}
                   </CardHeader>
-                  
+
                   <AnimatePresence>
-                    {expandedSection === "who" && (
+                    {expandedSection === "iwant" && (
                       <ExpandedBody
-                        key="who-body"
+                        key="iwant-body"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={contentTransition}
                       >
-                        <ScrollableContent>
-                          <ParticipantCard>
-                             <ParticipantRow onClick={(e) => e.stopPropagation()}>
-                                <div>
-                                  <div style={{ fontWeight: 600, fontSize: 16, color: "#222" }}>Guests</div>
-                                  <div style={{ fontSize: 13, color: "#717171", marginTop: 2 }}>Join the experience</div>
-                                </div>
-                                <CountControls>
-                                  <CountBtn 
-                                    onClick={() => setParticipantCount(Math.max(1, participantCount - 1))}
-                                    disabled={participantCount <= 1}
-                                  >
-                                    <Minus size={18} />
-                                  </CountBtn>
-                                  <CountVal>{participantCount}</CountVal>
-                                  <CountBtn 
-                                    onClick={() => setParticipantCount(participantCount + 1)}
-                                    disabled={participantCount >= 20}
-                                  >
-                                    <Plus size={18} />
-                                  </CountBtn>
-                                </CountControls>
-                             </ParticipantRow>
-                          </ParticipantCard>
+                        <ScrollableContent style={{ padding: 0 }}>
+                          <ExploreDropdownTypeChipFlow>
+                            {iWantCollections.map((c) => {
+                              const active = (selectedCollections || []).some(
+                                (x) => x.slug === c.slug,
+                              );
+                              const title = formatCollectionDisplayName(
+                                c.name || c.slug,
+                              );
+                              return (
+                                <ExploreDropdownTypeChip
+                                  key={c.id ?? c.slug}
+                                  type="button"
+                                  $selected={active}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCollections((prev) => {
+                                      const exists = prev.some((x) => x.slug === c.slug);
+                                      if (exists) {
+                                        return prev.filter((x) => x.slug !== c.slug);
+                                      }
+                                      return [
+                                        ...prev,
+                                        { slug: c.slug, name: c.name || title },
+                                      ];
+                                    });
+                                  }}
+                                >
+                                  {c.icon_name ? (
+                                    <ExploreBarLazyLucideIcon
+                                      iconName={c.icon_name}
+                                      size={16}
+                                      strokeWidth={1.5}
+                                    />
+                                  ) : null}
+                                  <span>{title}</span>
+                                </ExploreDropdownTypeChip>
+                              );
+                            })}
+                          </ExploreDropdownTypeChipFlow>
                         </ScrollableContent>
                       </ExpandedBody>
                     )}
@@ -726,10 +769,16 @@ export default function SearchFullScreen() {
             </LayoutGroup>
 
             <Footer>
-              <ClearLink onClick={clearAll}>Clear all</ClearLink>
-              <SearchBtn onClick={handleSearchClick}>
-                <Search size={20} strokeWidth={2.5} /> Search
-              </SearchBtn>
+              <ClearLink type="button" onClick={handleClearAllClick}>
+                Clear all
+              </ClearLink>
+              <ExploreShowResultsButton
+                type="button"
+                $footerFlex
+                onClick={handleSearchClick}
+              >
+                <Search size={18} strokeWidth={2} aria-hidden /> Search
+              </ExploreShowResultsButton>
             </Footer>
           </Overlay>
         </AnimatePresence>,

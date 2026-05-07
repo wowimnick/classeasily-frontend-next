@@ -10,7 +10,7 @@ export const PLAN_FEATURES_BASIC = [
   {
     label: "Marketplace listing",
     tooltip:
-      "Get discovered by customers searching for classes on Classeasily.",
+      "Get discovered by customers searching for classes on ClassEasily.",
   },
   { label: "One dashboard & payout" },
   { label: "Brand colors & fonts" },
@@ -27,7 +27,7 @@ export const PLAN_FEATURES_GROWTH = [
   {
     label: "Personalized booking emails",
     tooltip:
-      "Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic Classeasily emails.",
+      "Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic ClassEasily emails.",
   },
   {
     label: "Pin widget to a specific class",
@@ -88,7 +88,7 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     id: "marketplace",
     label: "Marketplace listing",
     tooltip:
-      "Get discovered by customers searching for classes on Classeasily.",
+      "Get discovered by customers searching for classes on ClassEasily.",
     valueType: "check",
     plans: { basic: true, growth: true, advanced: true },
   },
@@ -122,7 +122,7 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     id: "booking_emails",
     label: "Personalized booking emails",
     tooltip:
-      "Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic Classeasily emails.",
+      "Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic ClassEasily emails.",
     valueType: "check",
     plans: { basic: false, growth: true, advanced: true },
   },

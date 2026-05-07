@@ -18,9 +18,12 @@ import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
+import { BP, down } from "@/styles/breakpoints";
+
+import { ClassesContentSkeleton } from "./ExploreCardsSkeletonClient";
 
 const ClassesDisplay = dynamic(() => import("./ClassesDisplay"), {
-  loading: () => null,
+  loading: () => <ClassesContentSkeleton />,
 });
 
 const PageLayout = styled.div`
@@ -58,7 +61,7 @@ const BreadcrumbContainer = styled.div`
   white-space: nowrap;
   border: 0;
 
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     padding: 0 1rem;
   }
 `;
@@ -79,11 +82,18 @@ function buildApiParamsFromSearchParams(sp) {
   }
   if (location) apiParams.location_search = location;
 
-  const collection = sp.get("collection");
-  if (collection) apiParams.collection = collection;
+  const collectionSlugs = sp.getAll("collection").filter(Boolean);
+  if (collectionSlugs.length === 1) {
+    apiParams.collection = collectionSlugs[0];
+  } else if (collectionSlugs.length > 1) {
+    apiParams.collection = collectionSlugs;
+  }
 
   const tag = sp.get("tag");
   if (tag) apiParams.tag = tag;
+
+  const subs = sp.getAll("sub").filter(Boolean);
+  if (subs.length) apiParams.sub = subs;
 
   const keyword = sp.get("keyword");
   if (keyword) apiParams.keyword = keyword;
@@ -121,6 +131,62 @@ function buildApiParamsFromSearchParams(sp) {
   return apiParams;
 }
 
+/** Match modal Apply — builds query string for preview/API without navigating. */
+function mergeModalFiltersIntoSearchParams(baseSearchParams, newFilters, newSort) {
+  const newParams = new URLSearchParams(baseSearchParams.toString());
+
+  [
+    "price_min",
+    "price_max",
+    "radius",
+    "distance_max",
+    "time_preference",
+    "days",
+    "class_type",
+    "sort_by",
+    "date",
+    "start_date",
+    "end_date",
+    "participants",
+  ].forEach((key) => newParams.delete(key));
+
+  const defaultMaxPrice = 500;
+  const defaultMaxDistance = 50;
+
+  if (newFilters.pricePerClass[0] > 0)
+    newParams.set("price_min", newFilters.pricePerClass[0].toString());
+  if (newFilters.pricePerClass[1] < defaultMaxPrice)
+    newParams.set("price_max", newFilters.pricePerClass[1].toString());
+  if (newFilters.distance[1] !== defaultMaxDistance)
+    newParams.set("radius", newFilters.distance[1].toString());
+  newFilters.timePreference.forEach((tp) =>
+    newParams.append("time_preference", tp),
+  );
+  newFilters.days.forEach((day) => newParams.append("days", day));
+  if (
+    newFilters.classType &&
+    newFilters.classType.toLowerCase() !== "class" &&
+    newFilters.classType.toLowerCase() !== "all"
+  ) {
+    newParams.set("class_type", newFilters.classType);
+  }
+  if (newSort && newSort !== "relevance") {
+    newParams.set("sort_by", newSort);
+  }
+
+  if (newFilters.startDate && newFilters.endDate) {
+    newParams.set("start_date", newFilters.startDate);
+    newParams.set("end_date", newFilters.endDate);
+  } else if (newFilters.date) {
+    newParams.set("date", newFilters.date);
+  }
+
+  if (newFilters.participants > 1)
+    newParams.set("participants", newFilters.participants.toString());
+
+  return newParams;
+}
+
 /** Strip the `explore_page` key so we can compare "real" filter changes. */
 function stripPageKey(queryString) {
   const p = new URLSearchParams(queryString);
@@ -134,6 +200,7 @@ function ExploreClientContent({
   initialTotalCount,
   initialNextPageUrl,
   initialCollections = [],
+  initialCollectionsIWant = [],
   routeParams,
 }) {
   const router = useRouter();
@@ -144,7 +211,6 @@ function ExploreClientContent({
     useSearch();
   const { location: userLocation } = useIpGeolocation();
 
-  // --- STATE ---
   const [displayClasses, setDisplayClasses] = useState(initialClasses);
   const [totalClassesCount, setTotalClassesCount] = useState(initialTotalCount);
   const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
@@ -153,6 +219,7 @@ function ExploreClientContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // --- REFS (used by the IO callback so it never needs to be recreated) ---
   const scrollRootRef = useRef(null);
@@ -182,7 +249,10 @@ function ExploreClientContent({
   }, []);
 
   // --- DERIVED DATA FROM URL ---
-  const currentCollection = searchParams.get("collection") || "";
+  const currentCollections = useMemo(
+    () => [...searchParams.getAll("collection")].filter(Boolean),
+    [searchParams],
+  );
   const tag = searchParams.get("tag") || "";
   const currentSortBy = searchParams.get("sort_by") || "relevance";
 
@@ -209,7 +279,7 @@ function ExploreClientContent({
       timePreference: searchParams.getAll("time_preference") || [],
       days: searchParams.getAll("days") || [],
       classType: searchParams.get("class_type") || "class",
-      keyword: searchParams.get("keyword") || "",
+      keyword: "",
       date: searchParams.get("date") || "",
       startDate: searchParams.get("start_date") || "",
       endDate: searchParams.get("end_date") || "",
@@ -311,12 +381,10 @@ function ExploreClientContent({
       return;
     }
 
-    // Collection change is handled by server navigation, skip.
-    const currentObj = Object.fromEntries(searchParams.entries());
-    const prevObj = Object.fromEntries(
-      new URLSearchParams(prevStr).entries(),
-    );
-    if (currentObj.collection !== prevObj.collection) {
+    const collectionKeyFromSp = (sp) =>
+      [...sp.getAll("collection").filter(Boolean)].sort().join("\u0001");
+
+    if (collectionKeyFromSp(searchParams) !== collectionKeyFromSp(new URLSearchParams(prevStr))) {
       previousSearchParamsRef.current = currentStr;
       return;
     }
@@ -396,7 +464,7 @@ function ExploreClientContent({
   }, [searchParams]);
 
   const handleCollectionChange = useCallback(
-    (collectionSlug) => {
+    (collectionSlugOrSlugs) => {
       setIsNavigating(true);
       const currentQuery = getCurrentSearchString();
       const newParams = new URLSearchParams(currentQuery);
@@ -418,77 +486,96 @@ function ExploreClientContent({
 
       newParams.delete("category");
       newParams.delete("subcategory");
+      newParams.delete("sub");
 
-      if (collectionSlug) {
-        newParams.set("collection", collectionSlug);
-      } else {
-        newParams.delete("collection");
-      }
+      newParams.delete("collection");
+      const slugList = Array.isArray(collectionSlugOrSlugs)
+        ? collectionSlugOrSlugs.filter(Boolean)
+        : collectionSlugOrSlugs
+          ? [collectionSlugOrSlugs]
+          : [];
+      slugList.forEach((slug) => newParams.append("collection", slug));
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
     [getCurrentSearchString, router, pathname, selectedLocation, searchTerm],
   );
 
-  const handleApplyModalChanges = useCallback(
-    (newFilters, newSort) => {
+  const handleApplyTimePreferences = useCallback(
+    (timePreferenceIds) => {
       setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
-
-      [
-        "price_min",
-        "price_max",
-        "radius",
-        "distance_max",
-        "time_preference",
-        "days",
-        "class_type",
-        "keyword",
-        "sort_by",
-        "date",
-        "start_date",
-        "end_date",
-        "participants",
-      ].forEach((key) => newParams.delete(key));
-
-      const defaultMaxPrice = 500;
-      const defaultMaxDistance = 50;
-
-      if (newFilters.pricePerClass[0] > 0)
-        newParams.set("price_min", newFilters.pricePerClass[0].toString());
-      if (newFilters.pricePerClass[1] < defaultMaxPrice)
-        newParams.set("price_max", newFilters.pricePerClass[1].toString());
-      if (newFilters.distance[1] !== defaultMaxDistance)
-        newParams.set("radius", newFilters.distance[1].toString());
-      newFilters.timePreference.forEach((tp) =>
-        newParams.append("time_preference", tp),
-      );
-      newFilters.days.forEach((day) => newParams.append("days", day));
-      if (
-        newFilters.classType &&
-        newFilters.classType.toLowerCase() !== "class" &&
-        newFilters.classType.toLowerCase() !== "all"
-      ) {
-        newParams.set("class_type", newFilters.classType);
-      }
-      if (newFilters.keyword) newParams.set("keyword", newFilters.keyword);
-      if (newSort && newSort !== "relevance") {
-        newParams.set("sort_by", newSort);
-      }
-
-      if (newFilters.startDate && newFilters.endDate) {
-        newParams.set("start_date", newFilters.startDate);
-        newParams.set("end_date", newFilters.endDate);
-      } else if (newFilters.date) {
-        newParams.set("date", newFilters.date);
-      }
-
-      if (newFilters.participants > 0)
-        newParams.set("participants", newFilters.participants.toString());
-
+      newParams.delete("time_preference");
+      (timePreferenceIds || []).forEach((id) => {
+        if (id) newParams.append("time_preference", id);
+      });
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
     [searchParams, pathname, router],
+  );
+
+  const handleApplyModalChanges = useCallback(
+    (newFilters, newSort) => {
+      setIsNavigating(true);
+      const newParams = mergeModalFiltersIntoSearchParams(
+        searchParams,
+        newFilters,
+        newSort,
+      );
+      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
+
+  /** Debounced preview for explore bar — merges draft collection or time prefs onto current URL. */
+  const previewExploreBarCount = useCallback(
+    async (overrides = {}, signal) => {
+      const sp = new URLSearchParams(searchParams.toString());
+      sp.delete("explore_page");
+
+      if (overrides.collectionSlugs !== undefined) {
+        sp.delete("collection");
+        (overrides.collectionSlugs || []).forEach((s) => {
+          if (s) sp.append("collection", s);
+        });
+      } else if (overrides.collectionSlug !== undefined) {
+        sp.delete("collection");
+        if (overrides.collectionSlug) sp.append("collection", overrides.collectionSlug);
+      }
+      if (overrides.timePreferenceIds !== undefined) {
+        sp.delete("time_preference");
+        (overrides.timePreferenceIds || []).forEach((id) => {
+          if (id) sp.append("time_preference", id);
+        });
+      }
+
+      const apiParams = buildApiParamsFromSearchParams(sp);
+      const response = await classService.searchClassesCount(
+        { ...apiParams, page: 1 },
+        signal,
+      );
+      return typeof response.count === "number" ? response.count : 0;
+    },
+    [searchParams],
+  );
+
+  /** Preview count for filter modal temp state (matches Apply merge rules). */
+  const previewFilterModalCount = useCallback(
+    async (newFilters, newSort, signal) => {
+      const merged = mergeModalFiltersIntoSearchParams(
+        searchParams,
+        newFilters,
+        newSort,
+      );
+      merged.delete("explore_page");
+      const apiParams = buildApiParamsFromSearchParams(merged);
+      const response = await classService.searchClassesCount(
+        { ...apiParams, page: 1 },
+        signal,
+      );
+      return typeof response.count === "number" ? response.count : 0;
+    },
+    [searchParams],
   );
 
   // --- LOADING FLAGS ---
@@ -499,15 +586,17 @@ function ExploreClientContent({
     () => ({
       classes: displayClasses,
       collections: initialCollections,
+      collectionsIWant: initialCollectionsIWant,
       loading: showSkeleton,
       isNavigating,
       userLocation,
       filters: currentFilters,
       onFiltersChange: () => {},
-      currentCollection,
+      currentCollections,
       onCollectionChange: handleCollectionChange,
       currentSortBy,
       onApplyModalChanges: handleApplyModalChanges,
+      onApplyTimePreferences: handleApplyTimePreferences,
       observerTargetRef: sentinelCallbackRef,
       onClassListScrollRootReady,
       hasMorePages: !!nextPageUrl,
@@ -516,18 +605,24 @@ function ExploreClientContent({
       city: routeParams.city,
       tag,
       totalClassesCount,
+      isFilterModalOpen,
+      setIsFilterModalOpen,
+      previewExploreBarCount,
+      previewFilterModalCount,
     }),
     [
       displayClasses,
       initialCollections,
+      initialCollectionsIWant,
       showSkeleton,
       isNavigating,
       userLocation,
       currentFilters,
-      currentCollection,
+      currentCollections,
       handleCollectionChange,
       currentSortBy,
       handleApplyModalChanges,
+      handleApplyTimePreferences,
       sentinelCallbackRef,
       onClassListScrollRootReady,
       nextPageUrl,
@@ -536,12 +631,17 @@ function ExploreClientContent({
       routeParams.city,
       tag,
       totalClassesCount,
+      isFilterModalOpen,
+      setIsFilterModalOpen,
+      previewExploreBarCount,
+      previewFilterModalCount,
     ],
   );
 
   return (
     <PageLayout>
-      <ExploreHeader showOptionsWrapper={true} />
+      {/* unifiedExploreChrome: header + filter bar chrome — Explore only (see ClientHeader). */}
+      <ExploreHeader showOptionsWrapper unifiedExploreChrome />
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>

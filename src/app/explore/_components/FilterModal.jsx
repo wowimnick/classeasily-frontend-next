@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   X,
   TrendingUp,
@@ -9,15 +9,22 @@ import {
   Star,
   Navigation,
   Clock,
-  Sunrise,
-  Sun,
-  Moon,
+  Minus,
+  Plus,
+  Check,
 } from "lucide-react";
 import { ConfigProvider, Modal } from "antd";
 import Slider from "@/components/explore/Slider";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import posthog from "posthog-js";
+import { exploreTimePreferencesList as timePreferencesList } from "./exploreTimePreferences";
+import {
+  priceDistributionFromClasses,
+  distanceDistributionFromClasses,
+} from "./exploreFilterHistograms";
+import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
 
 // --- Theme & Styled Components ---
 
@@ -38,7 +45,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(2px);
-  z-index: 999;
+  z-index: 1100;
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`
@@ -46,13 +53,13 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 20px 20px 0 0;
-  height: 85vh; /* Slightly shorter for better reachability */
-  max-height: 85vh;
+  height: 88vh;
+  max-height: 88vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1101;
   outline: none;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
 `;
@@ -62,19 +69,27 @@ const DrawerHandle = styled.div`
   height: 4px;
   background: #e0e0e0;
   border-radius: 2px;
-  margin: 12px auto;
+  margin: 8px auto 6px;
   flex-shrink: 0;
 `;
 
 // Desktop Components
 const ModalHeader = styled.div`
-  padding: 16px 24px;
+  padding: 22px 24px 18px;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   flex-shrink: 0;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 24px;
+    padding-top: 22px;
+    border-bottom-color: #ebebeb;
+  `}
 `;
 
 const CloseButton = styled.button`
@@ -104,6 +119,8 @@ const Title = styled.h2`
   font-weight: 700;
   color: #222;
   margin: 0;
+
+  ${(p) => p.$compact && `font-size: 15px;`}
 `;
 
 const ModalBody = styled.div`
@@ -129,16 +146,36 @@ const Section = styled.div`
     border-bottom: none;
   }
 
-  @media (max-width: 768px) {
-    padding: 24px 20px;
-  }
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: ${p.$groupTight ? "8px 14px" : "12px 14px"};
+    border-bottom: 1px solid #ebebeb;
+  `}
 `;
 
 const SectionTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: #222;
-  margin: 0 0 20px 0;
+  margin: 0;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    font-size: 15px;
+    font-weight: 600;
+  `}
+`;
+
+/** Shared supporting line under every section title */
+const SectionSub = styled.p`
+  margin: 0;
+  margin-top: ${(p) => (p.$compact ? "4px" : "6px")};
+  margin-bottom: ${(p) => (p.$compact ? "10px" : "14px")};
+  font-size: ${(p) => (p.$compact ? "12px" : "13px")};
+  line-height: 1.45;
+  color: #717171;
 `;
 
 // -- Filters --
@@ -147,6 +184,13 @@ const SortGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
+
+  ${(p) =>
+    p.$compact &&
+    `
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  `}
 `;
 
 const SortCard = styled.button`
@@ -177,99 +221,161 @@ const SortCard = styled.button`
   svg {
     color: ${(props) => (props.$selected ? PRIMARY_COLOR : "#717171")};
   }
+
+  ${(p) =>
+    p.$compact &&
+    `
+    padding: 10px 8px;
+    gap: 6px;
+    border-radius: 10px;
+    span { font-size: 13px; }
+    svg { width: 18px !important; height: 18px !important; }
+  `}
 `;
 
-const TimeOption = styled.button`
+/** Compact variant of explore bar time dropdown (label + range + square checkbox). */
+const FilterTimeOptionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => (p.$compact ? "10px" : "12px")};
+`;
+
+const FilterTimeOptionRow = styled.button`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid
-    ${(props) => (props.$selected ? PRIMARY_COLOR : themeToken.borderDefault)};
-  border-radius: 12px;
-  background: ${(props) => (props.$selected ? themeToken.bgSelected : "white")};
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 12px;
+  min-height: ${(p) => (p.$compact ? "42px" : "46px")};
+`;
 
-  &:hover {
-    border-color: ${PRIMARY_COLOR};
-  }
+const FilterTimeOptionText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+`;
 
-  .icon-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: ${PRIMARY_COLOR};
-  }
+const FilterTimeOptionLabel = styled.span`
+  font-size: ${(p) => (p.$compact ? "15px" : "16px")};
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.25;
+`;
 
-  .text-content {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
+const FilterTimeOptionSub = styled.span`
+  font-size: ${(p) => (p.$compact ? "13px" : "14px")};
+  font-weight: 300;
+  color: #000000;
+  line-height: 1.35;
+`;
 
-  .label {
-    font-size: 15px;
-    font-weight: 600;
-    color: #222;
-  }
+const FilterTimeRowCheckbox = styled.span`
+  flex-shrink: 0;
+  width: ${(p) => (p.$compact ? "20px" : "22px")};
+  height: ${(p) => (p.$compact ? "20px" : "22px")};
+  border-radius: 5px;
+  border: 1px solid #0a0a0a;
+  background: ${({ $checked }) => ($checked ? "#000000" : "#ffffff")};
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.07);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 
-  .sub-label {
-    font-size: 13px;
-    color: #717171;
+  ${({ $checked }) =>
+    $checked
+      ? `
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.14),
+      0 4px 10px rgba(0, 0, 0, 0.16);
+  `
+      : ""}
+`;
+
+const GroupSizeHint = styled(SectionSub)`
+  margin-top: ${(p) => (p.$compact ? "2px" : "4px")};
+  margin-bottom: ${(p) => (p.$compact ? "6px" : "10px")};
+`;
+
+const GroupSizeStepper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${(p) => (p.$compact ? "8px" : "14px")};
+`;
+
+const GroupSizeStepBtn = styled.button`
+  width: ${(p) => (p.$compact ? 30 : 36)}px;
+  height: ${(p) => (p.$compact ? 30 : 36)}px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #222;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #f9fafb;
   }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+`;
+
+const GroupSizeValue = styled.span`
+  font-size: ${(p) => (p.$compact ? "15px" : "18px")};
+  font-weight: 700;
+  color: #222;
+  min-width: 24px;
+  text-align: center;
+  line-height: 1;
 `;
 
 const Footer = styled.div`
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
+  padding: 20px 22px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid #ebebeb;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: white;
   z-index: 10;
   flex-shrink: 0;
+  gap: 16px;
 `;
 
 const ClearButton = styled.button`
-  background: none;
   border: none;
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: underline;
+  background: none;
+  padding: 12px 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000;
   cursor: pointer;
-  color: #222;
-  padding: 8px 12px;
+  flex-shrink: 0;
+  line-height: 1.2;
   border-radius: 8px;
 
   &:hover {
     background: #f7f7f7;
-  }
-`;
-
-const ApplyButton = styled.button`
-  background: ${PRIMARY_COLOR};
-  color: white;
-  border: none;
-  padding: 14px 32px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
-
-  &:hover {
-    background: ${PRIMARY_COLOR}; /* Keep primary color on hover */
-    opacity: 0.9;
-  }
-  &:active {
-    transform: scale(0.98);
   }
 `;
 
@@ -284,26 +390,12 @@ const sortOptionsList = [
   { key: "newest", label: "Newest", icon: <Clock size={20} /> },
 ];
 
-const timePreferencesList = [
-  {
-    id: "Morning (6am-12pm)",
-    label: "Morning",
-    sub: "6:00 AM - 12:00 PM",
-    icon: <Sunrise size={18} />,
-  },
-  {
-    id: "Afternoon (12pm-5pm)",
-    label: "Afternoon",
-    sub: "12:00 PM - 5:00 PM",
-    icon: <Sun size={18} />,
-  },
-  {
-    id: "Evening (5pm-10pm)",
-    label: "Evening",
-    sub: "5:00 PM - 10:00 PM",
-    icon: <Moon size={18} />,
-  },
-];
+function formatShowResultsLabel(totalCount) {
+  if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
+    return "Show results";
+  }
+  return `Show ${totalCount.toLocaleString()} results`;
+}
 
 export default function FilterModal({
   isOpen,
@@ -311,10 +403,27 @@ export default function FilterModal({
   filters,
   currentSortBy,
   onApplyChanges,
+  classesForDistribution = [],
+  totalClassesCount,
+  previewFilterModalCount,
 }) {
   const [tempFilters, setTempFilters] = useState(filters);
   const [tempSortBy, setTempSortBy] = useState(currentSortBy || "relevance");
   const [isMobile, setIsMobile] = useState(false);
+  const [modalPreviewCount, setModalPreviewCount] = useState(null);
+  const [modalPreviewLoading, setModalPreviewLoading] = useState(false);
+
+  const compact = isMobile;
+
+  const priceDistribution = useMemo(
+    () => priceDistributionFromClasses(classesForDistribution, 500),
+    [classesForDistribution],
+  );
+
+  const distanceDistribution = useMemo(
+    () => distanceDistributionFromClasses(classesForDistribution, 80),
+    [classesForDistribution],
+  );
 
   useEffect(() => {
     const mq = () => window.innerWidth < 1048;
@@ -330,6 +439,47 @@ export default function FilterModal({
       setTempSortBy(currentSortBy || "relevance");
     }
   }, [filters, currentSortBy, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setModalPreviewCount(null);
+      setModalPreviewLoading(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !previewFilterModalCount) return;
+
+    setModalPreviewLoading(true);
+    const ac = new AbortController();
+    const t = setTimeout(() => {
+      (async () => {
+        try {
+          const c = await previewFilterModalCount(
+            tempFilters,
+            tempSortBy,
+            ac.signal,
+          );
+          if (!ac.signal.aborted) setModalPreviewCount(c);
+        } catch (e) {
+          if (e?.name === "AbortError" || e?.name === "CanceledError") return;
+          if (!ac.signal.aborted) setModalPreviewCount(null);
+        } finally {
+          if (!ac.signal.aborted) setModalPreviewLoading(false);
+        }
+      })();
+    }, 320);
+
+    return () => {
+      clearTimeout(t);
+      ac.abort();
+    };
+  }, [
+    isOpen,
+    tempFilters,
+    tempSortBy,
+    previewFilterModalCount,
+  ]);
 
   const handleApply = () => {
     posthog.capture("apply_filters", {
@@ -347,27 +497,30 @@ export default function FilterModal({
       timePreference: [],
       days: [],
       classType: "class",
-      keyword: "",
       date: "",
       startDate: "",
       endDate: "",
-      participants: filters.participants ?? 1,
+      participants: 1,
     });
     setTempSortBy("relevance");
   };
 
   const renderContent = () => (
     <>
-      <Section>
-        <SectionTitle>Sort by</SectionTitle>
-        <SortGrid>
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-sort-heading">
+          Sort by
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Choose how results are ordered.
+        </SectionSub>
+        <SortGrid $compact={compact}>
           {sortOptionsList.map((option) => {
             const isPriceKey = option.key === "price";
             const isSelected = isPriceKey
               ? tempSortBy.startsWith("price")
               : tempSortBy === option.key;
 
-            // Determine display label for price toggle
             let label = option.label;
             if (isPriceKey && isSelected) {
               label =
@@ -377,11 +530,12 @@ export default function FilterModal({
             return (
               <SortCard
                 key={option.key}
+                $compact={compact}
                 $selected={isSelected}
                 onClick={() => {
                   if (isPriceKey) {
                     setTempSortBy(
-                      tempSortBy === "price_asc" ? "price_desc" : "price_asc"
+                      tempSortBy === "price_asc" ? "price_desc" : "price_asc",
                     );
                   } else {
                     setTempSortBy(option.key);
@@ -396,9 +550,17 @@ export default function FilterModal({
         </SortGrid>
       </Section>
 
-      <Section>
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-price-heading">
+          Price range
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Cap the typical price shown for each experience.
+        </SectionSub>
         <Slider
-          label="Price Range"
+          hideLabel
+          aria-labelledby="filter-price-heading"
+          label=""
           min={0}
           max={500}
           value={tempFilters.pricePerClass[1]}
@@ -412,12 +574,22 @@ export default function FilterModal({
           }}
           prefix="Up to "
           suffix={tempFilters.pricePerClass[1] >= 500 ? "+" : ""}
+          distribution={priceDistribution}
+          compact={compact}
         />
       </Section>
 
-      <Section>
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-distance-heading">
+          Max distance
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Show classes within this driving distance.
+        </SectionSub>
         <Slider
-          label="Max Distance"
+          hideLabel
+          aria-labelledby="filter-distance-heading"
+          label=""
           min={1}
           max={80}
           value={tempFilters.distance[1] > 0 ? tempFilters.distance[1] : 50}
@@ -425,18 +597,69 @@ export default function FilterModal({
             setTempFilters((prev) => ({ ...prev, distance: [0, val] }))
           }
           suffix=" km"
+          distribution={distanceDistribution}
+          compact={compact}
         />
       </Section>
 
-      <Section>
-        <SectionTitle>Time of day</SectionTitle>
-        <div>
+      <Section $compact={compact} $groupTight={compact}>
+        <SectionTitle $compact={compact} id="filter-group-heading">
+          Group size
+        </SectionTitle>
+        <GroupSizeHint $compact={compact}>
+          Number of seats or tickets you need.
+        </GroupSizeHint>
+        <GroupSizeStepper $compact={compact}>
+          <GroupSizeStepBtn
+            type="button"
+            aria-label="Decrease group size"
+            $compact={compact}
+            onClick={() =>
+              setTempFilters((prev) => ({
+                ...prev,
+                participants: Math.max(1, (prev.participants ?? 1) - 1),
+              }))
+            }
+            disabled={(tempFilters.participants ?? 1) <= 1}
+          >
+            <Minus size={compact ? 14 : 16} />
+          </GroupSizeStepBtn>
+          <GroupSizeValue $compact={compact}>
+            {tempFilters.participants ?? 1}
+          </GroupSizeValue>
+          <GroupSizeStepBtn
+            type="button"
+            aria-label="Increase group size"
+            $compact={compact}
+            onClick={() =>
+              setTempFilters((prev) => ({
+                ...prev,
+                participants: Math.min(20, (prev.participants ?? 1) + 1),
+              }))
+            }
+            disabled={(tempFilters.participants ?? 1) >= 20}
+          >
+            <Plus size={compact ? 14 : 16} />
+          </GroupSizeStepBtn>
+        </GroupSizeStepper>
+      </Section>
+
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-time-heading">
+          Time of day
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Choose when you&apos;d like to take a class. You can pick more than
+          one.
+        </SectionSub>
+        <FilterTimeOptionList $compact={compact}>
           {timePreferencesList.map((time) => {
             const isSelected = tempFilters.timePreference.includes(time.id);
             return (
-              <TimeOption
+              <FilterTimeOptionRow
                 key={time.id}
-                $selected={isSelected}
+                type="button"
+                $compact={compact}
                 onClick={() => {
                   setTempFilters((prev) => {
                     const newPrefs = prev.timePreference.includes(time.id)
@@ -446,15 +669,21 @@ export default function FilterModal({
                   });
                 }}
               >
-                <div className="icon-box">{time.icon}</div>
-                <div className="text-content">
-                  <span className="label">{time.label}</span>
-                  <span className="sub-label">{time.sub}</span>
-                </div>
-              </TimeOption>
+                <FilterTimeOptionText>
+                  <FilterTimeOptionLabel $compact={compact}>
+                    {time.label}
+                  </FilterTimeOptionLabel>
+                  <FilterTimeOptionSub $compact={compact}>{time.sub}</FilterTimeOptionSub>
+                </FilterTimeOptionText>
+                <FilterTimeRowCheckbox $compact={compact} $checked={isSelected} aria-hidden>
+                  {isSelected ? (
+                    <Check size={compact ? 12 : 14} strokeWidth={3} aria-hidden />
+                  ) : null}
+                </FilterTimeRowCheckbox>
+              </FilterTimeOptionRow>
             );
           })}
-        </div>
+        </FilterTimeOptionList>
       </Section>
     </>
   );
@@ -468,25 +697,37 @@ export default function FilterModal({
             <StyledDrawerOverlay />
             <StyledDrawerContent>
               <DrawerHandle />
-              <ModalHeader>
-                <Title>Filters</Title>
+              <ModalHeader $compact={compact}>
+                <Title $compact={compact}>Filters</Title>
                 <CloseButton
                   type="button"
                   onClick={onClose}
                   aria-label="Close filters"
                   style={{ right: 20, left: "auto" }}
                 >
-                  <X size={20} />
+                  <X size={compact ? 18 : 20} />
                 </CloseButton>
               </ModalHeader>
 
               <ModalBody>{renderContent()}</ModalBody>
 
               <Footer>
-                <ClearButton onClick={clearFiltersAndSort}>
+                <ClearButton type="button" onClick={clearFiltersAndSort}>
                   Clear all
                 </ClearButton>
-                <ApplyButton onClick={handleApply}>Show results</ApplyButton>
+                <ExploreShowResultsButton
+                  type="button"
+                  onClick={handleApply}
+                  disabled={modalPreviewLoading}
+                  aria-busy={modalPreviewLoading}
+                >
+                  <ExploreResultsPrimaryLabel
+                    loading={modalPreviewLoading}
+                    label={formatShowResultsLabel(
+                      modalPreviewCount ?? totalClassesCount,
+                    )}
+                  />
+                </ExploreShowResultsButton>
               </Footer>
             </StyledDrawerContent>
           </Drawer.Portal>
@@ -539,8 +780,22 @@ export default function FilterModal({
         <ModalBody>{renderContent()}</ModalBody>
 
         <Footer>
-          <ClearButton onClick={clearFiltersAndSort}>Clear all</ClearButton>
-          <ApplyButton onClick={handleApply}>Show results</ApplyButton>
+          <ClearButton type="button" onClick={clearFiltersAndSort}>
+            Clear all
+          </ClearButton>
+          <ExploreShowResultsButton
+            type="button"
+            onClick={handleApply}
+            disabled={modalPreviewLoading}
+            aria-busy={modalPreviewLoading}
+          >
+            <ExploreResultsPrimaryLabel
+              loading={modalPreviewLoading}
+              label={formatShowResultsLabel(
+                modalPreviewCount ?? totalClassesCount,
+              )}
+            />
+          </ExploreShowResultsButton>
         </Footer>
       </Modal>
     </ConfigProvider>

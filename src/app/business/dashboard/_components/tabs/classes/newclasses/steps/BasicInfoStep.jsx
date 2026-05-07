@@ -744,7 +744,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               <ImagePlus size={16} />
-              Photos (2-10 required)
+              Photos (4-10 required)
             </FormLabel>
             <HelpText>
               <Info size={14} />
@@ -756,9 +756,9 @@ const BasicInfoStep = ({ onValidatedNext }) => {
               rules={[
                 {
                   validator: async () => {
-                    if (!images || images.length < 2) {
+                    if (!images || images.length < 4) {
                       return Promise.reject(
-                        new Error("Please upload at least 2 images.")
+                        new Error("Please upload at least 4 images.")
                       );
                     }
                     if (images.length > 10) {

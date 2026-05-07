@@ -115,12 +115,12 @@ const PaymentSection = styled.div`
 const SectionCard = styled.div`
   background: white;
   border-radius: 16px;
-  border: 1px solid #e5e7eb;
+  border: none;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  padding-left: 4px;
-  padding-right: 4px;
+  padding-left: 0;
+  padding-right: 0;
 
   @media (max-width: 1023px) {
     padding-left: 0;
@@ -145,6 +145,7 @@ const SectionHeader = styled.div`
   align-items: center;
   cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
   background: white;
+  border-bottom: 1px solid #ebebeb;
 
   h3 {
     margin: 0;
@@ -182,7 +183,7 @@ const SectionHeader = styled.div`
 `;
 
 const SectionContent = styled(motion.div)`
-  padding: 8px 24px 24px 24px;
+  padding: 16px 20px 20px;
 
   @media (max-width: 1023px) {
     padding: 0;
@@ -190,8 +191,8 @@ const SectionContent = styled(motion.div)`
 `;
 
 const SectionContentInner = styled.div`
-  padding: 8px 24px 24px 24px;
-  border-top: 1px solid #f3f4f6;
+  padding: 16px 20px 20px;
+  border-top: none;
 
   @media (max-width: 1023px) {
     padding: 0;
@@ -202,7 +203,16 @@ const SectionContentInner = styled.div`
 /* Drawer-style field rows on mobile (bordered rows like MobileReserveReviewDrawer) */
 const CheckoutFieldRow = styled.div`
   @media (min-width: 1024px) {
-    margin-bottom: 12px;
+    padding: 14px 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid #ebebeb;
+    &:last-of-type {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    &:first-of-type {
+      padding-top: 0;
+    }
   }
   @media (max-width: 1023px) {
     padding: 16px 20px;
@@ -220,6 +230,15 @@ const CheckoutContactRow = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #ebebeb;
+    margin-bottom: 0;
+
+    & > ${CheckoutFieldRow} {
+      padding: 0;
+      border-bottom: none;
+      margin: 0;
+    }
   }
 `;
 
@@ -369,21 +388,31 @@ const NextButton = styled(Button)`
 const AdditionalNotesRevealButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
-  padding: 0;
-  margin-top: 12px;
+  padding: 2px 0;
+  margin-top: 0;
   border: none;
-  background: none;
+  border-radius: 0;
+  background: transparent;
   color: #111827;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
-  text-decoration: underline;
+  text-decoration: none;
   transition: color 0.15s ease;
   &:hover {
     color: #374151;
+  }
+  svg {
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  @media (max-width: 1023px) {
+    padding: 0;
+    font-weight: 500;
   }
 `;
 
@@ -469,6 +498,183 @@ const SummarySection = styled.div`
     position: sticky;
     top: 100px; /* Account for sticky header */
   }
+`;
+
+const DesktopSummaryCard = styled.div`
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 18px 20px;
+  box-sizing: border-box;
+`;
+
+const DesktopSummaryTop = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const DesktopSummaryThumb = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const DesktopSummaryTitleWrap = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const DesktopSummaryTitle = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const DesktopSummaryRating = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #111111;
+  font-size: 13px;
+  line-height: 1;
+  .rating-count {
+    color: #717171;
+    font-weight: 400;
+  }
+`;
+
+const DesktopSummaryDivider = styled.div`
+  height: 1px;
+  background: #ebebeb;
+  margin: 16px 0;
+`;
+
+const DesktopSummarySection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const DesktopSummaryRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const DesktopSummaryTextBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const DesktopSummaryLabel = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1.25;
+`;
+
+const DesktopSummaryValue = styled.div`
+  font-size: 13px;
+  font-weight: 400;
+  color: ${(p) => (p.$muted ? "#717171" : "#111111")};
+  line-height: 1.4;
+`;
+
+const DesktopSummaryChangeBtn = styled.button`
+  border: none;
+  background: #f0f0f0;
+  color: #111111;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  &:hover {
+    background: #e9e9e9;
+  }
+`;
+
+const DesktopPriceHeader = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+`;
+
+const DesktopPriceRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+`;
+
+const DesktopPriceBreakdownLink = styled.button`
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  align-self: flex-start;
+  &:hover {
+    color: #374151;
+  }
+`;
+
+const DesktopPriceText = styled.div`
+  font-size: 13px;
+  font-weight: 400;
+  color: #111111;
+`;
+
+const DesktopTotalRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+`;
+
+const DesktopTotalLabel = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+  .currency-code {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+`;
+
+const DesktopTotalAmount = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
 `;
 
 /* Desktop Footer rendered INSIDE the payment section, so we just style the container */
@@ -932,6 +1138,15 @@ const PriceDetailsDrawerContent = styled(Drawer.Content)`
   right: 0;
   z-index: 1050;
   outline: none;
+
+  @media (min-width: 1024px) {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(460px, calc(100vw - 32px));
+    max-height: 72vh;
+    border-radius: 20px 20px 0 0;
+  }
 `;
 const PriceDetailsDrawerHandle = styled.div`
   width: 36px;
@@ -2148,7 +2363,6 @@ const ReviewAndPaymentStep = ({
           };
         }
       } catch (err) {
-        intentCreationAttemptedRef.current = false;
         const data = err?.response?.data || err;
         const errObj = data?.error;
         const msg =
@@ -3024,115 +3238,123 @@ const ReviewAndPaymentStep = ({
     );
   };
 
-  const renderTicketSummary = () => (
-    <TicketWrapper>
-      <TicketTop>
-        <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
-        <TicketSubHeader>
-          <MapPin />
-          <span>{classData?.business_name || "Host Location"}</span>
-        </TicketSubHeader>
-        {renderBookingDetailsTicket()}
-      </TicketTop>
-      <TicketDivider />
-      <TicketBottom>
-        {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
-          <PromoRevealButton type="button" onClick={() => setShowPromoGiftCard(true)}>
-            Add promo or gift card
-          </PromoRevealButton>
-        ) : (
-          <>
-            {!appliedDiscount ? (
-              <CouponTicketInput>
-                <Input
-                  size="middle"
-                  placeholder="e.g. SAVE10"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  bordered={false}
-                  onPressEnter={handleApplyCoupon}
-                />
-                <Button size="middle" onClick={handleApplyCoupon} loading={couponLoading} style={{ height: 45 }}>Apply</Button>
-              </CouponTicketInput>
-            ) : (
-              <AppliedCouponTicket>
-                <div className="coupon-info">
-                  <Percent size={14} />
-                  <span>{appliedDiscount.code.toUpperCase()} Applied</span>
-                </div>
-                <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveCoupon} />
-              </AppliedCouponTicket>
+  const renderTicketSummary = () => {
+    if (!selectedSlot) return null;
+
+    const averageRating = classData?.average_rating;
+    const reviewCount = classData?.review_count ?? 0;
+    const showRating = typeof averageRating === "number" || reviewCount > 0;
+    const currencyCode = classData?.currency_code || "USD";
+    const formatMoney = (value) => {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n === 0) return "Free";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currencyCode,
+      }).format(n);
+    };
+
+    const cancellationHeading =
+      cancellationPolicyText?.toLowerCase().startsWith("free cancellation")
+        ? "Free cancellation"
+        : "Cancellation Policy";
+
+    const slotDateText = selectedSlot?.date
+      ? formatNaiveDate(selectedSlot.date, "EEEE, MMMM d, yyyy")
+      : "Date not selected";
+    const slotTimeText =
+      selectedSlot?.date && selectedSlot?.time && typeof selectedSlot?.duration === "number"
+        ? formatTimeRangeForDisplay(
+            selectedSlot.date,
+            selectedSlot.time,
+            selectedSlot.duration,
+            businessTimeZone,
+            userTimeZone,
+          )
+        : "";
+
+    return (
+      <DesktopSummaryCard>
+        <DesktopSummaryTop>
+          <DesktopSummaryThumb>
+            {mobileSummaryImageUrl && <img src={mobileSummaryImageUrl} alt="" />}
+          </DesktopSummaryThumb>
+          <DesktopSummaryTitleWrap>
+            <DesktopSummaryTitle>{classData?.title || "Class experience"}</DesktopSummaryTitle>
+            {showRating && (
+              <DesktopSummaryRating>
+                <Star size={12} fill="currentColor" />
+                <strong>{Number(averageRating ?? 0).toFixed(1)}</strong>
+                <span className="rating-count">({reviewCount})</span>
+              </DesktopSummaryRating>
             )}
+          </DesktopSummaryTitleWrap>
+        </DesktopSummaryTop>
 
-            {!appliedGiftCard ? (
-              <CouponTicketInput style={{ marginTop: 12 }}>
-                <Input
-                  prefix={<Gift size={14} color="#9ca3af" />}
-                  placeholder="e.g. XXXX-XXXX-XXXX"
-                  value={giftCardCode}
-                  onChange={(e) => setGiftCardCode(e.target.value)}
-                  onPressEnter={handleApplyGiftCard}
-                  bordered={false}
-                />
-                <Button size="middle" onClick={handleApplyGiftCard} loading={gcLoading} style={{ height: 45 }}>Apply</Button>
-              </CouponTicketInput>
-            ) : (
-              <AppliedCouponTicket style={{ marginTop: 12, borderColor: "#8b5cf6", backgroundColor: "#f5f3ff", color: "#7c3aed" }}>
-                <div className="coupon-info">
-                  <Gift size={14} />
-                  <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
-                </div>
-                <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveGiftCard} />
-              </AppliedCouponTicket>
-            )}
-          </>
-        )}
+        <DesktopSummaryDivider />
 
-        <TicketRow>
-          <span>
-            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
-          </span>
-          <span>{subtotal === 0 ? "Free" : <NumberFlow value={subtotal} format={{ style: "currency", currency: "CAD" }} />}</span>
-        </TicketRow>
+        <DesktopSummarySection>
+          <DesktopSummaryLabel>{cancellationHeading}</DesktopSummaryLabel>
+          <DesktopSummaryValue $muted>{cancellationPolicyText}</DesktopSummaryValue>
+        </DesktopSummarySection>
 
-        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
-          <TicketRow style={{ color: "#059669" }}>
-            <span>
-              Discount
-              {appliedDiscount && ` (${appliedDiscount.code})`}
-              {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
-            </span>
-            <span><NumberFlow value={-discountAmount} format={{ style: "currency", currency: "CAD" }} /></span>
-          </TicketRow>
-        )}
+        <DesktopSummaryDivider />
 
-        {appliedGiftCard && (
-          <TicketRow style={{ color: "#7c3aed" }}>
-            <span>Gift Card</span>
-            <span>- <NumberFlow value={gcDeduction} format={{ style: "currency", currency: "CAD" }} /></span>
-          </TicketRow>
-        )}
+        <DesktopSummarySection>
+          <DesktopSummaryLabel>Date</DesktopSummaryLabel>
+          <DesktopSummaryValue>{slotDateText}</DesktopSummaryValue>
+          {slotTimeText && <DesktopSummaryValue>{slotTimeText}</DesktopSummaryValue>}
+        </DesktopSummarySection>
 
-        <TicketRow>
-          <span>{taxLineLabel}</span>
-          <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
-        </TicketRow>
+        <DesktopSummaryDivider />
 
-        <TicketTotalRow>
-          <span>Total</span>
-          <span>{finalTotal === 0 ? "Free" : <NumberFlow value={finalTotal} format={{ style: "currency", currency: "CAD" }} />}</span>
-        </TicketTotalRow>
-      </TicketBottom>
+        <DesktopSummaryRow>
+          <DesktopSummaryTextBlock>
+            <DesktopSummaryLabel>Guests</DesktopSummaryLabel>
+            <DesktopSummaryValue>
+              {participantsCount} {participantsCount === 1 ? "adult" : "adults"}
+            </DesktopSummaryValue>
+          </DesktopSummaryTextBlock>
+          {onRequestChangeParticipants && (
+            <DesktopSummaryChangeBtn
+              type="button"
+              onClick={onRequestChangeParticipants}
+            >
+              Change
+            </DesktopSummaryChangeBtn>
+          )}
+        </DesktopSummaryRow>
 
-      <InfoPanel $bgColor="#f9fafb" $borderColor="#e5e7eb" $iconColor="#6b7280" $titleColor="#111827" $textColor="#4b5563">
-        <Shield />
-        <div>
-          <h5>Cancellation Policy</h5>
-          <p>{cancellationPolicyText}</p>
-        </div>
-      </InfoPanel>
-    </TicketWrapper>
-  );
+        <DesktopSummaryDivider />
+
+        <DesktopSummarySection>
+          <DesktopPriceHeader>Price details</DesktopPriceHeader>
+          <DesktopPriceRow>
+            <DesktopPriceText>
+              {formatMoney(basePrice)} x {participantsCount}{" "}
+              {participantsCount === 1 ? "adult" : "adults"}
+            </DesktopPriceText>
+            <DesktopPriceText>{formatMoney(subtotal)}</DesktopPriceText>
+          </DesktopPriceRow>
+          <DesktopPriceBreakdownLink
+            type="button"
+            onClick={() => setPriceDetailsDrawerOpen(true)}
+          >
+            Price breakdown
+          </DesktopPriceBreakdownLink>
+        </DesktopSummarySection>
+
+        <DesktopSummaryDivider />
+
+        <DesktopTotalRow>
+          <DesktopTotalLabel>
+            Total <span className="currency-code">{currencyCode}</span>
+          </DesktopTotalLabel>
+          <DesktopTotalAmount>{formatMoney(finalTotal)}</DesktopTotalAmount>
+        </DesktopTotalRow>
+      </DesktopSummaryCard>
+    );
+  };
 
   const renderPaymentSectionContentWhenNoIntent = () => (
     <>
@@ -3301,7 +3523,7 @@ const ReviewAndPaymentStep = ({
               requiredMark={false}
               preserve
               onValuesChange={handleFormValuesChange}
-              style={{ padding: "0 12px" }}
+              style={{ padding: 0 }}
             >
               <SectionCard>
                 <SectionHeader $clickable={checkoutStep === "payment"} onClick={handleGoBackToGuest}>
@@ -3426,18 +3648,37 @@ const ReviewAndPaymentStep = ({
                         </CheckoutFieldRow>
                       </CheckoutContactRow>
                       <CheckoutFieldRow>
-                        {!showNotes ? (
-                          <AdditionalNotesRevealButton type="button" onClick={() => setShowNotes(true)}>
-                            <ChevronRight size={18} />
-                            <span>Add additional notes (optional)</span>
-                          </AdditionalNotesRevealButton>
-                        ) : (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={COLLAPSE_TRANSITION} style={{ overflow: "hidden" }}>
-                            <Form.Item name="notes" label={<FieldLabel>Additional notes</FieldLabel>} style={{ marginBottom: 0 }}>
-                              <Input.TextArea placeholder="Any special requests or dietary restrictions?" rows={2} />
-                            </Form.Item>
-                          </motion.div>
-                        )}
+                        <AdditionalNotesRevealButton
+                          type="button"
+                          onClick={() => setShowNotes((v) => !v)}
+                          aria-expanded={showNotes}
+                        >
+                          <span>Additional notes (optional)</span>
+                          {showNotes ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </AdditionalNotesRevealButton>
+                        <AnimatePresence initial={false}>
+                          {showNotes && (
+                            <motion.div
+                              key="notes"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={COLLAPSE_TRANSITION}
+                              style={{ overflow: "hidden", marginTop: 10 }}
+                            >
+                              <Form.Item
+                                name="notes"
+                                style={{ marginBottom: 0 }}
+                              >
+                                <Input.TextArea
+                                  placeholder="Any special requests, accessibility needs, or dietary notes?"
+                                  rows={3}
+                                  style={{ borderRadius: 8 }}
+                                />
+                              </Form.Item>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </CheckoutFieldRow>
                       {slotUnavailable && (
                         <Alert

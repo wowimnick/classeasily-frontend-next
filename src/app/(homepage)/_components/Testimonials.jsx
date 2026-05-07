@@ -91,7 +91,7 @@ const testimonialData = [
 
 // The featured review shown on the center image card
 const featuredTestimonial = {
-  quote: "Classeasily completely transformed how I spend my weekends. I've tried pottery, sushi-making, and cocktail classes — all within a month!",
+  quote: "ClassEasily completely transformed how I spend my weekends. I've tried pottery, sushi-making, and cocktail classes — all within a month!",
   name: "Sarah M.",
   title: "Experience Enthusiast",
   avatarUrl:

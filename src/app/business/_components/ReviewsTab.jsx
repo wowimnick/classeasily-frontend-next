@@ -976,7 +976,7 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
           {review.source && (
             <ReviewSourceTag source={review.source.toLowerCase()}>
               {review.source === "Google" ? <Globe /> : <Star />}
-              {review.source === "Google" ? "From Google" : "On Classeasily"}
+              {review.source === "Google" ? "From Google" : "On ClassEasily"}
             </ReviewSourceTag>
           )}
           <ReviewHeader>

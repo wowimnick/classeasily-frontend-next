@@ -75,6 +75,9 @@ export const API_ENDPOINTS = {
     "/my-business/widget-subscription/reactivate/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_INVOICES:
     "/my-business/widget-subscription/invoices/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT:
+    "/my-business/widget-subscription/checkout/",
+  MY_BUSINESS_BILLING_PORTAL: "/my-business/billing-portal/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_SETUP_INTENT:
     "/my-business/widget-subscription/setup-intent/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_SET_DEFAULT_PAYMENT_METHOD:
@@ -125,6 +128,8 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_ADDON_EMAIL_MARKETING_CANCEL: "/my-business/addons/email-marketing/cancel/",
   MY_BUSINESS_ADDON_EMAIL_MARKETING_REACTIVATE: "/my-business/addons/email-marketing/reactivate/",
   MY_BUSINESS_ADDON_EMAIL_MARKETING_CHANGE_TIER: "/my-business/addons/email-marketing/change-tier/",
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_PAYMENT_INTENT:
+    "/my-business/addons/email-marketing/payment-intent/",
 
   MY_BUSINESS_MEMBERSHIP_PRODUCTS: "/my-business/membership-products/",
   MY_BUSINESS_MEMBERS: "/my-business/members/",
@@ -137,6 +142,11 @@ export const API_ENDPOINTS = {
   // Public Endpoints
   PUBLIC_CLASSES: "/classes/",
   PUBLIC_CATEGORIES: "/categories/",
+  /** Keyword autocomplete: collections + classes */
+  SEARCH_SUGGEST: "/search/suggest/",
+  /** Public collections for homepage / explore pickers (?placement=i_want|featured|all) */
+  COLLECTIONS_PLACEMENT: "/collections/placement/",
+  CORPORATE_INQUIRY: "/corporate-inquiry/",
   GIFTCARD_PURCHASE_INTENT: "/gift-cards/purchase-intent/",
   GIFTCARD_VALIDATE: "/gift-cards/validate/",
   TOGGLE_FAVORITE: (classId) => `/classes/${classId}/toggle-favorite/`,
@@ -884,6 +894,75 @@ export const businessService = {
     }
   },
 
+  /**
+   * Stripe Checkout for widget plan (Basic/Growth/Advanced). Redirect user to returned url.
+   */
+  createWidgetSubscriptionCheckout: async ({
+    plan_id,
+    billing_interval,
+    success_url,
+    cancel_url,
+  } = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT,
+        { plan_id, billing_interval, success_url, cancel_url },
+      );
+      return {
+        success: true,
+        url: response.data?.checkout_url || response.data?.url,
+        session_id: response.data?.session_id,
+      };
+    } catch (error) {
+      console.error(
+        "Widget subscription checkout:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to start checkout.",
+      };
+    }
+  },
+
+  /** Stripe Customer Portal — manage/cancel subscriptions and saved cards. Optional subscription_update flow. */
+  createBillingPortalSession: async ({
+    return_url,
+    flow,
+    subscription_id,
+  } = {}) => {
+    try {
+      const body = { return_url };
+      if (flow === "subscription_update" && subscription_id) {
+        body.flow = flow;
+        body.subscription_id = subscription_id;
+      }
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_BILLING_PORTAL,
+        body,
+      );
+      return {
+        success: true,
+        url: response.data?.portal_url || response.data?.url,
+      };
+    } catch (error) {
+      console.error(
+        "Billing portal session:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to open billing portal.",
+      };
+    }
+  },
+
   cancelWidgetSubscription: async () => {
     try {
       const response = await axiosInstance.post(
@@ -1031,13 +1110,25 @@ export const businessService = {
     }
   },
 
-  createMarketplaceEmailAddonCheckout: async ({ success_url, cancel_url } = {}) => {
+  createMarketplaceEmailAddonCheckout: async ({
+    success_url,
+    cancel_url,
+    billing_interval,
+    interval,
+  } = {}) => {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CHECKOUT,
-        { success_url, cancel_url },
+        {
+          success_url,
+          cancel_url,
+          billing_interval: billing_interval || interval,
+        },
       );
-      return { success: true, url: response.data?.url };
+      return {
+        success: true,
+        url: response.data?.checkout_url || response.data?.url,
+      };
     } catch (error) {
       console.error(
         "Error creating marketplace email addon checkout:",
@@ -1124,7 +1215,10 @@ export const businessService = {
         API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CHECKOUT,
         { price_id, success_url, cancel_url },
       );
-      return { success: true, url: response.data?.url };
+      return {
+        success: true,
+        url: response.data?.checkout_url || response.data?.url,
+      };
     } catch (error) {
       return {
         success: false,
@@ -1986,6 +2080,92 @@ export const businessService = {
   },
 };
 
+/** Header keyword search — classes + curated collections */
+export const searchService = {
+  suggest: async ({ q, limit = 5, lat, lng, signal } = {}) => {
+    const trimmed = String(q ?? "").trim();
+    if (!trimmed) {
+      throw new Error("Search query is required");
+    }
+    const params = new URLSearchParams();
+    params.set("q", trimmed);
+    params.set("limit", String(limit));
+    if (lat != null && lng != null && lat !== "" && lng !== "") {
+      params.set("lat", String(lat));
+      params.set("lng", String(lng));
+    }
+    const url = `${API_ENDPOINTS.SEARCH_SUGGEST}?${params.toString()}`;
+    const response = await axiosInstance.get(url, { signal });
+    return response.data;
+  },
+};
+
+/** Curated collections by placement (homepage “I want…”, featured strip, etc.) */
+export const collectionService = {
+  listByPlacement: async (placement = "i_want", signal) => {
+    const response = await axiosInstance.get(API_ENDPOINTS.COLLECTIONS_PLACEMENT, {
+      params: { placement },
+      signal,
+    });
+    const data = response.data;
+    return Array.isArray(data) ? data : [];
+  },
+  /** Active sub-collections for a top-level collection slug (explore filters). */
+  fetchChildren: async (parentSlug, signal) => {
+    const safe = encodeURIComponent(parentSlug);
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.PUBLIC_CLASSES}collections/${safe}/children/`,
+      { signal },
+    );
+    const data = response.data;
+    return Array.isArray(data) ? data : [];
+  },
+};
+
+/**
+ * Public B2B / corporate inquiry form (no auth).
+ * POST body: company_name, contact_name, email, phone?, company_size?, message?, meta?
+ * `meta` may include: source, activity_interests (string[]), preferred_date (ISO date string), city.
+ */
+export const corporateService = {
+  submitInquiry: async (payload) => {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CORPORATE_INQUIRY,
+      payload,
+    );
+    return response.data;
+  },
+};
+
+/**
+ * Public corporate shortlist (magic link token, no auth).
+ */
+export const corporateBookingService = {
+  getShortlist: async (token) => {
+    const response = await axiosInstance.get(`/corporate/shortlist/${token}/`);
+    return response.data;
+  },
+  selectOption: async (token, payload) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/select/`,
+      payload,
+    );
+    return response.data;
+  },
+  getBooking: async (token, bookingId) => {
+    const response = await axiosInstance.get(
+      `/corporate/shortlist/${token}/booking/${bookingId}/`,
+    );
+    return response.data;
+  },
+  createDepositIntent: async (token, bookingId) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/booking/${bookingId}/deposit-intent/`,
+    );
+    return response.data;
+  },
+};
+
 // --- Class Services (Public Context) ---
 export const classService = {
   fetchClasses: async (filters = {}, fullUrl = null) => {
@@ -2092,6 +2272,36 @@ export const classService = {
         throw error; // Don't log this as a console error
       }
       console.error("Error searching classes:", error.response?.data || error);
+      throw error.response?.data || error;
+    }
+  },
+
+  /** Same filters as searchClasses; API returns only `{ count }` (no result rows). */
+  searchClassesCount: async (params = {}, signal) => {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append("count_only", "1");
+      Object.entries(params).forEach(([key, value]) => {
+        if (key === "count_only") return;
+        if (Array.isArray(value)) {
+          value.forEach((v) => queryParams.append(key, v));
+        } else if (value !== null && value !== undefined && value !== "") {
+          queryParams.append(key, value);
+        }
+      });
+      const url = `${
+        API_ENDPOINTS.PUBLIC_CLASSES
+      }search/?${queryParams.toString()}`;
+      const response = await axiosInstance.get(url, { signal });
+      return response.data;
+    } catch (error) {
+      if (error.name === "AbortError" || error.name === "CanceledError") {
+        throw error;
+      }
+      console.error(
+        "Error fetching class search count:",
+        error.response?.data || error,
+      );
       throw error.response?.data || error;
     }
   },

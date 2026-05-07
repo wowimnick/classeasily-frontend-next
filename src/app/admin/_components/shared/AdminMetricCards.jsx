@@ -3,9 +3,9 @@
 import React from "react";
 import styled from "styled-components";
 import NumberFlow from "@number-flow/react";
-import { Card, Popover, Tag } from "antd";
+import { Card, Popover, Tag, Tooltip } from "antd";
 import { AdminCardSkeleton } from "./AdminSkeletons";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp, Info } from "lucide-react";
 
 export const adminColors = {
   primary: "#ff385c",
@@ -202,7 +202,25 @@ const AdminMetricCards = ({
                       </Tag>
                     ) : null}
                   </StatCardHeader>
-                  <StatLabel>{title}</StatLabel>
+                  <StatLabel>
+                    {card.tooltip ? (
+                      <Tooltip title={card.tooltip}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            cursor: "help",
+                          }}
+                        >
+                          {title}
+                          <Info size={14} style={{ opacity: 0.65 }} aria-hidden />
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      title
+                    )}
+                  </StatLabel>
                 </div>
 
                 <StatValue>

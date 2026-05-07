@@ -17,6 +17,10 @@ export const LordIcon = forwardRef(
       style,
       playOnLoad = false,
       inState,
+      /** lord-icon `state` (e.g. hover-wink); used whenever not showing the playOnLoad intro state. */
+      state,
+      /** lord-icon `delay` (ms), e.g. with trigger="in". */
+      delay,
       onReady,
       onComplete,
     },
@@ -154,13 +158,17 @@ export const LordIcon = forwardRef(
     // Update colors when they change
     useEffect(() => {
       const icon = iconRef.current;
-      if (icon && isReady) {
+      if (!icon || !isReady) return;
+      if (colors != null && colors !== "") {
         icon.setAttribute("colors", colors);
+      } else {
+        icon.removeAttribute("colors");
       }
     }, [colors, isReady]);
 
     const currentTrigger = playOnLoad && !hasPlayedIn ? "in" : trigger;
-    const currentState = playOnLoad && !hasPlayedIn ? inState : undefined;
+    const currentState =
+      playOnLoad && !hasPlayedIn ? inState : state ?? undefined;
 
     return (
       <lord-icon
@@ -168,7 +176,10 @@ export const LordIcon = forwardRef(
         src={src}
         trigger={currentTrigger}
         state={currentState}
-        colors={colors}
+        {...(delay != null && `${delay}` !== ""
+          ? { delay: `${delay}` }
+          : {})}
+        colors={colors != null && colors !== "" ? colors : undefined}
         stroke="75"
         style={{
           width: size,

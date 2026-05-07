@@ -1,9 +1,9 @@
 import VerifyEmailClient from "../_components/VerifyEmailClient";
 
 export const metadata = {
-  title: "Verify Email | Classeasily",
+  title: "Verify Email | ClassEasily",
   description:
-    "Verify your email address to activate your Classeasily account.",
+    "Verify your email address to activate your ClassEasily account.",
 };
 
 export default function VerifyEmailPage({ params }) {

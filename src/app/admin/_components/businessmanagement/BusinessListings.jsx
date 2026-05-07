@@ -45,11 +45,14 @@ import {
   FileUp,
   Building2,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { businessManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { RefreshCw } from "lucide-react";
-import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { Drawer as VaulDrawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
+import { bookingTheme } from "@/app/business/dashboard/_components/tabs/classes/_shared/BookingFlowDesign";
 import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
 
 const { Option } = Select;
@@ -250,36 +253,96 @@ const StyledTable = styled(Table)`
   }
 `;
 
-const DrawerContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: ${colors.lightBg};
+const BusinessDrawerOverlay = styled(VaulDrawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
-const DrawerHeader = styled.div`
-  background-color: white;
-  padding: 24px;
-  border-bottom: 1px solid ${colors.border};
+const BusinessDrawerMobile = styled(VaulDrawer.Content)`
+  position: fixed;
+  top: 5vh;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  outline: none;
+`;
+
+const BusinessDrawerHandle = styled(VaulDrawer.Handle)`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  cursor: grab;
+  flex-shrink: 0;
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const BusinessDrawerDesktop = styled(VaulDrawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 800px;
+  max-width: 96vw;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const BusinessDrawerHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  flex-shrink: 0;
 `;
 
-const BusinessAvatar = styled(Avatar)`
-  width: 60px;
-  height: 60px;
-  font-size: 28px;
-  background: ${colors.primary};
-  color: white;
-  border-radius: 12px;
+const BusinessDrawerCloseBtn = styled(Button)`
+  padding: 8px;
+  height: auto;
+  border: none;
+  background: none;
+  flex-shrink: 0;
+  &:hover {
+    background: #f1f5f9;
+  }
+`;
+
+const BusinessDrawerBodyScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+  background: #fff;
 `;
 
 const InfoGroup = styled.div`
   background: white;
   padding: 20px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
+  border-radius: 16px;
+  border: 1px solid ${bookingTheme.borderLight};
   margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   &:last-child {
     margin-bottom: 0;
   }
@@ -374,10 +437,10 @@ const DrawerRightCol = styled.div`
 `;
 const SidebarCard = styled.div`
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 16px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid ${bookingTheme.borderLight};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 `;
 const SectionTitle = styled.div`
   font-size: 11px;
@@ -759,17 +822,47 @@ const BusinessDetailDrawerContent = ({
   );
 };
 
-const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAction, isActionLoading, onViewOwnerProfile }) => {
-  return (
-    <AdminResponsiveDrawer
-      open={open}
-      onClose={onClose}
-      title={business?.businessName || "Business Details"}
-      titleIcon={<Building size={18} style={{ color: colors.primary }} />}
-      isMobile={isMobile}
-      width="860px"
-    >
-      <DrawerContent style={{ padding: isMobile ? 0 : 24 }}>
+const DetailDrawerModal = ({
+  open,
+  onClose,
+  business,
+  isLoading,
+  isMobile,
+  onAction,
+  isActionLoading,
+  onViewOwnerProfile,
+}) => {
+  const handleOpenChange = (nextOpen) => {
+    if (!nextOpen) onClose();
+  };
+
+  const titleText = business?.businessName || "Business details";
+
+  const drawerInner = (
+    <>
+      <BusinessDrawerHeader>
+        <Title
+          level={4}
+          style={{
+            margin: 0,
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={titleText}
+        >
+          {titleText}
+        </Title>
+        <BusinessDrawerCloseBtn
+          type="text"
+          icon={<X size={20} />}
+          onClick={onClose}
+          aria-label="Close"
+        />
+      </BusinessDrawerHeader>
+      <BusinessDrawerBodyScroll style={{ padding: isMobile ? 16 : 24 }}>
         {isLoading ? (
           <AdminDrawerContentSkeleton />
         ) : (
@@ -780,8 +873,32 @@ const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAct
             onViewOwnerProfile={onViewOwnerProfile}
           />
         )}
-      </DrawerContent>
-    </AdminResponsiveDrawer>
+      </BusinessDrawerBodyScroll>
+    </>
+  );
+
+  return isMobile ? (
+    <VaulDrawer.Root open={open} onOpenChange={handleOpenChange} dismissible>
+      <VaulDrawer.Portal>
+        <BusinessDrawerOverlay />
+        <BusinessDrawerMobile>
+          <BusinessDrawerHandle />
+          {drawerInner}
+        </BusinessDrawerMobile>
+      </VaulDrawer.Portal>
+    </VaulDrawer.Root>
+  ) : (
+    <VaulDrawer.Root
+      open={open}
+      onOpenChange={handleOpenChange}
+      direction="right"
+      dismissible
+    >
+      <VaulDrawer.Portal>
+        <BusinessDrawerOverlay />
+        <BusinessDrawerDesktop>{drawerInner}</BusinessDrawerDesktop>
+      </VaulDrawer.Portal>
+    </VaulDrawer.Root>
   );
 };
 
@@ -828,6 +945,7 @@ const BusinessListings = () => {
     featured: false,
     province: undefined,
     verification_status: undefined,
+    engaged: "all",
   });
 
   const [pagination, setPagination] = useState({
@@ -873,6 +991,8 @@ const BusinessListings = () => {
           ...(currentFilters.verification_status && {
             verification_status: currentFilters.verification_status,
           }),
+          ...(currentFilters.engaged === "yes" && { engaged: true }),
+          ...(currentFilters.engaged === "no" && { engaged: false }),
           ordering:
             currentSorter.columnKey && currentSorter.order
               ? `${currentSorter.order === "descend" ? "-" : ""}${
@@ -920,6 +1040,7 @@ const BusinessListings = () => {
     filterParams.featured,
     filterParams.province,
     filterParams.verification_status,
+    filterParams.engaged,
     pagination.current,
     pagination.pageSize,
     sortedInfo,
@@ -980,7 +1101,6 @@ const BusinessListings = () => {
   };
 
   const showBusinessDetails = async (business) => {
-    if (detailDrawerOpen) return;
     setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBusiness(business);
@@ -1076,7 +1196,16 @@ const BusinessListings = () => {
             {b.businessName?.[0]}
           </Avatar>
           <div>
-            <Text strong>{b.businessName}</Text>
+            <Space size={6} wrap>
+              <Text strong>{b.businessName}</Text>
+              {b.is_engaged ? (
+                <Tooltip title="Logged in last 30d as owner or accepted staff, and has ever received a booking.">
+                  <Tag color="cyan" style={{ margin: 0 }}>
+                    Engaged
+                  </Tag>
+                </Tooltip>
+              ) : null}
+            </Space>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>
               <MapPin size={12} style={{ marginRight: 4 }} />
@@ -1192,9 +1321,18 @@ const BusinessListings = () => {
               {b.businessName?.[0]}
             </Avatar>
             <div>
-              <Text strong style={{ fontSize: "14px", display: "block" }}>
-                {b.businessName}
-              </Text>
+              <Space size={6} wrap align="center">
+                <Text strong style={{ fontSize: "14px", display: "block" }}>
+                  {b.businessName}
+                </Text>
+                {b.is_engaged ? (
+                  <Tooltip title="Logged in last 30d as owner or accepted staff, and has ever received a booking.">
+                    <Tag color="cyan" style={{ margin: 0 }}>
+                      Engaged
+                    </Tag>
+                  </Tooltip>
+                ) : null}
+              </Space>
               <Text type="secondary" style={{ fontSize: "12px" }}>
                 <MapPin size={12} style={{ marginRight: 4 }} />
                 {b.businessCity}, {b.businessState}
@@ -1347,6 +1485,15 @@ const BusinessListings = () => {
               >
                 Featured Only
               </Checkbox>
+              <Select
+                value={filterParams.engaged}
+                style={{ width: isMobile ? "100%" : 170 }}
+                onChange={(val) => handleFilterChange({ engaged: val })}
+              >
+                <Option value="all">Engagement (all)</Option>
+                <Option value="yes">Engaged only</Option>
+                <Option value="no">Not engaged</Option>
+              </Select>
             </SearchFilterContainer>
           </FilterBar>
 

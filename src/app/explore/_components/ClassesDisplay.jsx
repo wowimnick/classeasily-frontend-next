@@ -6,7 +6,8 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
 import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -22,10 +23,10 @@ import {
 } from "./ExplorePageSkeleton.jsx";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
+import { BP, down, up } from "@/styles/breakpoints";
+import { formatCollectionDisplayName } from "@/context/SearchContext";
 
-// Removed framer-motion import - using CSS animations instead for better performance
-
-// Lazy load map component with significant delay to prevent map tiles from becoming LCP
+// Lazy load map component
 const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
   ssr: false,
   loading: () => (
@@ -37,20 +38,26 @@ const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
 
 const GridContainer = styled.div`
   display: grid;
+  /* Desktop: keep two tracks so the map column can slide in; collapse to 0fr when hidden */
   grid-template-columns: ${({ $isMapVisible }) =>
-    $isMapVisible ? "minmax(0, 1fr) minmax(200px, 40%)" : "1fr"};
+    $isMapVisible
+      ? "minmax(0, 1fr) minmax(200px, 40%)"
+      : "minmax(0, 1fr) minmax(0, 0fr)"};
   width: 100%;
   height: calc(100vh - 80px);
   position: relative;
   overflow: hidden;
-  transition: grid-template-columns 0.4s ease-in-out;
-  will-change: grid-template-columns;
+  /* No transition on grid-template-columns: animating column widths reflows the
+     class card grid on every frame while the map also slides — feels broken.
+     Layout snaps; only the map panel uses motion (slide in/out). */
 
-  @media (max-width: 1100px) {
+  ${down(BP.EXPLORE_NARROW)} {
     grid-template-columns: ${({ $isMapVisible }) =>
-      $isMapVisible ? "minmax(0, 1fr) minmax(200px, 35%)" : "1fr"};
+      $isMapVisible
+        ? "minmax(0, 1fr) minmax(200px, 35%)"
+        : "minmax(0, 1fr) minmax(0, 0fr)"};
   }
-  @media (max-width: 1048px) {
+  ${down(BP.TABLET)} {
     grid-template-columns: 1fr;
     height: calc(100vh - 60px);
   }
@@ -63,7 +70,7 @@ const LeftContainer = styled.div`
   position: relative;
   height: 100%;
   overflow: hidden;
-  background-color: ${(props) => props.theme.token.colorBgContainer};
+  background-color: #ffffff;
   border-right: 1px solid #e8e8e8;
 `;
 
@@ -72,7 +79,8 @@ const CategoriesWrapper = styled.div`
   position: sticky;
   top: 0;
   z-index: 90;
-  background-color: #fff;
+  background-color: #ffffff;
+  transition: background-color 0.35s ease;
 `;
 
 const ClassGridWrapper = styled.div`
@@ -82,53 +90,66 @@ const ClassGridWrapper = styled.div`
   -ms-overflow-style: none;
   scrollbar-width: none;
   position: relative;
+  background: #ffffff;
+  /* Size container so card columns respond to this pane (e.g. map open), not only viewport */
+  container-type: inline-size;
+  container-name: explore-cards;
   &::-webkit-scrollbar {
     display: none;
   }
 
-  @media (max-width: 1048px) {
-    padding: 1rem;
-  }
-
-  @media (max-width: 480px) {
-    padding: 0.75rem;
+  ${down(BP.TABLET)} {
+    padding: 24px;
   }
 `;
 
-/* Tighter column mins so more columns fit; cards stay smaller on explore. */
+/**
+ * Equal-width columns from container inline-size (no ragged auto-fill mins).
+ * Thresholds: n × ~260px min card + (n−1) × 24px gap — columns jump only when another fits.
+ */
 const ClassGrid = styled.div`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  column-gap: 24px;
+  row-gap: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 
-  @media (max-width: 1400px) {
-    gap: 18px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
-
-  @media (max-width: 1048px) {
-    gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-
-  @media (max-width: 600px) {
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }
-
-  @media (max-width: 360px) {
+  @supports (container-type: inline-size) {
     grid-template-columns: 1fr;
+
+    @container explore-cards (min-width: 544px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @container explore-cards (min-width: 828px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    @container explore-cards (min-width: 1112px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @container explore-cards (min-width: 1396px) {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    @container explore-cards (min-width: 1680px) {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+
+  ${down(BP.TABLET)} {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
   }
 `;
 
-/* Let cards fill their grid cell; min-width prevents card from shrinking when layout isn't ready (e.g. explore before paint). */
+/* Cards fill grid cells; width comes from the column track. */
 const CardGridItem = styled.div`
   width: 100%;
   min-width: 0;
+
   & > a,
   & > div {
-    min-width: 140px;
+    min-width: 0;
+    width: 100%;
     max-width: 100%;
   }
 `;
@@ -139,22 +160,18 @@ const MapContainer = styled.div`
   overflow: hidden;
   padding: 25px;
   box-sizing: border-box;
+  min-width: 0;
 
-  @media (min-width: 1049px) {
-    display: ${({ $isMapVisible }) => ($isMapVisible ? "block" : "none")};
+  ${up(BP.TABLET)} {
+    display: block;
+    opacity: ${({ $isMapVisible }) => ($isMapVisible ? 1 : 0)};
+    pointer-events: ${({ $isMapVisible }) => ($isMapVisible ? "auto" : "none")};
+    transition: opacity 0.25s ease;
   }
 
-  @media (max-width: 1048px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    padding: 0;
-    visibility: ${(props) => (props.$showMap ? "visible" : "hidden")};
-    opacity: ${(props) => (props.$showMap ? 1 : 0)};
-    transition: opacity 0.2s, visibility 0.2s;
+  ${down(BP.TABLET)} {
+    /* Mobile map mounts in a dedicated motion shell (shared layout with FAB). */
+    display: none;
   }
 `;
 
@@ -166,11 +183,7 @@ const LoadingContainer = styled.div`
   width: 100%;
 `;
 
-const MobileMapToggle = styled.button`
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+const mobileExploreMapFabBase = css`
   padding: 10px 20px;
   background: rgba(255, 255, 255, 0.75);
   color: #222;
@@ -183,18 +196,62 @@ const MobileMapToggle = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  display: none;
   align-items: center;
   gap: 8px;
-  z-index: 1001;
   &:hover {
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
   }
-  @media (max-width: 1048px) {
+`;
+
+const MobileMapToggle = styled.button`
+  ${mobileExploreMapFabBase}
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  z-index: 1001;
+  display: none;
+  isolation: isolate;
+  ${down(BP.TABLET)} {
     display: inline-flex;
   }
 `;
+
+/** Same chrome as the FAB; sits inside the fullscreen map shell (absolute, not fixed). */
+const MobileMapListFab = styled.button`
+  ${mobileExploreMapFabBase}
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  z-index: 2;
+  display: inline-flex;
+`;
+
+const MobileMapFullscreenShell = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+  border-radius: 0;
+  will-change: transform;
+`;
+
+const exploreMobileMapMorphTransition = {
+  type: "spring",
+  stiffness: 440,
+  damping: 40,
+};
 
 // --- New No Results Styled Components (without framer-motion for better performance) ---
 
@@ -267,15 +324,17 @@ const NoResultsView = () => {
 const ClassesDisplay = ({
   classes = [],
   collections = [],
+  collectionsIWant = [],
   loading,
   isNavigating,
   userLocation,
   filters,
   onFiltersChange,
-  currentCollection,
+  currentCollections = [],
   onCollectionChange,
   currentSortBy,
   onApplyModalChanges,
+  onApplyTimePreferences,
   observerTargetRef,
   onClassListScrollRootReady,
   hasMorePages,
@@ -284,12 +343,11 @@ const ClassesDisplay = ({
   city,
   tag,
   totalClassesCount,
+  isFilterModalOpen,
+  setIsFilterModalOpen,
+  previewExploreBarCount,
+  previewFilterModalCount,
 }) => {
-  const applyRandomReviewOffset = (reviewCount, classId) => {
-    const offset = classId % 10;
-    return Math.max(0, reviewCount + offset);
-  };
-
   // Use geolocation hook but don't block rendering on it
   const { location: ipLocationHook } = useIpGeolocation();
   // Prefer userLocation from parent, fallback to hook
@@ -300,14 +358,32 @@ const ClassesDisplay = ({
   const gridWrapperRef = useRef(null);
 
   const [selectedClassId, setSelectedClassId] = useState(null);
-  const [isMapVisible, setIsMapVisible] = useState(true);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [shouldLoadMap, setShouldLoadMap] = useState(false);
+  /** Keeps the desktop two-column grid until the map panel finishes sliding out (see AnimatePresence onExitComplete). */
+  const [holdDesktopMapSlot, setHoldDesktopMapSlot] = useState(false);
 
   const pathnameWithSearch = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
+
+  const desktopMapUsesGridSlot =
+    !isMobile && (isMapVisible || holdDesktopMapSlot);
+
+  const collectionDisplayName = useMemo(() => {
+    const slugs = (currentCollections || []).filter(Boolean);
+    if (!slugs.length) return null;
+    const labels = slugs.map((slug) => {
+      const fromFeatured = collections?.find((c) => c.slug === slug);
+      if (fromFeatured?.name) return fromFeatured.name;
+      const fromWant = collectionsIWant?.find((c) => c.slug === slug);
+      if (fromWant?.name) return fromWant.name;
+      return formatCollectionDisplayName(slug);
+    });
+    if (labels.length === 1) return labels[0];
+    return `${labels.slice(0, 2).join(" · ")}${labels.length > 2 ? ` +${labels.length - 2}` : ""}`;
+  }, [currentCollections, collections, collectionsIWant]);
 
   useEffect(() => {
     const unregister = registerScrollGetter(
@@ -330,11 +406,11 @@ const ClassesDisplay = ({
   // Scroll list back to top when collection selection changes
   useEffect(() => {
     gridWrapperRef.current?.scrollTo(0, 0);
-  }, [currentCollection]);
+  }, [currentCollections.join("|")]);
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth <= 1048;
+      const mobile = window.innerWidth <= BP.TABLET;
       setIsMobile(mobile);
       if (!mobile) {
         setShowMap(false);
@@ -345,6 +421,14 @@ const ClassesDisplay = ({
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (isMapVisible) setHoldDesktopMapSlot(false);
+  }, [isMapVisible]);
+
+  useEffect(() => {
+    if (isMobile) setHoldDesktopMapSlot(false);
+  }, [isMobile]);
 
   useEffect(() => {
     if (isMobile && showMap) {
@@ -479,10 +563,7 @@ const ClassesDisplay = ({
         images: classItem.images,
         options: classItem.options,
         rating: classItem.average_rating,
-        totalReviews: applyRandomReviewOffset(
-          classItem.review_count,
-          classItem.classId
-        ),
+        totalReviews: Math.max(0, Number(classItem.review_count) || 0),
       });
     }
     return markers;
@@ -526,18 +607,22 @@ const ClassesDisplay = ({
               rating={classItem.average_rating}
               min_session_price={classItem.min_session_price}
               min_course_price={classItem.min_course_price}
-              totalReviews={applyRandomReviewOffset(
-                classItem.review_count,
-                classItem.classId
-              )}
+              totalReviews={Math.max(0, Number(classItem.review_count) || 0)}
               business_name={classItem.business_name}
               city={classItem.city}
               state={classItem.state}
+              location={classItem.location}
+              listing_duration_minutes={classItem.listing_duration_minutes}
               coordinates={classItem.coordinates}
               distance={classItem.distance}
-              isSelected={selectedClassId === classItem.classId}
               is_favorited={classItem.is_favorited}
               priority={index < 6}
+              exploreLayout
+              categoryLabel={collectionDisplayName}
+              showPopularBadge={
+                Number(classItem.review_count) >= 75 &&
+                Number(classItem.average_rating) >= 4.7
+              }
             />
           </CardGridItem>
         ))}
@@ -550,22 +635,34 @@ const ClassesDisplay = ({
   };
 
   return (
-    <GridContainer $isMapVisible={!isMobile && isMapVisible}>
+    <GridContainer $isMapVisible={desktopMapUsesGridSlot}>
       <LeftContainer style={{ display: isMobile && showMap ? "none" : "flex" }}>
         <CategoriesWrapper>
           <ExploreCategories
             classes={classesWithDistance}
             collections={collections}
+            collectionsIWant={collectionsIWant}
             filters={filters}
             onFiltersChange={onFiltersChange}
-            currentCollection={currentCollection}
+            currentCollections={currentCollections}
             onCollectionChange={onCollectionChange}
             currentSortBy={currentSortBy}
             onApplyModalChanges={onApplyModalChanges}
+            onApplyTimePreferences={onApplyTimePreferences}
             isFilterModalOpen={isFilterModalOpen}
             setIsFilterModalOpen={setIsFilterModalOpen}
-            isMapVisible={isMapVisible}
-            onShowMap={() => setIsMapVisible(true)}
+            /* Desktop: keep true while map slides out (holdDesktopMapSlot) so Map chip
+               only appears after the grid expands — avoids chip animation + column jump. */
+            isMapVisible={
+              isMobile ? isMapVisible : isMapVisible || holdDesktopMapSlot
+            }
+            onShowMap={() => {
+              setIsMapVisible(true);
+              setShowMap(true);
+            }}
+            totalClassesCount={totalClassesCount}
+            previewExploreBarCount={previewExploreBarCount}
+            previewFilterModalCount={previewFilterModalCount}
           />
         </CategoriesWrapper>
         <ClassGridWrapper ref={gridWrapperRef}>
@@ -586,37 +683,129 @@ const ClassesDisplay = ({
         </ClassGridWrapper>
       </LeftContainer>
 
-      <MapContainer
-        $isMapVisible={!isMobile && isMapVisible}
-        $showMap={isMobile && showMap}
-      >
-        {shouldLoadMap && ((isMobile && showMap) || (!isMobile && isMapVisible)) && (
-          <MapDisplay
-            key={mapKey}
-            markers={mapMarkers}
-            selectedClassId={selectedClassId}
-            onMarkerClick={handleMarkerClick}
-            userLocation={ipLocation || userLocation}
-            showMap={showMap}
-            onHideMap={() => setIsMapVisible(false)}
-            isMobile={isMobile}
-          />
+      <MapContainer $isMapVisible={desktopMapUsesGridSlot}>
+        {shouldLoadMap && !isMobile && (
+          <AnimatePresence
+            mode="wait"
+            onExitComplete={() => setHoldDesktopMapSlot(false)}
+          >
+            {isMapVisible && (
+              <motion.div
+                key="explore-map-desktop"
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 32,
+                  mass: 0.85,
+                }}
+              >
+                <MapDisplay
+                  key={mapKey}
+                  markers={mapMarkers}
+                  selectedClassId={selectedClassId}
+                  onMarkerClick={handleMarkerClick}
+                  userLocation={ipLocation || userLocation}
+                  showMap={showMap}
+                  onHideMap={() => {
+                    setHoldDesktopMapSlot(true);
+                    setIsMapVisible(false);
+                  }}
+                  isMobile={isMobile}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </MapContainer>
 
-      {isMobile && !isFilterModalOpen && (
-        <MobileMapToggle onClick={() => setShowMap(!showMap)}>
-          {showMap ? (
-            <>
-              <List size={16} /> Show List
-            </>
-          ) : (
-            <>
-              <MapIcon size={16} /> Show Map
-            </>
-          )}
-        </MobileMapToggle>
-      )}
+      <AnimatePresence initial={false}>
+        {isMobile && !isFilterModalOpen && !showMap && (
+          <MobileMapToggle
+            key="explore-map-fab"
+            type="button"
+            onClick={() => setShowMap(true)}
+            aria-label="Show map"
+          >
+            <motion.span
+              key="fab-label"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <MapIcon size={16} aria-hidden /> Show Map
+            </motion.span>
+          </MobileMapToggle>
+        )}
+        {isMobile && showMap && (
+          <motion.div
+            key="explore-map-fullscreen"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={exploreMobileMapMorphTransition}
+            style={{ position: "fixed", inset: 0, zIndex: 1000 }}
+          >
+            <MobileMapFullscreenShell>
+              {shouldLoadMap ? (
+                <motion.div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                    position: "relative",
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.06, duration: 0.22, ease: "easeOut" }}
+                >
+                  <MapDisplay
+                    key={mapKey}
+                    markers={mapMarkers}
+                    selectedClassId={selectedClassId}
+                    onMarkerClick={handleMarkerClick}
+                    userLocation={ipLocation || userLocation}
+                    showMap={showMap}
+                    onHideMap={() => {
+                      setShowMap(false);
+                      setIsMapVisible(false);
+                    }}
+                    isMobile={isMobile}
+                  />
+                </motion.div>
+              ) : (
+                <LoadingContainer
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                  }}
+                >
+                  <GlobalLoaderWithoutInlineStyles />
+                </LoadingContainer>
+              )}
+              {!isFilterModalOpen && (
+                <MobileMapListFab
+                  type="button"
+                  onClick={() => setShowMap(false)}
+                  aria-label="Show list"
+                >
+                  <List size={16} aria-hidden /> Show List
+                </MobileMapListFab>
+              )}
+            </MobileMapFullscreenShell>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </GridContainer>
   );
 };

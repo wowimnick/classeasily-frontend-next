@@ -2854,7 +2854,7 @@ const ClassEditDrawer = ({
                         <FormGroup>
                           <FormLabelWithIcon>
                             <ImagePlus size={16} />
-                            Photos (2-10 required)
+                            Photos (4-10 required)
                           </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
@@ -2866,10 +2866,10 @@ const ClassEditDrawer = ({
                             rules={[
                               {
                                 validator: async () => {
-                                  if (!mainImages || mainImages.length < 2)
+                                  if (!mainImages || mainImages.length < 4)
                                     return Promise.reject(
                                       new Error(
-                                        "Please upload at least 2 images.",
+                                        "Please upload at least 4 images.",
                                       ),
                                     );
                                   if (mainImages.length > 10)

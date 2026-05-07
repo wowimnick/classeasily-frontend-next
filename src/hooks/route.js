@@ -35,7 +35,7 @@ export async function GET(request) {
     try {
       const response = await fetch('https://ipapi.co/json/', {
         headers: {
-          'User-Agent': 'Classeasily/1.0',
+          'User-Agent': 'ClassEasily/1.0',
         },
       });
 

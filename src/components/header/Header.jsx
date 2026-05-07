@@ -12,7 +12,7 @@ import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Menu, Search } from "lucide-react";
 import dayjs from "dayjs";
-import { useSearch } from "@/context/SearchContext";
+import { useSearch, summarizeCollectionsForPill } from "@/context/SearchContext";
 
 // --- DYNAMIC IMPORTS ---
 const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
@@ -437,8 +437,12 @@ const HeaderContent = ({
     currentUser?.is_impersonating ||
     false;
 
-  const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } =
-    useSearch();
+  const {
+    searchTerm,
+    datePickerValue,
+    selectedCollections,
+    setIsDrawerOpen,
+  } = useSearch();
 
   useEffect(() => {
     const scrollThreshold = topOffset > 0 ? topOffset : 100;
@@ -509,7 +513,7 @@ const HeaderContent = ({
         $isImpersonating={isImpersonating}
         $topOffset={topOffset}
       >
-        <LogoLink href="/">
+        <LogoLink href="/" aria-label="ClassEasily home">
           <LogoContainer $isScrolled={isScrolled}>
             <LogoIcon
               isScrolled={isScrolled}
@@ -520,7 +524,7 @@ const HeaderContent = ({
               $isScrolled={isScrolled}
               color={isScrolled ? scrolledStyling.logoColor : logoTitleColor}
             >
-              classeasily
+              ClassEasily
             </Title>
           </LogoContainer>
         </LogoLink>
@@ -528,6 +532,16 @@ const HeaderContent = ({
         <Spacer />
 
         <Selection>
+          <Link href="/corporate" legacyBehavior>
+            <AuthLink
+              color={activeColor}
+              $borderColor="transparent"
+              $hoverColor="rgba(255,255,255,0.2)"
+              $isScrolled={isScrolled}
+            >
+              Corporate
+            </AuthLink>
+          </Link>
           <Link href="/business" legacyBehavior>
             <AuthLink
               color={activeColor}
@@ -630,7 +644,8 @@ const HeaderContent = ({
               <NotchText>
                 <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
                 <NotchSubtitle>
-                  {getNotchDateDisplay()} • {participantCount} guests
+                  {getNotchDateDisplay()} •{" "}
+                  {summarizeCollectionsForPill(selectedCollections)}
                 </NotchSubtitle>
               </NotchText>
               <NotchIcon>
@@ -657,7 +672,7 @@ const FallbackLogoIcon = ({ color = "#fff" }) => (
     viewBox="0 0 64.81 105.86"
     fill={color}
     role="img"
-    aria-label="Classeasily Logo"
+    aria-label="ClassEasily logo"
     style={{ flexShrink: 0 }}
   >
     <circle cx="64" cy="30" r="4" fill={color} />
@@ -714,11 +729,11 @@ const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
       $isImpersonating={false}
       $topOffset={topOffset}
     >
-      <LogoLink href="/">
+      <LogoLink href="/" aria-label="ClassEasily home">
         <LogoContainer $isScrolled={false}>
           <FallbackLogoIcon color={logoTitleColor} />
           <Title color={logoTitleColor} $isScrolled={false}>
-            classeasily
+            ClassEasily
           </Title>
         </LogoContainer>
       </LogoLink>

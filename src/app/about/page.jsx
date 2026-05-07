@@ -5,31 +5,31 @@ import Footer from "@/components/homepage/Footer";
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
-  title: "About Classeasily | Local Classes & Experiences",
+  title: "About ClassEasily | Local Classes & Experiences",
   description:
-    "Classeasily helps you discover and book local workshops and experiences, and gives hosts tools to grow. Learn what we do and who we serve.",
+    "ClassEasily helps you discover and book local workshops and experiences, and gives hosts tools to grow. Learn what we do and who we serve.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
-    title: "About Classeasily",
+    title: "About ClassEasily",
     description:
       "A marketplace for local workshops and experiences—built for guests who love to learn and hosts who love to teach.",
     url: "/about",
-    siteName: "Classeasily",
+    siteName: "ClassEasily",
     type: "website",
     images: [
       {
         url: "https://i.imgur.com/biTTckW.png",
         width: 1200,
         height: 630,
-        alt: "Classeasily",
+        alt: "ClassEasily",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "About Classeasily",
+    title: "About ClassEasily",
     description:
       "Discover local classes, book experiences, and grow your teaching business on one platform.",
     images: ["https://i.imgur.com/biTTckW.png"],
@@ -54,13 +54,13 @@ export default async function AboutPage() {
   const aboutJsonLd = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name: "About Classeasily",
+    name: "About ClassEasily",
     url: "https://classeasily.com/about",
     description:
-      "Classeasily connects guests with local workshops and experiences and provides hosts with listing, booking, and payment tools.",
+      "ClassEasily connects guests with local workshops and experiences and provides hosts with listing, booking, and payment tools.",
     mainEntity: {
       "@type": "Organization",
-      name: "Classeasily",
+      name: "ClassEasily",
       url: "https://classeasily.com",
     },
   };
@@ -81,16 +81,16 @@ export default async function AboutPage() {
         }}
       >
         <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>
-          About Classeasily
+          About ClassEasily
         </h1>
         <p style={{ marginBottom: "1rem" }}>
-          <strong>Classeasily</strong> is a marketplace for local workshops,
+          <strong>ClassEasily</strong> is a marketplace for local workshops,
           classes, and experiences—from pottery and glassblowing to cooking,
           fitness, and creative nights out. We help people find memorable things
           to do nearby and make it easy to book with trusted hosts.
         </p>
         <p style={{ marginBottom: "1rem" }}>
-          For instructors, studios, and small businesses, Classeasily offers
+          For instructors, studios, and small businesses, ClassEasily offers
           tools to list experiences, manage schedules, take bookings, and reach
           new students. Our goal is to support independent hosts with fair,
           transparent pricing and a smooth experience for both sides.
@@ -98,7 +98,7 @@ export default async function AboutPage() {
         <p style={{ marginBottom: "1.5rem" }}>
           Ready to explore? Start at{" "}
           <Link href="/explore">Explore</Link> or learn about hosting on{" "}
-          <Link href="/business">Classeasily for business</Link>.
+          <Link href="/business">ClassEasily for business</Link>.
         </p>
       </main>
       <Footer />

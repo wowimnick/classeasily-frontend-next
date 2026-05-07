@@ -376,10 +376,10 @@ export default function FooterClient({ collections = [] }) {
               <LogoIconWrap>
                 <LogoIcon size={32} restingColor="#111827" activeColor="#111827" />
               </LogoIconWrap>
-              <LogoName>classeasily</LogoName>
+              <LogoName>ClassEasily</LogoName>
             </LogoRow>
             <BrandDesc>
-              Classeasily helps you discover and book local classes, workshops, and experiences — making it easy to learn something new.
+              ClassEasily helps you discover and book local classes, workshops, and experiences — making it easy to learn something new.
             </BrandDesc>
             <BrandBottomRow>
               <SocialRow>
@@ -406,7 +406,7 @@ export default function FooterClient({ collections = [] }) {
           {/* Nav columns */}
           <NavGrid>
             <NavCol>
-              <NavTitle>Classeasily</NavTitle>
+              <NavTitle>ClassEasily</NavTitle>
               <NavList>
                 <li><NavLink href="/blog">Our Blog</NavLink></li>
                 <li><NavLink href="/explore">Explore Classes</NavLink></li>
@@ -417,6 +417,7 @@ export default function FooterClient({ collections = [] }) {
             <NavCol>
               <NavTitle>Businesses</NavTitle>
               <NavList>
+                <li><NavLink href="/corporate">ClassEasily for teams</NavLink></li>
                 <li><NavLink href="/business">Become a Host</NavLink></li>
                 <li><NavLink href="/business/help/">Business Help</NavLink></li>
                 <li><NavLink href="/business/register">Registration</NavLink></li>
@@ -426,8 +427,7 @@ export default function FooterClient({ collections = [] }) {
             <NavCol>
               <NavTitle>Support</NavTitle>
               <NavList>
-                <li><NavLinkA href="mailto:support@classeasily.com">Email Support</NavLinkA></li>
-                <li><NavLink href="/my-tickets">Help Center</NavLink></li>
+                <li><NavLink href="/my-tickets">Contact us</NavLink></li>
                 <li><NavLink href="/fees">Fees & Charges</NavLink></li>
                 <li><NavLink href="/terms-of-service">Trust & Safety</NavLink></li>
                 <li><NavLink href="/copyright-policy">Copyright Policy</NavLink></li>
@@ -439,7 +439,7 @@ export default function FooterClient({ collections = [] }) {
         <Divider />
 
         <FooterBottom>
-          <Copyright>© 2026 Classeasily. All rights reserved.</Copyright>
+          <Copyright>© 2026 ClassEasily. All rights reserved.</Copyright>
           <LegalLinks>
             <LegalLink href="/terms-of-service">Terms of Service</LegalLink>
             <LegalLink href="/privacy-policy">Privacy Policy</LegalLink>
@@ -450,7 +450,7 @@ export default function FooterClient({ collections = [] }) {
 
       {/* Big classeasily text below footer with gap, white → transparent, ~1/3 below viewport */}
       <WatermarkSection>
-        <Watermark>classeasily</Watermark>
+        <Watermark>ClassEasily</Watermark>
       </WatermarkSection>
     </FooterWrapper>
   );

@@ -988,7 +988,7 @@ const Hero = () => {
             </motion.div>
             <motion.div variants={fadeUp}>
               <HeroP>
-                One platform: list on the Classeasily marketplace so we bring you customers, and embed a widget on your own site so visitors book there. Same calendar, one dashboard.
+                One platform: list on the ClassEasily marketplace so we bring you customers, and embed a widget on your own site so visitors book there. Same calendar, one dashboard.
               </HeroP>
             </motion.div>
             <motion.div variants={fadeUp}>
@@ -1102,11 +1102,11 @@ const FeaturesIntro = () => (
       <ValuePropsGrid as={motion.div} variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
         <VPItem variants={fadeUp}>
           <h3><Megaphone size={20} color="#fc4056" /> We do marketing for you</h3>
-          <p>Get listed on the Classeasily marketplace. When guests search for experiences, they find you—no ad spend required. We bring discovery to your door.</p>
+          <p>Get listed on the ClassEasily marketplace. When guests search for experiences, they find you—no ad spend required. We bring discovery to your door.</p>
         </VPItem>
         <VPItem variants={fadeUp}>
           <h3><Store size={20} color="#fc4056" /> Marketplace + widget in one place</h3>
-          <p>One account: your listing on Classeasily and an embeddable widget for your website. Same calendar, same payouts. Update once, it's live everywhere.</p>
+          <p>One account: your listing on ClassEasily and an embeddable widget for your website. Same calendar, same payouts. Update once, it's live everywhere.</p>
         </VPItem>
         <VPItem variants={fadeUp}>
           <h3><CreditCard size={20} color="#fc4056" /> Apple Pay and all major cards</h3>
@@ -1674,7 +1674,7 @@ const FeatureLists = () => (
         <ListColumn variants={fadeUp}>
           <h4>Discovery</h4>
           <ul>
-            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Listed on Classeasily marketplace</li>
+            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Listed on ClassEasily marketplace</li>
             <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Searchable by location, category & date</li>
             <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> No ad spend to get visibility</li>
             <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Public profile with reviews</li>
@@ -1730,7 +1730,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Can I use the widget if I already use another booking tool?',
-    a: 'The widget only works with Classeasily. You manage all your availability and classes in your Classeasily dashboard — it becomes your single source of truth for both the marketplace listing and the site widget.',
+    a: 'The widget only works with ClassEasily. You manage all your availability and classes in your ClassEasily dashboard — it becomes your single source of truth for both the marketplace listing and the site widget.',
   },
   {
     q: 'Is the checkout secure?',

@@ -136,7 +136,7 @@ const QuickPill = styled.button`
   }
 `;
 
-const CustomCalendar = ({ value, onChange, onClose }) => {
+const CustomCalendar = ({ value, onChange, onClose, showQuickSelect = true }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
   const selectedStart = value?.start
@@ -312,20 +312,22 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         </MonthSection>
       </DoubleMonthGrid>
 
-      <QuickSelectGrid>
-        <QuickPill type="button" onClick={() => applyPreset("weekend")}>
-          This Weekend
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
-          Next Weekend
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("this_week")}>
-          This Week
-        </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("next_week")}>
-          Next Week
-        </QuickPill>
-      </QuickSelectGrid>
+      {showQuickSelect && (
+        <QuickSelectGrid>
+          <QuickPill type="button" onClick={() => applyPreset("weekend")}>
+            This Weekend
+          </QuickPill>
+          <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
+            Next Weekend
+          </QuickPill>
+          <QuickPill type="button" onClick={() => applyPreset("this_week")}>
+            This Week
+          </QuickPill>
+          <QuickPill type="button" onClick={() => applyPreset("next_week")}>
+            Next Week
+          </QuickPill>
+        </QuickSelectGrid>
+      )}
     </CalendarWrapper>
   );
 };

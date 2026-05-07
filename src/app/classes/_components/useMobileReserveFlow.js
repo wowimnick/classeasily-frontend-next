@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { scheduleService } from "@/services/apiService";
 import posthog from "posthog-js";
+import { BP } from "@/styles/breakpoints";
 
 /** Breakpoint (px) below which mobile reserve flow is shown */
-export const MOBILE_RESERVE_BREAKPOINT = 1024;
+export const MOBILE_RESERVE_BREAKPOINT = BP.TABLET;
 
 /** Delay (ms) between closing one drawer and opening another to avoid overlap */
 export const DRAWER_TRANSITION_MS = 150;
@@ -14,8 +15,28 @@ export const DRAWER_TRANSITION_MS = 150;
 /** Default participant count when slot allows more */
 export const DEFAULT_PARTICIPANTS = 2;
 
-/** Availability fetch window (days) for mobile calendar */
-const MOBILE_AVAILABILITY_DAYS = 60;
+/**
+ * Total horizon for mobile availability (matches former “far future” fix).
+ * Loaded in small chunks: first chunk returns quickly (same perceived speed as old 60d),
+ * remaining chunks run in parallel so total wait ≈ one chunk, not one huge query.
+ */
+const MOBILE_AVAILABILITY_RANGE_DAYS = 540;
+const MOBILE_AVAILABILITY_CHUNK_DAYS = 60;
+
+function buildAvailabilityChunkSpecs(minSelectableDate, chunkDays, totalDays) {
+  const specs = [];
+  for (let offset = 0; offset < totalDays; offset += chunkDays) {
+    const rangeStart = new Date(minSelectableDate);
+    rangeStart.setDate(rangeStart.getDate() + offset);
+    const rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeEnd.getDate() + chunkDays);
+    specs.push({
+      start_date: getLocalYYYYMMDD(rangeStart),
+      end_date: getLocalYYYYMMDD(rangeEnd),
+    });
+  }
+  return specs;
+}
 
 /**
  * Encapsulates all state and handlers for the mobile reserve flow:
@@ -65,26 +86,60 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   useEffect(() => {
     if (!mounted || !optionToDisplayOnCard?.optionId || !isMobileView) return;
     const optionId = optionToDisplayOnCard.optionId;
-    setMobileSlotsLoading(true);
-    setMobileAvailabilityError(false);
-    const start = new Date(mobileMinSelectableDate);
-    const end = new Date(start);
-    end.setDate(end.getDate() + MOBILE_AVAILABILITY_DAYS);
-    scheduleService
-      .getAvailabilityForOption(optionId, {
-        start_date: getLocalYYYYMMDD(start),
-        end_date: getLocalYYYYMMDD(end),
-      })
-      .then((res) => {
-        if (res && typeof res === "object") {
-          setMobileAvailableSlots((prev) => ({ ...prev, ...res }));
+    let cancelled = false;
+
+    const specs = buildAvailabilityChunkSpecs(
+      mobileMinSelectableDate,
+      MOBILE_AVAILABILITY_CHUNK_DAYS,
+      MOBILE_AVAILABILITY_RANGE_DAYS,
+    );
+
+    (async () => {
+      setMobileSlotsLoading(true);
+      setMobileAvailabilityError(false);
+      setMobileAvailableSlots({});
+
+      try {
+        const first = await scheduleService.getAvailabilityForOption(
+          optionId,
+          specs[0],
+        );
+        if (cancelled) return;
+        if (first && typeof first === "object") {
+          setMobileAvailableSlots(first);
         }
-      })
-      .catch((e) => {
+        setMobileSlotsLoading(false);
+
+        if (specs.length <= 1) return;
+
+        const rest = await Promise.all(
+          specs.slice(1).map((spec) =>
+            scheduleService
+              .getAvailabilityForOption(optionId, spec)
+              .catch((err) => {
+                console.error("Mobile availability chunk failed", err);
+                return {};
+              }),
+          ),
+        );
+        if (cancelled) return;
+        const merged = {};
+        for (const part of rest) {
+          if (part && typeof part === "object") Object.assign(merged, part);
+        }
+        if (Object.keys(merged).length > 0) {
+          setMobileAvailableSlots((prev) => ({ ...prev, ...merged }));
+        }
+      } catch (e) {
         console.error("Mobile availability fetch failed", e);
-        setMobileAvailabilityError(true);
-      })
-      .finally(() => setMobileSlotsLoading(false));
+        if (!cancelled) setMobileAvailabilityError(true);
+        setMobileSlotsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [mounted, optionToDisplayOnCard?.optionId, isMobileView, mobileMinSelectableDate]);
 
   useEffect(() => {

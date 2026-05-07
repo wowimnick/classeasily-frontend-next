@@ -1,471 +1,355 @@
-// components/explore/ExploreCategories.jsx
 "use client";
 
 import React, {
+  memo,
+  Suspense,
+  useMemo,
   useState,
   useRef,
   useEffect,
-  useMemo,
+  useLayoutEffect,
   useCallback,
-  lazy,
-  memo,
-  Suspense,
 } from "react";
-import {
-  ChevronRight,
-  ChevronLeft,
-  Map as MapIcon,
-  Settings2,
-  Layers,
-} from "lucide-react";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
+import {
+  ChevronDown,
+  Feather,
+  Map as MapIcon,
+  Settings2,
+  Check,
+} from "lucide-react";
+import { exploreTimePreferencesList } from "./exploreTimePreferences";
+import { ExploreBarLazyLucideIcon } from "./exploreBarLazyIcon.jsx";
+import ExploreResultsPrimaryLabel from "./ExploreResultsPrimaryLabel.jsx";
+import { useIsDesktopOrWider } from "@/styles/breakpoints-hooks";
+import { BP, down } from "@/styles/breakpoints";
+import { ExploreShowResultsButton } from "@/components/explore/ExploreShowResultsButton";
+import {
+  ExploreDropdownTypeChipFlow,
+  ExploreDropdownTypeChip,
+} from "@/components/explore/ExploreDropdownTypeChips";
 
-// Defer FilterModal loading to reduce initial bundle size
 const FilterModal = dynamic(() => import("./FilterModal"), { ssr: false });
 
-// Icon loading logic
-const IconFallback = (props) => (
-  <div {...props} style={{ width: 18, height: 18, ...props.style }} />
+const ExploreExperienceTypeDrawer = dynamic(
+  () => import("./ExploreExperienceTypeDrawer"),
+  { ssr: false },
+);
+const ExploreTimeOfDayDrawer = dynamic(
+  () => import("./ExploreTimeOfDayDrawer"),
+  { ssr: false },
 );
 
-const lazyIconCache = new Map();
-
-function getLazyIcon(iconName) {
-  if (!lazyIconCache.has(iconName)) {
-    lazyIconCache.set(
-      iconName,
-      lazy(() =>
-        import("lucide-react").then((module) => ({
-          default: module[iconName] || Layers,
-        })),
-      ),
-    );
-  }
-  return lazyIconCache.get(iconName);
+function useClickOutside(ref, handler) {
+  useEffect(() => {
+    const listener = (event) => {
+      if (!ref.current || ref.current.contains(event.target)) return;
+      handler(event);
+    };
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]);
 }
 
-const CategoryIcon = memo(({ iconName, ...props }) => {
-  const IconComponent = getLazyIcon(iconName);
-  return (
-    <Suspense fallback={<IconFallback {...props} />}>
-      <IconComponent {...props} />
-    </Suspense>
-  );
-});
-
-const CategoriesWrapper = styled.div`
+/** Explore filter bar — matches ClientHeader #fafafa when map is hidden on desktop; white when map is open */
+const BarOuter = styled.div`
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: ${(p) => (p.$desktopMapHidden ? "#fafafa" : "#ffffff")};
   position: sticky;
-  flex-direction: column;
-  background-color: #fff;
-  width: 100%;
-  z-index: 100;
   top: 0;
-  border-bottom: 1px solid #f0f0f0;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.03);
+  z-index: 100;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 10px 12px;
+  transition:
+    border-color 0.35s ease,
+    background-color 0.25s ease;
+
+  ${down(BP.MOBILE)} {
+    border-bottom: none;
+  }
 `;
 
-const Categories = styled.div`
+const BarCluster = styled.div`
   display: flex;
-  position: relative;
-  flex-direction: row;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  gap: 0.25rem;
-  padding: 0 1.5rem;
+  flex-wrap: wrap;
   align-items: center;
-  background: #ffffff;
-  height: 72px;
-  z-index: 2;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  @media (max-width: 767px) {
-    padding: 0 1rem;
-    gap: 0.5rem;
-    height: 64px;
-  }
-`;
-
-const SubCategories = styled.div`
-  display: flex;
-  position: relative;
-  flex-direction: row;
-  padding: 0.5rem 1.5rem;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
   width: 100%;
-  overflow-x: ${({ $shouldScroll }) => ($shouldScroll ? "auto" : "hidden")};
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
-  max-height: ${({ isVisible }) => (isVisible ? "100px" : "0")};
-  transition: opacity 300ms ease-out, max-height 300ms ease-out;
-  border-top: 1px solid #f0f0f0;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  @media (max-width: 768px) {
-    padding: 0.4rem 1rem;
-    gap: 0.4rem;
-  }
-`;
 
-// --- COMPACT CATEGORY STYLES ---
-const CategoryGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-  cursor: ${({ $isSelected }) => ($isSelected ? "default" : "pointer")};
-  flex-shrink: 0;
-  border-bottom: 1px solid transparent;
-  border-bottom-color: ${({ $isSelected }) =>
-    $isSelected ? "#ff385c" : "transparent"};
-  min-width: 44px;
-  min-height: 44px;
-  width: 72px;
-  height: 100%;
-  padding: 8px 4px 4px;
-  position: relative;
-  z-index: 2;
-  box-sizing: border-box;
+  ${down(BP.MOBILE)} {
+    flex-wrap: nowrap;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 12px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 
-  @media (max-width: 768px) {
-    width: 60px;
-    padding: 6px 2px 4px;
-  }
-`;
-
-const CategoryFont = styled.p`
-  font-size: 11px;
-  font-weight: ${({ $isSelected }) => ($isSelected ? "700" : "500")};
-  color: ${({ $isSelected }) => ($isSelected ? "#000000" : "#717171")};
-  margin: 4px 0 0 0;
-  transition: all 0.2s ease;
-  text-align: center;
-  line-height: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    font-size: 10px;
-  }
-`;
-
-const ImageBackground = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-
-  @media (max-width: 768px) {
-    width: 20px;
-    height: 20px;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-    color: ${({ $isSelected }) => ($isSelected ? "#000000" : "#717171")};
-    stroke-width: ${({ $isSelected }) => ($isSelected ? 2.5 : 2)};
-    transition: all 0.2s ease;
-  }
-
-  @media (max-width: 768px) {
-    svg {
-      width: 18px;
-      height: 18px;
+    &::-webkit-scrollbar {
+      display: none;
     }
   }
-
-  ${CategoryGroup}:hover & svg {
-    color: #222;
-  }
 `;
 
-// --- COMPACT COLLECTION PILLS ---
-const CollectionPill = styled.button`
-  display: flex;
+const BarControlButton = styled.button`
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: ${({ $isSelected }) => ($isSelected ? "#222" : "#fff")};
-  color: ${({ $isSelected }) => ($isSelected ? "#fff" : "#222")};
-  border: 1px solid ${({ $isSelected }) => ($isSelected ? "#222" : "#e0e0e0")};
-  white-space: nowrap;
-  padding: 20px;
-  border-radius: 20px;
-  min-height: 40px;
+  gap: 6px;
+  flex-shrink: 0;
   height: 40px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  box-shadow: ${({ $isSelected }) =>
-    $isSelected ? "0 2px 8px rgba(0,0,0,0.15)" : "0 1px 3px rgba(0,0,0,0.05)"};
-  position: relative;
-  z-index: 2;
-
-  &:hover {
-    background-color: ${({ $isSelected }) =>
-      $isSelected ? "#000" : "#f7f7f7"};
-    border-color: ${({ $isSelected }) => ($isSelected ? "#000" : "#d0d0d0")};
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 768px) {
-    min-height: 40px;
-    height: 40px;
-    font-size: 13px;
-    padding: 20px;
-  }
-`;
-
-const VerticalSeparator = styled.div`
-  width: 1px;
-  height: 24px;
-  background-color: #eaeaea;
-  margin: 0 8px;
-  flex-shrink: 0;
-  z-index: 2;
-`;
-
-// --- SUB-CATEGORY PILLS ---
-const SubCategoryGroup = styled.div`
-  display: flex;
-  background-color: ${({ $isSelected }) => ($isSelected ? "#ffebee" : "#f5f5f5")};
-  color: ${({ $isSelected }) => ($isSelected ? "#ff385c" : "#595959")};
-  white-space: nowrap;
-  border-radius: 16px;
-  padding: 0 12px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid ${({ $isSelected }) => ($isSelected ? "#ffb2b2" : "#e0e0e0")};
-  &:hover {
-    background-color: ${({ $isSelected }) =>
-      $isSelected ? "#ffebee" : "#efefef"};
-    border-color: ${({ $isSelected }) => ($isSelected ? "#ffb2b2" : "#bdbdbd")};
-  }
-  @media (max-width: 768px) {
-    height: 30px;
-    padding: 0 10px;
-    font-size: 11px;
-  }
-`;
-
-const ScrollWrapper = styled.div`
-  display: flex;
-  position: relative;
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-  background: #ffffff;
-  height: 100%;
-
-  &::before,
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 40px;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 300ms ease-in-out;
-  }
-
-  &::before {
-    left: 0;
-    background: linear-gradient(to right, #ffffff 45%, rgba(255, 255, 255, 0));
-    opacity: ${({ $showLeftFade }) => ($showLeftFade ? 1 : 0)};
-  }
-
-  &::after {
-    right: 0;
-    background: linear-gradient(to left, #ffffff 45%, rgba(255, 255, 255, 0));
-    opacity: ${({ $showRightFade }) => ($showRightFade ? 1 : 0)};
-  }
-`;
-
-const ScrollButton = styled.button`
-  position: absolute;
-  display: ${({ $show }) => ($show ? "flex" : "none")};
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-  border: 1px solid #eee;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 5;
-  transition: all 0.2s ease;
-  color: #222;
-
-  &:hover {
-    background-color: #fff;
-    transform: scale(1.1);
-    color: #000;
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const PrevButton = styled(ScrollButton)`
-  left: 0.25rem;
-`;
-const NextButton = styled(ScrollButton)`
-  right: 0.25rem;
-`;
-
-const TopSection = styled.div`
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  position: relative;
-`;
-
-const CategoriesScrollArea = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-`;
-
-const ScrollFilterWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
-  flex-shrink: 0;
-  gap: 12px;
-  height: 100%;
-
-  @media (max-width: 768px) {
-    padding: 0 1rem;
-  }
-`;
-
-const FilterButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 24px;
+  padding: 0 14px;
   background: #ffffff;
   box-shadow: 0px 8px 11px 0px rgba(0, 0, 0, 0.06);
-  border: 1px solid #dddddd;
+  border: 1px solid ${(p) => (p.$active ? "#222222" : "#dddddd")};
   border-radius: 20px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   color: #222222;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
     background: #f7f7f7;
-    border-color: #c2c2c2;
+    border-color: ${(p) => (p.$active ? "#222222" : "#c2c2c2")};
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
-  @media (max-width: 768px) {
-    height: 40px;
+  .bar-label {
+    white-space: nowrap;
+  }
+
+  ${down(BP.MOBILE)} {
+    height: 38px;
     padding: 0 12px;
     font-size: 13px;
-    span {
-      display: none;
+    gap: 5px;
+
+    ${(p) =>
+      p.$hideLabelOnMobile &&
+      `
+      .bar-label {
+        display: none;
+      }
+    `}
+
+    svg {
+      flex-shrink: 0;
     }
   }
 `;
 
-const ShowMapButton = styled(FilterButton)`
-  @media (max-width: 1048px) {
+/** Rotating chevron for Type / Time triggers (desktop dropdown + mobile drawer state). */
+const ChevronTriggerWrap = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s ease;
+  transform: rotate(${({ $open }) => ($open ? "180deg" : "0deg")});
+`;
+
+const ShowMapOnDesktop = styled(BarControlButton)`
+  ${down(BP.TABLET)} {
     display: none;
   }
 `;
 
-const SUBCATEGORY_CACHE_KEY = "subcategory_master_list";
-const getCachedMap = () => {
-  if (typeof window === "undefined") {
-    return {};
-  }
-  try {
-    const cachedData = sessionStorage.getItem(SUBCATEGORY_CACHE_KEY);
-    return cachedData ? JSON.parse(cachedData) : {};
-  } catch (e) {
-    console.error("Could not read subcategory cache", e);
-    return {};
-  }
-};
+/** Vertical rule between bar control groups */
+const BarDivider = styled.span`
+  display: inline-block;
+  width: 1px;
+  height: 24px;
+  background: #dddddd;
+  flex-shrink: 0;
+  align-self: center;
 
-const setCachedMap = (map) => {
-  if (typeof window === "undefined") {
-    return;
+  ${down(BP.MOBILE)} {
+    height: 22px;
   }
-  try {
-    sessionStorage.setItem(SUBCATEGORY_CACHE_KEY, JSON.stringify(map));
-  } catch (e) {
-    console.error("Could not write to subcategory cache", e);
+`;
+
+/** Before Map control — Map is desktop-only; hide rule on narrow screens (avoids stray divider on mobile). */
+const BarDividerBeforeMapDesktop = styled(BarDivider)`
+  ${down(BP.TABLET)} {
+    display: none;
   }
-};
+`;
 
-const CategoryItem = memo(({ category, isSelected, onClick }) => (
-  <CategoryGroup onClick={onClick} $isSelected={isSelected}>
-    <ImageBackground $isSelected={isSelected}>
-      <CategoryIcon iconName={category.icon_name} />
-    </ImageBackground>
-    <CategoryFont $isSelected={isSelected}>{category.name}</CategoryFont>
-  </CategoryGroup>
-), (prevProps, nextProps) => 
-  prevProps.category.key === nextProps.category.key &&
-  prevProps.isSelected === nextProps.isSelected
-);
+/* Header-style floating panel (ClientHeader UnifiedPopupContainer) */
+const ExploreDropdownPanel = styled.div`
+  position: fixed;
+  z-index: 2600;
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 0;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  max-height: min(520px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
 
-const CollectionItem = memo(({ collection, isSelected, onClick }) => (
-  <CollectionPill
-    onClick={onClick}
-    $isSelected={isSelected}
-    aria-pressed={isSelected}
-  >
-    {collection.name}
-  </CollectionPill>
-), (prevProps, nextProps) =>
-  prevProps.collection.key === nextProps.collection.key &&
-  prevProps.collection.slug === nextProps.collection.slug &&
-  prevProps.isSelected === nextProps.isSelected
-);
+  &[data-variant="type"] {
+    max-height: min(560px, calc(100vh - 96px));
+  }
+`;
 
-// Respect admin sort_order for explore page (collections from API are already ordered; this ensures client order)
-const sortCollectionsByOrder = (list) =>
-  [...(list || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+const TimeDropdownIntro = styled.div`
+  padding: 16px 20px 8px;
+`;
+
+const TimeDropdownTitle = styled.div`
+  font-size: 17px;
+  font-weight: 700;
+  color: #000000;
+  letter-spacing: -0.02em;
+`;
+
+const TimeDropdownSubtitle = styled.p`
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #000000;
+`;
+
+const TimeOptionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 20px 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+`;
+
+const TimeOptionRow = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  min-height: 48px;
+`;
+
+const TimeRowCheckbox = styled.span`
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid #0a0a0a;
+  background: ${({ $checked }) => ($checked ? "#000000" : "#ffffff")};
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.07);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  ${({ $checked }) =>
+    $checked
+      ? `
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.14),
+      0 4px 10px rgba(0, 0, 0, 0.16);
+  `
+      : ""}
+`;
+
+const TimeOptionText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+`;
+
+const TimeOptionLabel = styled.span`
+  font-size: 17px;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.25;
+`;
+
+const TimeOptionSub = styled.span`
+  font-size: 15px;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.35;
+`;
+
+const DropdownFooter = styled.div`
+  border-top: 1px solid #ebebeb;
+  padding: 12px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+`;
+
+const DropdownClearLink = styled.button`
+  border: none;
+  background: none;
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1.2;
+`;
+
+function sortCollectionsByOrder(list) {
+  return [...(list || [])].sort(
+    (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999),
+  );
+}
+
+function findOriginalsCollection(collections) {
+  const list = (collections || []).filter((c) => !c?.is_all);
+  const bySlug = list.find(
+    (c) => String(c.slug || "").toLowerCase() === "originals",
+  );
+  if (bySlug) return bySlug;
+  return (
+    list.find(
+      (c) => String(c.name || "").trim().toLowerCase() === "originals",
+    ) || null
+  );
+}
+
+function formatShowResultsLabel(totalCount) {
+  if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
+    return "Show results";
+  }
+  return `Show ${totalCount.toLocaleString()} results`;
+}
 
 function ExploreCategoriesContent({
   collections = [],
-  currentCollection,
+  collectionsIWant = [],
+  classes = [],
+  currentCollections = [],
   onCollectionChange,
   filters,
   onFiltersChange,
@@ -475,162 +359,450 @@ function ExploreCategoriesContent({
   setIsFilterModalOpen,
   isMapVisible,
   onShowMap,
+  onApplyTimePreferences,
+  totalClassesCount,
+  previewExploreBarCount,
+  previewFilterModalCount,
 }) {
-  const sortedCollections = useMemo(
-    () => sortCollectionsByOrder(collections),
-    [collections]
+  const [typeDrawerOpen, setTypeDrawerOpen] = useState(false);
+  const [timeDrawerOpen, setTimeDrawerOpen] = useState(false);
+  const isDesktopBar = useIsDesktopOrWider();
+
+  const [barPreviewCount, setBarPreviewCount] = useState(null);
+  const [barPreviewLoading, setBarPreviewLoading] = useState(false);
+
+  const barRootRef = useRef(null);
+  const typeBtnRef = useRef(null);
+  const timeBtnRef = useRef(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({
+    top: 0,
+    left: 0,
+    width: 360,
+  });
+
+  const [typeDraftSlugs, setTypeDraftSlugs] = useState([]);
+  const [timeDraft, setTimeDraft] = useState([]);
+
+  const sortedIWant = useMemo(
+    () => sortCollectionsByOrder(collectionsIWant),
+    [collectionsIWant],
   );
-  const [optimisticCollection, setOptimisticCollection] =
-    useState(currentCollection);
 
-  useEffect(() => {
-    setOptimisticCollection(currentCollection);
-  }, [currentCollection]);
+  const originalsRow = useMemo(
+    () => findOriginalsCollection(collections),
+    [collections],
+  );
+  const originalsSlug = originalsRow?.slug;
 
-  const categoriesRef = useRef(null);
-  const [showCategoryScrollButtons, setShowCategoryScrollButtons] =
-    useState(false);
-  const [canScrollCategoryLeft, setCanScrollCategoryLeft] = useState(false);
-  const [canScrollCategoryRight, setCanScrollCategoryRight] = useState(false);
+  const originalsActive =
+    originalsSlug &&
+    currentCollections.length === 1 &&
+    currentCollections[0] === originalsSlug;
+  const typeFilterActive = sortedIWant.some((c) =>
+    currentCollections.includes(c.slug),
+  );
+  const timeFilterActive = (filters?.timePreference?.length || 0) > 0;
 
-  const updateCategoryScrollPosition = useCallback(() => {
-    if (categoriesRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = categoriesRef.current;
-      setCanScrollCategoryLeft(scrollLeft > 1);
-      setCanScrollCategoryRight(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  }, []);
-
-  const handleCategoryScroll = (direction) => {
-    if (categoriesRef.current) {
-      const scrollAmount = categoriesRef.current.offsetWidth * 0.7;
-      categoriesRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
+  const toggleOriginals = () => {
+    if (!originalsSlug) return;
+    if (currentCollections.length === 1 && currentCollections[0] === originalsSlug) {
+      onCollectionChange([]);
+    } else {
+      onCollectionChange([originalsSlug]);
     }
   };
 
+  const closeDropdowns = useCallback(() => setActiveDropdown(null), []);
+
+  useClickOutside(barRootRef, closeDropdowns);
+
   useEffect(() => {
-    const currentRef = categoriesRef.current;
-    if (currentRef) {
-      currentRef.addEventListener("scroll", updateCategoryScrollPosition, {
-        passive: true,
-      });
-      updateCategoryScrollPosition();
-      return () =>
-        currentRef.removeEventListener("scroll", updateCategoryScrollPosition);
+    const onKey = (e) => {
+      if (e.key === "Escape") closeDropdowns();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeDropdowns]);
+
+  useEffect(() => {
+    if (!isDesktopBar) setActiveDropdown(null);
+  }, [isDesktopBar]);
+
+  useEffect(() => {
+    if (activeDropdown !== "type") return;
+    const wantSlugs = new Set(sortedIWant.map((c) => c.slug));
+    const next = (currentCollections || []).filter((s) => wantSlugs.has(s));
+    setTypeDraftSlugs(next);
+  }, [activeDropdown, currentCollections, sortedIWant]);
+
+  useEffect(() => {
+    if (activeDropdown !== "time") return;
+    setTimeDraft([...(filters?.timePreference || [])]);
+  }, [activeDropdown, filters?.timePreference]);
+
+  useEffect(() => {
+    if (isDesktopBar && (activeDropdown === "type" || activeDropdown === "time")) {
+      return;
     }
-  }, [updateCategoryScrollPosition]);
+    setBarPreviewCount(null);
+    setBarPreviewLoading(false);
+  }, [isDesktopBar, activeDropdown]);
 
   useEffect(() => {
-    const checkCatScrollable = () => {
-      if (categoriesRef.current) {
-        const elem = categoriesRef.current;
-        const isScrollable = elem.scrollWidth > elem.clientWidth;
-        setShowCategoryScrollButtons(isScrollable);
-        if (isScrollable) updateCategoryScrollPosition();
-      }
-    };
+    if (!previewExploreBarCount) return;
+    if (!isDesktopBar) return;
+    if (activeDropdown !== "type" && activeDropdown !== "time") return;
 
-    const timeoutId = setTimeout(checkCatScrollable, 100);
-    window.addEventListener("resize", checkCatScrollable);
+    setBarPreviewLoading(true);
+    const ac = new AbortController();
+    const t = setTimeout(() => {
+      (async () => {
+        try {
+          const overrides =
+            activeDropdown === "type"
+              ? { collectionSlugs: typeDraftSlugs }
+              : { timePreferenceIds: timeDraft };
+          const c = await previewExploreBarCount(overrides, ac.signal);
+          if (!ac.signal.aborted) setBarPreviewCount(c);
+        } catch (e) {
+          if (e?.name === "AbortError" || e?.name === "CanceledError") return;
+          if (!ac.signal.aborted) setBarPreviewCount(null);
+        } finally {
+          if (!ac.signal.aborted) setBarPreviewLoading(false);
+        }
+      })();
+    }, 120);
+
     return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("resize", checkCatScrollable);
+      clearTimeout(t);
+      ac.abort();
     };
-  }, [sortedCollections, updateCategoryScrollPosition]);
+  }, [
+    previewExploreBarCount,
+    isDesktopBar,
+    activeDropdown,
+    typeDraftSlugs,
+    timeDraft,
+  ]);
 
-  const handleCollectionClick = useCallback(
-    (collectionSlug) => {
-      if (optimisticCollection === collectionSlug) return;
-      setOptimisticCollection(collectionSlug);
-      onCollectionChange(collectionSlug);
-    },
-    [optimisticCollection, onCollectionChange]
-  );
+  const showResultsCount = barPreviewCount ?? totalClassesCount;
+
+  const updateDropdownPosition = useCallback(() => {
+    if (!activeDropdown || !isDesktopBar) return;
+    const ref = activeDropdown === "type" ? typeBtnRef : timeBtnRef;
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const panelWidth =
+      activeDropdown === "type"
+        ? Math.min(560, window.innerWidth - 24)
+        : Math.min(400, window.innerWidth - 24);
+    let left = r.left + r.width / 2 - panelWidth / 2;
+    left = Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12));
+    setDropdownPos({
+      top: r.bottom + 8,
+      left,
+      width: panelWidth,
+    });
+  }, [activeDropdown, isDesktopBar]);
+
+  useLayoutEffect(() => {
+    updateDropdownPosition();
+  }, [updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!activeDropdown || !isDesktopBar) return;
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [activeDropdown, isDesktopBar, updateDropdownPosition]);
+
+  const toggleTypeTrigger = () => {
+    if (isDesktopBar) {
+      setActiveDropdown((d) => (d === "type" ? null : "type"));
+    } else {
+      setTypeDrawerOpen(true);
+    }
+  };
+
+  const toggleTimeTrigger = () => {
+    if (isDesktopBar) {
+      setActiveDropdown((d) => (d === "time" ? null : "time"));
+    } else {
+      setTimeDrawerOpen(true);
+    }
+  };
+
+  const typeList = sortedIWant.filter((c) => c.slug && !c.is_all);
+
+  const applyTypeDesktop = () => {
+    onCollectionChange(typeDraftSlugs);
+    closeDropdowns();
+  };
+
+  const applyTimeDesktop = () => {
+    onApplyTimePreferences(timeDraft);
+    closeDropdowns();
+  };
+
+  const toggleTimeChip = (id) => {
+    setTimeDraft((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const typeExpanded = isDesktopBar
+    ? activeDropdown === "type"
+    : typeDrawerOpen;
+  const timeExpanded = isDesktopBar
+    ? activeDropdown === "time"
+    : timeDrawerOpen;
+
+  /** Single-column / map closed: same strip as unified explore header (#fafafa). */
+  const desktopMapHidden = isDesktopBar && !isMapVisible;
 
   return (
-    <CategoriesWrapper>
-      <TopSection>
-        <CategoriesScrollArea>
-          <ScrollWrapper
-            $showLeftFade={showCategoryScrollButtons && canScrollCategoryLeft}
-            $showRightFade={showCategoryScrollButtons && canScrollCategoryRight}
+    <>
+      <BarOuter ref={barRootRef} $desktopMapHidden={desktopMapHidden}>
+        <BarCluster>
+          {originalsSlug ? (
+            <BarControlButton
+              type="button"
+              $active={originalsActive}
+              onClick={toggleOriginals}
+              aria-pressed={originalsActive}
+            >
+              <Feather
+                size={14}
+                strokeWidth={2}
+                color="#c9a227"
+                aria-hidden
+              />
+              <span className="bar-label">Originals</span>
+            </BarControlButton>
+          ) : null}
+
+          {sortedIWant.length > 0 ? (
+            <BarControlButton
+              ref={typeBtnRef}
+              type="button"
+              $active={typeFilterActive}
+              onClick={toggleTypeTrigger}
+              aria-expanded={typeExpanded}
+              aria-haspopup="listbox"
+            >
+              <span className="bar-label">Type</span>
+              <ChevronTriggerWrap $open={typeExpanded} aria-hidden>
+                <ChevronDown size={14} strokeWidth={2.25} />
+              </ChevronTriggerWrap>
+            </BarControlButton>
+          ) : null}
+
+          <BarControlButton
+            ref={timeBtnRef}
+            type="button"
+            $active={timeFilterActive}
+            onClick={toggleTimeTrigger}
+            aria-expanded={timeExpanded}
+            aria-haspopup="listbox"
           >
-            <PrevButton
-              $show={showCategoryScrollButtons && canScrollCategoryLeft}
-              onClick={() => handleCategoryScroll("left")}
-              aria-label="Scroll previous"
-            >
-              <ChevronLeft size={16} />
-            </PrevButton>
+            <span className="bar-label">Time of day</span>
+            <ChevronTriggerWrap $open={timeExpanded} aria-hidden>
+              <ChevronDown size={14} strokeWidth={2.25} />
+            </ChevronTriggerWrap>
+          </BarControlButton>
 
-            <Categories ref={categoriesRef}>
-              {sortedCollections.map((collection, index) => {
-                const id =
-                  collection.key || collection.slug || `collection-${index}`;
-                const slug = collection.key || collection.slug;
-                return (
-                  <React.Fragment key={id}>
-                    {index === 1 && (
-                      <VerticalSeparator aria-hidden="true" />
-                    )}
-                    <CollectionItem
-                      collection={collection}
-                      isSelected={optimisticCollection === slug}
-                      onClick={() => handleCollectionClick(slug)}
-                    />
-                  </React.Fragment>
-                );
-              })}
-            </Categories>
+          <BarDivider aria-hidden />
 
-            <NextButton
-              $show={showCategoryScrollButtons && canScrollCategoryRight}
-              onClick={() => handleCategoryScroll("right")}
-              aria-label="Scroll next"
-            >
-              <ChevronRight size={16} />
-            </NextButton>
-          </ScrollWrapper>
-        </CategoriesScrollArea>
-
-        <ScrollFilterWrapper>
-          <FilterButton
+          <BarControlButton
+            type="button"
+            $hideLabelOnMobile
             onClick={() => setIsFilterModalOpen(true)}
             aria-label="Open filters"
           >
-            <Settings2 size={16} /> <span>Filters</span>
-          </FilterButton>
+            <Settings2 size={16} aria-hidden />
+            <span className="bar-label">Filters</span>
+          </BarControlButton>
+
           {!isMapVisible && (
-            <ShowMapButton onClick={onShowMap} aria-label="Show map">
-              <MapIcon size={16} />
-              <span>Map</span>
-            </ShowMapButton>
+            <>
+              <BarDividerBeforeMapDesktop aria-hidden />
+              <ShowMapOnDesktop
+                type="button"
+                onClick={onShowMap}
+                aria-label="Show map"
+              >
+                <MapIcon size={16} aria-hidden />
+                <span className="bar-label">Map</span>
+              </ShowMapOnDesktop>
+            </>
           )}
-        </ScrollFilterWrapper>
-      </TopSection>
+        </BarCluster>
+
+        {isDesktopBar && activeDropdown === "type" && typeList.length > 0 && (
+          <ExploreDropdownPanel
+            data-variant="type"
+            role="listbox"
+            aria-label="Experience type"
+            style={{
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: dropdownPos.width,
+            }}
+          >
+            <ExploreDropdownTypeChipFlow>
+              {typeList.map((c) => (
+                <ExploreDropdownTypeChip
+                  key={c.slug}
+                  type="button"
+                  $selected={typeDraftSlugs.includes(c.slug)}
+                  onClick={() =>
+                    setTypeDraftSlugs((prev) =>
+                      prev.includes(c.slug)
+                        ? prev.filter((s) => s !== c.slug)
+                        : [...prev, c.slug],
+                    )
+                  }
+                >
+                  {c.icon_name ? (
+                    <ExploreBarLazyLucideIcon
+                      iconName={c.icon_name}
+                      size={16}
+                      strokeWidth={1.5}
+                    />
+                  ) : null}
+                  <span>{c.name}</span>
+                </ExploreDropdownTypeChip>
+              ))}
+            </ExploreDropdownTypeChipFlow>
+            <DropdownFooter>
+              <DropdownClearLink
+                type="button"
+                onClick={() => setTypeDraftSlugs([])}
+              >
+                Clear all
+              </DropdownClearLink>
+              <ExploreShowResultsButton
+                type="button"
+                $compact
+                onClick={applyTypeDesktop}
+                disabled={barPreviewLoading}
+                aria-busy={barPreviewLoading}
+              >
+                <ExploreResultsPrimaryLabel
+                  loading={barPreviewLoading}
+                  label={formatShowResultsLabel(showResultsCount)}
+                />
+              </ExploreShowResultsButton>
+            </DropdownFooter>
+          </ExploreDropdownPanel>
+        )}
+
+        {isDesktopBar && activeDropdown === "time" && (
+          <ExploreDropdownPanel
+            data-variant="time"
+            role="listbox"
+            aria-label="Time of day"
+            style={{
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: dropdownPos.width,
+            }}
+          >
+            <TimeDropdownIntro>
+              <TimeDropdownTitle>Time of day</TimeDropdownTitle>
+              <TimeDropdownSubtitle>
+                Choose when you&apos;d like to take a class. You can pick more
+                than one.
+              </TimeDropdownSubtitle>
+            </TimeDropdownIntro>
+            <TimeOptionList>
+              {exploreTimePreferencesList.map((t) => {
+                const selected = timeDraft.includes(t.id);
+                return (
+                  <TimeOptionRow
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleTimeChip(t.id)}
+                  >
+                    <TimeOptionText>
+                      <TimeOptionLabel>{t.label}</TimeOptionLabel>
+                      <TimeOptionSub>{t.sub}</TimeOptionSub>
+                    </TimeOptionText>
+                    <TimeRowCheckbox $checked={selected} aria-hidden>
+                      {selected ? (
+                        <Check size={14} strokeWidth={3} aria-hidden />
+                      ) : null}
+                    </TimeRowCheckbox>
+                  </TimeOptionRow>
+                );
+              })}
+            </TimeOptionList>
+            <DropdownFooter>
+              <DropdownClearLink type="button" onClick={() => setTimeDraft([])}>
+                Clear all
+              </DropdownClearLink>
+              <ExploreShowResultsButton
+                type="button"
+                $compact
+                onClick={applyTimeDesktop}
+                disabled={barPreviewLoading}
+                aria-busy={barPreviewLoading}
+              >
+                <ExploreResultsPrimaryLabel
+                  loading={barPreviewLoading}
+                  label={formatShowResultsLabel(showResultsCount)}
+                />
+              </ExploreShowResultsButton>
+            </DropdownFooter>
+          </ExploreDropdownPanel>
+        )}
+      </BarOuter>
 
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
-        onOpen={() => setIsFilterModalOpen(true)}
         filters={filters}
         currentSortBy={currentSortBy}
         onApplyChanges={onApplyModalChanges}
-        onFiltersChangeForTags={onFiltersChange}
+        classesForDistribution={classes}
+        totalClassesCount={totalClassesCount}
+        previewFilterModalCount={previewFilterModalCount}
       />
-    </CategoriesWrapper>
+
+      <ExploreExperienceTypeDrawer
+        open={!isDesktopBar && typeDrawerOpen}
+        onOpenChange={setTypeDrawerOpen}
+        collectionsIWant={sortedIWant}
+        currentCollections={currentCollections}
+        onApplyCollection={onCollectionChange}
+        totalClassesCount={totalClassesCount}
+        previewExploreBarCount={previewExploreBarCount}
+      />
+
+      <ExploreTimeOfDayDrawer
+        open={!isDesktopBar && timeDrawerOpen}
+        onOpenChange={setTimeDrawerOpen}
+        selectedTimePreferenceIds={filters?.timePreference || []}
+        onApplyTimePreferences={onApplyTimePreferences}
+        totalClassesCount={totalClassesCount}
+        previewExploreBarCount={previewExploreBarCount}
+      />
+    </>
   );
 }
 
-const ExploreCategories = (props) => {
+function ExploreCategories(props) {
   return (
-    <Suspense fallback={<div style={{ height: "72px" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "56px" }} />}>
       <ExploreCategoriesContent {...props} />
     </Suspense>
   );
-};
+}
 
 export default memo(ExploreCategories);

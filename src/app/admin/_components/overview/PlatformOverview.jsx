@@ -503,7 +503,12 @@ export default function PlatformOverview() {
                 ? payoutsData.results.length
                 : 0,
           activeUsers30d: userData.active_users_30d ?? userData.active_30d ?? userData.active_users_in_period ?? 0,
-          activeBusinesses30d: bizData.active_businesses_30d ?? bizData.active_30d ?? bizData.active_businesses_in_period ?? 0,
+          activeBusinesses30d:
+            bizData.active_businesses ??
+            bizData.active_businesses_30d ??
+            bizData.active_30d ??
+            bizData.active_businesses_in_period ??
+            0,
           bookingsThisMonth: bookingData.bookings_this_month ?? bookingData.monthly ?? 0,
           avgRevenuePerBusiness: avgRevPerBiz,
           userGrowth: userData.growth_percent ?? userData.mom_growth ?? null,
@@ -646,7 +651,9 @@ export default function PlatformOverview() {
         color: colors.primary,
         growth: stats.businessGrowth,
         periodBadge: "All-time",
-        footer: `${stats.activeBusinesses30d.toLocaleString()} owner/staff active (30d)`,
+        tooltip:
+          "“Active” subtext counts businesses that logged in within the last 30 days as owner or accepted staff and have ever received at least one booking.",
+        footer: `${stats.activeBusinesses30d.toLocaleString()} logged in last 30d AND ever booked`,
       },
       {
         label: "Bookings",

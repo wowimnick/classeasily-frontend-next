@@ -557,6 +557,7 @@ const menuGroupsConfig = [
         ),
         children: [
           { key: "all-bookings", label: "All Bookings" },
+          { key: "corporate-inquiries", label: "Corporate" },
           { key: "payments", label: "Payments" },
           { key: "payouts", label: "Payouts" },
         ],

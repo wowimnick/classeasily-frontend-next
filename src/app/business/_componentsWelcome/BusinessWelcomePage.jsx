@@ -2341,7 +2341,7 @@ const BusinessWelcomePage = () => {
                     passionate hosts
                   </SocialProofHeadline>
                   <SocialProofSubtext>
-                    Classeasily has helped hosts across every category — from yoga to ceramics — grow their bookings and spend less time on admin.
+                    ClassEasily has helped hosts across every category — from yoga to ceramics — grow their bookings and spend less time on admin.
                   </SocialProofSubtext>
                 </SocialProofLeft>
 
@@ -2357,7 +2357,7 @@ const BusinessWelcomePage = () => {
                   <ImageOverlayGradient />
                   <ImageOverlayContent>
                     <ImageOverlayQuote>
-                      "Classeasily made running my workshop feel completely effortless!"
+                      "ClassEasily made running my workshop feel completely effortless!"
                     </ImageOverlayQuote>
                     <ImageOverlayAuthor>
                       <ImageAuthorName>Sarah B.</ImageAuthorName>
