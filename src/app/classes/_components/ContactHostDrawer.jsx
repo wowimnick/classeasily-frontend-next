@@ -9,6 +9,8 @@ import message from "@/lib/message";
 import { guestMessageService } from "@/services/apiService";
 
 const MODAL_DRAWER_BREAKPOINT = 768;
+/** Same band as ClassPageClient `Z_CLASS_HOST_AND_POLICIES` — above peek bar (900) and header popovers */
+const Z_CONTACT_HOST_STACK = 5000;
 
 const theme = {
   textPrimary: "#222222",
@@ -21,7 +23,7 @@ const DrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 1050;
+  z-index: ${Z_CONTACT_HOST_STACK};
 `;
 
 const DrawerContent = styled(Drawer.Content)`
@@ -35,7 +37,7 @@ const DrawerContent = styled(Drawer.Content)`
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1051;
+  z-index: ${Z_CONTACT_HOST_STACK + 1};
   outline: none;
   min-height: 0;
 `;
@@ -410,6 +412,7 @@ export default function ContactHostDrawer({
       onCancel={handleClose}
       width={520}
       centered
+      zIndex={Z_CONTACT_HOST_STACK}
       title={title}
       footer={null}
       destroyOnClose
