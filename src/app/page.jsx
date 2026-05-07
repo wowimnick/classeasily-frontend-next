@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { preloadHomepageData } from "@/lib/server-data-fetchers";
 import "./(homepage)/_components/homepage.css";
 
@@ -93,6 +93,10 @@ export const metadata = {
 export default async function HomePage() {
   "use cache";
   cacheLife("homepage");
+  // Cache Components: fetch() tags are not enough for this cached shell — match backend trigger_nextjs_revalidation tags.
+  cacheTag("homepage-content");
+  cacheTag("collections");
+  cacheTag("homepage-classes");
 
   // Parallel data fetching
   const { row_collections, categories } = await preloadHomepageData();
