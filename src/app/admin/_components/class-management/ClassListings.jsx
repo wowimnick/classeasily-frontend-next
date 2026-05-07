@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import styled, { keyframes } from "styled-components";
 import {
   Table,
@@ -68,6 +69,14 @@ import moment from "moment";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import { AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+
+const ScheduleCalendarView = dynamic(
+  () =>
+    import(
+      "@/app/business/dashboard/_components/tabs/classes/manageclasses/ScheduleCalendarView"
+    ),
+  { ssr: false },
+);
 
 
 const { Option } = Select;
@@ -931,6 +940,9 @@ export default function ClassListings() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isEditDrawerVisible, setIsEditDrawerVisible] = useState(false);
   const [classToEdit, setClassToEdit] = useState(null);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleModalClass, setScheduleModalClass] = useState(null);
+  const [scheduleModalLoading, setScheduleModalLoading] = useState(false);
   const editDrawerOperation = useRef(null);
   const [filterParams, setFilterParams] = useState({
     search: "",
@@ -1094,6 +1106,37 @@ export default function ClassListings() {
     setIsEditDrawerVisible(false);
     setClassToEdit(null);
     setDetailsLoading(false);
+  }, []);
+
+  const openScheduleManager = useCallback(async (classItem) => {
+    setScheduleModalOpen(true);
+    setScheduleModalClass(null);
+    setScheduleModalLoading(true);
+    try {
+      const response = await classManagementService.getClassDetails(
+        classItem.classId,
+      );
+      if (response.success && response.data) {
+        const d = response.data;
+        setScheduleModalClass({
+          ...d,
+          option: d.options?.[0] ?? null,
+        });
+      } else {
+        message.error(response.error || "Failed to load class");
+        setScheduleModalOpen(false);
+      }
+    } catch {
+      message.error("Failed to load class");
+      setScheduleModalOpen(false);
+    } finally {
+      setScheduleModalLoading(false);
+    }
+  }, []);
+
+  const closeScheduleModal = useCallback(() => {
+    setScheduleModalOpen(false);
+    setScheduleModalClass(null);
   }, []);
 
   useEffect(() => {
@@ -1506,6 +1549,13 @@ export default function ClassListings() {
                 Edit Class
               </Menu.Item>
               <Menu.Item
+                key="schedules"
+                icon={<Calendar size={14} />}
+                onClick={() => openScheduleManager(record)}
+              >
+                Manage schedules
+              </Menu.Item>
+              <Menu.Item
                 key="3"
                 icon={<Layers size={14} />}
                 onClick={() => openCollectionModal(record)}
@@ -1608,6 +1658,14 @@ export default function ClassListings() {
             style={{ flex: 1 }}
           >
             Edit
+          </Button>
+          <Button
+            size="middle"
+            icon={<Calendar size={14} />}
+            onClick={() => openScheduleManager(item)}
+            style={{ flex: 1 }}
+          >
+            Schedules
           </Button>
           <Button
             type="primary"
@@ -1909,6 +1967,41 @@ export default function ClassListings() {
           loading={detailsLoading}
           onSuccess={handleEditSuccess}
         />
+
+        <Modal
+          title={
+            scheduleModalClass?.title
+              ? `Schedules — ${scheduleModalClass.title}`
+              : "Schedules"
+          }
+          open={scheduleModalOpen}
+          onCancel={closeScheduleModal}
+          footer={null}
+          width="98%"
+          style={{ top: 12, paddingBottom: 0, maxWidth: 1600 }}
+          styles={{
+            body: {
+              height: "calc(100vh - 100px)",
+              padding: 0,
+              overflow: "hidden",
+            },
+          }}
+          destroyOnClose
+        >
+          {scheduleModalLoading ? (
+            <div style={{ padding: 48, textAlign: "center" }}>
+              <GlobalLoaderWithInlineStyles />
+            </div>
+          ) : scheduleModalClass ? (
+            <div style={{ height: "100%", minHeight: 400 }}>
+              <ScheduleCalendarView
+                initialClassId={scheduleModalClass.classId}
+                prefetchedClasses={[scheduleModalClass]}
+                urlSyncBasePath="/admin/classes/schedules"
+              />
+            </div>
+          ) : null}
+        </Modal>
 
         <ClassDetailDrawer
           open={detailDrawerOpen}
