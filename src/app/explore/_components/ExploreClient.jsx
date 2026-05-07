@@ -19,6 +19,7 @@ import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
 import { BP, down } from "@/styles/breakpoints";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 
 import { ClassesContentSkeleton } from "./ExploreCardsSkeletonClient";
 
@@ -70,7 +71,7 @@ const BreadcrumbContainer = styled.div`
 function buildApiParamsFromSearchParams(sp) {
   const apiParams = {};
   const defaultMaxPrice = 500;
-  const defaultMaxDistance = 50;
+  const defaultMaxDistance = 100;
 
   const lat = sp.get("lat");
   const lng = sp.get("lng");
@@ -151,7 +152,7 @@ function mergeModalFiltersIntoSearchParams(baseSearchParams, newFilters, newSort
   ].forEach((key) => newParams.delete(key));
 
   const defaultMaxPrice = 500;
-  const defaultMaxDistance = 50;
+  const defaultMaxDistance = 100;
 
   if (newFilters.pricePerClass[0] > 0)
     newParams.set("price_min", newFilters.pricePerClass[0].toString());
@@ -203,6 +204,11 @@ function ExploreClientContent({
   initialCollectionsIWant = [],
   routeParams,
 }) {
+  const collectionsIWantForExplore = useMemo(
+    () => filterCollectionsWithActiveClasses(initialCollectionsIWant),
+    [initialCollectionsIWant],
+  );
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -258,7 +264,7 @@ function ExploreClientContent({
 
   const currentFilters = useMemo(() => {
     const defaultMaxPrice = 500;
-    const defaultMaxDistance = 50;
+    const defaultMaxDistance = 100;
     return {
       pricePerClass: [
         parseInt(searchParams.get("price_min") || "0", 10),
@@ -586,7 +592,7 @@ function ExploreClientContent({
     () => ({
       classes: displayClasses,
       collections: initialCollections,
-      collectionsIWant: initialCollectionsIWant,
+      collectionsIWant: collectionsIWantForExplore,
       loading: showSkeleton,
       isNavigating,
       userLocation,
@@ -613,7 +619,7 @@ function ExploreClientContent({
     [
       displayClasses,
       initialCollections,
-      initialCollectionsIWant,
+      collectionsIWantForExplore,
       showSkeleton,
       isNavigating,
       userLocation,

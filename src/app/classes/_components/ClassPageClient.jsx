@@ -33,6 +33,24 @@ import { BP, down, up } from "@/styles/breakpoints";
 /** Max width for fixed glass footers (tablet / iPad — avoids full-bleed bars) */
 const MOBILE_STICKY_FOOTER_MAX_WIDTH_PX = 480;
 
+/** Below Ant Design modal default (~1000) so host/policy modals cover the peek bar + mask */
+const Z_DESKTOP_PEEK_BAR = 900;
+/** Host + cancellation modals / drawers — above peek bar and header search popovers (~2600) */
+const Z_CLASS_HOST_AND_POLICIES = 5000;
+
+/** Normalize option cancellation fields (camelCase from API + rare snake_case). */
+function getOptionCancellation(opt) {
+  if (!opt) return null;
+  const policy = opt.cancellationPolicy ?? opt.cancellation_policy;
+  if (policy == null || policy === "") return null;
+  return {
+    policy,
+    refundPercentage:
+      opt.cancellationRefundPercentage ?? opt.cancellation_refund_percentage,
+    customHours: opt.cancellationCustomHours ?? opt.cancellation_custom_hours,
+  };
+}
+
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));
 const Reviews = dynamic(() => import("./ClassReviews"), { ssr: true });
@@ -192,7 +210,7 @@ const PeekBar = styled.div`
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    z-index: 120;
+    z-index: ${Z_DESKTOP_PEEK_BAR};
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 opacity 0.25s ease;
     transform: translateY(${(p) => (p.$visible ? "0" : "110%")});
@@ -250,6 +268,11 @@ const PeekCancellation = styled.button`
   cursor: pointer;
   text-align: left;
   font: inherit;
+  position: relative;
+  z-index: 3;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
   &:hover {
     color: #111;
   }
@@ -1090,6 +1113,10 @@ export default function ClassPageClient({
   const [showMobileBestPriceBanner, setShowMobileBestPriceBanner] =
     useState(false);
   const [contactHostOpen, setContactHostOpen] = useState(false);
+  const [peekCancellationModal, setPeekCancellationModal] = useState({
+    open: false,
+    text: "",
+  });
 
   /**
    * Server-rendered class payload can be stale (Next fetch uses force-cache): if Gemini
@@ -1483,29 +1510,31 @@ export default function ClassPageClient({
   const peekPriceUnit =
     optionToDisplayOnCard?.booking_type === "Full Course" ? "/ course" : "/ guest";
 
-  const peekHasCancellationPolicy = !!(optionToDisplayOnCard?.cancellationPolicy);
+  const peekCancellation = useMemo(
+    () => getOptionCancellation(optionToDisplayOnCard),
+    [optionToDisplayOnCard],
+  );
+  const peekHasCancellationPolicy = !!peekCancellation;
+
+  const closePeekCancellationModal = useCallback(() => {
+    setPeekCancellationModal({ open: false, text: "" });
+  }, []);
 
   const showPeekCancellationPolicy = useCallback(() => {
-    const opt = optionToDisplayOnCard;
-    if (!opt?.cancellationPolicy) return;
+    if (!peekCancellation) return;
     const slot = mobileReserve.mobileSelectedSlot;
     const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const text = getCancellationPolicyText(
-      opt.cancellationPolicy,
-      opt.cancellationRefundPercentage,
-      opt.cancellationCustomHours,
+      peekCancellation.policy,
+      peekCancellation.refundPercentage,
+      peekCancellation.customHours,
       slot?.date && slot?.time ? `${slot.date}T${slot.time}` : null,
       userTz,
       classData?.business_timezone || null,
     );
-    Modal.info({
-      title: "Cancellation Policy",
-      content: text,
-      okText: "Close",
-      width: 440,
-    });
+    setPeekCancellationModal({ open: true, text });
   }, [
-    optionToDisplayOnCard,
+    peekCancellation,
     mobileReserve.mobileSelectedSlot,
     classData?.business_timezone,
   ]);
@@ -1758,7 +1787,11 @@ export default function ClassPageClient({
               <PeekCancellation
                 type="button"
                 aria-label="View cancellation policy"
-                onClick={showPeekCancellationPolicy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  showPeekCancellationPolicy();
+                }}
               >
                 Cancellation Policy
               </PeekCancellation>
@@ -1787,6 +1820,30 @@ export default function ClassPageClient({
               classTitle={classData?.title}
             />
           )}
+          <Modal
+            title="Cancellation Policy"
+            open={peekCancellationModal.open}
+            onCancel={closePeekCancellationModal}
+            footer={
+              <AntButton type="primary" onClick={closePeekCancellationModal}>
+                Close
+              </AntButton>
+            }
+            zIndex={Z_CLASS_HOST_AND_POLICIES}
+            centered
+            width={440}
+            destroyOnClose
+          >
+            <div
+              style={{
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.6,
+              }}
+            >
+              {peekCancellationModal.text}
+            </div>
+          </Modal>
           {showMobileBestPriceBanner && (
             <MobileBestPricePopUp
               visible={showMobileBestPriceBanner}

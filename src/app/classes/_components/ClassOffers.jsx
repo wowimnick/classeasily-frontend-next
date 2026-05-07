@@ -294,10 +294,10 @@ const ICONS = {
     colors: "primary:#848484,secondary:#4bb3fd,tertiary:#3a3347",
   },
   love: {
-    src: "https://cdn.lordicon.com/xryjrepg.json",
+    src: "https://cdn.lordicon.com/ajzwsrcs.json",
     trigger: "in",
     delay: 1500,
-    state: "in-love",
+    state: "morph-glitter",
     colors: "primary:#ff385c",
   },
   team: {

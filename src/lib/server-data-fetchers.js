@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { normalizeExploreCollectionSlugs } from "@/lib/seo";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -174,7 +175,9 @@ export async function fetchExploreCollectionLists() {
     const data = await fetchHomepageContentCached();
     return {
       collections: data.collections || [],
-      collectionsIWant: data.collections_i_want || [],
+      collectionsIWant: filterCollectionsWithActiveClasses(
+        data.collections_i_want || [],
+      ),
     };
   } catch (error) {
     console.error("Error fetching explore collection lists:", error);

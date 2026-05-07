@@ -28,6 +28,7 @@ import {
 } from "@/components/explore/ExploreDropdownTypeChips";
 import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 import CustomCalendar from "@/app/(homepage)/_components/CustomCalendarMobile";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 
 // --- Styled Components ---
 
@@ -392,7 +393,7 @@ export default function SearchFullScreen() {
     (async () => {
       try {
         const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(rows);
+        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
       } catch {
         if (!cancelled) setIWantCollections([]);
       }

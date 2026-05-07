@@ -1238,6 +1238,26 @@ export const classManagementService = {
     }
   },
 
+  /** Queue Gemini curator for one automated collection (POST /admin/collections/:id/reclassify/). */
+  reclassifyAutomatedCollection: async (id) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/collections/${id}/reclassify/`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error queueing curator for collection ${id}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data ||
+          error.message ||
+          "Failed to queue curator",
+      };
+    }
+  },
+
   bulkAssignCollectionClasses: async (collectionId, classIds) => {
     try {
       const response = await axiosInstance.post(

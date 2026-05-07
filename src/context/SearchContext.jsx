@@ -94,7 +94,6 @@ const LORDICON_TORONTO = (
   <LordIcon
     src="https://cdn.lordicon.com/luvlauio.json"
     trigger="in"
-    delay="1500"
     state="in-reveal"
     colors="primary:#3a3347,secondary:#e4e4e4,tertiary:#ffc738"
     style={{ width: 40, height: 40 }}

@@ -41,23 +41,36 @@ const SkeletonPulse = css`
 `;
 
 const SkeletonGrid = styled.div`
-  column-count: 2;
-  column-gap: 32px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
   margin-bottom: 28px;
   width: 100%;
 
   @media (max-width: 900px) {
-    column-count: 1;
+    flex-direction: column;
+    gap: 0;
+  }
+`;
+
+const SkeletonCol = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+
+  &.skeleton-col-secondary {
+    @media (max-width: 900px) {
+      display: none;
+    }
   }
 `;
 
 const SkeletonReviewCell = styled.div`
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   width: 100%;
-  vertical-align: top;
-  break-inside: avoid;
-  margin-bottom: 32px;
   gap: 12px;
 `;
 
@@ -180,25 +193,32 @@ const HeaderTitle = styled.span`
 `;
 
 const ReviewsGrid = styled.div`
-  column-count: 2;
-  column-gap: 32px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
   margin-bottom: 28px;
   width: 100%;
 
   @media (max-width: 900px) {
-    column-count: 1;
+    flex-direction: column;
+    gap: 0;
   }
+`;
+
+const ReviewsCol = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 `;
 
 const PreviewReviewRoot = styled.div`
   position: relative;
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  vertical-align: top;
-  break-inside: avoid;
-  margin-bottom: 32px;
 `;
 
 const PreviewTopRow = styled.div`
@@ -606,29 +626,60 @@ const DrawerModalSub = styled.p`
   line-height: 1.45;
 `;
 
+/** Greedy multi-column balance so preview grids stay close in height. */
+function distributeReviewsToColumns(reviews, columnCount) {
+  if (!reviews?.length) return [];
+  if (columnCount <= 1) return [reviews];
+  const cols = Array.from({ length: columnCount }, () => []);
+  const sums = Array(columnCount).fill(0);
+  const weight = (r) => {
+    const text = String(r?.comment || r?.text || "").length;
+    const imgs = Array.isArray(r?.image_urls) ? r.image_urls.length : 0;
+    return 40 + Math.min(text, 1200) / 6 + imgs * 80;
+  };
+  reviews.forEach((r) => {
+    let j = 0;
+    for (let k = 1; k < columnCount; k += 1) {
+      if (sums[k] < sums[j]) j = k;
+    }
+    cols[j].push(r);
+    sums[j] += weight(r);
+  });
+  return cols;
+}
+
 // --- Helpers ---
 /** On the class page we only show positive reviews (4–5 stars); "See all reviews" shows everything. */
 const isPositiveReview = (review) => (Number(review?.rating) || 0) >= 4;
 
-const normalizeReview = (review) => ({
-  ...review,
-  id: review.id ?? review.reviewId ?? review.google_review_id,
-  reviewer_avatar_url:
-    review.reviewer_avatar_url || review.user?.avatar_thumb_url,
-  reviewer_name: review.reviewer_name || review.user?.name,
-  reviewer_location:
-    (typeof review.reviewer_location === "string" && review.reviewer_location) ||
-    (typeof review.reviewerLocation === "string" && review.reviewerLocation) ||
-    (typeof review.location === "string" && review.location) ||
-    null,
-  image_urls:
-    review.image_urls?.length > 0
-      ? review.image_urls
-      : review.image_medium_url
-        ? [review.image_medium_url]
-        : [],
-  business_response: review.business_response || review.owner_response,
-});
+const normalizeReview = (review, index = 0) => {
+  const baseId =
+    review.id ??
+    review.reviewId ??
+    review.google_review_id ??
+    `${index}-${review?.reviewer_name || review?.user?.name || "anon"}-${
+      review?.date || review?.createdAt || review?.review_date || ""
+    }`;
+  return {
+    ...review,
+    id: baseId,
+    reviewer_avatar_url:
+      review.reviewer_avatar_url || review.user?.avatar_thumb_url,
+    reviewer_name: review.reviewer_name || review.user?.name,
+    reviewer_location:
+      (typeof review.reviewer_location === "string" && review.reviewer_location) ||
+      (typeof review.reviewerLocation === "string" && review.reviewerLocation) ||
+      (typeof review.location === "string" && review.location) ||
+      null,
+    image_urls:
+      review.image_urls?.length > 0
+        ? review.image_urls
+        : review.image_medium_url
+          ? [review.image_medium_url]
+          : [],
+    business_response: review.business_response || review.owner_response,
+  };
+};
 
 function formatReviewWhen(review) {
   const raw = review.date || review.createdAt || review.review_date;
@@ -750,9 +801,16 @@ const ReviewSkeletonLoader = () => (
 
 const PreviewReviewsSkeletonGrid = () => (
   <SkeletonGrid>
-    {[1, 2, 3, 4, 5, 6].map((k) => (
-      <ReviewSkeletonLoader key={k} />
-    ))}
+    <SkeletonCol>
+      {[1, 2, 3].map((k) => (
+        <ReviewSkeletonLoader key={k} />
+      ))}
+    </SkeletonCol>
+    <SkeletonCol className="skeleton-col-secondary">
+      {[4, 5, 6].map((k) => (
+        <ReviewSkeletonLoader key={k} />
+      ))}
+    </SkeletonCol>
   </SkeletonGrid>
 );
 
@@ -781,7 +839,7 @@ const Reviews = ({
     const reviewsArray = Array.isArray(serverReviews)
       ? serverReviews
       : serverReviews?.reviews || [];
-    return reviewsArray.map(normalizeReview);
+    return reviewsArray.map((r, i) => normalizeReview(r, i));
   }, [serverReviews]);
 
   // State
@@ -838,6 +896,11 @@ const Reviews = ({
   const previewGridReviews = useMemo(
     () => displayPreviewReviews.slice(0, 6),
     [displayPreviewReviews],
+  );
+
+  const previewReviewColumns = useMemo(
+    () => distributeReviewsToColumns(previewGridReviews, isMobile ? 1 : 2),
+    [previewGridReviews, isMobile],
   );
 
   const reviewStats = useMemo(() => {
@@ -913,7 +976,7 @@ const Reviews = ({
         if (mode === "business") {
           const result = await classService.fetchBusinessReviews(slug, 1, 6);
           if (result.success && result.data) {
-            setPreviewReviews((result.data || []).map(normalizeReview));
+            setPreviewReviews((result.data || []).map((r, i) => normalizeReview(r, i)));
           }
         } else {
           const result = await classService.fetchClassReviewsPaginated(
@@ -922,7 +985,7 @@ const Reviews = ({
             6,
           );
           if (result.success) {
-            setPreviewReviews((result.reviews || []).map(normalizeReview));
+            setPreviewReviews((result.reviews || []).map((r, i) => normalizeReview(r, i)));
           }
         }
       } catch (error) {
@@ -943,10 +1006,13 @@ const Reviews = ({
         if (mode === "business") {
           const result = await classService.fetchBusinessReviews(slug, page, 10);
           if (result.success && result.data) {
-            const newReviews = (result.data || []).map(normalizeReview);
-            setModalReviews((prev) =>
-              page === 1 ? newReviews : [...prev, ...newReviews],
-            );
+            setModalReviews((prev) => {
+              const offset = page === 1 ? 0 : prev.length;
+              const newReviews = (result.data || []).map((r, i) =>
+                normalizeReview(r, offset + i),
+              );
+              return page === 1 ? newReviews : [...prev, ...newReviews];
+            });
             setModalPage(page);
             setModalHasMore(result.hasMore || false);
           }
@@ -957,11 +1023,14 @@ const Reviews = ({
             10,
           );
           if (result.success) {
-            const newReviews = (result.reviews || []).map(normalizeReview);
+            setModalReviews((prev) => {
+              const offset = page === 1 ? 0 : prev.length;
+              const newReviews = (result.reviews || []).map((r, i) =>
+                normalizeReview(r, offset + i),
+              );
+              return page === 1 ? newReviews : [...prev, ...newReviews];
+            });
             const pagination = result.pagination || {};
-            setModalReviews((prev) =>
-              page === 1 ? newReviews : [...prev, ...newReviews],
-            );
             setModalPage(page);
             setModalHasMore(pagination.has_more || false);
           }
@@ -991,15 +1060,6 @@ const Reviews = ({
   const toggleReviewExpansion = (reviewId) =>
     setExpandedReviews((prev) => ({ ...prev, [reviewId]: !prev[reviewId] }));
 
-  const handleSortChange = useCallback((sort) => {
-    return (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setModalSort(sort);
-    };
-  }, []);
-
-  // --- Render Helpers ---
   const renderReviewContent = (review, index, isModal) => {
     const isExpanded = expandedReviews[review.id];
     const isLastElement = isModal && index === sortedModalReviews.length - 1;
@@ -1204,10 +1264,14 @@ const Reviews = ({
         {reviewsHeaderBlock}
 
         <ReviewsGrid>
-          {previewGridReviews.map((review, index) => (
-            <Fragment key={String(review.id)}>
-              {renderReviewContent(review, index, false)}
-            </Fragment>
+          {previewReviewColumns.map((col, colIdx) => (
+            <ReviewsCol key={colIdx}>
+              {col.map((review, index) => (
+                <Fragment key={String(review.id)}>
+                  {renderReviewContent(review, index, false)}
+                </Fragment>
+              ))}
+            </ReviewsCol>
           ))}
         </ReviewsGrid>
 
@@ -1262,39 +1326,39 @@ const Reviews = ({
               marginBottom: 0,
             },
             body: {
-              padding: "16px 24px 28px",
+              padding: 0,
               maxHeight: "70vh",
               overflowY: "auto",
             },
           }}
         >
-          <ModalToolbar>
+          <ModalToolbar style={{ padding: "0 24px 12px" }}>
             <SortLabel>Sort</SortLabel>
             <SortChip
               type="button"
               data-active={modalSort === "recent"}
-              onClick={handleSortChange("recent")}
+              onClick={() => setModalSort("recent")}
             >
               Most recent
             </SortChip>
             <SortChip
               type="button"
               data-active={modalSort === "high"}
-              onClick={handleSortChange("high")}
+              onClick={() => setModalSort("high")}
             >
               Highest rated
             </SortChip>
             <SortChip
               type="button"
               data-active={modalSort === "low"}
-              onClick={handleSortChange("low")}
+              onClick={() => setModalSort("low")}
             >
               Lowest rated
             </SortChip>
           </ModalToolbar>
-          <div>
+          <div style={{ padding: "0 24px 20px" }}>
             {sortedModalReviews.map((review, index) => (
-              <Fragment key={String(review.id)}>
+              <Fragment key={`${String(review.id)}-${index}`}>
                 {renderReviewContent(review, index, true)}
               </Fragment>
             ))}
@@ -1323,32 +1387,32 @@ const Reviews = ({
                     {initialReviewCount} total · sort and read every comment
                   </DrawerModalSub>
                 </DrawerModalTitle>
-                <ModalToolbar>
+                <ModalToolbar style={{ paddingLeft: 0, paddingRight: 0 }}>
                   <SortLabel>Sort</SortLabel>
                   <SortChip
                     type="button"
                     data-active={modalSort === "recent"}
-                    onClick={handleSortChange("recent")}
+                    onClick={() => setModalSort("recent")}
                   >
                     Most recent
                   </SortChip>
                   <SortChip
                     type="button"
                     data-active={modalSort === "high"}
-                    onClick={handleSortChange("high")}
+                    onClick={() => setModalSort("high")}
                   >
                     Highest rated
                   </SortChip>
                   <SortChip
                     type="button"
                     data-active={modalSort === "low"}
-                    onClick={handleSortChange("low")}
+                    onClick={() => setModalSort("low")}
                   >
                     Lowest rated
                   </SortChip>
                 </ModalToolbar>
                 {sortedModalReviews.map((review, index) => (
-                  <Fragment key={String(review.id)}>
+                  <Fragment key={`${String(review.id)}-${index}`}>
                     {renderReviewContent(review, index, true)}
                   </Fragment>
                 ))}

@@ -40,7 +40,7 @@ export function priceDistributionFromClasses(classes, maxPrice = 500) {
   return buildNormalizedHistogram(values, 0, maxPrice, PRICE_HISTOGRAM_BUCKETS);
 }
 
-export function distanceDistributionFromClasses(classes, maxKm = 80) {
+export function distanceDistributionFromClasses(classes, maxKm = 100) {
   const values = (classes || [])
     .map((c) => c?.distance)
     .filter((d) => d != null && Number.isFinite(d) && d >= 0);

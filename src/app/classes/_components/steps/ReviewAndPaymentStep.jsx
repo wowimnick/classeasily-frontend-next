@@ -1127,10 +1127,11 @@ const PriceDetailsDrawerOverlay = styled(Drawer.Overlay)`
   ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 const PriceDetailsDrawerContent = styled(Drawer.Content)`
-  background: white;
+  background: transparent;
   display: flex;
   flex-direction: column;
-  border-radius: 24px 24px 0 0;
+  align-items: stretch;
+  border-radius: 0;
   max-height: 70vh;
   position: fixed;
   bottom: 0;
@@ -1138,11 +1139,28 @@ const PriceDetailsDrawerContent = styled(Drawer.Content)`
   right: 0;
   z-index: 1050;
   outline: none;
+  box-shadow: none;
 
   @media (min-width: 1024px) {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    align-items: center;
+    max-height: 72vh;
+    left: 0;
+    right: 0;
+    background: transparent;
+  }
+`;
+
+const PriceDetailsDrawerPanel = styled.div`
+  width: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  max-height: 70vh;
+  min-height: 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+
+  @media (min-width: 1024px) {
     width: min(460px, calc(100vw - 32px));
     max-height: 72vh;
     border-radius: 20px 20px 0 0;
@@ -3496,8 +3514,10 @@ const ReviewAndPaymentStep = ({
               <Drawer.Portal>
                 <PriceDetailsDrawerOverlay />
                 <PriceDetailsDrawerContent>
-                  <PriceDetailsDrawerHandle />
-                  <PriceDetailsDrawerBody>{renderPriceDetailsDrawerContent()}</PriceDetailsDrawerBody>
+                  <PriceDetailsDrawerPanel>
+                    <PriceDetailsDrawerHandle />
+                    <PriceDetailsDrawerBody>{renderPriceDetailsDrawerContent()}</PriceDetailsDrawerBody>
+                  </PriceDetailsDrawerPanel>
                 </PriceDetailsDrawerContent>
               </Drawer.Portal>
             </Drawer.Root>

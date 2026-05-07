@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   useContext,
   createContext,
   lazy,
@@ -56,6 +57,7 @@ import {
   Search,
   X,
   Box,
+  RefreshCw,
 } from "lucide-react";
 import debounce from "lodash/debounce";
 import { classManagementService } from "@/services/adminDash";
@@ -661,6 +663,7 @@ const UniversalEditDrawer = ({
   isLoading,
   form,
   parentOptions = [],
+  onCoverRemoveIntent,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -877,6 +880,10 @@ const UniversalEditDrawer = ({
               maxCount={1}
               beforeUpload={() => false}
               showUploadList={{ showPreviewIcon: false }}
+              onRemove={() => {
+                onCoverRemoveIntent?.();
+                return true;
+              }}
             >
               <div
                 style={{
@@ -1144,8 +1151,8 @@ const UniversalEditDrawer = ({
                       marginTop: 4,
                     }}
                   >
-                    The system will automatically find and add classes matching
-                    your criteria.
+                    Saving does not run the AI curator. Use the refresh icon in the
+                    Actions column for this row to queue Gemini across all active classes.
                   </Paragraph>
                 </div>
               </div>
@@ -1297,6 +1304,8 @@ const CollectionsManagement = () => {
   const [assignResults, setAssignResults] = useState([]);
   const [assignSearching, setAssignSearching] = useState(false);
   const [assignSelected, setAssignSelected] = useState([]);
+  /** True only after user removes the cover in the drawer; avoids wiping S3/image on save when fileList is empty. */
+  const coverRemovalIntendedRef = useRef(false);
 
   const runAssignSearch = useCallback(async (q) => {
     const trimmed = (q || "").trim();
@@ -1390,6 +1399,42 @@ const CollectionsManagement = () => {
   useEffect(() => {
     fetchCollections();
   }, [fetchCollections]);
+
+  const handleReclassifyCollection = useCallback(async (col) => {
+    if (!col?.id || col.type !== "automated") return;
+    setActionLoading(true);
+    message.loading({
+      content: "Queueing Gemini curator…",
+      key: "reclassify",
+      duration: 0,
+    });
+    try {
+      const res = await classManagementService.reclassifyAutomatedCollection(col.id);
+      if (res.success) {
+        message.success({
+          content:
+            "AI curator queued — membership updates apply when Celery workers finish.",
+          key: "reclassify",
+          duration: 5,
+        });
+      } else {
+        const detail =
+          typeof res.error === "string"
+            ? res.error
+            : res.error?.detail || "Failed to queue curator";
+        message.error({ content: detail, key: "reclassify", duration: 5 });
+      }
+    } catch (e) {
+      message.error({
+        content: "Failed to queue curator",
+        key: "reclassify",
+        duration: 4,
+      });
+    } finally {
+      message.destroy("reclassify");
+      setActionLoading(false);
+    }
+  }, []);
 
   const patchCollectionField = useCallback(async (col, partial) => {
     setActionLoading(true);
@@ -1538,10 +1583,10 @@ const CollectionsManagement = () => {
         duration: 0,
       });
 
-      let imageS3Key = undefined;
+      let imageS3Payload = undefined;
       const imageFileObject = values.image?.[0];
 
-      if (imageFileObject && imageFileObject.originFileObj) {
+      if (imageFileObject?.originFileObj) {
         const fileToUpload = imageFileObject.originFileObj;
         message.loading({
           content: "Uploading image...",
@@ -1554,7 +1599,7 @@ const CollectionsManagement = () => {
         );
 
         if (uploadResult.success) {
-          imageS3Key = uploadResult.s3_key;
+          imageS3Payload = uploadResult.s3_key;
           message.success({
             content: "Image uploaded!",
             key: "imageUpload",
@@ -1570,8 +1615,8 @@ const CollectionsManagement = () => {
           message.destroy("saveAction");
           return;
         }
-      } else if (values.image === undefined || values.image.length === 0) {
-        imageS3Key = null;
+      } else if (selectedItem && coverRemovalIntendedRef.current) {
+        imageS3Payload = null;
       }
 
       const safeValues = {
@@ -1591,8 +1636,8 @@ const CollectionsManagement = () => {
         payload.slug = normalizedSlug;
       }
 
-      if (imageS3Key !== undefined) {
-        payload.image_s3_key = imageS3Key;
+      if (imageS3Payload !== undefined) {
+        payload.image_s3_key = imageS3Payload;
       }
 
       payload.is_active = safeValues.is_active !== false;
@@ -1648,6 +1693,7 @@ const CollectionsManagement = () => {
   };
 
   const openDrawer = (item = null) => {
+    coverRemovalIntendedRef.current = false;
     setSelectedItem(item);
     editForm.resetFields();
     editForm.setFieldsValue(mapCollectionToFormValues(item));
@@ -1844,10 +1890,21 @@ const CollectionsManagement = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 148,
       align: "right",
       render: (_, col) => (
-        <Space>
+        <Space size={4}>
+          {col.type === "automated" ? (
+            <Tooltip title="Run Gemini curator for this collection (all active classes)">
+              <Button
+                type="text"
+                size="small"
+                icon={<RefreshCw size={16} />}
+                onClick={() => handleReclassifyCollection(col)}
+                aria-label={`Run AI curator for ${col.name}`}
+              />
+            </Tooltip>
+          ) : null}
           <Button icon={<Edit size={16} />} onClick={() => openDrawer(col)} />
           <Button
             danger
@@ -2192,6 +2249,9 @@ const CollectionsManagement = () => {
             isLoading={actionLoading}
             form={editForm}
             parentOptions={parentOptions}
+            onCoverRemoveIntent={() => {
+              coverRemovalIntendedRef.current = true;
+            }}
           />
         </DashboardWrapper>
       </ConfigProvider>

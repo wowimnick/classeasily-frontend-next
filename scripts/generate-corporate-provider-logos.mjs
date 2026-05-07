@@ -86,7 +86,22 @@ function toAbsoluteUrl(value, baseUrl) {
   }
 }
 
+function isBusinessListingEligible(business) {
+  if (!business || typeof business !== "object") return false;
+  if (business.disabled === true || business.isDisabled === true) return false;
+  if (business.isActive === false || business.is_active === false) return false;
+  if (
+    business.verificationStatus != null &&
+    business.verificationStatus !== "" &&
+    String(business.verificationStatus).toLowerCase() !== "verified"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function businessToLogo(business, baseUrl) {
+  if (!isBusinessListingEligible(business)) return null;
   const name =
     business.businessName ||
     business.name ||

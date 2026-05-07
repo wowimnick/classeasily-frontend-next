@@ -27,6 +27,7 @@ import {
   summarizeCollectionsForPill,
 } from "@/context/SearchContext";
 import { collectionService } from "@/services/apiService";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 import {
   exploreSearchDropdownPanelCss,
   ExploreDropdownTypeChipFlow,
@@ -681,7 +682,7 @@ export default function BannerSearchClient({ mode }) {
     (async () => {
       try {
         const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(rows);
+        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
       } catch {
         if (!cancelled) setIWantCollections([]);
       }

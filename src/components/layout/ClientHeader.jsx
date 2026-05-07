@@ -36,6 +36,7 @@ import {
 import { BP, down } from "@/styles/breakpoints";
 import { useIsMobile } from "@/styles/breakpoints-hooks";
 import { collectionService } from "@/services/apiService";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 import {
   exploreSearchDropdownPanelCss,
   ExploreDropdownTypeChipFlow,
@@ -1183,7 +1184,7 @@ function ExploreHeaderContent({
     (async () => {
       try {
         const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(rows);
+        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
       } catch {
         if (!cancelled) setIWantCollections([]);
       }
