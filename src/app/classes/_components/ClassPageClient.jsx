@@ -192,7 +192,7 @@ const PeekBar = styled.div`
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    z-index: 120;
+    z-index: 2600;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 opacity 0.25s ease;
     transform: translateY(${(p) => (p.$visible ? "0" : "110%")});
@@ -1503,6 +1503,8 @@ export default function ClassPageClient({
       content: text,
       okText: "Close",
       width: 440,
+      zIndex: 11000,
+      centered: true,
     });
   }, [
     optionToDisplayOnCard,
@@ -1758,7 +1760,11 @@ export default function ClassPageClient({
               <PeekCancellation
                 type="button"
                 aria-label="View cancellation policy"
-                onClick={showPeekCancellationPolicy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  showPeekCancellationPolicy();
+                }}
               >
                 Cancellation Policy
               </PeekCancellation>

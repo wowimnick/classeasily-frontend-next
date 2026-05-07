@@ -930,6 +930,7 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
 
   const organizeReviewsIntoColumns = useCallback((reviews, numColumns) => {
     const columns = Array.from({ length: numColumns }, () => []);
+    const heights = Array(numColumns).fill(0);
     const reviewsByCategory = { recent: [], month: [], quarter: [], older: [] };
 
     reviews.forEach((review) => {
@@ -937,23 +938,35 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
       reviewsByCategory[category].push(review);
     });
 
-    let currentColumn = 0;
     const categories = ["recent", "month", "quarter", "older"];
+    const estHeight = (rev) =>
+      1 +
+      Math.min(1200, (rev.comment || "").length) / 180 +
+      (rev.image_medium_url || (rev.image_urls && rev.image_urls.length) ? 1.2 : 0);
 
     categories.forEach((category) => {
       const categoryReviews = reviewsByCategory[category];
-      if (categoryReviews.length > 0) {
-        columns[currentColumn].push({
-          type: "divider",
-          category,
-          label: getTimeCategoryLabel(category),
-        });
+      if (categoryReviews.length === 0) return;
 
-        categoryReviews.forEach((review) => {
-          columns[currentColumn].push({ type: "review", data: review });
-          currentColumn = (currentColumn + 1) % numColumns;
-        });
+      let c = 0;
+      for (let j = 1; j < numColumns; j += 1) {
+        if (heights[j] < heights[c]) c = j;
       }
+      columns[c].push({
+        type: "divider",
+        category,
+        label: getTimeCategoryLabel(category),
+      });
+      heights[c] += 0.35;
+
+      categoryReviews.forEach((review) => {
+        let col = 0;
+        for (let j = 1; j < numColumns; j += 1) {
+          if (heights[j] < heights[col]) col = j;
+        }
+        columns[col].push({ type: "review", data: review });
+        heights[col] += estHeight(review);
+      });
     });
 
     return columns;

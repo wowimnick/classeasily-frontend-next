@@ -19,6 +19,7 @@ import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
 import { BP, down } from "@/styles/breakpoints";
+import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 
 import { ClassesContentSkeleton } from "./ExploreCardsSkeletonClient";
 
@@ -203,6 +204,11 @@ function ExploreClientContent({
   initialCollectionsIWant = [],
   routeParams,
 }) {
+  const collectionsIWantForExplore = useMemo(
+    () => filterCollectionsWithActiveClasses(initialCollectionsIWant),
+    [initialCollectionsIWant],
+  );
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -586,7 +592,7 @@ function ExploreClientContent({
     () => ({
       classes: displayClasses,
       collections: initialCollections,
-      collectionsIWant: initialCollectionsIWant,
+      collectionsIWant: collectionsIWantForExplore,
       loading: showSkeleton,
       isNavigating,
       userLocation,
@@ -613,7 +619,7 @@ function ExploreClientContent({
     [
       displayClasses,
       initialCollections,
-      initialCollectionsIWant,
+      collectionsIWantForExplore,
       showSkeleton,
       isNavigating,
       userLocation,

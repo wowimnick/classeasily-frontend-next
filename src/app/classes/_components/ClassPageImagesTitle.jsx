@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -1251,25 +1251,33 @@ const GalleryScrollArea = styled.div`
 /* CSS-columns masonry: each cell flows naturally based on its image's aspect ratio.
    Images different sizes → no empty gaps as they pack vertically per column. */
 const GalleryGrid = styled.div`
-  column-count: 3;
-  column-gap: 6px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
   max-width: 1200px;
   margin: 0 auto;
 
-  @media (max-width: 900px) {
-    column-count: 2;
+  @media (max-width: 500px) {
+    gap: 4px;
   }
+`;
+
+const GalleryFlexCol = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 
   @media (max-width: 500px) {
-    column-count: 2;
-    column-gap: 4px;
+    gap: 4px;
   }
 `;
 
 const GalleryCell = styled.div`
   display: block;
   width: 100%;
-  margin: 0 0 6px;
+  margin: 0;
   overflow: hidden;
   border-radius: 14px;
   cursor: pointer;
@@ -1287,7 +1295,7 @@ const GalleryCell = styled.div`
   opacity: 0;
 
   @media (max-width: 500px) {
-    margin: 0 0 4px;
+    margin: 0;
   }
 
   ${({ $hidden }) =>
@@ -1519,6 +1527,27 @@ const ClassPageImagesTitle = React.memo(
     const usePlaceholders = classImages.length === 0;
 
     const imagesToDisplay = usePlaceholders ? PLACEHOLDER_IMAGES : classImages;
+
+    const galleryColumns = useMemo(() => {
+      const n = windowDim.w <= 900 ? 2 : 3;
+      const items = imagesToDisplay.map((img, i) => ({ img, i }));
+      const cols = Array.from({ length: n }, () => []);
+      const sums = Array(n).fill(0);
+      items.forEach(({ img, i }) => {
+        const dim = imageDims[i];
+        const w =
+          dim && dim.width > 0 && dim.height > 0
+            ? dim.height / dim.width
+            : 1;
+        let j = 0;
+        for (let k = 1; k < n; k += 1) {
+          if (sums[k] < sums[j]) j = k;
+        }
+        cols[j].push({ img, i });
+        sums[j] += w;
+      });
+      return cols;
+    }, [imagesToDisplay, imageDims, windowDim.w]);
 
     const resolveImageUrl = (img, preferSmaller = false) => {
       if (!img) return "";
@@ -3016,53 +3045,52 @@ const ClassPageImagesTitle = React.memo(
                   onClick={(e) => e.stopPropagation()}
                 >
                   <GalleryGrid>
-                    {imagesToDisplay.map((img, i) => {
-                      const isFlipCell = i === galleryFlipIdxRef.current;
-                      // Always use the locked-in src for the flip cell so the URL never
-                      // changes (open → revealed → exit), preventing any re-fetch flash.
-                      const src = isFlipCell
-                        ? galleryFlipSrcRef.current || resolveImageUrl(img, true)
-                        : resolveImageUrl(img, true);
-                      const hideForFlip =
-                        isFlipCell &&
-                        galleryPhase !== "revealed" &&
-                        !galleryExitPending;
-                      // During exit FLIP (gallery → single), hide only the source cell
-                      // (the one that was clicked). Use a ref so this stays correct even
-                      // after lightboxIndex has been updated to the new value.
-                      const hideForExit =
-                        galleryExitPending && i === galleryExitSourceIdxRef.current;
-                      const dim = imageDims[i];
-                      const cellStyle = dim
-                        ? { aspectRatio: `${dim.width} / ${dim.height}` }
-                        : undefined;
-                      return (
-                        <GalleryCell
-                          key={i}
-                          ref={(el) => {
-                            galleryItemRefs.current[i] = el;
-                          }}
-                          style={cellStyle}
-                          $isFlipCell={isFlipCell}
-                          $reveal={galleryPhase === "revealed"}
-                          $animDelay={i * 0.05}
-                          $locked={galleryInputLocked}
-                          $hidden={hideForFlip || hideForExit}
-                          onClick={() => selectFromGallery(i)}
-                          role="button"
-                          aria-label={`View image ${i + 1}`}
-                        >
-                          {src && (
-                            <GalleryImg
-                              src={src}
-                              alt=""
-                              loading="eager"
-                              onLoad={() => recalibrateOpeningFlipTarget(i)}
-                            />
-                          )}
-                        </GalleryCell>
-                      );
-                    })}
+                    {galleryColumns.map((column, colIdx) => (
+                      <GalleryFlexCol key={colIdx}>
+                        {column.map(({ img, i }) => {
+                          const isFlipCell = i === galleryFlipIdxRef.current;
+                          const src = isFlipCell
+                            ? galleryFlipSrcRef.current || resolveImageUrl(img, true)
+                            : resolveImageUrl(img, true);
+                          const hideForFlip =
+                            isFlipCell &&
+                            galleryPhase !== "revealed" &&
+                            !galleryExitPending;
+                          const hideForExit =
+                            galleryExitPending && i === galleryExitSourceIdxRef.current;
+                          const dim = imageDims[i];
+                          const cellStyle = dim
+                            ? { aspectRatio: `${dim.width} / ${dim.height}` }
+                            : undefined;
+                          return (
+                            <GalleryCell
+                              key={i}
+                              ref={(el) => {
+                                galleryItemRefs.current[i] = el;
+                              }}
+                              style={cellStyle}
+                              $isFlipCell={isFlipCell}
+                              $reveal={galleryPhase === "revealed"}
+                              $animDelay={i * 0.05}
+                              $locked={galleryInputLocked}
+                              $hidden={hideForFlip || hideForExit}
+                              onClick={() => selectFromGallery(i)}
+                              role="button"
+                              aria-label={`View image ${i + 1}`}
+                            >
+                              {src && (
+                                <GalleryImg
+                                  src={src}
+                                  alt=""
+                                  loading="eager"
+                                  onLoad={() => recalibrateOpeningFlipTarget(i)}
+                                />
+                              )}
+                            </GalleryCell>
+                          );
+                        })}
+                      </GalleryFlexCol>
+                    ))}
                   </GalleryGrid>
                 </GalleryScrollArea>
               )}

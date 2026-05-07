@@ -168,10 +168,13 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         start = today.day() === 0 ? today.day(6).add(1, "week") : today.day(6);
         end = start.add(1, "day");
         break;
-      case "next_weekend":
-        start = today.day(6).add(1, "week");
-        end = start.add(1, "day");
+      case "this_week": {
+        start = today.startOf("day");
+        const dow = today.day();
+        const daysUntilSat = (6 - dow + 7) % 7;
+        end = daysUntilSat === 0 ? today : today.add(daysUntilSat, "day");
         break;
+      }
       case "next_week":
         start = today.add(1, "week").startOf("week");
         end = today.add(1, "week").endOf("week");
@@ -284,8 +287,8 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         <QuickPill type="button" onClick={() => applyPreset("weekend")}>
           This Weekend
         </QuickPill>
-        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
-          Next Weekend
+        <QuickPill type="button" onClick={() => applyPreset("this_week")}>
+          This Week
         </QuickPill>
         <QuickPill type="button" onClick={() => applyPreset("next_week")}>
           Next Week

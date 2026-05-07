@@ -158,6 +158,7 @@ const HomeClassCard = ({
   }, [identifier, router]);
 
   const toggleFavorite = async (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) return message.info("Log in to save favorites.");
     if (isToggling) return;
@@ -409,7 +410,13 @@ const HomeClassCard = ({
       ref={cardRef}
       href={`/classes/${identifier}`}
       className={containerClass}
-      onClick={handleLinkClick}
+      onClick={(e) => {
+        if (e.target.closest("button")) {
+          e.preventDefault();
+          return;
+        }
+        handleLinkClick();
+      }}
       onMouseEnter={handlePrefetch}
       onFocus={handlePrefetch}
       prefetch={true}

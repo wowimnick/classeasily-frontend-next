@@ -29,8 +29,8 @@ const DrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  height: 96vh;
-  max-height: 96vh;
+  height: 88vh;
+  max-height: 88vh;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -45,13 +45,13 @@ const DrawerHandle = styled.div`
   height: 4px;
   background: #e5e7eb;
   border-radius: 2px;
-  margin: 12px auto 8px;
+  margin: 8px auto 6px;
   flex-shrink: 0;
 `;
 
 const DrawerBody = styled.div`
   overflow-y: scroll;
-  padding: 0 12px 16px;
+  padding: 0 10px 12px;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -71,8 +71,8 @@ const HeaderRow = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
-  padding-top: 8px;
+  margin-bottom: 12px;
+  padding-top: 4px;
   flex-shrink: 0;
 `;
 
@@ -136,12 +136,12 @@ const InfoCard = styled.div`
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  margin-bottom: 14px;
   flex-shrink: 0;
 `;
 
 const CardSection = styled.div`
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid ${theme.borderLight};
   &:last-child {
     border-bottom: none;
@@ -298,7 +298,7 @@ const ContactHostForm = forwardRef(function ContactHostForm(
         <Input.TextArea
           className="contact-message-textarea"
           placeholder="Your question or message..."
-          rows={4}
+          rows={hideSubmitButton ? 3 : 4}
           maxLength={5000}
           showCount
         />
@@ -413,7 +413,9 @@ export default function ContactHostDrawer({
       title={title}
       footer={null}
       destroyOnClose
-      styles={{ body: { paddingTop: 0 } }}
+      styles={{
+        body: { padding: "8px 24px 24px" },
+      }}
     >
       <FormFieldSizes>
         <ContactHostForm

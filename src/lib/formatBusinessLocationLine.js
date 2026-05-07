@@ -101,6 +101,37 @@ export function formatBusinessLocationLine(loc) {
   return [address, unit, tail].filter(Boolean).join(", ");
 }
 
+function normalizePart(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function locationIdentityKeyForDedupe(loc) {
+  const address = normalizePart(loc.address);
+  const unit = normalizePart(loc.unit);
+  const city = normalizePart(loc.city);
+  const state = normalizePart(loc.state);
+  const zip = String(loc.zip_code || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  if (address || unit || city || state || zip) {
+    return `f:${address}|${unit}|${city}|${state}|${zip}`;
+  }
+  const lat = loc.latitude != null ? parseFloat(loc.latitude) : NaN;
+  const lng = loc.longitude != null ? parseFloat(loc.longitude) : NaN;
+  if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+    const rlat = Math.round(lat * 1e5) / 1e5;
+    const rlng = Math.round(lng * 1e5) / 1e5;
+    return `ll:${rlat},${rlng}`;
+  }
+  const compact = normalizeComparable(formatBusinessLocationLine(loc));
+  if (compact) return `s:${compact}`;
+  return `id:${loc.id != null ? String(loc.id) : String(loc.name || "")}`;
+}
+
 /**
  * Drop duplicate venues (e.g. legacy + synced rows) when coordinates match closely.
  * Prefers `is_primary` and stable name order.
@@ -120,14 +151,7 @@ export function dedupeBusinessLocationsForDisplay(locations) {
   const out = [];
 
   for (const loc of sorted) {
-    const lat = loc.latitude != null ? parseFloat(loc.latitude) : NaN;
-    const lng = loc.longitude != null ? parseFloat(loc.longitude) : NaN;
-    let key;
-    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-      key = `ll:${Math.round(lat * 1e4) / 1e4},${Math.round(lng * 1e4) / 1e4}`;
-    } else {
-      key = `s:${normalizeComparable(formatBusinessLocationLine(loc))}`;
-    }
+    const key = locationIdentityKeyForDedupe(loc);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(loc);

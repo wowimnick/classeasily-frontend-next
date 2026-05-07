@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, css } from "styled-components";
 import Image from "next/image";
 import { 
-  MapPin, Star, Phone, Mail, Clock, 
+  Star, Phone, Mail, Clock, 
   ExternalLink, Facebook, Twitter, Instagram, Linkedin, Youtube, 
   Share, Heart, Globe, Users
 } from "lucide-react";
@@ -15,6 +15,7 @@ import "leaflet/dist/leaflet.css";
 import NumberFlow from "@number-flow/react";
 
 // Imported components
+import dynamic from "next/dynamic";
 import ClientHeader from "@/components/layout/ClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 import ReviewsTab from "./ReviewsTab.jsx";
@@ -23,6 +24,25 @@ import {
   formatBusinessLocationLine,
   dedupeBusinessLocationsForDisplay,
 } from "@/lib/formatBusinessLocationLine";
+
+const LordIcon = dynamic(
+  () => import("@/services/ReactUtils").then((m) => m.LordIcon),
+  { ssr: false },
+);
+
+const HIGHLIGHT_ICON_TOP_RATED = {
+  src: "https://cdn.lordicon.com/ajzwsrcs.json",
+  trigger: "in",
+  delay: 1500,
+  state: "morph-glitter",
+  colors: "primary:#ff385c",
+};
+
+const HIGHLIGHT_ICON_LOCATION = {
+  src: "https://cdn.lordicon.com/zttzteli.json",
+  trigger: "in",
+  delay: 2000,
+};
 
 // --- GLOBAL STYLES ---
 const GlobalStyles = createGlobalStyle`
@@ -174,12 +194,12 @@ const ActionBtn = styled.button`
 const ContentGrid = styled.div`
   display: grid;
   grid-template-columns: 1.8fr 1fr;
-  gap: 64px;
+  gap: 42px;
   position: relative;
 
   @media (max-width: 950px) {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 28px;
   }
 `;
 
@@ -196,17 +216,17 @@ const RightColumn = styled.div`
 
 const SectionDivider = styled.div`
   border-bottom: 1px solid #dddddd;
-  padding-top: 12px;
-  margin-bottom: 18px;
+  padding-top: 10px;
+  margin-bottom: 14px;
 `;
 
 const HostRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 1px solid #dddddd;
-  margin-bottom: 32px;
+  margin-bottom: 22px;
 `;
 
 const HostInfo = styled.div`
@@ -233,16 +253,21 @@ const DescriptionText = styled.p`
 // "At a glance" redesigned as Highlights
 const HighlightsGrid = styled.div`
   display: grid;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 14px;
+  margin-bottom: 22px;
 `;
 
 const HighlightItem = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 12px;
+  align-items: flex-start;
   
   .icon {
-    min-width: 24px;
+    min-width: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .content {
@@ -615,17 +640,27 @@ const BusinessPageClient = ({ initialData, slug }) => {
             <HighlightsGrid>
               {ratingAsNumber > 4.5 && (
                 <HighlightItem>
-                  <div className="icon"><Star size={24} /></div>
+                  <div className="icon">
+                    <LordIcon
+                      {...HIGHLIGHT_ICON_TOP_RATED}
+                      style={{ width: "24px", height: "24px" }}
+                    />
+                  </div>
                   <div className="content">
-                    <h3>Top Rated</h3>
+                    <h3>Top rated</h3>
                     <p>This business is highly rated by students.</p>
                   </div>
                 </HighlightItem>
               )}
               <HighlightItem>
-                <div className="icon"><MapPin size={24} /></div>
+                <div className="icon">
+                  <LordIcon
+                    {...HIGHLIGHT_ICON_LOCATION}
+                    style={{ width: "24px", height: "24px" }}
+                  />
+                </div>
                 <div className="content">
-                  <h3>Great Location</h3>
+                  <h3>Great location</h3>
                   <p>Located in the heart of {businessCity}.</p>
                 </div>
               </HighlightItem>
@@ -634,7 +669,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
             <SectionDivider />
 
             {/* UPCOMING CLASSES — above locations / about so visitors see schedules first */}
-            <div style={{ marginBottom: "32px" }}>
+            <div style={{ marginBottom: "22px" }}>
               <BusinessUpcomingClasses
                 classes={classes}
                 businessName={businessName}

@@ -427,6 +427,7 @@ const ClassOptionCard = ({
               placement="topLeft"
               mouseEnterDelay={0.2}
               arrow
+              trigger={["hover", "click"]}
               styles={{ body: { maxWidth: 320 } }}
             >
               <CancellationPolicyText>
