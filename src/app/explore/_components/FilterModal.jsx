@@ -421,7 +421,7 @@ export default function FilterModal({
   );
 
   const distanceDistribution = useMemo(
-    () => distanceDistributionFromClasses(classesForDistribution, 80),
+    () => distanceDistributionFromClasses(classesForDistribution, 100),
     [classesForDistribution],
   );
 
@@ -493,7 +493,7 @@ export default function FilterModal({
   const clearFiltersAndSort = () => {
     setTempFilters({
       pricePerClass: [0, 500],
-      distance: [0, 50],
+      distance: [0, 100],
       timePreference: [],
       days: [],
       classType: "class",
@@ -591,8 +591,8 @@ export default function FilterModal({
           aria-labelledby="filter-distance-heading"
           label=""
           min={1}
-          max={80}
-          value={tempFilters.distance[1] > 0 ? tempFilters.distance[1] : 50}
+          max={100}
+          value={tempFilters.distance[1] > 0 ? tempFilters.distance[1] : 100}
           onChange={(val) =>
             setTempFilters((prev) => ({ ...prev, distance: [0, val] }))
           }

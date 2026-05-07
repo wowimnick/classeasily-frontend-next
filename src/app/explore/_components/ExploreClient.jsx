@@ -70,7 +70,7 @@ const BreadcrumbContainer = styled.div`
 function buildApiParamsFromSearchParams(sp) {
   const apiParams = {};
   const defaultMaxPrice = 500;
-  const defaultMaxDistance = 50;
+  const defaultMaxDistance = 100;
 
   const lat = sp.get("lat");
   const lng = sp.get("lng");
@@ -151,7 +151,7 @@ function mergeModalFiltersIntoSearchParams(baseSearchParams, newFilters, newSort
   ].forEach((key) => newParams.delete(key));
 
   const defaultMaxPrice = 500;
-  const defaultMaxDistance = 50;
+  const defaultMaxDistance = 100;
 
   if (newFilters.pricePerClass[0] > 0)
     newParams.set("price_min", newFilters.pricePerClass[0].toString());
@@ -258,7 +258,7 @@ function ExploreClientContent({
 
   const currentFilters = useMemo(() => {
     const defaultMaxPrice = 500;
-    const defaultMaxDistance = 50;
+    const defaultMaxDistance = 100;
     return {
       pricePerClass: [
         parseInt(searchParams.get("price_min") || "0", 10),
