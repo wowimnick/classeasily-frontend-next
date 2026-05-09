@@ -241,6 +241,19 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.price_max = parseInt(searchParams.price_max, 10);
   if (searchParams.radius) apiParams.radius = parseInt(searchParams.radius, 10);
 
+  const subsExplore = searchParams.sub;
+  if (subsExplore) {
+    apiParams.sub = Array.isArray(subsExplore) ? subsExplore : [subsExplore];
+  }
+
+  const classTypeExplore = searchParams.class_type;
+  if (typeof classTypeExplore === "string" && classTypeExplore.trim()) {
+    const v = classTypeExplore.trim().toLowerCase();
+    if (v !== "class" && v !== "all") {
+      apiParams.class_type = classTypeExplore.trim();
+    }
+  }
+
   // --- DATE RANGE LOGIC ---
   if (searchParams.start_date) apiParams.start_date = searchParams.start_date;
   if (searchParams.end_date) apiParams.end_date = searchParams.end_date;

@@ -570,3 +570,9 @@ export const useSearch = () => {
   }
   return context;
 };
+
+/** Session memo for explore results (see ExploreClient + exploreResultsCache). */
+export {
+  peekExploreSearchResults,
+  stashExploreSearchResults,
+} from "@/lib/exploreResultsCache";

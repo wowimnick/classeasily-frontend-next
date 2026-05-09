@@ -1,6 +1,6 @@
 /* HowItWorks.module.css */
 .section {
-  background: linear-gradient(45deg, rgb(175, 16, 16), rgb(218, 84, 88));
+  background: #FB2347;
   position: relative;
   overflow: hidden;
   display: flex;

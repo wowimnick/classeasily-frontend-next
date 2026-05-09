@@ -586,10 +586,9 @@ const MapDisplay = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isMounted, setIsMounted] = useState(false);
+  const [mapDomAllowed, setMapDomAllowed] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
   const [mapKey, setMapKey] = useState(() => `map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
-  const prevShowMapRef = React.useRef(showMap);
 
   const handleViewClass = useCallback(
     (slug) => {
@@ -601,20 +600,22 @@ const MapDisplay = ({
     [pathname, searchParams, router]
   );
 
+  /* Leaflet must fully release the DOM after unmount before a new Map mounts — especially
+     after SPA back/forward. Tear down, wait, then a fresh key + MapContainer (see ClassPageMap). */
   useEffect(() => {
-    setIsMounted(true);
-    return () => {
-      setIsMounted(false);
-    };
-  }, []);
-
-  // Regenerate map key when map becomes visible again to avoid "map container is in use"
-  useEffect(() => {
-    if (showMap && !prevShowMapRef.current) {
+    let alive = true;
+    setMapDomAllowed(false);
+    const t = window.setTimeout(() => {
+      if (!alive) return;
       setMapKey(`map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
-    }
-    prevShowMapRef.current = showMap;
-  }, [showMap]);
+      setMapDomAllowed(true);
+    }, 175);
+    return () => {
+      alive = false;
+      window.clearTimeout(t);
+      setMapDomAllowed(false);
+    };
+  }, [pathname, showMap]);
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -713,7 +714,7 @@ const MapDisplay = ({
         <MapPin size={16} /> Hide Map
       </HideMapButton>
 
-      {isMounted && mapKey && (
+      {mapDomAllowed && mapKey && (
         <div key={mapKey} className="map-root-container">
           <MapContainer
             key={mapKey}

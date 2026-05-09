@@ -1310,6 +1310,18 @@ function ExploreHeaderContent({
   };
 
   const handleSectionButtonKeyDown = (e, field) => {
+    const target = e.target;
+    const tag =
+      target && typeof target.tagName === "string"
+        ? target.tagName.toUpperCase()
+        : "";
+    const typingInField =
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      (target && target.isContentEditable);
+    if (typingInField) return;
+
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleFieldClick(field);

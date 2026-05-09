@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import styled from "styled-components";
 import { MapPin, Clock } from "lucide-react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
@@ -331,6 +331,28 @@ const LocationTab = ({
     return [lat, lng];
   }, [coordinates]);
 
+  const [mapDomAllowed, setMapDomAllowed] = useState(false);
+  const [leafletMountId, setLeafletMountId] = useState(0);
+
+  useEffect(() => {
+    if (!position) {
+      setMapDomAllowed(false);
+      return;
+    }
+    let alive = true;
+    setMapDomAllowed(false);
+    const t = window.setTimeout(() => {
+      if (!alive) return;
+      setLeafletMountId((n) => n + 1);
+      setMapDomAllowed(true);
+    }, 175);
+    return () => {
+      alive = false;
+      window.clearTimeout(t);
+      setMapDomAllowed(false);
+    };
+  }, [coordinates, position?.[0], position?.[1]]);
+
   const brandIcon = useMemo(() => createBrandIcon(), []);
 
   const googleMapsUrl = useMemo(() => {
@@ -365,9 +387,10 @@ const LocationTab = ({
             </AddressText>
           </AddressBlock>
         )}
-        {position ? (
+        {position && mapDomAllowed ? (
           <MapWrapper>
             <MapContainer
+              key={`location-tab-${leafletMountId}`}
               center={position}
               zoom={15}
               scrollWheelZoom={true}

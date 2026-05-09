@@ -469,12 +469,23 @@ const BusinessPageClient = ({ initialData, slug }) => {
   const router = useRouter();
   const [businessData, setBusinessData] = useState(initialData);
   const [memberships, setMemberships] = useState([]);
-  const [isMounted, setIsMounted] = useState(false);
-  const [mapContainerKey] = useState(() => `business-map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+  const [mapDomAllowed, setMapDomAllowed] = useState(false);
+  const [leafletMountId, setLeafletMountId] = useState(0);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    let alive = true;
+    setMapDomAllowed(false);
+    const t = window.setTimeout(() => {
+      if (!alive) return;
+      setLeafletMountId((n) => n + 1);
+      setMapDomAllowed(true);
+    }, 175);
+    return () => {
+      alive = false;
+      window.clearTimeout(t);
+      setMapDomAllowed(false);
+    };
+  }, [slug]);
 
   useEffect(() => {
     if (!slug || typeof window === "undefined") return;
@@ -844,9 +855,9 @@ const BusinessPageClient = ({ initialData, slug }) => {
 
                 {/* Map Preview - key per slug so Leaflet never reuses the same container */}
                 <MapPreviewBox>
-                   {isMounted && (
+                   {mapDomAllowed && (
                     <MapContainer
-                      key={`${mapContainerKey}-${slug ?? "unknown"}`}
+                      key={`business-map-${slug ?? "unknown"}-${leafletMountId}`}
                       center={mapCoordinates}
                       zoom={14}
                       scrollWheelZoom={false}

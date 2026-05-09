@@ -20,6 +20,10 @@ import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
 import { BP, down } from "@/styles/breakpoints";
 import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
+import {
+  peekExploreSearchResults,
+  stashExploreSearchResults,
+} from "@/lib/exploreResultsCache";
 
 import { ClassesContentSkeleton } from "./ExploreCardsSkeletonClient";
 
@@ -67,6 +71,24 @@ const BreadcrumbContainer = styled.div`
   }
 `;
 
+/** Map URL class_type to FilterModal option ids (canonical slugs + backend labels). */
+function exploreClassTypeUrlToFilterId(raw) {
+  if (!raw || typeof raw !== "string") return "class";
+  const t = raw.trim();
+  if (!t) return "class";
+  const lower = t.toLowerCase();
+  if (lower === "class" || lower === "all") return "class";
+  if (lower === "single_session") return "single_session";
+  if (lower === "full_course") return "full_course";
+  if (t === "Single Session") return "single_session";
+  if (t === "Full Course") return "full_course";
+  if (lower === "single session") return "single_session";
+  if (lower === "full course") return "full_course";
+  if (lower === "single") return "single_session";
+  if (lower === "course") return "full_course";
+  return "class";
+}
+
 /** Build API params from URL search params. */
 function buildApiParamsFromSearchParams(sp) {
   const apiParams = {};
@@ -102,6 +124,9 @@ function buildApiParamsFromSearchParams(sp) {
   const priceMax = parseInt(sp.get("price_max") || String(defaultMaxPrice), 10);
   if (priceMax < defaultMaxPrice) apiParams.price_max = priceMax;
 
+  const priceMin = parseInt(sp.get("price_min") || "0", 10);
+  if (!Number.isNaN(priceMin) && priceMin > 0) apiParams.price_min = priceMin;
+
   const radiusRaw =
     sp.get("radius") || sp.get("distance_max") || String(defaultMaxDistance);
   const radius = parseInt(radiusRaw, 10);
@@ -128,6 +153,14 @@ function buildApiParamsFromSearchParams(sp) {
 
   const days = sp.getAll("days");
   if (days.length > 0) apiParams.days = days;
+
+  const classTypeRaw = sp.get("class_type")?.trim();
+  if (classTypeRaw) {
+    const lower = classTypeRaw.toLowerCase();
+    if (lower !== "class" && lower !== "all") {
+      apiParams.class_type = classTypeRaw;
+    }
+  }
 
   return apiParams;
 }
@@ -166,8 +199,8 @@ function mergeModalFiltersIntoSearchParams(baseSearchParams, newFilters, newSort
   newFilters.days.forEach((day) => newParams.append("days", day));
   if (
     newFilters.classType &&
-    newFilters.classType.toLowerCase() !== "class" &&
-    newFilters.classType.toLowerCase() !== "all"
+    newFilters.classType !== "class" &&
+    newFilters.classType !== "all"
   ) {
     newParams.set("class_type", newFilters.classType);
   }
@@ -284,7 +317,9 @@ function ExploreClientContent({
       ],
       timePreference: searchParams.getAll("time_preference") || [],
       days: searchParams.getAll("days") || [],
-      classType: searchParams.get("class_type") || "class",
+      classType: exploreClassTypeUrlToFilterId(
+        searchParams.get("class_type") || "",
+      ),
       keyword: "",
       date: searchParams.get("date") || "",
       startDate: searchParams.get("start_date") || "",
@@ -338,6 +373,19 @@ function ExploreClientContent({
         setNextPageUrl(newNext);
         nextPageUrlRef.current = newNext;
         if (!isMore) setFetchError(null);
+
+        if (!isMore && typeof window !== "undefined") {
+          try {
+            const canon = stripPageKey(window.location.search.slice(1) || "");
+            stashExploreSearchResults(canon, {
+              results: response.results || [],
+              count: response.count || 0,
+              next: newNext,
+            });
+          } catch {
+            /* non-fatal */
+          }
+        }
       } catch (error) {
         if (error.name !== "AbortError" && error.name !== "CanceledError") {
           console.error("Error fetching classes:", error);
@@ -395,8 +443,16 @@ function ExploreClientContent({
       return;
     }
 
-    setLoading(true);
     previousSearchParamsRef.current = currentStr;
+
+    const canonKey = stripPageKey(currentStr);
+    const cached = peekExploreSearchResults(canonKey);
+    if (cached?.results?.length) {
+      setDisplayClasses(cached.results);
+      setTotalClassesCount(cached.count ?? 0);
+      setNextPageUrl(cached.next ?? null);
+      nextPageUrlRef.current = cached.next ?? null;
+    }
 
     const apiParams = buildApiParamsFromSearchParams(
       new URLSearchParams(stripPageKey(currentStr)),
@@ -586,7 +642,9 @@ function ExploreClientContent({
 
   // --- LOADING FLAGS ---
   const effectiveLoading = loading && !loadingMore;
-  const showSkeleton = effectiveLoading || isNavigating || isSearching;
+  const showSkeleton =
+    isNavigating ||
+    ((effectiveLoading || isSearching) && displayClasses.length === 0);
 
   const classesDisplayProps = useMemo(
     () => ({
