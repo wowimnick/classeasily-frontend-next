@@ -65,15 +65,17 @@ function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
 
 const SearchContext = createContext();
 
-const SEARCH_STORAGE_KEY = "classeasily_search_state";
+/** Persisted search: written to sessionStorage + localStorage (local enables new-tab continue UX). */
+export const SEARCH_STATE_STORAGE_KEY = "classeasily_search_state";
 
 function getStoredSearchState() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(SEARCH_STORAGE_KEY);
+    const raw =
+      sessionStorage.getItem(SEARCH_STATE_STORAGE_KEY) ??
+      localStorage.getItem(SEARCH_STATE_STORAGE_KEY);
     if (!raw) return null;
-    const data = JSON.parse(raw);
-    return data;
+    return JSON.parse(raw);
   } catch {
     return null;
   }
@@ -82,7 +84,9 @@ function getStoredSearchState() {
 function saveSearchState(state) {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(state));
+    const payload = JSON.stringify(state);
+    sessionStorage.setItem(SEARCH_STATE_STORAGE_KEY, payload);
+    localStorage.setItem(SEARCH_STATE_STORAGE_KEY, payload);
   } catch (_) {}
 }
 
@@ -196,7 +200,7 @@ export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
   citySlug: preset.citySlug,
 }));
 
-/** Canonical default when no location is chosen (header, explore, clear). */
+/** Default GTA hub used when submitting explore search with no location picked (see performSearch). */
 export function getDefaultTorontoSearchLocation() {
   const t = GTA_PRESETS[0];
   return {
@@ -206,6 +210,14 @@ export function getDefaultTorontoSearchLocation() {
     provinceSlug: t.provinceSlug,
   };
 }
+
+/** Fresh session / cleared search — no preset shown in UI; Toronto is applied on submit via performSearch. */
+const EMPTY_SEARCH_LOCATION = {
+  displayName: "",
+  coordinates: null,
+  citySlug: null,
+  provinceSlug: null,
+};
 
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
@@ -228,7 +240,7 @@ export const SearchProvider = ({ children }) => {
     ) {
       return stored.selectedLocation.displayName.trim();
     }
-    return getDefaultTorontoSearchLocation().displayName;
+    return "";
   });
   const [selectedLocation, setSelectedLocation] = useState(() => {
     const stored = getStoredSearchState();
@@ -244,7 +256,7 @@ export const SearchProvider = ({ children }) => {
         };
       }
     }
-    return getDefaultTorontoSearchLocation();
+    return { ...EMPTY_SEARCH_LOCATION };
   });
   const [datePickerValue, setDatePickerValue] = useState(() => {
     const stored = getStoredSearchState();
@@ -349,15 +361,17 @@ export const SearchProvider = ({ children }) => {
   }, []);
 
   const clearAll = useCallback(() => {
-    const t = getDefaultTorontoSearchLocation();
-    setSearchTerm(t.displayName);
-    setSelectedLocation({ ...t });
+    setSearchTerm("");
+    setSelectedLocation({ ...EMPTY_SEARCH_LOCATION });
     setDatePickerValue(null);
     setParticipantCount(1);
     setSelectedCollections([]);
     setGeocodedAddressResults([]);
     try {
-      if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(SEARCH_STATE_STORAGE_KEY);
+        localStorage.removeItem(SEARCH_STATE_STORAGE_KEY);
+      }
     } catch (_) {}
   }, []);
 

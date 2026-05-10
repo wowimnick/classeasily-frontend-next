@@ -51,14 +51,19 @@ const scrolledStyling = {
 };
 
 const HeaderWrapper = styled.header`
-  background-color: ${(props) =>
-    props.$isScrolled ? scrolledStyling.backgroundColor : "transparent"};
+  background-color: ${(props) => {
+    if (props.$isScrolled) return scrolledStyling.backgroundColor;
+    if (props.$heroLightChrome) return "#ffffff";
+    return "transparent";
+  }};
   box-shadow: ${(props) =>
     props.$isScrolled ? "0 2px 10px rgba(0, 0, 0, 0.1)" : "none"};
   backdrop-filter: ${(props) => (props.$isScrolled ? "blur(8px)" : "none")};
   padding: ${(props) => (props.$isScrolled ? "0.3rem 2rem" : "0.5rem 3rem")};
   color: ${(props) =>
-    props.$isScrolled ? scrolledStyling.color : props.$initialColor};
+    props.$isScrolled || props.$heroLightChrome
+      ? scrolledStyling.color
+      : props.$initialColor};
   text-align: center;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -95,33 +100,55 @@ const HeaderWrapper = styled.header`
       -webkit-backdrop-filter: blur(12px) saturate(180%);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 
                   inset 0 1px 0 rgba(255, 255, 255, 0.4);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     `}
+    ${(props) =>
+      props.$isHomepage
+        ? `
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+    `
+        : ""}
   }
 
   @media (max-width: 756px) {
-    width: calc(100% - 2rem);
-    left: 1rem;
-    right: 1rem;
+    ${(props) =>
+      props.$homeHeroFlush
+        ? `
+      width: 100%;
+      left: 0;
+      right: 0;
+      top: ${props.$isImpersonating ? "56px" : "0"};
+      border-top-left-radius: ${props.$isHomepage ? "18px" : "0"};
+      border-top-right-radius: ${props.$isHomepage ? "18px" : "0"};
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 1rem 10px;
+      background-color: #ffffff;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    `
+        : `
+      width: calc(100% - 2rem);
+      left: 1rem;
+      right: 1rem;
 
-    top: ${(props) => {
-      const baseTop = props.$isImpersonating ? 56 : 8;
-      return `${baseTop}px`;
-    }};
+      top: ${props.$isImpersonating ? "56px" : "8px"};
 
-    border-radius: 9999px;
-    padding: 0.5rem 1rem;
-    background-color: ${(props) =>
-      props.$isScrolled
-        ? "rgba(255, 255, 255, 0.95)"
-        : "rgba(255, 255, 255, 0.15)"};
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.08),
-      0 2px 8px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 9999px;
+      padding: 0.5rem 1rem;
+      background-color: ${
+        props.$isScrolled
+          ? "rgba(255, 255, 255, 0.95)"
+          : "rgba(255, 255, 255, 0.15)"
+      };
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    `}
   }
 `;
 
@@ -286,7 +313,8 @@ const AuthLink = styled.span`
   display: inline-block;
   transition: all 0.3s ease;
   &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: ${(props) =>
+      props.$onLightHero ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.15)"};
   }
   @media (max-width: 756px) {
     font-size: 0.8rem;
@@ -437,6 +465,8 @@ const HeaderContent = ({
     currentUser?.is_impersonating ||
     false;
 
+  const heroLightChrome = pathname === "/" && !isScrolled;
+
   const {
     searchTerm,
     datePickerValue,
@@ -497,13 +527,15 @@ const HeaderContent = ({
   };
 
   // --- DYNAMIC COLOR LOGIC ---
-  const activeColor = isScrolled
-    ? scrolledStyling.color // #000000
-    : dropdownButtonColor; // usually #fff
+  const activeColor =
+    heroLightChrome || isScrolled
+      ? scrolledStyling.color
+      : dropdownButtonColor;
 
-  const activeBorderColor = isScrolled
-    ? scrolledStyling.borderColor // #e5e7eb
-    : dropdownButtonOutlineColor; // usually #fff
+  const activeBorderColor =
+    heroLightChrome || isScrolled
+      ? scrolledStyling.borderColor
+      : dropdownButtonOutlineColor;
 
   return (
     <>
@@ -512,17 +544,26 @@ const HeaderContent = ({
         $initialColor={logoTitleColor}
         $isImpersonating={isImpersonating}
         $topOffset={topOffset}
+        $homeHeroFlush={heroLightChrome}
+        $heroLightChrome={heroLightChrome}
+        $isHomepage={pathname === "/"}
       >
         <LogoLink href="/" aria-label="ClassEasily home">
-          <LogoContainer $isScrolled={isScrolled}>
+          <LogoContainer $isScrolled={isScrolled || heroLightChrome}>
             <LogoIcon
-              isScrolled={isScrolled}
+              isScrolled={isScrolled || heroLightChrome}
               activeColor={scrolledStyling.logoColor}
-              restingColor={logoTitleColor}
+              restingColor={
+                heroLightChrome ? scrolledStyling.logoColor : logoTitleColor
+              }
             />
             <Title
-              $isScrolled={isScrolled}
-              color={isScrolled ? scrolledStyling.logoColor : logoTitleColor}
+              $isScrolled={isScrolled || heroLightChrome}
+              color={
+                isScrolled || heroLightChrome
+                  ? scrolledStyling.logoColor
+                  : logoTitleColor
+              }
             >
               ClassEasily
             </Title>
@@ -538,6 +579,7 @@ const HeaderContent = ({
               $borderColor="transparent"
               $hoverColor="rgba(255,255,255,0.2)"
               $isScrolled={isScrolled}
+              $onLightHero={heroLightChrome}
             >
               Corporate
             </AuthLink>
@@ -548,6 +590,7 @@ const HeaderContent = ({
               $borderColor="transparent"
               $hoverColor="rgba(255,255,255,0.2)"
               $isScrolled={isScrolled}
+              $onLightHero={heroLightChrome}
             >
               Become a host
             </AuthLink>
@@ -722,17 +765,26 @@ const FallbackMenuSkeleton = styled.div`
 
 // --- FALLBACK COMPONENT ---
 const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
+  const pathname = usePathname();
+  const heroLightChrome = pathname === "/";
+  const fallbackLogoColor = heroLightChrome
+    ? scrolledStyling.logoColor
+    : logoTitleColor;
+
   return (
     <HeaderWrapper
       $isScrolled={false}
       $initialColor={logoTitleColor}
       $isImpersonating={false}
       $topOffset={topOffset}
+      $homeHeroFlush={heroLightChrome}
+      $heroLightChrome={heroLightChrome}
+      $isHomepage={pathname === "/"}
     >
       <LogoLink href="/" aria-label="ClassEasily home">
-        <LogoContainer $isScrolled={false}>
-          <FallbackLogoIcon color={logoTitleColor} />
-          <Title color={logoTitleColor} $isScrolled={false}>
+        <LogoContainer $isScrolled={heroLightChrome}>
+          <FallbackLogoIcon color={fallbackLogoColor} />
+          <Title color={fallbackLogoColor} $isScrolled={heroLightChrome}>
             ClassEasily
           </Title>
         </LogoContainer>

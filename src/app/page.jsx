@@ -159,51 +159,53 @@ export default async function HomePage() {
       />
 
       <div className="homepage-style">
-        <main className="main-content">
-          <BannerSearchClient mode="announcement" />
-          <SharedMainClientHeader topOffset={48} />
+        <BannerSearchClient mode="announcement" />
+        <SharedMainClientHeader topOffset={58} />
 
-          <BannerSearch />
+        <div className="homepage-sheet">
+          <main className="main-content">
+            <BannerSearch />
 
-          {row_collections?.map((collection) => (
-            <Suspense key={collection.title} fallback={<FindClassSkeleton />}>
-              <FindClassClientWrapper
-                title={collection.title}
-                subtitle={collection.subtitle}
-                initialClasses={collection.classes}
-                seeAllLink={collection.seeAllLink || "/explore"}
-              />
+            {row_collections?.map((collection) => (
+              <Suspense key={collection.title} fallback={<FindClassSkeleton />}>
+                <FindClassClientWrapper
+                  title={collection.title}
+                  subtitle={collection.subtitle}
+                  initialClasses={collection.classes}
+                  seeAllLink={collection.seeAllLink || "/explore"}
+                />
+              </Suspense>
+            ))}
+
+            <Suspense
+              fallback={<HomepageCategoriesFallback categories={categories} />}
+            >
+              <HomepageCategories initialCategories={categories} />
             </Suspense>
-          ))}
 
-          <Suspense
-            fallback={<HomepageCategoriesFallback categories={categories} />}
-          >
-            <HomepageCategories initialCategories={categories} />
-          </Suspense>
+            <section id="how-it-works">
+              <Suspense fallback={<div style={{ height: "600px" }} />}>
+                <HowItWorks />
+              </Suspense>
+            </section>
 
-          <section id="how-it-works">
-            <Suspense fallback={<div style={{ height: "600px" }} />}>
-              <HowItWorks />
+            <Suspense fallback={<div style={{ height: "500px" }} />}>
+              <GiftCardsCTA />
             </Suspense>
-          </section>
 
-          <Suspense fallback={<div style={{ height: "500px" }} />}>
-            <GiftCardsCTA />
+            <Suspense fallback={<div style={{ height: "500px" }} />}>
+              <ForHostsClient />
+            </Suspense>
+
+            <Suspense fallback={<div style={{ height: "400px" }} />}>
+              <Testimonials />
+            </Suspense>
+          </main>
+
+          <Suspense fallback={<div style={{ height: "300px" }} />}>
+            <Footer />
           </Suspense>
-
-          <Suspense fallback={<div style={{ height: "500px" }} />}>
-            <ForHostsClient />
-          </Suspense>
-
-          <Suspense fallback={<div style={{ height: "400px" }} />}>
-            <Testimonials />
-          </Suspense>
-        </main>
-
-        <Suspense fallback={<div style={{ height: "300px" }} />}>
-          <Footer />
-        </Suspense>
+        </div>
 
         {/* Global Overlays - Loaded only when needed logic triggers */}
         <CancellationOverlay />
