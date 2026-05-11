@@ -1714,7 +1714,10 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
         classId: schedule.classId,
         date: dayjs(schedule.date),
         time: dayjs(`${schedule.date}T${schedule.time}`),
-        price: schedule.price ? parseFloat(schedule.price) : 0,
+        price:
+          schedule.price != null && parseFloat(schedule.price) > 0
+            ? parseFloat(schedule.price)
+            : undefined,
         maxParticipants: schedule.maxParticipants || 10,
         minParticipants: schedule.minParticipants || 1,
         name: schedule.name || "",
@@ -1738,7 +1741,8 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
         classId: defaultClassId,
         date: prefillDate,
         time: prefillTime,
-        price: dup ? parseFloat(dup.price) || 0 : 0,
+        price:
+          dup && parseFloat(dup.price) > 0 ? parseFloat(dup.price) : undefined,
         maxParticipants: dup?.maxParticipants ?? 10,
         minParticipants: dup?.minParticipants ?? 1,
         name: dup?.name || "",
@@ -1754,7 +1758,7 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
       if (!optionId) { message.error("This experience has no option configured."); return; }
       const timeStr = values.time.format("HH:mm");
       const dateStr = values.date.format("YYYY-MM-DD");
-      const priceStr = Math.max(0, parseFloat(values.price) || 0).toFixed(2);
+      const priceStr = parseFloat(values.price).toFixed(2);
 
       const payload = {
         option: optionId,
@@ -1798,7 +1802,13 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
       const values = await form.validateFields(["classId", "date_range", "name"]);
       if (selectedDays.length === 0) { message.error("Select at least one day."); return; }
       if (times.length === 0) { message.error("Add at least one time."); return; }
-      const priceRaw = form.getFieldValue("price") || 0;
+      const priceRaw = form.getFieldValue("price");
+      const priceNum = parseFloat(priceRaw);
+      if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        message.error("Enter a price greater than zero.");
+        setLoading(false);
+        return;
+      }
       const maxPart = form.getFieldValue("maxParticipants") || 10;
       if (!maxPart) { message.error("Set max guests."); return; }
       setLoading(true);
@@ -1812,7 +1822,7 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
         days_of_week: selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean),
         times: times.map(t => t.format("HH:mm")),
         duration,
-        price: Math.max(0, parseFloat(priceRaw) || 0).toFixed(2),
+        price: priceNum.toFixed(2),
         maxParticipants: maxPart,
         minParticipants: form.getFieldValue("minParticipants") || 1,
       };
@@ -1987,9 +1997,24 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
       {/* Price & Capacity */}
       <TwoCol>
         <FieldGroup>
-          <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person booking price. Enter 0 for free sessions." /></FieldLabel>
-          <Form.Item name="price" noStyle rules={[{ required: true, message: "Required" }]}>
-            <InputNumber min={0} step={0.01} precision={2} prefix="$" style={{ width: "100%" }} />
+          <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person price before taxes and fees. Must be greater than zero." /></FieldLabel>
+          <Form.Item
+            name="price"
+            noStyle
+            rules={[
+              { required: true, message: "Required" },
+              {
+                validator: (_, value) => {
+                  const n = typeof value === "number" ? value : parseFloat(value);
+                  if (!Number.isFinite(n) || n <= 0) {
+                    return Promise.reject(new Error("Enter a price greater than zero."));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <InputNumber min={0.01} step={0.01} precision={2} prefix="$" style={{ width: "100%" }} />
           </Form.Item>
         </FieldGroup>
         <FieldGroup>
@@ -2071,7 +2096,10 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
         classId: schedule.classId,
         date: dayjs(schedule.date),
         time: dayjs(`${schedule.date}T${schedule.time}`),
-        price: parseFloat(schedule.price) || 0,
+        price:
+          schedule.price != null && parseFloat(schedule.price) > 0
+            ? parseFloat(schedule.price)
+            : undefined,
         maxParticipants: schedule.maxParticipants || 10,
         minParticipants: schedule.minParticipants || 1,
         name: schedule.name || "",
@@ -2093,7 +2121,8 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
           : timeStr
             ? dayjs(`2000-01-01T${timeStr}`)
             : dayjs("09:00", "HH:mm"),
-        price: dup ? parseFloat(dup.price) || 0 : 0,
+        price:
+          dup && parseFloat(dup.price) > 0 ? parseFloat(dup.price) : undefined,
         maxParticipants: dup?.maxParticipants ?? 10,
         minParticipants: dup?.minParticipants ?? 1,
         name: dup?.name || "",
@@ -2129,7 +2158,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
         if (!optionId) { message.error("This experience needs to be configured first."); return; }
         const timeStr = values.time.format("HH:mm");
         const dateStr = values.date.format("YYYY-MM-DD");
-        const priceStr = Math.max(0, parseFloat(values.price) || 0).toFixed(2);
+        const priceStr = parseFloat(values.price).toFixed(2);
         const payload = {
           option: optionId,
           date: dateStr,
@@ -2175,7 +2204,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
           days_of_week: selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean),
           times: times.map(t => t.format("HH:mm")),
           duration,
-          price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
+          price: parseFloat(values.price).toFixed(2),
           maxParticipants: values.maxParticipants,
           minParticipants: form.getFieldValue("minParticipants") || 1,
         };
@@ -2347,9 +2376,24 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
 
             <TwoCol>
               <FieldGroup>
-                <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person booking price. Enter 0 for free sessions." /></FieldLabel>
-                <Form.Item name="price" noStyle rules={[{ required: true, message: "Required" }]}>
-                  <InputNumber min={0} step={0.01} precision={2} style={{ width: "100%" }} addonBefore="$" />
+                <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person price before taxes and fees. Must be greater than zero." /></FieldLabel>
+                <Form.Item
+                  name="price"
+                  noStyle
+                  rules={[
+                    { required: true, message: "Required" },
+                    {
+                      validator: (_, value) => {
+                        const n = typeof value === "number" ? value : parseFloat(value);
+                        if (!Number.isFinite(n) || n <= 0) {
+                          return Promise.reject(new Error("Enter a price greater than zero."));
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <InputNumber min={0.01} step={0.01} precision={2} style={{ width: "100%" }} addonBefore="$" />
                 </Form.Item>
               </FieldGroup>
               <FieldGroup>
@@ -2417,7 +2461,15 @@ function BulkEditPanel({ selectedIds, allSchedules, onSuccess, onClose }) {
       const ids = [...selectedIds];
       const updates = {};
       if (groupName) updates.name = groupName;
-      if (price !== "") updates.price = Math.max(0, parseFloat(price) || 0).toFixed(2);
+      if (price !== "") {
+        const pn = parseFloat(price);
+        if (!Number.isFinite(pn) || pn <= 0) {
+          message.error("Price must be greater than zero.");
+          setLoading(false);
+          return;
+        }
+        updates.price = pn.toFixed(2);
+      }
       if (maxParticipants !== "") updates.maxParticipants = parseInt(maxParticipants, 10);
       await Promise.all(ids.map(id => scheduleService.updateSchedule(id, updates)));
       message.success(`Updated ${ids.length} schedule${ids.length > 1 ? "s" : ""}.`);
@@ -2442,7 +2494,7 @@ function BulkEditPanel({ selectedIds, allSchedules, onSuccess, onClose }) {
       <TwoCol>
         <FieldGroup>
           <FieldLabel><DollarSign size={13} />Price</FieldLabel>
-          <InputNumber min={0} step={0.01} precision={2} value={price || undefined} onChange={v => setPrice(v ?? "")} style={{ width: "100%" }} addonBefore="$" placeholder="—" />
+          <InputNumber min={0.01} step={0.01} precision={2} value={price || undefined} onChange={v => setPrice(v ?? "")} style={{ width: "100%" }} addonBefore="$" placeholder="—" />
         </FieldGroup>
         <FieldGroup>
           <FieldLabel><Users size={13} />Max Guests</FieldLabel>
@@ -3032,7 +3084,12 @@ function MobileFiltersDrawer({ open, onClose, ...sidebarProps }) {
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ScheduleCalendarView({ initialClassId, initialInstanceId }) {
+export default function ScheduleCalendarView({
+  initialClassId,
+  initialInstanceId,
+  prefetchedClasses = null,
+  urlSyncBasePath = "/business/dashboard/schedules",
+}) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState("month");
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -3111,6 +3168,24 @@ export default function ScheduleCalendarView({ initialClassId, initialInstanceId
 
   // ── Load classes ─────────────────────────────────────────────────────────────
   const loadClasses = useCallback(async () => {
+    if (prefetchedClasses != null) {
+      const processed = prefetchedClasses.map((cls) => ({
+        ...cls,
+        option: cls.option ?? cls.options?.[0] ?? null,
+      }));
+      setClasses(processed);
+      const ids = new Set(processed.map((c) => c.classId));
+      setVisibleClassIds((prev) => {
+        if (initialClassId) return new Set([initialClassId]);
+        if (prev.size === 0) return ids;
+        const merged = new Set(prev);
+        ids.forEach((id) => {
+          if (!merged.has(id)) merged.add(id);
+        });
+        return merged;
+      });
+      return;
+    }
     try {
       const result = await businessClassService.fetchBusinessClasses();
       if (result.success && Array.isArray(result.data)) {
@@ -3135,7 +3210,7 @@ export default function ScheduleCalendarView({ initialClassId, initialInstanceId
     } catch (err) {
       console.error(err);
     }
-  }, [initialClassId]);
+  }, [initialClassId, prefetchedClasses]);
 
   // ── Load schedules ────────────────────────────────────────────────────────
   const loadSchedules = useCallback(async (classList) => {
@@ -3178,8 +3253,8 @@ export default function ScheduleCalendarView({ initialClassId, initialInstanceId
     if (!sp.has("instanceId")) return;
     sp.delete("instanceId");
     const qs = sp.toString();
-    router.replace(`/business/dashboard/schedules${qs ? `?${qs}` : ""}`, { scroll: false });
-  }, [router]);
+    router.replace(`${urlSyncBasePath}${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [router, urlSyncBasePath]);
 
   // Open schedule editor drawer from /schedules?instanceId= (e.g. overview "Edit" deep link)
   useEffect(() => {
@@ -3752,8 +3827,13 @@ export default function ScheduleCalendarView({ initialClassId, initialInstanceId
             }
             setGroupEditLoading(true);
             try {
+              const priceNum = parseFloat(values.price);
+              if (!Number.isFinite(priceNum) || priceNum <= 0) {
+                message.error("Enter a price greater than zero.");
+                return;
+              }
               const updates = {
-                price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
+                price: priceNum.toFixed(2),
                 duration: values.duration ?? 60,
                 maxParticipants: values.maxParticipants ?? 10,
                 minParticipants: values.minParticipants ?? 1,
@@ -3778,8 +3858,23 @@ export default function ScheduleCalendarView({ initialClassId, initialInstanceId
             }
           }}
         >
-          <Form.Item label="Price" name="price" rules={[{ required: true }]}>
-            <Input type="number" step="0.01" prefix="$" />
+          <Form.Item
+            label="Price"
+            name="price"
+            rules={[
+              { required: true, message: "Required" },
+              {
+                validator: (_, v) => {
+                  const n = parseFloat(v);
+                  if (!Number.isFinite(n) || n <= 0) {
+                    return Promise.reject(new Error("Must be greater than zero"));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <Input type="number" step="0.01" min="0.01" prefix="$" />
           </Form.Item>
           <Form.Item label="Duration (min)" name="duration" rules={[{ required: true }]}>
             <InputNumber min={15} step={15} style={{ width: "100%" }} />

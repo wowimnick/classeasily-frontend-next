@@ -877,13 +877,13 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     setFormData({
       duration: 60,
       maxParticipants: 10,
-      price: 0,
+      price: undefined,
       selectedDays: [],
     });
     form.setFieldsValue({
       duration: 60,
       maxParticipants: 10,
-      price: 0,
+      price: undefined,
       time: dayjs("09:00", "HH:mm"),
     });
     setCurrentStep(0);
@@ -976,6 +976,12 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         (o) => o.booking_type === "Full Course"
       );
 
+      const priceNum = parseFloat(values.price);
+      if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        message.error("Enter a price greater than zero.");
+        return;
+      }
+
       const commonPayload = {
         name: values.name,
         start_date: values.dateRange[0].format("YYYY-MM-DD"),
@@ -983,7 +989,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         time: values.time.format("HH:mm:ss"),
         duration: values.duration,
         maxParticipants: values.maxParticipants,
-        price: parseFloat(values.price),
+        price: priceNum,
       };
 
       if (editingSchedule) {
@@ -1245,8 +1251,24 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <TwoColGrid>
                 <FieldContainer>
                   <Label>Total Price (CAD)</Label>
-                  <CompactFormItem name="price" rules={[{ required: true }]}>
-                    <StyledInput prefix="$" type="number" step="0.01" />
+                  <CompactFormItem
+                    name="price"
+                    rules={[
+                      { required: true, message: "Required" },
+                      {
+                        validator: (_, v) => {
+                          const n = parseFloat(v);
+                          if (!Number.isFinite(n) || n <= 0) {
+                            return Promise.reject(
+                              new Error("Price must be greater than zero"),
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
+                    <StyledInput prefix="$" type="number" min="0.01" step="0.01" />
                   </CompactFormItem>
                 </FieldContainer>
                 <FieldContainer>

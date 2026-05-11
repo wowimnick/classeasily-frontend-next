@@ -72,6 +72,7 @@ import {
   businessService,
   uploadService,
 } from "@/services/apiService";
+import { classManagementService } from "@/services/adminDash";
 import debounce from "lodash/debounce";
 import {
   MapContainer,
@@ -2017,6 +2018,8 @@ const ClassEditDrawer = ({
   onClose,
   classData: initialClassDataProp,
   onSuccess,
+  useAdminApi = false,
+  isClassDataLoading = false,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -2051,6 +2054,7 @@ const ClassEditDrawer = ({
   const watchedLocationRef = Form.useWatch("location_ref", form);
 
   useEffect(() => {
+    if (useAdminApi) return;
     let cancelled = false;
     (async () => {
       setLocationsFetchComplete(false);
@@ -2064,7 +2068,24 @@ const ClassEditDrawer = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [useAdminApi]);
+
+  useEffect(() => {
+    if (!useAdminApi) return;
+    if (!visible || !initialClassDataProp) {
+      if (!visible) {
+        setBusinessLocations([]);
+        setLocationsFetchComplete(false);
+      }
+      return;
+    }
+    const raw = initialClassDataProp.business_locations;
+    const locs = Array.isArray(raw)
+      ? raw.filter((l) => l.is_active !== false)
+      : [];
+    setBusinessLocations(locs);
+    setLocationsFetchComplete(true);
+  }, [useAdminApi, visible, initialClassDataProp]);
 
   useEffect(() => {
     return () => {
@@ -2077,15 +2098,7 @@ const ClassEditDrawer = ({
   }, [mainImages]);
 
   useEffect(() => {
-    if (visible && initialClassDataProp) {
-      editLocationUiSeededRef.current = false;
-      setDataLoading(true);
-      initialClassDataRef.current = JSON.parse(
-        JSON.stringify(initialClassDataProp),
-      );
-      initializeFormAndStates(initialClassDataRef.current, []);
-      setDataLoading(false);
-    } else if (!visible) {
+    if (!visible) {
       form.resetFields();
       setMainImages([]);
       setMapSearchResults([]);
@@ -2097,8 +2110,21 @@ const ClassEditDrawer = ({
       setActiveTier(0);
       initialClassDataRef.current = null;
       editLocationUiSeededRef.current = false;
+      setDataLoading(true);
+      return;
     }
-  }, [visible, initialClassDataProp, form]);
+    if (isClassDataLoading || !initialClassDataProp) {
+      setDataLoading(true);
+      return;
+    }
+    editLocationUiSeededRef.current = false;
+    setDataLoading(true);
+    initialClassDataRef.current = JSON.parse(
+      JSON.stringify(initialClassDataProp),
+    );
+    initializeFormAndStates(initialClassDataRef.current);
+    setDataLoading(false);
+  }, [visible, initialClassDataProp, isClassDataLoading, form]);
 
   const handleOpenChange = (open) => {
     if (!open) {
@@ -2643,10 +2669,15 @@ const ClassEditDrawer = ({
       payload.options = JSON.stringify(formattedOptions);
 
       // 6. Send Update
-      const result = await businessClassService.updateClass(
-        initialClassDataProp.classId,
-        payload,
-      );
+      const classId = initialClassDataRef.current?.classId;
+      if (!classId) {
+        message.error("Missing class id.");
+        setLoading(false);
+        return;
+      }
+      const result = useAdminApi
+        ? await classManagementService.updateClass(classId, payload)
+        : await businessClassService.updateClass(classId, payload);
 
       if (result.success) {
         onSuccess?.(result.data);
@@ -2728,7 +2759,9 @@ const ClassEditDrawer = ({
       <DrawerHeader>
         <DrawerTitle level={4}>Edit Experience</DrawerTitle>
         <DrawerHeaderActions>
-          <CopyPageLinkButton icon={Link2} label="Copy link to this experience" size={20} />
+          {!useAdminApi && (
+            <CopyPageLinkButton icon={Link2} label="Copy link to this experience" size={20} />
+          )}
           <CloseButton
             icon={<X size={20} />}
             onClick={onClose}

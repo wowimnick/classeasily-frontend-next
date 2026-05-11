@@ -943,8 +943,8 @@ const MobileExploreSearchPill = styled.button`
   background: #ffffff;
   border: 1px solid rgb(219, 219, 219);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    0 4px 14px rgba(0, 0, 0, 0.05);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 10px 28px rgba(0, 0, 0, 0.14);
   color: #000000;
   cursor: pointer;
   box-sizing: border-box;
@@ -953,8 +953,8 @@ const MobileExploreSearchPill = styled.button`
 
   &:hover {
     box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.05),
-      0 6px 18px rgba(0, 0, 0, 0.09);
+      0 3px 8px rgba(0, 0, 0, 0.1),
+      0 12px 32px rgba(0, 0, 0, 0.16);
   }
 `;
 
@@ -1038,14 +1038,14 @@ const contentVariants = {
   center: {
     opacity: 1,
     scale: 1,
-    transition: { delay: 0.1, duration: 0.3, ease: "easeOut" },
+    transition: { delay: 0.18, duration: 0.3, ease: "easeOut" },
   },
   exit: { opacity: 0, transition: { duration: 0 } },
 };
 
 function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
   const raw = (selectedLocation?.displayName || searchTerm || "").trim();
-  if (!raw) return "Experiences near you";
+  if (!raw) return "Start your search";
   const city = raw.split(",")[0].trim();
   return `Experiences in ${city}`;
 }
@@ -1115,6 +1115,9 @@ function ExploreHeaderContent({
   /** True only when opening a field from the compact pill; cleared when dropdown may show. */
   const deferSearchDropdownUntilExpandedRef = useRef(false);
   const dropdownRevealFallbackTimerRef = useRef(null);
+  /** Keeps dim overlay flush under the header while spring height animates (fixed px top was ahead of layout). */
+  const headerWrapperMeasureRef = useRef(null);
+  const [searchBackdropTopPx, setSearchBackdropTopPx] = useState(HEADER_H_COMPACT);
 
   activeFieldRef.current = activeField;
 
@@ -1136,7 +1139,7 @@ function ExploreHeaderContent({
 
   const getCompactLocationDisplay = useCallback(() => {
     const raw = (searchTerm || "").trim();
-    if (!raw) return "Located in Toronto";
+    if (!raw) return "Start your search";
     const norm = raw.replace(/\s+/g, " ").trim();
     if (norm === TORONTO_PRESET_DISPLAY || /^toronto, ?ON$/i.test(norm)) {
       return "Located in Toronto";
@@ -1256,7 +1259,7 @@ function ExploreHeaderContent({
       if (activeFieldRef.current && deferSearchDropdownUntilExpandedRef.current) {
         revealSearchDropdown();
       }
-    }, 140);
+    }, 220);
     return () => {
       if (dropdownRevealFallbackTimerRef.current) {
         clearTimeout(dropdownRevealFallbackTimerRef.current);
@@ -1264,6 +1267,47 @@ function ExploreHeaderContent({
       }
     };
   }, [activeField, revealSearchDropdown, updatePopupPosition]);
+
+  useLayoutEffect(() => {
+    if (!isExpanded) return undefined;
+    const el = headerWrapperMeasureRef.current;
+    if (!el || typeof window === "undefined") return undefined;
+
+    let lastRoundedBottom = -1;
+    const syncBackdropTop = () => {
+      const bottom = el.getBoundingClientRect().bottom;
+      const rounded = Math.max(0, Math.ceil(bottom));
+      if (rounded !== lastRoundedBottom) {
+        lastRoundedBottom = rounded;
+        setSearchBackdropTopPx(rounded);
+      }
+    };
+
+    syncBackdropTop();
+
+    const ro = new ResizeObserver(syncBackdropTop);
+    ro.observe(el);
+    window.addEventListener("resize", syncBackdropTop);
+    window.addEventListener("scroll", syncBackdropTop, true);
+
+    const springMs = 750;
+    const springStartedAt = performance.now();
+    let rafId = 0;
+    const springFollow = () => {
+      syncBackdropTop();
+      if (performance.now() - springStartedAt < springMs) {
+        rafId = window.requestAnimationFrame(springFollow);
+      }
+    };
+    rafId = window.requestAnimationFrame(springFollow);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      ro.disconnect();
+      window.removeEventListener("resize", syncBackdropTop);
+      window.removeEventListener("scroll", syncBackdropTop, true);
+    };
+  }, [isExpanded]);
 
   const closeActiveField = useCallback(() => {
     if (dropdownRevealFallbackTimerRef.current) {
@@ -1310,6 +1354,18 @@ function ExploreHeaderContent({
   };
 
   const handleSectionButtonKeyDown = (e, field) => {
+    const target = e.target;
+    const tag =
+      target && typeof target.tagName === "string"
+        ? target.tagName.toUpperCase()
+        : "";
+    const typingInField =
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      (target && target.isContentEditable);
+    if (typingInField) return;
+
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleFieldClick(field);
@@ -1414,7 +1470,7 @@ function ExploreHeaderContent({
         {isExpanded && (
           <SearchBackdrop
             key="search-backdrop"
-            $top={isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT}
+            $top={searchBackdropTopPx}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1426,6 +1482,7 @@ function ExploreHeaderContent({
       </AnimatePresence>
 
       <HeaderWrapper
+        ref={headerWrapperMeasureRef}
         $isFixed={isFixed}
         $unifiedExploreChrome={unifiedExploreChrome}
         $exploreMobileLight={exploreMobileLight}

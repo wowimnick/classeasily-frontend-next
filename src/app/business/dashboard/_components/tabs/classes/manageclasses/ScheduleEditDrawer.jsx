@@ -1081,8 +1081,8 @@ const RULES = {
         if (value === "" || value === null || value === undefined) {
           return Promise.reject(new Error("Please enter a price."));
         }
-        if (Number.isNaN(num) || num < 0) {
-          return Promise.reject(new Error("Price must be 0 or greater."));
+        if (Number.isNaN(num) || num <= 0) {
+          return Promise.reject(new Error("Price must be greater than zero."));
         }
         return Promise.resolve();
       },
@@ -1279,7 +1279,6 @@ const ScheduleEditDrawer = ({
     setBulkCurrentStep(0);
 
     const defaultValues = {
-      price: "0.00",
       duration: 60,
       maxParticipants: 10,
       minParticipants: 1,
@@ -1309,7 +1308,6 @@ const ScheduleEditDrawer = ({
         commonDetails: {
           duration: 60,
           maxParticipants: 10,
-          price: "0.00",
           minParticipants: 1,
         },
       });
@@ -1406,8 +1404,8 @@ const ScheduleEditDrawer = ({
       setIsLoading(true);
       const timeStr = values.time.format("HH:mm");
       const dateStr = values.date.format("YYYY-MM-DD");
-      const priceNum = Number.isFinite(parseFloat(values.price)) ? parseFloat(values.price) : 0;
-      const priceStr = Math.max(0, priceNum).toFixed(2);
+      const priceNum = parseFloat(values.price);
+      const priceStr = priceNum.toFixed(2);
       const minPart = values.minParticipants ?? 1;
 
       if (editingSchedule) {
@@ -1426,9 +1424,9 @@ const ScheduleEditDrawer = ({
           time: typeof initial.time === "string" ? initial.time.slice(0, 5) : "",
           duration: initial.duration,
           price:
-            initial.price != null
+            initial.price != null && initial.price !== ""
               ? parseFloat(initial.price).toFixed(2)
-              : "0.00",
+              : "",
           maxParticipants: initial.maxParticipants,
           minParticipants: initial.minParticipants ?? 1,
           date:
@@ -1502,9 +1500,7 @@ const ScheduleEditDrawer = ({
       ]);
       const values = { ...formData, ...bulkForm.getFieldsValue(true) };
       setIsBulkLoading(true);
-      const priceNum = Number.isFinite(parseFloat(values.commonDetails?.price))
-        ? parseFloat(values.commonDetails.price)
-        : 0;
+      const priceNum = parseFloat(values.commonDetails.price);
       const payload = {
         name: values.name,
         option: selectedOptionId,
@@ -1513,7 +1509,7 @@ const ScheduleEditDrawer = ({
         days_of_week: values.days_of_week,
         times: values.times.map((t) => t.format("HH:mm")),
         duration: values.commonDetails?.duration,
-        price: Math.max(0, priceNum).toFixed(2),
+        price: priceNum.toFixed(2),
         maxParticipants: values.commonDetails?.maxParticipants,
         minParticipants: values.commonDetails?.minParticipants ?? 1,
       };
@@ -1536,9 +1532,9 @@ const ScheduleEditDrawer = ({
       await form.validateFields();
       const values = form.getFieldsValue(true);
       setIsLoading(true);
-      const priceNum = Number.isFinite(parseFloat(values.price)) ? parseFloat(values.price) : 0;
+      const priceNum = parseFloat(values.price);
       const updates = {
-        price: Math.max(0, priceNum).toFixed(2),
+        price: priceNum.toFixed(2),
         maxParticipants: values.maxParticipants,
         minParticipants: values.minParticipants ?? 1,
         duration: values.duration,

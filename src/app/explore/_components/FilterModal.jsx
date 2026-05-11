@@ -390,6 +390,25 @@ const sortOptionsList = [
   { key: "newest", label: "Newest", icon: <Clock size={20} /> },
 ];
 
+/** Values align with backend normalize_booking_type_query (?class_type=). */
+const CLASS_TYPE_OPTIONS = [
+  {
+    id: "class",
+    label: "All types",
+    sub: "Drop-in sessions and multi-session courses",
+  },
+  {
+    id: "single_session",
+    label: "Drop-in session",
+    sub: "Workshops and pay-per-class options",
+  },
+  {
+    id: "full_course",
+    label: "Multi-session course",
+    sub: "Series and multi-day courses",
+  },
+];
+
 function formatShowResultsLabel(totalCount) {
   if (typeof totalCount !== "number" || Number.isNaN(totalCount)) {
     return "Show results";
@@ -577,6 +596,49 @@ export default function FilterModal({
           distribution={priceDistribution}
           compact={compact}
         />
+      </Section>
+
+      <Section $compact={compact}>
+        <SectionTitle $compact={compact} id="filter-experience-type-heading">
+          Experience type
+        </SectionTitle>
+        <SectionSub $compact={compact}>
+          Filter by how the listing is structured.
+        </SectionSub>
+        <FilterTimeOptionList $compact={compact}>
+          {CLASS_TYPE_OPTIONS.map((opt) => {
+            const isSelected = (tempFilters.classType || "class") === opt.id;
+            return (
+              <FilterTimeOptionRow
+                key={opt.id}
+                type="button"
+                $compact={compact}
+                aria-pressed={isSelected}
+                onClick={() =>
+                  setTempFilters((prev) => ({ ...prev, classType: opt.id }))
+                }
+              >
+                <FilterTimeOptionText>
+                  <FilterTimeOptionLabel $compact={compact}>
+                    {opt.label}
+                  </FilterTimeOptionLabel>
+                  <FilterTimeOptionSub $compact={compact}>
+                    {opt.sub}
+                  </FilterTimeOptionSub>
+                </FilterTimeOptionText>
+                <FilterTimeRowCheckbox
+                  $compact={compact}
+                  $checked={isSelected}
+                  aria-hidden
+                >
+                  {isSelected ? (
+                    <Check size={compact ? 12 : 14} strokeWidth={3} aria-hidden />
+                  ) : null}
+                </FilterTimeRowCheckbox>
+              </FilterTimeOptionRow>
+            );
+          })}
+        </FilterTimeOptionList>
       </Section>
 
       <Section $compact={compact}>

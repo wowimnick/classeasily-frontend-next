@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import styled, { createGlobalStyle } from "styled-components";
 import { Building, Hand } from "lucide-react";
@@ -174,6 +175,7 @@ const ClassPageMap = ({
   const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
   const saltToggle = Boolean(saltLocation);
+  const pathname = usePathname();
 
   useEffect(() => {
     let alive = true;
@@ -191,7 +193,7 @@ const ClassPageMap = ({
       window.clearTimeout(t);
       setMapDomAllowed(false);
     };
-  }, [coordinates, saltToggle]);
+  }, [coordinates, saltToggle, pathname]);
 
   useEffect(() => {
     setMapInteractionEnabled(false);

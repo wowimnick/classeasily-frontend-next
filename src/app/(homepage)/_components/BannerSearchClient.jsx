@@ -11,13 +11,9 @@ import styled, { createGlobalStyle } from "styled-components";
 import {
   Search,
   MapPin,
-  Star,
-  ArrowRight,
-  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -89,12 +85,17 @@ const SearchFormWrapper = styled(motion.form)`
   border-radius: 100px;
   padding: 0;
   height: 76px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.14);
+  border: 1px solid rgb(213, 213, 213);
   /* Wider than sum of segment min-widths + search button so the button stays inside the pill */
-  max-width: min(720px, calc(100vw - 32px));
+  max-width: min(820px, calc(100vw - 48px));
   /* Popup sits below the pill — must not clip it (overflow hidden lives on SearchPillRow only). */
   overflow: visible;
   z-index: 50;
+
+  @media (max-width: 768px) {
+    max-width: min(320px, calc(100vw - 48px));
+  }
 `;
 
 /** Clips the rounded pill chrome only; dropdown is a sibling outside this box. */
@@ -166,7 +167,7 @@ const ValueDisplay = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  max-width: 260px;
   position: relative;
   z-index: 1;
 `;
@@ -201,7 +202,7 @@ const UnifiedPopupContainer = styled(motion.div)`
 
 const SearchModeStage = styled.div`
   width: 100%;
-  max-width: 720px;
+  max-width: 920px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -276,60 +277,74 @@ const IconBox = styled.div`
   flex-shrink: 0;
 `;
 
-// --- MOBILE COMPONENTS ---
-const StaticSearchPill = styled(motion.button)`
-  background: #ffffff;
-  border: none;
-  border-radius: 100px;
-  padding: 10px 16px 10px 20px;
-  width: 100%;
-  max-width: 360px;
+// --- MOBILE COMPONENTS (match explore ClientHeader MobileExploreSearchPill) ---
+const MobileHeroSearchPill = styled(motion.button)`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 36px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid rgb(219, 219, 219);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 10px 28px rgba(0, 0, 0, 0.14);
+  color: #000000;
   cursor: pointer;
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s ease;
 
-  .content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-    flex: 1;
-    min-width: 0;
-  }
-  .icon-circle {
-    width: 36px;
-    height: 36px;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #222;
+  &:hover {
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.1),
+      0 12px 32px rgba(0, 0, 0, 0.16);
   }
 `;
 
-const PillText = styled.div`
-  font-family: "ProximaSoft", sans-serif;
+const MobileHeroPillLine1 = styled.span`
+  display: block;
   font-size: 15px;
-  font-weight: 600;
-  color: #222;
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
-const PillSubtext = styled.div`
-  font-family: "ProximaSoft", sans-serif;
+const MobileHeroPillMetaRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
   font-size: 13px;
-  color: #717171;
+  font-weight: 400;
+  color: #000000;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  .meta-sep {
+    color: #000000;
+    font-weight: 400;
+    user-select: none;
+    flex-shrink: 0;
+  }
 `;
 
-// --- ANNOUNCEMENT & TRUST STYLES ---
+// --- ANNOUNCEMENT STYLES ---
 const BannerWrapper = styled.div`
   position: relative;
   width: 100%;
@@ -339,13 +354,13 @@ const BannerWrapper = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 90;
-  padding: 12px 20px;
-  min-height: 52px;
+  padding: 18px 24px 14px;
+  min-height: 76px;
   box-shadow:
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
     0 4px 12px rgba(0, 0, 0, 0.12);
 
-  @media (max-width: 850px) {
+  @media (max-width: 768px) {
     display: none;
   }
 `;
@@ -355,6 +370,8 @@ const BannerContainer = styled.div`
   justify-content: center;
   width: 100%;
   max-width: 1200px;
+  /* Sheet overlaps ~22px; shift up ~half so copy centers in the visible band above the curve */
+  transform: translate3d(0, -11px, 0);
 `;
 const LeftContent = styled.div`
   display: flex;
@@ -381,7 +398,8 @@ const TextContent = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 8px;
-  font-size: clamp(12px, 1.35vw + 11px, 14px);
+  /* Fluid size, capped at 14px */
+  font-size: clamp(12px, 0.75vw + 10px, 14px);
   line-height: 1.35;
   justify-content: center;
   text-align: center;
@@ -400,13 +418,8 @@ const TextContent = styled.div`
     font-weight: 400;
   }
 
-  /* When wrapped to 2 rows, reduce text size */
   @media (max-width: 1100px) {
-    font-size: 12px;
     gap: 4px 6px;
-  }
-  @media (max-width: 950px) {
-    font-size: 11px;
   }
 `;
 const SecondaryLink = styled(Link)`
@@ -428,120 +441,6 @@ const SecondaryLink = styled(Link)`
   }
   svg {
     transition: transform 0.2s ease;
-  }
-`;
-
-// Trust Strip
-const TrustStripWrapper = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.27);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
-  padding: 0.5rem 1.5rem;
-
-  @media (max-width: 850px) {
-    display: none;
-  }
-`;
-const WaveContainer = styled.div`
-  position: absolute;
-  top: -25px;
-  left: 0;
-  width: 100%;
-  height: 25px;
-  overflow: hidden;
-  z-index: 11;
-  pointer-events: none;
-  svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    fill: rgba(0, 0, 0, 0.27);
-  }
-`;
-const TrustContent = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  max-width: 1200px;
-  width: 100%;
-  position: relative;
-  @media (max-width: 800px) {
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-`;
-const AvatarPile = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 10px 0;
-  @media (max-width: 600px) {
-    display: none;
-  }
-`;
-const AvatarItem = styled.div`
-  position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease;
-  background: #333;
-
-  /* Add these lines: */
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-`;
-const CenterInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 4px;
-    text-align: center;
-  }
-`;
-const StarCluster = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  svg {
-    fill: #ffd700;
-    color: #ffd700;
-    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
-  }
-`;
-const TrustText = styled.div`
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  .title {
-    color: #fff;
-    font-family: "ProximaSoft", sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .subtitle {
-    color: rgba(255, 255, 255, 0.8);
-    font-family: "ProximaSoft", sans-serif;
-    font-size: 13px;
-    font-weight: 500;
   }
 `;
 
@@ -567,9 +466,37 @@ const FrozenContent = ({
 
 const POPUP_SIZES = { location: 400, date: 660, collection: 400 };
 
+function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
+  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
+  if (!raw) return "Start your search";
+  const city = raw.split(",")[0].trim();
+  return `Experiences in ${city}`;
+}
+
+function formatMobileExploreDateSummary(datePickerValue) {
+  if (!datePickerValue) return "Anytime";
+  if (datePickerValue.start && datePickerValue.end) {
+    const a = dayjs(datePickerValue.start);
+    const b = dayjs(datePickerValue.end);
+    if (a.isValid() && b.isValid()) {
+      if (a.isSame(b, "day")) return a.format("MMM D");
+      return `${a.format("MMM D")} – ${b.format("MMM D")}`;
+    }
+  }
+  if (typeof datePickerValue?.format === "function") {
+    return datePickerValue.format("MMM D");
+  }
+  if (typeof datePickerValue === "string" && datePickerValue) {
+    const d = dayjs(datePickerValue);
+    return d.isValid() ? d.format("MMM D") : "Anytime";
+  }
+  return "Anytime";
+}
+
 export default function BannerSearchClient({ mode }) {
   const {
     searchTerm,
+    selectedLocation,
     datePickerValue,
     setDatePickerValue,
     selectedCollections,
@@ -848,126 +775,25 @@ export default function BannerSearchClient({ mode }) {
     );
   }
 
-  if (mode === "trust") {
-    const activityImagesLeft = [
-      {
-        src: "https://i.ytimg.com/vi/Z39AeBVCQu0/maxresdefault.jpg",
-        alt: "Neon Sign Making",
-        x: 0,
-        y: -3,
-        z: 2,
-      },
-    ];
-    const activityImagesRight = [
-      {
-        src: "https://media.istockphoto.com/id/1413388346/vector/white-maple-leaf-on-a-red-background-the-symbol-of-canada.jpg?s=170667a&w=0&k=20&c=n9Vf1HXscEwD-4lAbnZvfhHW0Mdi6sL2wYGPHpQ344I=",
-        alt: "Maple Leaf",
-        x: 0,
-        y: 3,
-        z: 2,
-      },
-    ];
-    return (
-      <TrustStripWrapper>
-        <WaveContainer>
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,100 C150,200 350,0 500,100 C650,200 800,0 1000,100 C1100,150 1200,100 1200,100 V120 H0 V100 Z"></path>
-          </svg>
-        </WaveContainer>
-        <TrustContent>
-          <AvatarPile>
-            {activityImagesLeft.map((item, i) => (
-              <AvatarItem
-                key={i}
-                style={{
-                  zIndex: item.z,
-                  marginLeft: i === 0 ? 0 : `${item.x}px`,
-                  transform: `translateY(${item.y}px)`,
-                }}
-              >
-                <Image
-                  src={item.src}
-                  alt={item.alt}
-                  width={44}
-                  height={44}
-                  style={{ objectFit: "cover" }}
-                />
-              </AvatarItem>
-            ))}
-          </AvatarPile>
-          <CenterInfo>
-            <StarCluster>
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={20} strokeWidth={0} />
-              ))}
-            </StarCluster>
-            <TrustText>
-              <span className="title">Thousands of 5-star reviews</span>
-              <span className="subtitle">
-                A growing community of people booking fun local experiences.
-              </span>
-            </TrustText>
-          </CenterInfo>
-          <AvatarPile>
-            {activityImagesRight.map((item, i) => (
-              <AvatarItem
-                key={i}
-                style={{
-                  zIndex: item.z,
-                  marginLeft: i === 0 ? 0 : `${item.x}px`,
-                  transform: `translateY(${item.y}px)`,
-                }}
-              >
-                <Image
-                  src={item.src}
-                  alt={item.alt}
-                  width={44}
-                  height={44}
-                  style={{ objectFit: "cover" }}
-                />
-              </AvatarItem>
-            ))}
-          </AvatarPile>
-        </TrustContent>
-      </TrustStripWrapper>
-    );
-  }
-
   if (mode === "mobile") {
-    const getPillLabel = () => searchTerm || "Search around?";
-    const getPillSubLabel = () => {
-      let parts = [];
-      if (datePickerValue) {
-        if (datePickerValue.start && datePickerValue.end) {
-          const s = dayjs(datePickerValue.start);
-          const e = dayjs(datePickerValue.end);
-          if (s.month() === e.month())
-            parts.push(`${s.format("MMM D")} - ${e.format("D")}`);
-          else parts.push(`${s.format("MMM D")} - ${e.format("MMM D")}`);
-        } else {
-          parts.push(dayjs(datePickerValue).format("MMM D"));
-        }
-      } else parts.push("Any week");
-      parts.push(summarizeCollectionsForPill(selectedCollections));
-      return parts.join(" • ");
-    };
     return (
-      <StaticSearchPill
+      <MobileHeroSearchPill
+        type="button"
         onClick={() => setIsDrawerOpen(true)}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: 0.98 }}
+        aria-label="Edit search"
       >
-        <div className="icon-circle">
-          <Search size={22} strokeWidth={2.5} />
-        </div>
-        <div className="content">
-          <div
-            style={{ display: "flex", flexDirection: "column", width: "100%" }}
-          >
-            <PillText>{getPillLabel()}</PillText>
-            <PillSubtext>{getPillSubLabel()}</PillSubtext>
-          </div>
-        </div>
-      </StaticSearchPill>
+        <MobileHeroPillLine1>
+          {getMobileExploreLocationTitle(selectedLocation, searchTerm)}
+        </MobileHeroPillLine1>
+        <MobileHeroPillMetaRow>
+          <span>{formatMobileExploreDateSummary(datePickerValue)}</span>
+          <span className="meta-sep" aria-hidden>
+            ·
+          </span>
+          <span>{summarizeCollectionsForPill(selectedCollections)}</span>
+        </MobileHeroPillMetaRow>
+      </MobileHeroSearchPill>
     );
   }
 
@@ -995,7 +821,7 @@ export default function BannerSearchClient({ mode }) {
                   ref={locationRef}
                   $isActive={activeField === "location"}
                   onClick={() => handleFieldClick("location")}
-                  style={{ width: "260px", flexShrink: 0 }}
+                  style={{ width: "300px", flexShrink: 0 }}
                 >
                   {activeField === "location" && (
                     <ActivePill
@@ -1025,7 +851,7 @@ export default function BannerSearchClient({ mode }) {
                   ref={dateRef}
                   $isActive={activeField === "date"}
                   onClick={() => handleFieldClick("date")}
-                  style={{ minWidth: "170px" }}
+                  style={{ minWidth: "192px" }}
                 >
                   {activeField === "date" && (
                     <ActivePill
@@ -1046,7 +872,7 @@ export default function BannerSearchClient({ mode }) {
                   ref={collectionRef}
                   $isActive={activeField === "collection"}
                   onClick={() => handleFieldClick("collection")}
-                  style={{ minWidth: "160px" }}
+                  style={{ minWidth: "200px", flex: 1 }}
                 >
                   {activeField === "collection" && (
                     <ActivePill

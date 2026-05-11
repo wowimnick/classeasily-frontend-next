@@ -69,25 +69,8 @@ export async function searchClasses(params = {}) {
     const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
     const cacheTags = generateSearchCacheTags(params);
 
-    // No location/keyword/tag/collection and no date/participant filters: cache for instant explore page
-    const collectionSlugsForCache = normalizeExploreCollectionSlugs(params.collection);
-    const hasNoGeoOrFilters =
-      !params.lat &&
-      !params.lng &&
-      !params.location_search &&
-      !params.keyword &&
-      !params.tag &&
-      collectionSlugsForCache.length === 0;
-    const hasNoExtraFilters =
-      !params.date &&
-      !params.start_date &&
-      !params.end_date &&
-      !params.participants &&
-      (!params.time_preference || (Array.isArray(params.time_preference) && params.time_preference.length === 0)) &&
-      (!params.days || (Array.isArray(params.days) && params.days.length === 0));
-    const isCategoryOnlyCacheable = hasNoGeoOrFilters && hasNoExtraFilters;
-
-    const cacheStrategy = isCategoryOnlyCacheable ? "force-cache" : "no-store";
+    // Typesense + CDN-friendly: Data Cache all shapes; rely on tags + edge stale-while-revalidate.
+    const cacheStrategy = "force-cache";
     const nextConfig = { tags: cacheTags };
 
     if (process.env.NODE_ENV === "development") {

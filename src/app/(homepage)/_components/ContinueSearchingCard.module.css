@@ -1,0 +1,218 @@
+/* Framer Motion height-tween wrapper — clips content during expand */
+.wrapper {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  background: #ffffff;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.09);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 0;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.13);
+}
+
+.card:active {
+  transform: scale(0.99);
+}
+
+.card:focus {
+  outline: none;
+}
+
+.card:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 3px;
+}
+
+/* ── Inner row: thumbnail + text ── */
+.inner {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: min(820px, calc(100vw - 40px));
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  /* Grow OFF — flex-grow was stealing row space so copy hugged one edge instead of staying centered as a cluster */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 94px); /* thumb stack 74px + gap 20px */
+}
+
+/* ── Desktop: single line (hide mobile stack) ── */
+.singleLine {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.label,
+.city,
+.chevronRow {
+  display: none;
+}
+
+/* ── Arrow icon inline with text ── */
+.arrowIcon {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  color: #111111;
+  flex-shrink: 0;
+}
+
+/* ── Stacked thumbnail ── */
+.thumbStack {
+  position: relative;
+  flex: 0 0 74px;
+  width: 74px;
+  height: 66px;
+}
+
+/* Back image — rotated slightly, peeking left */
+.thumbBack {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  transform: rotate(-5deg);
+  z-index: 0;
+}
+
+.thumbBackImg {
+  object-fit: cover;
+  width: 62px !important;
+  height: 62px !important;
+  display: block;
+}
+
+/* Front image — sits on top, white frame border */
+.thumbFront {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1;
+}
+
+.thumbFrontImg {
+  object-fit: cover;
+  width: 62px !important;
+  height: 62px !important;
+  display: block;
+}
+
+/* ── Mobile: hide single line, show stacked ── */
+@media (max-width: 480px) {
+  .singleLine {
+    display: none;
+  }
+
+  .label {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111111;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    white-space: nowrap;
+    margin-bottom: 2px;
+  }
+
+  .city {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111111;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .chevronRow {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+  }
+
+  .chevronIcon {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111111;
+    line-height: 1.25;
+  }
+
+  .left {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 88px); /* thumb stack 68px + gap 20px */
+  }
+
+  .thumbStack {
+    flex: 0 0 68px;
+    width: 68px;
+    height: 60px;
+  }
+
+  .thumbBack,
+  .thumbFront {
+    width: 56px;
+    height: 56px;
+    border-radius: 9px;
+  }
+
+  .thumbBackImg,
+  .thumbFrontImg {
+    width: 56px !important;
+    height: 56px !important;
+  }
+}

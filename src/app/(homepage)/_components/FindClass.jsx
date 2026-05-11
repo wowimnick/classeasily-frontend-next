@@ -22,11 +22,12 @@ const MainWrapper = styled.section`
     padding: 0 3rem;
   }
   @media (max-width: 768px) {
-    padding: 0 1.5rem;
+    /* Flush carousel to screen right; gutter on left only */
+    padding: 0 0 0 1rem;
     margin: 1rem auto;
   }
   @media (max-width: 616px) {
-    padding: 0 1rem;
+    padding: 0 0 0 1rem;
   }
 `;
 
@@ -36,6 +37,14 @@ const HeaderContainer = styled.div`
   align-items: flex-end;
   width: 100%;
   margin-bottom: 1rem;
+
+  @media (max-width: 768px) {
+    padding-top: 0.75rem;
+    padding-left: 0;
+    padding-right: 1rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+  }
 `;
 
 const HeaderLeft = styled.div`
@@ -46,7 +55,6 @@ const HeaderLeft = styled.div`
   margin-bottom: 0;
 
   @media (max-width: 768px) {
-    
     gap: 0.05rem;
   }
 `;
