@@ -75,12 +75,12 @@
 
 /* --- Typography (fluid across viewport) --- */
 .heroText {
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.03em;
   font-size: clamp(1.85rem, 2.8vw + 1.15rem, 3.35rem);
   margin: 0;
   line-height: 1.06;
-  color: #0a0a0a;
+  color: #f92346;
   white-space: nowrap;
 }
 
@@ -97,11 +97,11 @@
 }
 
 .heroTextMobile {
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.035em;
   font-size: clamp(1.25rem, 5.5vw + 0.75rem, 2rem);
   text-align: center;
-  color: #000;
+  color: #f92346;
   margin: 0;
   line-height: 1.08;
   white-space: nowrap;
