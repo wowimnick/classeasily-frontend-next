@@ -18,7 +18,7 @@ import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
-import { BP, down } from "@/styles/breakpoints";
+import { BP, down, mq } from "@/styles/breakpoints";
 import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 import {
   peekExploreSearchResults,
@@ -35,14 +35,37 @@ const PageLayout = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 0;
   overflow: hidden;
   background-color: ${(props) => props.theme.token.colorBgContainer};
+
+  /* Safari iOS: tie shell to visible viewport; prevent rubber-band scrolling the chrome away */
+  ${down(BP.MOBILE)} {
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
 `;
 
 const ContentArea = styled.main`
-  flex-grow: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ExploreResultsPane = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+
+const ExploreHeaderSlot = styled.div`
+  flex-shrink: 0;
 `;
 
 const FetchErrorBanner = styled.div`
@@ -237,6 +260,31 @@ function ExploreClientContent({
   initialCollectionsIWant = [],
   routeParams,
 }) {
+  /** Mobile Safari: `ClassesDisplay` must not clear body overflow on list view — document scroll steals the chrome. */
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof matchMedia === "undefined") return;
+    const mql = window.matchMedia(mq.mobile);
+    const lockDocumentScroll = () => {
+      if (!mql.matches) return;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+    const unlockDocumentScroll = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+    const onViewport = () => {
+      if (mql.matches) lockDocumentScroll();
+      else unlockDocumentScroll();
+    };
+    onViewport();
+    mql.addEventListener("change", onViewport);
+    return () => {
+      mql.removeEventListener("change", onViewport);
+      unlockDocumentScroll();
+    };
+  }, []);
+
   const collectionsIWantForExplore = useMemo(
     () => filterCollectionsWithActiveClasses(initialCollectionsIWant),
     [initialCollectionsIWant],
@@ -705,7 +753,9 @@ function ExploreClientContent({
   return (
     <PageLayout>
       {/* unifiedExploreChrome: header + filter bar chrome — Explore only (see ClientHeader). */}
-      <ExploreHeader showOptionsWrapper unifiedExploreChrome />
+      <ExploreHeaderSlot>
+        <ExploreHeader showOptionsWrapper unifiedExploreChrome />
+      </ExploreHeaderSlot>
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>
@@ -713,7 +763,9 @@ function ExploreClientContent({
         {fetchError && !showSkeleton && (
           <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>
         )}
-        <ClassesDisplay {...classesDisplayProps} />
+        <ExploreResultsPane>
+          <ClassesDisplay {...classesDisplayProps} />
+        </ExploreResultsPane>
       </ContentArea>
     </PageLayout>
   );

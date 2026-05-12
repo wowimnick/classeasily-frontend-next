@@ -348,7 +348,7 @@ const MobileHeroPillMetaRow = styled.span`
 const BannerWrapper = styled.div`
   position: relative;
   width: 100%;
-  background: linear-gradient(90deg, #6b0f1a 0%, #850d19 50%, #6b0f1a 100%);
+  background: linear-gradient(90deg, #f92346 0%, #ff3d5c 50%, #f92346 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -383,7 +383,7 @@ const LeftContent = styled.div`
 `;
 const NewBadge = styled.span`
   background: #ffffff;
-  color: #850d19;
+  color: #f92346;
   font-size: 10px;
   font-weight: 800;
   padding: 2px 6px;

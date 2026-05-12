@@ -37,6 +37,27 @@
   .centerCol {
     display: none;
   }
+
+  .leftCol {
+    align-items: center;
+    text-align: center;
+  }
+
+  .headline {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .subtext {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .statRow {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 
 /* ─── LEFT COLUMN ─── */

@@ -52,6 +52,7 @@ const TextContent = styled.div`
     text-align: center;
     order: 3;
     width: 100%;
+    padding-left: 0;
     padding-right: 0;
   }
 `;
@@ -90,6 +91,10 @@ const MobileHeading = styled.h2`
 
   @media (max-width: 992px) {
     display: block;
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 `;
 

@@ -558,7 +558,7 @@ const BusinessManagement = () => {
             </div>
           </ContentSection>
         </div>
-
+      </ContentLayer>
       </DashboardWrapper>
     </ConfigProvider>
   );

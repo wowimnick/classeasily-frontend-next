@@ -33,11 +33,17 @@ const Sheet = styled(Drawer.Content)`
 
 const Header = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16px;
   flex-shrink: 0;
   padding: 24px;
   padding-top: 32px;
+`;
+
+const HeaderText = styled.div`
+  flex: 1;
+  min-width: 0;
 `;
 
 const SheetTitle = styled.h2`
@@ -45,6 +51,14 @@ const SheetTitle = styled.h2`
   font-size: 21px;
   font-weight: 500;
   color: #222222;
+`;
+
+const SheetHint = styled.p`
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 400;
+  color: #717171;
 `;
 
 const CloseBtn = styled.button`
@@ -56,6 +70,7 @@ const CloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 `;
 
 /** Matches desktop DropdownTypeChipFlow — wrap + fit-content pills */
@@ -78,24 +93,21 @@ const TypeChip = styled.button`
   justify-content: flex-start;
   width: fit-content;
   max-width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgb(228, 228, 228);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 24px rgba(0, 0, 0, 0.07);
+  padding: 10px 16px;
+  border: 1px solid ${(p) => (p.$selected ? "#111111" : "#e5e7eb")};
   border-radius: 9999px;
-  background: ${(p) => (p.$selected ? "#111111" : "#ffffff")};
-  font-size: 14px;
+  background: #ffffff;
+  font-size: 13px;
   line-height: 1.2;
-  color: ${(p) => (p.$selected ? "#ffffff" : "#222222")};
+  color: #222222;
   cursor: pointer;
   font-weight: ${(p) => (p.$selected ? 600 : 400)};
   text-align: left;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: border-color 0.15s ease;
 
   svg {
     flex-shrink: 0;
-    color: ${(p) => (p.$selected ? "#ffffff" : "inherit")};
+    color: inherit;
   }
 `;
 
@@ -193,7 +205,10 @@ export default function ExploreExperienceTypeDrawer({
         <Overlay />
         <Sheet aria-describedby={undefined}>
           <Header>
-            <SheetTitle>Experience type</SheetTitle>
+            <HeaderText>
+              <SheetTitle>Experience type</SheetTitle>
+              <SheetHint>You can select multiple types.</SheetHint>
+            </HeaderText>
             <CloseBtn
               type="button"
               aria-label="Close"
