@@ -101,7 +101,8 @@ const ClassGridWrapper = styled.div`
   }
 
   ${down(BP.MOBILE)} {
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   ${down(BP.TABLET)} {
@@ -436,17 +437,6 @@ const ClassesDisplay = ({
   useEffect(() => {
     if (isMobile) setHoldDesktopMapSlot(false);
   }, [isMobile]);
-
-  useEffect(() => {
-    if (isMobile && showMap) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isMobile, showMap]);
 
   // Defer map briefly to prioritize LCP, then load map sooner for better UX
   useEffect(() => {

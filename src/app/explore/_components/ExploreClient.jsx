@@ -18,7 +18,7 @@ import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext";
-import { BP, down } from "@/styles/breakpoints";
+import { BP, down, mq } from "@/styles/breakpoints";
 import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 import {
   peekExploreSearchResults,
@@ -38,6 +38,13 @@ const PageLayout = styled.div`
   min-height: 0;
   overflow: hidden;
   background-color: ${(props) => props.theme.token.colorBgContainer};
+
+  /* Safari iOS: tie shell to visible viewport; prevent rubber-band scrolling the chrome away */
+  ${down(BP.MOBILE)} {
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
 `;
 
 const ContentArea = styled.main`
@@ -253,6 +260,31 @@ function ExploreClientContent({
   initialCollectionsIWant = [],
   routeParams,
 }) {
+  /** Mobile Safari: `ClassesDisplay` must not clear body overflow on list view — document scroll steals the chrome. */
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof matchMedia === "undefined") return;
+    const mql = window.matchMedia(mq.mobile);
+    const lockDocumentScroll = () => {
+      if (!mql.matches) return;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+    const unlockDocumentScroll = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+    const onViewport = () => {
+      if (mql.matches) lockDocumentScroll();
+      else unlockDocumentScroll();
+    };
+    onViewport();
+    mql.addEventListener("change", onViewport);
+    return () => {
+      mql.removeEventListener("change", onViewport);
+      unlockDocumentScroll();
+    };
+  }, []);
+
   const collectionsIWantForExplore = useMemo(
     () => filterCollectionsWithActiveClasses(initialCollectionsIWant),
     [initialCollectionsIWant],

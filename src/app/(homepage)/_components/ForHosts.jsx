@@ -52,6 +52,7 @@ const TextContent = styled.div`
     text-align: center;
     order: 3;
     width: 100%;
+    padding-left: 0;
     padding-right: 0;
   }
 `;
