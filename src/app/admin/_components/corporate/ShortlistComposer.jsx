@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
-  Collapse,
+  Col,
   Form,
   Input,
   InputNumber,
+  Row,
   Select,
   Slider,
   Space,
@@ -19,6 +20,16 @@ import OptionEditCard from "./OptionEditCard";
 import { dollarsToCents } from "./dollarsField";
 
 const { Text } = Typography;
+
+const STEP_LABEL = {
+  fontSize: 12,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  color: "rgba(0,0,0,0.45)",
+  display: "block",
+  marginBottom: 10,
+};
 
 export default function ShortlistComposer({ shortlist, onRefresh }) {
   const [depPct, setDepPct] = useState(shortlist.deposit_percent ?? 25);
@@ -76,56 +87,73 @@ export default function ShortlistComposer({ shortlist, onRefresh }) {
   };
 
   return (
-    <Space direction="vertical" style={{ width: "100%" }} size="large">
-      <Card title="Deposit" size="small">
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Text type="secondary">
-            The intro shown on the customer shortlist is standardized (thank-you + how compare / choose /
-            deposit work). Adjust deposit percentage below.
-          </Text>
-          <div>
-            <Text>Deposit {depPct}%</Text>
-            <Slider
-              min={5}
-              max={50}
-              value={depPct}
-              onChange={setDepPct}
-              onChangeComplete={(v) => patchMeta({ deposit_percent: v })}
-              disabled={patching}
+    <Space direction="vertical" style={{ width: "100%" }} size={20}>
+      <div>
+        <Text style={STEP_LABEL}>Step 1 · Deposit & internal notes</Text>
+        <Card size="small" styles={{ body: { paddingBottom: 12 } }}>
+          <Space direction="vertical" style={{ width: "100%" }} size={12}>
+            <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.45 }}>
+              Customer-facing intro is standardized. Set deposit % here; internal notes stay admin-only.
+            </Text>
+            <div>
+              <Text strong>Deposit {depPct}%</Text>
+              <Slider
+                min={5}
+                max={50}
+                value={depPct}
+                onChange={setDepPct}
+                onChangeComplete={(v) => patchMeta({ deposit_percent: v })}
+                disabled={patching}
+              />
+            </div>
+            <div>
+              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
+                Internal notes (team only)
+              </Text>
+              <Input.TextArea
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={() => patchMeta({ internal_notes: notes })}
+                placeholder="Handoff context, scheduling constraints…"
+              />
+            </div>
+          </Space>
+        </Card>
+      </div>
+
+      <div>
+        <Text style={STEP_LABEL}>Step 2 · Options you&apos;ll send (1–3)</Text>
+        <Space direction="vertical" style={{ width: "100%" }} size={12}>
+          {activeSorted.length === 0 ? (
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              No options yet — use Step 3 to add from the catalog or build a custom row.
+            </Text>
+          ) : null}
+          {activeSorted.map((opt, idx) => (
+            <OptionEditCard
+              key={opt.id}
+              option={opt}
+              sortIndex={idx}
+              activeOptionsSorted={activeSorted}
+              onRefresh={onRefresh}
+              onSwapDown={swapDown}
             />
-          </div>
-          <Collapse
-            items={[
-              {
-                key: "internal",
-                label: "Internal notes (team only)",
-                children: (
-                  <Input.TextArea
-                    rows={2}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    onBlur={() => patchMeta({ internal_notes: notes })}
-                  />
-                ),
-              },
-            ]}
-          />
+          ))}
         </Space>
-      </Card>
+      </div>
 
-      {activeSorted.map((opt, idx) => (
-        <OptionEditCard
-          key={opt.id}
-          option={opt}
-          sortIndex={idx}
-          activeOptionsSorted={activeSorted}
-          onRefresh={onRefresh}
-          onSwapDown={swapDown}
-        />
-      ))}
-
-      <AddFromClassSection shortlistId={shortlist.id} onDone={onRefresh} />
-      <AddCustomSection shortlistId={shortlist.id} onDone={onRefresh} />
+      <div>
+        <Text style={STEP_LABEL}>Step 3 · Add an option</Text>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} md={12}>
+            <AddFromClassSection shortlistId={shortlist.id} onDone={onRefresh} />
+          </Col>
+          <Col xs={24} md={12}>
+            <AddCustomSection shortlistId={shortlist.id} onDone={onRefresh} />
+          </Col>
+        </Row>
+      </div>
     </Space>
   );
 }
@@ -197,11 +225,25 @@ function AddFromClassSection({ shortlistId, onDone }) {
   };
 
   return (
-    <Card size="small" title="Add from an existing class">
+    <Card
+      size="small"
+      variant="borderless"
+      style={{
+        background: "#fafafa",
+        border: "1px solid #f0f0f0",
+        borderRadius: 10,
+      }}
+    >
       {!open ? (
-        <Button type="dashed" onClick={() => setOpen(true)} block>
-          Add from class catalog
-        </Button>
+        <Space direction="vertical" size={10} style={{ width: "100%" }}>
+          <Text strong>From class catalog</Text>
+          <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.45 }}>
+            Pull title, host, and imagery from an existing Classeasily class. Choose slot 1–3 and set the price for this quote.
+          </Text>
+          <Button type="primary" onClick={() => setOpen(true)} block>
+            Add from catalog
+          </Button>
+        </Space>
       ) : (
         <Form form={form} layout="vertical">
           <Form.Item name="position" label="Position (1–3)" rules={[{ required: true }]}>
@@ -278,11 +320,25 @@ function AddCustomSection({ shortlistId, onDone }) {
   };
 
   return (
-    <Card size="small" title="Add custom option">
+    <Card
+      size="small"
+      variant="borderless"
+      style={{
+        background: "#fafafa",
+        border: "1px solid #f0f0f0",
+        borderRadius: 10,
+      }}
+    >
       {!open ? (
-        <Button type="dashed" onClick={() => setOpen(true)} block>
-          Add custom option
-        </Button>
+        <Space direction="vertical" size={10} style={{ width: "100%" }}>
+          <Text strong>Custom offering</Text>
+          <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.45 }}>
+            For venues not on the platform yet — add copy, pricing, optional dates, and image URLs manually.
+          </Text>
+          <Button type="primary" onClick={() => setOpen(true)} block>
+            Build custom option
+          </Button>
+        </Space>
       ) : (
         <Form form={form} layout="vertical">
           <Form.Item name="position" label="Position (1–3)" rules={[{ required: true }]}>

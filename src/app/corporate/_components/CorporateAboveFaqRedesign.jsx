@@ -649,6 +649,11 @@ const FALLBACK_LOGOS = [
 const GENERATED_LOGOS = Array.isArray(providerLogoData?.logos)
   ? providerLogoData.logos
       .filter((item) => item?.disabled !== true)
+      .filter((item) => {
+        const n = item?.activePublicClassCount;
+        if (n === undefined || n === null) return true;
+        return Number(n) > 0;
+      })
       .map((item) => ({
         name: typeof item?.name === "string" ? item.name.trim() : "",
         logo: typeof item?.logo === "string" ? item.logo.trim() : "",
