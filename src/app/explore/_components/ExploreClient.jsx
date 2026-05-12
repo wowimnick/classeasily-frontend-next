@@ -35,14 +35,30 @@ const PageLayout = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 0;
   overflow: hidden;
   background-color: ${(props) => props.theme.token.colorBgContainer};
 `;
 
 const ContentArea = styled.main`
-  flex-grow: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ExploreResultsPane = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+
+const ExploreHeaderSlot = styled.div`
+  flex-shrink: 0;
 `;
 
 const FetchErrorBanner = styled.div`
@@ -705,7 +721,9 @@ function ExploreClientContent({
   return (
     <PageLayout>
       {/* unifiedExploreChrome: header + filter bar chrome — Explore only (see ClientHeader). */}
-      <ExploreHeader showOptionsWrapper unifiedExploreChrome />
+      <ExploreHeaderSlot>
+        <ExploreHeader showOptionsWrapper unifiedExploreChrome />
+      </ExploreHeaderSlot>
       <BreadcrumbContainer>
         <Breadcrumbs />
       </BreadcrumbContainer>
@@ -713,7 +731,9 @@ function ExploreClientContent({
         {fetchError && !showSkeleton && (
           <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>
         )}
-        <ClassesDisplay {...classesDisplayProps} />
+        <ExploreResultsPane>
+          <ClassesDisplay {...classesDisplayProps} />
+        </ExploreResultsPane>
       </ContentArea>
     </PageLayout>
   );

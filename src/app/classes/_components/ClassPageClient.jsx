@@ -1686,8 +1686,31 @@ export default function ClassPageClient({
 
             {/* Suspense fallback for client-heavy components */}
             <Suspense fallback={<ClassPageDeferredSkeleton />}>
+              {mobileReserve.isMobileView && optionToDisplayOnCard && (
+                <>
+                  <WhenSection id="when-section">
+                    <WhenTitle>Pick a date</WhenTitle>
+                    <WhenCalendarWrap>
+                      <MiniCalendar
+                        availableSlots={mobileReserve.mobileAvailableSlots}
+                        loading={mobileReserve.mobileSlotsLoading}
+                        selectedDate={mobileReserve.mobileSelectedDate}
+                        onDateSelect={mobileReserve.handleMobileDateSelect}
+                        currentDate={mobileReserve.mobileCalendarMonth}
+                        onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
+                        minSelectableDate={mobileReserve.mobileMinSelectableDate}
+                        today={mobileReserve.mobileToday}
+                      />
+                    </WhenCalendarWrap>
+                  </WhenSection>
+                  {!classData.coordinates && <SectionDividerAnt />}
+                </>
+              )}
               {classData.coordinates && (
                 <>
+                  {mobileReserve.isMobileView && optionToDisplayOnCard && (
+                    <SectionDividerAnt />
+                  )}
                   <MapSectionWrapper>
                     <PageSectionTitle>Where you&apos;ll be</PageSectionTitle>
                     <MapInnerContainer>
@@ -1705,9 +1728,9 @@ export default function ClassPageClient({
                       <AddressDisplay>{fullAddress}</AddressDisplay>
                     )}
                   </MapSectionWrapper>
-                  <SectionDividerAnt />
                 </>
               )}
+              {classData.coordinates && <SectionDividerAnt />}
               <Reviews
                 slug={classData.slug}
                 initialRating={classData.average_rating || 0}
@@ -1721,26 +1744,6 @@ export default function ClassPageClient({
                   Array.isArray(classData.features) ? classData.features : []
                 }
               />
-              {mobileReserve.isMobileView && optionToDisplayOnCard && (
-                <>
-                  <SectionDividerAnt />
-                  <WhenSection id="when-section">
-                    <WhenTitle>Pick a date</WhenTitle>
-                    <WhenCalendarWrap>
-                      <MiniCalendar
-                        availableSlots={mobileReserve.mobileAvailableSlots}
-                        loading={mobileReserve.mobileSlotsLoading}
-                        selectedDate={mobileReserve.mobileSelectedDate}
-                        onDateSelect={mobileReserve.handleMobileDateSelect}
-                        currentDate={mobileReserve.mobileCalendarMonth}
-                        onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
-                        minSelectableDate={mobileReserve.mobileMinSelectableDate}
-                        today={mobileReserve.mobileToday}
-                      />
-                    </WhenCalendarWrap>
-                  </WhenSection>
-                </>
-              )}
               <SectionDividerAnt />
               {businessData && (
                 <HostInfo

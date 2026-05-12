@@ -44,7 +44,8 @@ const GridContainer = styled.div`
       ? "minmax(0, 1fr) minmax(200px, 40%)"
       : "minmax(0, 1fr) minmax(0, 0fr)"};
   width: 100%;
-  height: calc(100vh - 80px);
+  flex: 1 1 0;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   /* No transition on grid-template-columns: animating column widths reflows the
@@ -59,7 +60,6 @@ const GridContainer = styled.div`
   }
   ${down(BP.TABLET)} {
     grid-template-columns: 1fr;
-    height: calc(100vh - 60px);
   }
 `;
 
@@ -69,6 +69,7 @@ const LeftContainer = styled.div`
   padding: 0;
   position: relative;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
   background-color: #ffffff;
   border-right: 1px solid #e8e8e8;
@@ -85,6 +86,7 @@ const CategoriesWrapper = styled.div`
 
 const ClassGridWrapper = styled.div`
   flex-grow: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.5rem 2.5rem;
   -ms-overflow-style: none;
@@ -96,6 +98,10 @@ const ClassGridWrapper = styled.div`
   container-name: explore-cards;
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  ${down(BP.MOBILE)} {
+    overscroll-behavior-y: contain;
   }
 
   ${down(BP.TABLET)} {
@@ -157,6 +163,7 @@ const CardGridItem = styled.div`
 const MapContainer = styled.div`
   position: relative;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
   padding: 25px;
   box-sizing: border-box;

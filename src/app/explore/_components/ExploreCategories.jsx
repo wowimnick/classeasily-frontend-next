@@ -92,6 +92,8 @@ const BarCluster = styled.div`
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 12px;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     scrollbar-width: none;
     -ms-overflow-style: none;
 

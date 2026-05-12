@@ -90,6 +90,10 @@ const MobileHeading = styled.h2`
 
   @media (max-width: 992px) {
     display: block;
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 `;
 
