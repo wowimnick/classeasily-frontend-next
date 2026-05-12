@@ -230,7 +230,7 @@ const VisualPanel = styled.div`
   padding: 14px;
   display: flex;
   height: 620px;
-  align-self: start;
+  align-self: center;
   @media (max-width: 1024px) {
     display: none;
   }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CopyOutlined } from "@ant-design/icons";
-import { Button, Drawer, Space, Tabs, Typography, message } from "antd";
+import { Button, Divider, Drawer, Space, Typography, message } from "antd";
 import dayjs from "dayjs";
 import { corporateAdminService } from "@/services/adminDash";
 import ShortlistComposer from "./ShortlistComposer";
@@ -34,12 +34,7 @@ export default function InquiryDetailDrawer({
   onRefreshShortlist,
   onShortlistCreated,
 }) {
-  const [tab, setTab] = useState("inquiry");
   const [sending, setSending] = useState(false);
-
-  useEffect(() => {
-    if (open) setTab("inquiry");
-  }, [open, inquiryRow?.id]);
 
   const siteBase = useMemo(() => {
     const raw = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -98,7 +93,6 @@ export default function InquiryDetailDrawer({
       message.success("Shortlist created");
       if (onShortlistCreated) await onShortlistCreated(res.data);
       else await onRefreshShortlist();
-      setTab("compose");
     } catch (e) {
       message.error(e?.response?.data?.detail || "Could not create shortlist");
     }
@@ -118,12 +112,21 @@ export default function InquiryDetailDrawer({
     }
   };
 
+  const drawerExtra =
+    shortlist && previewHref ? (
+      <Button href={previewHref} target="_blank" rel="noopener noreferrer" onClick={handlePreviewClick}>
+        Preview layout
+      </Button>
+    ) : null;
+
   return (
     <Drawer
-      width={760}
+      width={880}
       open={open && !!inquiryRow}
       onClose={onClose}
       title={inquiryRow?.company_name || "Inquiry"}
+      extra={drawerExtra}
+      styles={{ body: { paddingTop: 12 } }}
       footer={
         <Space direction="vertical" style={{ width: "100%" }} size="small">
           <Text type={validation.ok ? "success" : "secondary"}>{validation.detail}</Text>
@@ -141,90 +144,74 @@ export default function InquiryDetailDrawer({
       }
     >
       {inquiryRow ? (
-        <Tabs
-          activeKey={tab}
-          onChange={setTab}
-          items={[
-            {
-              key: "inquiry",
-              label: "Inquiry",
-              children: (
-                <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                  <div>
-                    <Text strong>{inquiryRow.contact_name}</Text>{" "}
-                    <Text type="secondary">&lt;{inquiryRow.email}&gt;</Text>
-                  </div>
-                  {inquiryRow.phone ? (
-                    <Text>
-                      Phone: {inquiryRow.phone}
-                    </Text>
-                  ) : null}
-                  {inquiryRow.company_size ? (
-                    <Text>Company size: {inquiryRow.company_size}</Text>
-                  ) : null}
-                  <Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
-                    {inquiryRow.message || "—"}
-                  </Paragraph>
-                  <Text type="secondary">
-                    Created {inquiryRow.created_at ? dayjs(inquiryRow.created_at).format("MMM D, YYYY h:mm A") : "—"}
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <div>
+            <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Inquiry
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <Text strong style={{ fontSize: 15 }}>
+                {inquiryRow.contact_name}
+              </Text>{" "}
+              <Text type="secondary">&lt;{inquiryRow.email}&gt;</Text>
+            </div>
+            {inquiryRow.phone ? (
+              <div style={{ marginTop: 6 }}>
+                <Text type="secondary">Phone · </Text>
+                <Text>{inquiryRow.phone}</Text>
+              </div>
+            ) : null}
+            {inquiryRow.company_size ? (
+              <div style={{ marginTop: 4 }}>
+                <Text type="secondary">Company size · </Text>
+                <Text>{inquiryRow.company_size}</Text>
+              </div>
+            ) : null}
+            <Paragraph style={{ whiteSpace: "pre-wrap", marginTop: 12, marginBottom: 8 }}>
+              {inquiryRow.message || "—"}
+            </Paragraph>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Submitted{" "}
+              {inquiryRow.created_at ? dayjs(inquiryRow.created_at).format("MMM D, YYYY h:mm A") : "—"}
+            </Text>
+          </div>
+
+          {!shortlist && !slLoading ? (
+            <Button type="primary" onClick={createShortlist}>
+              Create shortlist for this inquiry
+            </Button>
+          ) : null}
+
+          {shortlist ? (
+            <>
+              <Divider style={{ margin: "8px 0" }} />
+              <div>
+                <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                  Customer link
+                </Text>
+                <Space wrap align="start">
+                  <Text code style={{ wordBreak: "break-all", maxWidth: "100%" }}>
+                    {publicShortlistUrl || "Set NEXT_PUBLIC_SITE_URL for accurate links"}
                   </Text>
-                  {!shortlist && !slLoading ? (
-                    <Button type="primary" onClick={createShortlist}>
-                      Create shortlist
-                    </Button>
-                  ) : null}
-                  {shortlist ? (
-                    <Space wrap align="start">
-                      <div>
-                        <Text type="secondary">Customer link</Text>
-                        <div>
-                          <Text code style={{ wordBreak: "break-all" }}>
-                            {publicShortlistUrl || "Set NEXT_PUBLIC_SITE_URL for accurate links"}
-                          </Text>
-                        </div>
-                      </div>
-                      <Button icon={<CopyOutlined />} onClick={copyLink}>
-                        Copy link
-                      </Button>
-                    </Space>
-                  ) : null}
-                </Space>
-              ),
-            },
-            {
-              key: "compose",
-              label: "Compose",
-              disabled: !shortlist,
-              children: slLoading ? (
-                <Text type="secondary">Loading shortlist…</Text>
-              ) : shortlist ? (
-                <ShortlistComposer shortlist={shortlist} onRefresh={onRefreshShortlist} />
-              ) : (
-                <Text type="secondary">Create a shortlist first.</Text>
-              ),
-            },
-            {
-              key: "preview",
-              label: "Preview",
-              disabled: !shortlist,
-              children: (
-                <Space direction="vertical">
-                  <Text>Open the exact customer layout (no emails sent).</Text>
-                  <Button
-                    type="primary"
-                    href={previewHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    disabled={!shortlist}
-                    onClick={handlePreviewClick}
-                  >
-                    Open business view in new tab
+                  <Button icon={<CopyOutlined />} onClick={copyLink}>
+                    Copy link
                   </Button>
                 </Space>
-              ),
-            },
-          ]}
-        />
+              </div>
+              <Divider style={{ margin: "16px 0" }} />
+              <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Compose shortlist
+              </Text>
+              {slLoading ? (
+                <Text type="secondary">Loading shortlist…</Text>
+              ) : (
+                <ShortlistComposer shortlist={shortlist} onRefresh={onRefreshShortlist} />
+              )}
+            </>
+          ) : slLoading ? (
+            <Text type="secondary">Loading…</Text>
+          ) : null}
+        </Space>
       ) : null}
     </Drawer>
   );

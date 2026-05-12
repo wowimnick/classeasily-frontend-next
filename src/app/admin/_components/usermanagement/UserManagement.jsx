@@ -26,7 +26,6 @@ import {
   Divider,
   Typography,
   Radio,
-  Popconfirm,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -724,17 +723,6 @@ const StyledTable = styled(Table)`
   }
 `;
 
-const BulkActionsBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  background: ${hexToRgba(colors.primary, 0.04)};
-  border-bottom: 1px solid ${colors.border};
-  font-size: 13px;
-  color: ${colors.textPrimary};
-`;
-
 const UserRoleTag = styled(Tag)`
   font-weight: 500;
   border: none !important;
@@ -829,7 +817,6 @@ const UserManagementDashboard = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [bookingActivityFilter, setBookingActivityFilter] = useState(undefined);
-  const [lastActiveFilter, setLastActiveFilter] = useState(undefined);
 
   // Drawer & Modal State
   const [selectedUser, setSelectedUser] = useState(null);
@@ -865,8 +852,6 @@ const UserManagementDashboard = () => {
     active_growth_percent: null,
   });
   const [chartPeriod, setChartPeriod] = useState("30d");
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [selectedRows, setSelectedRows] = useState([]);
   const [form] = Form.useForm();
   const [roles, setRoles] = useState([]);
   const screens = useBreakpoint();
@@ -884,7 +869,6 @@ const UserManagementDashboard = () => {
     if ("role" in updates) setRoleFilter(updates.role);
     if ("status" in updates) setStatusFilter(updates.status);
     if ("booking_count" in updates) setBookingActivityFilter(updates.booking_count);
-    if ("last_active" in updates) setLastActiveFilter(updates.last_active);
   };
 
   const fetchUsers = useCallback(
@@ -897,7 +881,6 @@ const UserManagementDashboard = () => {
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(searchText && { search: searchText }),
         ...(bookingActivityFilter && { booking_count: bookingActivityFilter }),
-        ...(lastActiveFilter && { last_active: lastActiveFilter }),
       };
       try {
         const response = await userAdminService.getUsers(params);
@@ -925,7 +908,6 @@ const UserManagementDashboard = () => {
       statusFilter,
       searchText,
       bookingActivityFilter,
-      lastActiveFilter,
       pagination.current,
       pagination.pageSize,
     ]
@@ -933,7 +915,7 @@ const UserManagementDashboard = () => {
 
   useEffect(() => {
     fetchUsers(1, pagination.pageSize);
-  }, [roleFilter, statusFilter, searchText, bookingActivityFilter, lastActiveFilter]);
+  }, [roleFilter, statusFilter, searchText, bookingActivityFilter]);
 
   const handleTableChange = (newPagination) => {
     fetchUsers(newPagination.current, newPagination.pageSize);
@@ -1264,84 +1246,6 @@ const UserManagementDashboard = () => {
       "User deleted",
       "Error deleting user."
     );
-
-  const handleBulkEmail = () => {
-    const emails = selectedRows.map((r) => r.email).filter(Boolean);
-    if (emails.length === 0) {
-      message.warning("No email addresses in selected users.");
-      return;
-    }
-    window.location.href = `mailto:${emails.join(",")}`;
-  };
-
-  const handleBulkDeactivate = () => {
-    if (selectedRowKeys.length === 0) return;
-    setLoading(true);
-    Promise.all(selectedRowKeys.map((id) => userAdminService.lockAccount(id)))
-      .then(() => {
-        message.success(`${selectedRowKeys.length} account(s) deactivated.`);
-        setSelectedRowKeys([]);
-        setSelectedRows([]);
-        fetchUsers(pagination.current, pagination.pageSize);
-      })
-      .catch(() => message.error("Some accounts could not be deactivated."))
-      .finally(() => setLoading(false));
-  };
-
-  const [bulkRoleModalOpen, setBulkRoleModalOpen] = useState(false);
-  const [bulkRoleLoading, setBulkRoleLoading] = useState(false);
-  const [bulkRoleForm] = Form.useForm();
-  const handleBulkAssignRole = () => setBulkRoleModalOpen(true);
-  const handleBulkAssignRoleSubmit = async () => {
-    const { role } = await bulkRoleForm.validateFields();
-    setBulkRoleLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedRowKeys.map((id) => userAdminService.updateUser(id, { role_id: role }))
-      );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed === 0) {
-        message.success(`Role updated for ${selectedRowKeys.length} user(s).`);
-      } else {
-        message.warning(`Updated ${results.length - failed}; ${failed} failed.`);
-      }
-      setBulkRoleModalOpen(false);
-      bulkRoleForm.resetFields();
-      setSelectedRowKeys([]);
-      setSelectedRows([]);
-      fetchUsers(pagination.current, pagination.pageSize);
-    } catch {
-      message.error("Could not update roles.");
-    } finally {
-      setBulkRoleLoading(false);
-    }
-  };
-
-  const handleBulkExportCSV = () => {
-    if (selectedRows.length === 0) {
-      message.warning("No users selected.");
-      return;
-    }
-    const headers = ["User ID", "Email", "First Name", "Last Name", "Role", "Status", "Created"];
-    const rows = selectedRows.map((r) => [
-      r.userId ?? "",
-      r.email ?? "",
-      (typeof r.first_name === "string" ? r.first_name : "") ?? "",
-      (typeof r.last_name === "string" ? r.last_name : "") ?? "",
-      r.roleName ?? r.role_name ?? "",
-      r.status ?? "",
-      r.createdAt ?? "",
-    ]);
-    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    message.success("CSV downloaded.");
-  };
 
   const handlePieClick = useCallback(
     (data) => {
@@ -2260,37 +2164,8 @@ const UserManagementDashboard = () => {
                 <Option value="5_plus">5+ Bookings</Option>
                 <Option value="10_plus">10+ Bookings (Power)</Option>
               </Select>
-              <Select
-                placeholder="Last Active"
-                style={{ width: isMobile ? "100%" : 150 }}
-                allowClear
-                value={lastActiveFilter}
-                onChange={(value) => handleFilterChange({ last_active: value })}
-              >
-                <Option value="7d">Active last 7d</Option>
-                <Option value="30d">Active last 30d</Option>
-                <Option value="90d_inactive">Inactive 90d+</Option>
-                <Option value="never">Never Logged In</Option>
-              </Select>
             </SearchFilterContainer>
           </FilterBar>
-          {selectedRowKeys.length > 0 && (
-            <BulkActionsBar>
-              <strong>{selectedRowKeys.length} selected</strong>
-              <Button size="small" icon={<Mail size={13} />} onClick={handleBulkEmail}>Email</Button>
-              <Popconfirm
-                title={`Deactivate ${selectedRowKeys.length} account(s)? They will not be able to log in.`}
-                onConfirm={handleBulkDeactivate}
-                okText="Deactivate"
-                okButtonProps={{ danger: true }}
-              >
-                <Button size="small" icon={<Lock size={13} />} danger>Deactivate</Button>
-              </Popconfirm>
-              <Button size="small" icon={<Edit size={13} />} onClick={handleBulkAssignRole}>Assign Role</Button>
-              <Button size="small" icon={<FileText size={13} />} onClick={handleBulkExportCSV}>Export CSV</Button>
-              <Button size="small" type="text" onClick={() => { setSelectedRowKeys([]); setSelectedRows([]); }}>Clear</Button>
-            </BulkActionsBar>
-          )}
 
           {isMobile ? (
             <MobileCardList>
@@ -2310,16 +2185,6 @@ const UserManagementDashboard = () => {
               }
               rowKey="userId"
               loading={false}
-              rowSelection={{
-                selectedRowKeys,
-                onChange: (keys, rows) => {
-                  setSelectedRowKeys(keys);
-                  setSelectedRows(rows || []);
-                },
-                getCheckboxProps: (record) => ({
-                  disabled: React.isValidElement(record.first_name),
-                }),
-              }}
               pagination={
                 loading
                   ? false
@@ -2426,28 +2291,6 @@ const UserManagementDashboard = () => {
                   <Option key={r.id} value={r.id}>
                     {r.name}
                   </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Form>
-        </Modal>
-
-        <Modal
-          title={`Assign role to ${selectedRowKeys.length} user(s)`}
-          open={bulkRoleModalOpen}
-          onCancel={() => { setBulkRoleModalOpen(false); bulkRoleForm.resetFields(); }}
-          footer={[
-            <Button key="cancel" onClick={() => { setBulkRoleModalOpen(false); bulkRoleForm.resetFields(); }}>Cancel</Button>,
-            <Button key="submit" type="primary" loading={bulkRoleLoading} onClick={() => handleBulkAssignRoleSubmit()} icon={<Shield size={14} />}>Apply to selected</Button>,
-          ]}
-          destroyOnClose
-          styles={{ content: { background: "#fff" }, body: { padding: "20px 24px", background: "#fff" } }}
-        >
-          <Form form={bulkRoleForm} layout="vertical">
-            <Form.Item name="role" label="New role" rules={[{ required: true, message: "Select a role." }]}>
-              <Select placeholder="Select role" loading={!roles.length}>
-                {roles.map((r) => (
-                  <Option key={r.id} value={r.id}>{r.name}</Option>
                 ))}
               </Select>
             </Form.Item>

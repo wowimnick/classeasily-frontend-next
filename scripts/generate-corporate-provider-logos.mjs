@@ -29,6 +29,8 @@ const fallbackLogos = [
 const LOGO_LIMIT = Number.parseInt(process.env.CORPORATE_LOGO_LIMIT || "120", 10);
 const PAGE_SIZE = Number.parseInt(process.env.CORPORATE_LOGO_PAGE_SIZE || "50", 10);
 const MAX_PAGES = Number.parseInt(process.env.CORPORATE_LOGO_MAX_PAGES || "40", 10);
+const DETAIL_CONCURRENCY = Number.parseInt(process.env.CORPORATE_LOGO_DETAIL_CONCURRENCY || "8", 10);
+const MAX_DETAIL_CHECKS = Number.parseInt(process.env.CORPORATE_LOGO_MAX_DETAIL_CHECKS || "300", 10);
 
 async function loadEnvFile(filePath) {
   try {
@@ -131,6 +133,64 @@ function businessToLogo(business, baseUrl) {
   };
 }
 
+/**
+ * Public business detail exposes `classes` as active marketplace classes only.
+ * Businesses with none (or only inactive / removed listings) are omitted from the logo rail.
+ */
+async function fetchActivePublicClassCount(baseUrl, slug) {
+  if (!slug || typeof slug !== "string") return 0;
+  try {
+    const url = `${baseUrl}/businesses/${encodeURIComponent(slug)}/`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return 0;
+    const data = await response.json();
+    const classes = data.classes;
+    return Array.isArray(classes) ? classes.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function filterLogosWithActivePublicClasses(baseUrl, sortedCandidates, limit) {
+  const accepted = [];
+  let idx = 0;
+  let fetchesDone = 0;
+
+  while (
+    accepted.length < limit &&
+    idx < sortedCandidates.length &&
+    fetchesDone < MAX_DETAIL_CHECKS
+  ) {
+    const batch = [];
+    while (
+      batch.length < DETAIL_CONCURRENCY &&
+      idx < sortedCandidates.length &&
+      fetchesDone + batch.length < MAX_DETAIL_CHECKS
+    ) {
+      const c = sortedCandidates[idx++];
+      if (c?.slug) batch.push(c);
+    }
+    if (!batch.length) break;
+
+    const results = await Promise.all(
+      batch.map(async (entry) => {
+        const count = await fetchActivePublicClassCount(baseUrl, entry.slug);
+        return count >= 1 ? { ...entry, activePublicClassCount: count } : null;
+      }),
+    );
+    fetchesDone += batch.length;
+
+    for (const row of results) {
+      if (row && accepted.length < limit) accepted.push(row);
+    }
+  }
+
+  return dedupeLogos(accepted);
+}
+
 function dedupeLogos(logos) {
   const seen = new Set();
   const result = [];
@@ -197,19 +257,20 @@ async function main() {
 
   try {
     const businesses = await fetchAllBusinesses(baseUrl);
-    const logos = dedupeLogos(
+    const candidates = dedupeLogos(
       businesses
         .map((business) => businessToLogo(business, baseUrl))
         .filter(Boolean)
-        .sort((a, b) => b.reviewCount - a.reviewCount)
-        .slice(0, LOGO_LIMIT),
+        .sort((a, b) => b.reviewCount - a.reviewCount),
     );
 
+    const logos = await filterLogosWithActivePublicClasses(baseUrl, candidates, LOGO_LIMIT);
+
     if (!logos.length) {
-      console.warn("[corporate-logos] No logos found in API payload. Using fallback logos.");
+      console.warn("[corporate-logos] No logos with active public classes. Using fallback logos.");
       await writeOutput(fallbackLogos, {
         source: "fallback",
-        reason: "no_logos_in_api_payload",
+        reason: "no_eligible_logos_after_class_filter",
       });
       return;
     }
@@ -218,6 +279,8 @@ async function main() {
       source: "api",
       apiBaseUrl: baseUrl,
       fetchedBusinesses: businesses.length,
+      detailConcurrency: DETAIL_CONCURRENCY,
+      maxDetailChecks: MAX_DETAIL_CHECKS,
       limit: LOGO_LIMIT,
     });
   } catch (error) {

@@ -37,6 +37,7 @@ import {
   Avatar,
   Empty,
   Spin,
+  Collapse,
 } from "antd";
 import message from "@/lib/message";
 import { theme as antdComponentTheme } from "@/components/theme";
@@ -379,32 +380,6 @@ const CollectionDrawerFooterBar = styled.div`
   flex-shrink: 0;
 `;
 
-const FormSectionCard = styled.div`
-  margin-bottom: 24px;
-  background: ${bookingTheme.bg};
-  border: 1px solid ${bookingTheme.borderLight};
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  padding: 20px;
-
-  &:last-of-type {
-    margin-bottom: 0;
-  }
-
-  .ant-form-item:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const SectionCardHeading = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: ${bookingTheme.textPrimary};
-  margin: 0 0 16px;
-  letter-spacing: -0.01em;
-`;
-
 const AssignModalBody = styled.div`
   display: flex;
   flex-direction: column;
@@ -447,7 +422,7 @@ const AssignSelectedChips = styled.div`
 
 const TOGGLE_COLUMN_HELP = {
   search:
-    "Keyword search and /search/suggest can match this collection (slug, name, and search aliases). Turn off to hide from free-text search only.",
+    "Keyword search and /search/suggest can match this collection (slug and name). Turn off to hide from free-text search only.",
   iWant:
     "Homepage hero, explore header, and mobile search “I want…” chips. Independent from other placement toggles.",
   featured:
@@ -537,14 +512,11 @@ const COLLECTION_FORM_DEFAULTS = {
   type: "manual",
   ai_criteria: "",
   is_active: true,
-  search_aliases: [],
   is_searchable: true,
   show_in_i_want: false,
   show_in_featured_categories: false,
   show_on_homepage_rows: true,
   icon_name: "",
-  color: "",
-  parent: undefined,
 };
 
 function mapCollectionToFormValues(item) {
@@ -568,19 +540,11 @@ function mapCollectionToFormValues(item) {
     is_active: item.is_active !== false,
     type: item.type || "manual",
     ai_criteria: item.automation_rules?.ai_criteria || "",
-    search_aliases: Array.isArray(item.search_aliases) ? item.search_aliases : [],
     is_searchable: item.is_searchable !== false,
     show_in_i_want: !!item.show_in_i_want,
     show_in_featured_categories: !!item.show_in_featured_categories,
     show_on_homepage_rows: item.show_on_homepage_rows !== false,
     icon_name: normalizeLucideIconName(item.icon_name) || "",
-    color: item.color || "",
-    parent:
-      item.parent != null && item.parent !== ""
-        ? typeof item.parent === "object"
-          ? item.parent?.id
-          : item.parent
-        : undefined,
   };
 }
 
@@ -662,23 +626,18 @@ const UniversalEditDrawer = ({
   onSave,
   isLoading,
   form,
-  parentOptions = [],
   onCoverRemoveIntent,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const typeValue = Form.useWatch("type", form);
   const iconValue = Form.useWatch("icon_name", form);
-  const colorValue = Form.useWatch("color", form);
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const normalizedIconValue = useMemo(
     () => normalizeLucideIconName(iconValue),
     [iconValue],
   );
-  const iconPreviewColor = useMemo(() => {
-    const raw = String(colorValue ?? "").trim();
-    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw) ? raw : colors.textSecondary;
-  }, [colorValue]);
+  const iconPreviewColor = colors.textSecondary;
   const iconOptions = useMemo(() => {
     const results = searchLucideIcons(iconSearchQuery, 80);
     if (normalizedIconValue && !results.includes(normalizedIconValue)) {
@@ -759,455 +718,399 @@ const UniversalEditDrawer = ({
         }}
         requiredMark={false}
       >
-        <FormSectionCard>
-          <SectionCardHeading>Basics & cover</SectionCardHeading>
-          <Form.Item
-            name="name"
-            label={<FormLabel>Collection name</FormLabel>}
-            rules={[{ required: true }]}
-          >
-            <Input size="large" placeholder="e.g., Date Night, Under $50" />
-          </Form.Item>
+        <Collapse
+          bordered={false}
+          ghost
+          defaultActiveKey={["basics", "placement", "automation", "publish"]}
+          style={{ background: "transparent" }}
+        >
+          <Collapse.Panel header="Basics & cover" key="basics">
+            <Form.Item
+              name="name"
+              label={<FormLabel>Collection name</FormLabel>}
+              rules={[{ required: true }]}
+            >
+              <Input size="middle" placeholder="e.g., Date Night, Under $50" />
+            </Form.Item>
 
-          <Form.Item
-            name="slug"
-            label={
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: bookingTheme.textPrimary,
+            <Form.Item
+              name="slug"
+              label={
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: bookingTheme.textPrimary,
+                  }}
+                >
+                  Slug
+                  <Tooltip title="URL-friendly identifier. Auto-generated if left blank.">
+                    <InfoIcon size={14} color={colors.textTertiary} />
+                  </Tooltip>
+                </span>
+              }
+              rules={[
+                {
+                  pattern: /^[a-z0-9-]+$/,
+                  message: "Lowercase, numbers, and hyphens only.",
+                },
+              ]}
+            >
+              <Input
+                size="middle"
+                placeholder="e.g., music, digital-art"
+                suffix={
+                  <Tooltip title="Auto-generate from name">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<Bot size={18} color={colors.primary} />}
+                      onClick={() => {
+                        const n = form.getFieldValue("name");
+                        if (n)
+                          form.setFieldsValue({
+                            slug: n
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")
+                              .replace(/[^a-z0-9-]/g, ""),
+                          });
+                      }}
+                    />
+                  </Tooltip>
+                }
+              />
+            </Form.Item>
+
+            <Form.Item label={<FormLabel>Homepage description</FormLabel>}>
+              <>
+                <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
+                  Shown on the homepage and explore where this collection appears.
+                </FormHelpText>
+                <Form.Item
+                  name="description"
+                  rules={[{ required: true, message: "A description is required." }]}
+                  noStyle
+                >
+                  <Input.TextArea
+                    rows={3}
+                    placeholder="e.g., Unleash your inner creative genius with our art classes"
+                    style={{ resize: "none" }}
+                  />
+                </Form.Item>
+              </>
+            </Form.Item>
+
+            <Form.Item
+              name="image"
+              label={<FormLabel>Cover image</FormLabel>}
+              valuePropName="fileList"
+              getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+              rules={[
+                {
+                  required: !data,
+                  message: "An image is required for new items.",
+                },
+              ]}
+            >
+              <Upload
+                name="image"
+                listType="picture-card"
+                maxCount={1}
+                beforeUpload={() => false}
+                showUploadList={{ showPreviewIcon: false }}
+                onRemove={() => {
+                  onCoverRemoveIntent?.();
+                  return true;
                 }}
               >
-                Slug
-                <Tooltip title="URL-friendly identifier. Auto-generated if left blank.">
-                  <InfoIcon size={14} color={colors.textTertiary} />
-                </Tooltip>
-              </span>
-            }
-            rules={[
-              {
-                pattern: /^[a-z0-9-]+$/,
-                message: "Lowercase, numbers, and hyphens only.",
-              },
-            ]}
-          >
-            <Input
-              size="large"
-              placeholder="e.g., music, digital-art"
-              suffix={
-                <Tooltip title="Auto-generate from name">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<Bot size={18} color={colors.primary} />}
-                    onClick={() => {
-                      const n = form.getFieldValue("name");
-                      if (n)
-                        form.setFieldsValue({
-                          slug: n
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")
-                            .replace(/[^a-z0-9-]/g, ""),
-                        });
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <Plus size={20} color={colors.textSecondary} />
+                  <span style={{ fontSize: 13, color: colors.textSecondary }}>
+                    Upload
+                  </span>
+                </div>
+              </Upload>
+            </Form.Item>
+          </Collapse.Panel>
+
+          <Collapse.Panel header="Placement & visibility" key="placement">
+            <FormHelpText style={{ marginTop: 0, marginBottom: 16 }}>
+              Placement toggles control where this collection appears. The publish
+              toggle below acts as a master on/off switch.
+            </FormHelpText>
+
+            <Form.Item label={<FormLabel>Collection icon</FormLabel>}>
+              <>
+                <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
+                  Search valid Lucide icons and preview before saving.
+                </FormHelpText>
+                <Form.Item name="icon_name" noStyle>
+                  <Select
+                    allowClear
+                    showSearch
+                    size="middle"
+                    placeholder="Search icons (e.g. palette, utensils)"
+                    options={iconOptions}
+                    filterOption={false}
+                    onSearch={setIconSearchQuery}
+                    onChange={(value) => {
+                      const normalized = normalizeLucideIconName(value);
+                      form.setFieldValue("icon_name", normalized || "");
                     }}
+                    notFoundContent="No matching Lucide icon"
                   />
-                </Tooltip>
-              }
-            />
-          </Form.Item>
+                </Form.Item>
+              </>
+            </Form.Item>
 
-          <Form.Item
-            name="parent"
-            label={<FormLabel>Parent collection</FormLabel>}
-            extra={
-              <FormHelpText style={{ marginTop: 4 }}>
-                Leave empty for a top-level chip on the homepage. Choose a parent to create a
-                sub-tag for explore filters (one level deep).
-              </FormHelpText>
-            }
-          >
-            <Select
-              allowClear
-              size="large"
-              placeholder="Top-level (no parent)"
-              showSearch
-              optionFilterProp="label"
-              options={parentOptions.map((c) => ({
-                value: c.id,
-                label: c.name,
-              }))}
-            />
-          </Form.Item>
-
-          <Form.Item label={<FormLabel>Homepage description</FormLabel>}>
-            <>
-              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-                Shown on the homepage and explore where this collection appears.
-              </FormHelpText>
-              <Form.Item
-                name="description"
-                rules={[{ required: true, message: "A description is required." }]}
-                noStyle
-              >
-                <Input.TextArea
-                  rows={3}
-                  placeholder="e.g., Unleash your inner creative genius with our art classes"
-                  style={{ resize: "none" }}
-                />
-              </Form.Item>
-            </>
-          </Form.Item>
-
-          <Form.Item
-            name="image"
-            label={<FormLabel>Cover image</FormLabel>}
-            valuePropName="fileList"
-            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-            rules={[
-              {
-                required: !data,
-                message: "An image is required for new items.",
-              },
-            ]}
-          >
-            <Upload
-              name="image"
-              listType="picture-card"
-              maxCount={1}
-              beforeUpload={() => false}
-              showUploadList={{ showPreviewIcon: false }}
-              onRemove={() => {
-                onCoverRemoveIntent?.();
-                return true;
+            <div
+              style={{
+                marginTop: -8,
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
               }}
             >
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: "#f8fafc",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <IconPreview
+                  iconKey={normalizedIconValue}
+                  size={18}
+                  color={iconPreviewColor}
+                  strokeWidth={2.3}
+                />
+              </span>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                {normalizedIconValue
+                  ? `Selected: ${formatLucideIconLabel(normalizedIconValue)}`
+                  : "Default icon will be used when none is set."}
+              </Text>
+            </div>
+
+            <Form.Item label={<FormLabel>Keyword / suggest</FormLabel>}>
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 8,
+                  alignItems: "flex-start",
+                  padding: "12px 16px",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  borderRadius: 12,
+                  background: bookingTheme.bgSecondary,
                 }}
               >
-                <Plus size={20} color={colors.textSecondary} />
-                <span style={{ fontSize: 13, color: colors.textSecondary }}>
-                  Upload
-                </span>
+                <Form.Item name="is_searchable" valuePropName="checked" noStyle>
+                  <ToggleSettingRow
+                    title="Include in keyword search"
+                    description="Allows keyword search and suggest to match this collection by slug and name."
+                  />
+                </Form.Item>
               </div>
-            </Upload>
-          </Form.Item>
-        </FormSectionCard>
+            </Form.Item>
 
-        <FormSectionCard>
-          <SectionCardHeading>Discovery & placement</SectionCardHeading>
-          <FormHelpText style={{ marginTop: 0, marginBottom: 16 }}>
-            Placement toggles control where this collection appears. The publish
-            toggle in the next section acts as a master on/off switch.
-          </FormHelpText>
-          <Form.Item label={<FormLabel>Search aliases</FormLabel>}>
-            <>
-              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-                Tokens that map this collection to keyword search (e.g. pottery,
-                pizza).
-              </FormHelpText>
-              <Form.Item
-                name="search_aliases"
-                normalize={(value) =>
-                  (value || [])
-                    .map((t) => String(t).toLowerCase().trim())
-                    .filter(Boolean)
-                }
-                noStyle
+            <Form.Item label={<FormLabel>“I want…” picker</FormLabel>}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  padding: "12px 16px",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  borderRadius: 12,
+                  background: bookingTheme.bgSecondary,
+                }}
               >
-                <Select
-                  mode="tags"
-                  size="large"
-                  style={{ width: "100%" }}
-                  placeholder="Type and press Enter — e.g. pottery, ceramics"
-                  tokenSeparators={[","]}
-                />
-              </Form.Item>
-            </>
-          </Form.Item>
+                <Form.Item name="show_in_i_want" valuePropName="checked" noStyle>
+                  <ToggleSettingRow
+                    title="Show in guided search chips"
+                    description="Displays this collection in homepage and mobile “I want…” pickers."
+                  />
+                </Form.Item>
+              </div>
+            </Form.Item>
 
-          <Form.Item label={<FormLabel>Collection icon</FormLabel>}>
-            <>
-              <FormHelpText style={{ marginTop: 0, marginBottom: 8 }}>
-                Search valid Lucide icons and preview before saving.
-              </FormHelpText>
-              <Form.Item name="icon_name" noStyle>
-                <Select
-                  allowClear
-                  showSearch
-                  size="large"
-                  placeholder="Search icons (e.g. palette, utensils)"
-                  options={iconOptions}
-                  filterOption={false}
-                  onSearch={setIconSearchQuery}
-                  onChange={(value) => {
-                    const normalized = normalizeLucideIconName(value);
-                    form.setFieldValue("icon_name", normalized || "");
-                  }}
-                  notFoundContent="No matching Lucide icon"
-                />
-              </Form.Item>
-            </>
-          </Form.Item>
-
-          <div
-            style={{
-              marginTop: -8,
-              marginBottom: 16,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <span
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                background: "#f8fafc",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <IconPreview
-                iconKey={normalizedIconValue}
-                size={18}
-                color={iconPreviewColor}
-                strokeWidth={2.3}
-              />
-            </span>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-              {normalizedIconValue
-                ? `Selected: ${formatLucideIconLabel(normalizedIconValue)}`
-                : "Default icon will be used when none is set."}
-            </Text>
-          </div>
-
-          <Form.Item
-            name="color"
-            label={<FormLabel>Chip color (hex)</FormLabel>}
-          >
-            <Input placeholder="#f81e3e" allowClear maxLength={20} size="large" />
-          </Form.Item>
-
-          <Form.Item label={<FormLabel>Keyword / suggest</FormLabel>}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "12px 16px",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                borderRadius: 12,
-                background: bookingTheme.bgSecondary,
-              }}
-            >
-              <Form.Item name="is_searchable" valuePropName="checked" noStyle>
-                <ToggleSettingRow
-                  title="Include in keyword search"
-                  description="Allows keyword search and suggest to match this collection by slug, name, and aliases."
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-
-          <Form.Item label={<FormLabel>“I want…” picker</FormLabel>}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "12px 16px",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                borderRadius: 12,
-                background: bookingTheme.bgSecondary,
-              }}
-            >
-              <Form.Item name="show_in_i_want" valuePropName="checked" noStyle>
-                <ToggleSettingRow
-                  title="Show in guided search chips"
-                  description="Displays this collection in homepage and mobile “I want…” pickers."
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-
-          <Form.Item label={<FormLabel>Featured categories strip</FormLabel>}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "12px 16px",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                borderRadius: 12,
-                background: bookingTheme.bgSecondary,
-              }}
-            >
-              <Form.Item
-                name="show_in_featured_categories"
-                valuePropName="checked"
-                noStyle
+            <Form.Item label={<FormLabel>Featured categories strip</FormLabel>}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  padding: "12px 16px",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  borderRadius: 12,
+                  background: bookingTheme.bgSecondary,
+                }}
               >
-                <ToggleSettingRow
-                  title="Show in featured strip"
-                  description="Shows this collection in the homepage featured categories row."
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-
-          <Form.Item label={<FormLabel>Homepage collection rows</FormLabel>}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "12px 16px",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                borderRadius: 12,
-                background: bookingTheme.bgSecondary,
-              }}
-            >
-              <Form.Item
-                name="show_on_homepage_rows"
-                valuePropName="checked"
-                noStyle
-              >
-                <ToggleSettingRow
-                  title="Show in homepage rows"
-                  description="Includes this collection in homepage carousels such as “Date night near you”."
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-        </FormSectionCard>
-
-        <FormSectionCard>
-          <SectionCardHeading>How classes are added</SectionCardHeading>
-          <Form.Item
-            name="type"
-            label={<FormLabel>Curation method</FormLabel>}
-          >
-            <Radio.Group
-              buttonStyle="solid"
-              size="large"
-              style={{ width: "100%" }}
-            >
-              <Radio.Button
-                value="manual"
-                style={{ width: "50%", textAlign: "center" }}
-              >
-                Manual
-              </Radio.Button>
-              <Radio.Button
-                value="automated"
-                style={{ width: "50%", textAlign: "center" }}
-              >
-                <Space size={6}>
-                  <BrainCircuit size={16} /> AI automated
-                </Space>
-              </Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-
-          {typeValue === "automated" && (
-            <div
-              style={{
-                background: hexToRgba(colors.purple, 0.04),
-                padding: 20,
-                borderRadius: 16,
-                marginBottom: 16,
-                border: `1px solid ${hexToRgba(colors.purple, 0.15)}`,
-              }}
-            >
-              <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: colors.purple,
-                    color: "white",
-                    padding: 6,
-                    borderRadius: 8,
-                    height: "fit-content",
-                  }}
+                <Form.Item
+                  name="show_in_featured_categories"
+                  valuePropName="checked"
+                  noStyle
                 >
-                  <Bot size={18} />
-                </div>
-                <div>
-                  <Text strong style={{ color: colors.purple, fontSize: 15 }}>
-                    AI curator active
-                  </Text>
-                  <Paragraph
+                  <ToggleSettingRow
+                    title="Show in featured strip"
+                    description="Shows this collection in the homepage featured categories row."
+                  />
+                </Form.Item>
+              </div>
+            </Form.Item>
+
+            <Form.Item label={<FormLabel>Homepage collection rows</FormLabel>}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  padding: "12px 16px",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  borderRadius: 12,
+                  background: bookingTheme.bgSecondary,
+                }}
+              >
+                <Form.Item
+                  name="show_on_homepage_rows"
+                  valuePropName="checked"
+                  noStyle
+                >
+                  <ToggleSettingRow
+                    title="Show in homepage rows"
+                    description="Includes this collection in homepage carousels such as “Date night near you”."
+                  />
+                </Form.Item>
+              </div>
+            </Form.Item>
+          </Collapse.Panel>
+
+          <Collapse.Panel header="Automation" key="automation">
+            <Form.Item name="type" label={<FormLabel>Curation method</FormLabel>}>
+              <Radio.Group
+                buttonStyle="solid"
+                size="middle"
+                style={{ width: "100%" }}
+              >
+                <Radio.Button
+                  value="manual"
+                  style={{ width: "50%", textAlign: "center" }}
+                >
+                  Manual
+                </Radio.Button>
+                <Radio.Button
+                  value="automated"
+                  style={{ width: "50%", textAlign: "center" }}
+                >
+                  <Space size={6}>
+                    <BrainCircuit size={16} /> AI automated
+                  </Space>
+                </Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+
+            {typeValue === "automated" && (
+              <div
+                style={{
+                  background: hexToRgba(colors.purple, 0.04),
+                  padding: 20,
+                  borderRadius: 16,
+                  marginBottom: 16,
+                  border: `1px solid ${hexToRgba(colors.purple, 0.15)}`,
+                }}
+              >
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div
                     style={{
-                      margin: 0,
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                      marginTop: 4,
+                      background: colors.purple,
+                      color: "white",
+                      padding: 6,
+                      borderRadius: 8,
+                      height: "fit-content",
                     }}
                   >
-                    Saving does not run the AI curator. Use the refresh icon in the
-                    Actions column for this row to queue Gemini across all active classes.
-                  </Paragraph>
+                    <Bot size={18} />
+                  </div>
+                  <div>
+                    <Text strong style={{ color: colors.purple, fontSize: 15 }}>
+                      AI curator active
+                    </Text>
+                    <Paragraph
+                      style={{
+                        margin: 0,
+                        color: colors.textSecondary,
+                        fontSize: 13,
+                        marginTop: 4,
+                      }}
+                    >
+                      Saving does not run the AI curator. Use the refresh icon in the
+                      Actions column for this row to queue Gemini across all active classes.
+                    </Paragraph>
+                  </div>
                 </div>
+
+                <Form.Item
+                  name="ai_criteria"
+                  label={
+                    <span style={{ fontWeight: 600, color: colors.textPrimary }}>
+                      Criteria instructions
+                    </span>
+                  }
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please describe the criteria for the AI.",
+                    },
+                  ]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="e.g. 'Classes suitable for romantic dates, involving wine tasting, pottery, or salsa dancing. Should be for adults.'"
+                    style={{
+                      borderRadius: 12,
+                      borderColor: hexToRgba(colors.purple, 0.2),
+                    }}
+                  />
+                </Form.Item>
               </div>
+            )}
+          </Collapse.Panel>
 
-              <Form.Item
-                name="ai_criteria"
-                label={
-                  <span style={{ fontWeight: 600, color: colors.textPrimary }}>
-                    Criteria instructions
-                  </span>
-                }
-                rules={[
-                  {
-                    required: true,
-                    message: "Please describe the criteria for the AI.",
-                  },
-                ]}
-                style={{ marginBottom: 0 }}
+          <Collapse.Panel header="Publishing" key="publish">
+            <Form.Item label={<FormLabel>Collection is published</FormLabel>}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  padding: "12px 16px",
+                  border: `1px solid ${bookingTheme.borderLight}`,
+                  borderRadius: 12,
+                  background: bookingTheme.bgSecondary,
+                }}
               >
-                <Input.TextArea
-                  rows={4}
-                  placeholder="e.g. 'Classes suitable for romantic dates, involving wine tasting, pottery, or salsa dancing. Should be for adults.'"
-                  style={{
-                    borderRadius: 12,
-                    borderColor: hexToRgba(colors.purple, 0.2),
-                  }}
-                />
-              </Form.Item>
-            </div>
-          )}
-
-        </FormSectionCard>
-
-        <FormSectionCard>
-          <SectionCardHeading>Publishing</SectionCardHeading>
-          <Form.Item label={<FormLabel>Collection is published</FormLabel>}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "12px 16px",
-                border: `1px solid ${bookingTheme.borderLight}`,
-                borderRadius: 12,
-                background: bookingTheme.bgSecondary,
-              }}
-            >
-              <Form.Item name="is_active" valuePropName="checked" noStyle>
-                <ToggleSettingRow
-                  title="Visible to customers"
-                  description="Master visibility switch. When off, the collection is hidden everywhere, regardless of placement toggles."
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-        </FormSectionCard>
+                <Form.Item name="is_active" valuePropName="checked" noStyle>
+                  <ToggleSettingRow
+                    title="Visible to customers"
+                    description="Master visibility switch. When off, the collection is hidden everywhere, regardless of placement toggles."
+                  />
+                </Form.Item>
+              </div>
+            </Form.Item>
+          </Collapse.Panel>
+        </Collapse>
       </Form>
     </CollectionDrawerBodyScroll>
   );
@@ -1650,18 +1553,11 @@ const CollectionsManagement = () => {
         payload.automation_rules = {};
       }
 
-      payload.search_aliases = Array.isArray(safeValues.search_aliases)
-        ? safeValues.search_aliases
-            .map((token) => String(token || "").trim().toLowerCase())
-            .filter(Boolean)
-        : [];
       payload.is_searchable = safeValues.is_searchable !== false;
       payload.show_in_i_want = !!safeValues.show_in_i_want;
       payload.show_in_featured_categories = !!safeValues.show_in_featured_categories;
       payload.show_on_homepage_rows = safeValues.show_on_homepage_rows !== false;
       payload.icon_name = normalizeLucideIconName(safeValues.icon_name) || "";
-      payload.color = String(safeValues.color || "").trim();
-      payload.parent = safeValues.parent ?? null;
 
       const response = selectedItem
         ? await classManagementService.updateCollection(selectedItem.id, payload)
@@ -2248,7 +2144,6 @@ const CollectionsManagement = () => {
             onSave={handleSaveItem}
             isLoading={actionLoading}
             form={editForm}
-            parentOptions={parentOptions}
             onCoverRemoveIntent={() => {
               coverRemovalIntendedRef.current = true;
             }}

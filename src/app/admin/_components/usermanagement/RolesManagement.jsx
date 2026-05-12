@@ -533,6 +533,9 @@ const RolesManagement = () => {
   const screens = useBreakpoint();
   const isMobile = !screens.lg;
 
+  const isElevatedRoleManager =
+    user?.role?.name === "Super Admin" || Boolean(user?.is_superuser);
+
   const fetchAllData = useCallback(() => {
     setLoading(true);
     Promise.all([
@@ -813,11 +816,14 @@ const RolesManagement = () => {
       fixed: "right",
       render: (_, role) => {
         if (React.isValidElement(role.actions)) return role.actions;
-        const canEdit = user?.role?.hierarchy_level > role.hierarchy_level;
+        const canEdit =
+          isElevatedRoleManager ||
+          user?.role?.hierarchy_level > role.hierarchy_level;
         const canDelete =
           !role.is_system &&
           role.user_count === 0 &&
-          user?.role?.hierarchy_level > role.hierarchy_level;
+          (isElevatedRoleManager ||
+            user?.role?.hierarchy_level > role.hierarchy_level);
         const actionsDisabled = actionLoading || loading;
         return (
           <Space>
@@ -895,11 +901,14 @@ const RolesManagement = () => {
     }
 
     // Real Data Card
-    const canEdit = user?.role?.hierarchy_level > role.hierarchy_level;
+    const canEdit =
+      isElevatedRoleManager ||
+      user?.role?.hierarchy_level > role.hierarchy_level;
     const canDelete =
       !role.is_system &&
       role.user_count === 0 &&
-      user?.role?.hierarchy_level > role.hierarchy_level;
+      (isElevatedRoleManager ||
+        user?.role?.hierarchy_level > role.hierarchy_level);
     const actionsDisabled = actionLoading || loading;
 
     return (
@@ -1362,7 +1371,8 @@ const RolesManagement = () => {
                 />
               )}
               {user?.role?.hierarchy_level <= selectedRole?.hierarchy_level &&
-                !selectedRole?.is_system && (
+                !selectedRole?.is_system &&
+                !isElevatedRoleManager && (
                   <Alert
                     message="You cannot delete a role with equal or higher privileges than your own."
                     type="error"

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useUrlState } from "@/hooks/useUrlState";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
@@ -46,8 +47,11 @@ import {
   Building2,
   ExternalLink,
   X,
+  LogIn,
 } from "lucide-react";
-import { businessManagementService } from "@/services/adminDash";
+import { businessManagementService, userAdminService } from "@/services/adminDash";
+import { businessClassService } from "@/services/apiService";
+import { useAuthStore } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { RefreshCw } from "lucide-react";
 import { Drawer as VaulDrawer } from "vaul";
@@ -58,6 +62,12 @@ import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminS
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph, Link } = Typography;
+
+const OPERATIONAL_TOOLTIPS = {
+  closed: "Account deactivated — customers cannot book.",
+  open: "Active with at least one active schedule — bookable on the platform.",
+  noSchedules: "Active but no active schedules — nothing bookable until schedules exist.",
+};
 
 // --- STYLING & THEME (ADAPTED FROM BOOKINGSLIST) ---
 const colors = {
@@ -591,6 +601,7 @@ const BusinessDetailDrawerContent = ({
   isActionLoading,
   onAction,
   onViewOwnerProfile,
+  onImpersonate,
 }) => {
   if (!business) {
     return (
@@ -618,6 +629,7 @@ const BusinessDetailDrawerContent = ({
     isActive,
     featured,
     owner_email,
+    owner_id,
     businessHours,
   } = business;
 
@@ -788,17 +800,32 @@ const BusinessDetailDrawerContent = ({
         <SidebarCard>
           <SectionTitle><UserCheck size={12} /> Owner</SectionTitle>
           <InfoValue copyable>{owner_email || "N/A"}</InfoValue>
-          {owner_email && onViewOwnerProfile && (
-            <Button
-              type="link"
-              size="small"
-              icon={<ExternalLink size={14} />}
-              onClick={() => onViewOwnerProfile(owner_email)}
-              style={{ paddingLeft: 0, marginTop: 6 }}
-            >
-              View owner profile
-            </Button>
-          )}
+          {(owner_email && onViewOwnerProfile) || (owner_id != null && onImpersonate) ? (
+            <Space direction="vertical" size={8} style={{ marginTop: 8, width: "100%" }} align="start">
+              {owner_email && onViewOwnerProfile ? (
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<ExternalLink size={14} />}
+                  onClick={() => onViewOwnerProfile(owner_email)}
+                  style={{ paddingLeft: 0 }}
+                >
+                  View owner profile
+                </Button>
+              ) : null}
+              {owner_id != null && onImpersonate ? (
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<LogIn size={14} />}
+                  onClick={() => onImpersonate(owner_id)}
+                  style={{ marginLeft: 0 }}
+                >
+                  Impersonate owner
+                </Button>
+              ) : null}
+            </Space>
+          ) : null}
         </SidebarCard>
         <SidebarCard>
           <SectionTitle><Star size={12} /> Rating</SectionTitle>
@@ -831,6 +858,7 @@ const DetailDrawerModal = ({
   onAction,
   isActionLoading,
   onViewOwnerProfile,
+  onImpersonate,
 }) => {
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) onClose();
@@ -871,6 +899,7 @@ const DetailDrawerModal = ({
             isActionLoading={isActionLoading}
             onAction={onAction}
             onViewOwnerProfile={onViewOwnerProfile}
+            onImpersonate={onImpersonate}
           />
         )}
       </BusinessDrawerBodyScroll>
@@ -917,6 +946,7 @@ const ImportLogPre = styled.pre`
 
 const BusinessListings = () => {
   const router = useRouter();
+  const [businessIdRaw, setBusinessIdParam] = useUrlState("businessId");
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -924,11 +954,49 @@ const BusinessListings = () => {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
   const handleViewOwnerProfile = useCallback((ownerEmail) => {
     if (!ownerEmail) return;
     setDetailDrawerOpen(false);
+    setBusinessIdParam(null);
     router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
-  }, [router]);
+  }, [router, setBusinessIdParam]);
+
+  const closeDetailDrawer = useCallback(() => {
+    setDetailDrawerOpen(false);
+    setBusinessIdParam(null);
+  }, [setBusinessIdParam]);
+
+  const handleImpersonateOwner = useCallback(
+    async (userId) => {
+      if (userId == null) return;
+      try {
+        setIsActionLoading(true);
+        const result = await userAdminService.impersonateUser(userId);
+        if (result.success && result.data?.user) {
+          useAuthStore.setState({
+            user: result.data.user,
+            isAuthenticated: true,
+            isImpersonating: true,
+            isLoading: false,
+          });
+          message.success("Now impersonating owner.");
+          closeDetailDrawer();
+          router.push("/");
+        } else {
+          message.error(result.error || "Could not start impersonation.");
+        }
+      } catch (e) {
+        console.error(e);
+        message.error("An unexpected error occurred.");
+      } finally {
+        setIsActionLoading(false);
+      }
+    },
+    [router, closeDetailDrawer]
+  );
 
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importBusinesses, setImportBusinesses] = useState([]);
@@ -946,6 +1014,7 @@ const BusinessListings = () => {
     province: undefined,
     verification_status: undefined,
     engaged: "all",
+    revenue_tier: undefined,
   });
 
   const [pagination, setPagination] = useState({
@@ -991,6 +1060,9 @@ const BusinessListings = () => {
           ...(currentFilters.verification_status && {
             verification_status: currentFilters.verification_status,
           }),
+          ...(currentFilters.revenue_tier && {
+            revenue_tier: currentFilters.revenue_tier,
+          }),
           ...(currentFilters.engaged === "yes" && { engaged: true }),
           ...(currentFilters.engaged === "no" && { engaged: false }),
           ordering:
@@ -1026,6 +1098,24 @@ const BusinessListings = () => {
   );
 
   useEffect(() => {
+    let cancelled = false;
+    setCategoriesLoading(true);
+    businessClassService
+      .getCategories()
+      .then((r) => {
+        if (cancelled) return;
+        if (r.success) setCategoriesList(r.data || []);
+        else message.error(r.error || "Failed to fetch categories");
+      })
+      .finally(() => {
+        if (!cancelled) setCategoriesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
       fetchBusinesses(filterParams, pagination, sortedInfo);
     }, 300);
@@ -1041,6 +1131,7 @@ const BusinessListings = () => {
     filterParams.province,
     filterParams.verification_status,
     filterParams.engaged,
+    filterParams.revenue_tier,
     pagination.current,
     pagination.pageSize,
     sortedInfo,
@@ -1097,26 +1188,53 @@ const BusinessListings = () => {
       `Business deleted`,
       "Failed to delete business"
     );
-    setDetailDrawerOpen(false);
+    closeDetailDrawer();
   };
 
-  const showBusinessDetails = async (business) => {
-    setDetailDrawerOpen(true);
-    setDetailsLoading(true);
-    setSelectedBusiness(business);
-    try {
-      const response = await businessManagementService.getBusinessDetails(
-        business.businessId
-      );
-      if (response.success) {
-        setSelectedBusiness(response.data);
-      } else message.error(response.error || "Failed to fetch details");
-    } catch (e) {
-      message.error("Error fetching details");
-    } finally {
-      setDetailsLoading(false);
+  const skipNextUrlOpenRef = useRef(false);
+
+  const loadBusinessDetailById = useCallback(
+    async (bid, { syncUrl = false } = {}) => {
+      if (!bid) return;
+      if (syncUrl) {
+        skipNextUrlOpenRef.current = true;
+        setBusinessIdParam(bid);
+      }
+      setDetailDrawerOpen(true);
+      setDetailsLoading(true);
+      setSelectedBusiness(null);
+      try {
+        const response = await businessManagementService.getBusinessDetails(bid);
+        if (response.success) setSelectedBusiness(response.data);
+        else message.error(response.error || "Failed to fetch details");
+      } catch (e) {
+        message.error("Error fetching details");
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [setBusinessIdParam]
+  );
+
+  const showBusinessDetails = useCallback(
+    (businessOrStub) => {
+      const bid = businessOrStub?.businessId;
+      if (!bid) return;
+      void loadBusinessDetailById(bid, { syncUrl: true });
+    },
+    [loadBusinessDetailById]
+  );
+
+  useEffect(() => {
+    if (!businessIdRaw) return;
+    const id = Number(businessIdRaw);
+    if (!Number.isFinite(id)) return;
+    if (skipNextUrlOpenRef.current) {
+      skipNextUrlOpenRef.current = false;
+      return;
     }
-  };
+    void loadBusinessDetailById(id, { syncUrl: false });
+  }, [businessIdRaw, loadBusinessDetailById]);
 
   const refreshData = () => {
     fetchBusinesses(filterParams, { ...pagination, current: 1 }, sortedInfo);
@@ -1267,11 +1385,17 @@ const BusinessListings = () => {
             <Tag color="blue">Pending Review</Tag>
           )}
           {!b.isActive ? (
-            <Tag color="error">Closed</Tag>
+            <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
+              <span><Tag color="error">Closed</Tag></span>
+            </Tooltip>
           ) : b.has_active_schedules ? (
-            <Tag color="success">Open</Tag>
+            <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
+              <span><Tag color="success">Open</Tag></span>
+            </Tooltip>
           ) : (
-            <Tag color="warning">No Schedules</Tag>
+            <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
+              <span><Tag color="warning">No Schedules</Tag></span>
+            </Tooltip>
           )}
           {b.featured && (
             <FeaturedTag color="gold">
@@ -1294,13 +1418,35 @@ const BusinessListings = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 72,
       fixed: "right",
       align: "right",
       render: (_, b) => (
-        <Button icon={<Eye size={14} />} onClick={() => showBusinessDetails(b)}>
-          Details
-        </Button>
+        <Dropdown
+          trigger={["click"]}
+          menu={{
+            items: [
+              {
+                key: "details",
+                icon: <Eye size={14} />,
+                label: "View details",
+                onClick: () => showBusinessDetails(b),
+              },
+              ...(b.owner_id != null
+                ? [
+                    {
+                      key: "imp",
+                      icon: <LogIn size={14} />,
+                      label: "Impersonate owner",
+                      onClick: () => handleImpersonateOwner(b.owner_id),
+                    },
+                  ]
+                : []),
+            ],
+          }}
+        >
+          <Button type="text" icon={<MoreHorizontal size={18} />} aria-label="Row actions" />
+        </Dropdown>
       ),
     },
   ];
@@ -1344,11 +1490,17 @@ const BusinessListings = () => {
               <Tag color="blue">Pending</Tag>
             )}
             {!b.isActive ? (
-              <Tag color="error">Closed</Tag>
+              <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
+                <span><Tag color="error">Closed</Tag></span>
+              </Tooltip>
             ) : b.has_active_schedules ? (
-              <Tag color="success">Open</Tag>
+              <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
+                <span><Tag color="success">Open</Tag></span>
+              </Tooltip>
             ) : (
-              <Tag color="warning">No Schedules</Tag>
+              <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
+                <span><Tag color="warning">No Schedules</Tag></span>
+              </Tooltip>
             )}
           </Space>
         </div>
@@ -1430,8 +1582,7 @@ const BusinessListings = () => {
               <Building /> All Businesses
             </TableTitle>
             <TableDescription>
-              Complete list of businesses with filtering and search
-              capabilities.
+              Search and manage businesses. Closed / Open / No schedules reflect listing availability (hover tags for detail).
             </TableDescription>
           </TableHeader>
           <FilterBar>
@@ -1444,6 +1595,18 @@ const BusinessListings = () => {
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
                 style={{ width: isMobile ? "100%" : 260, borderRadius: 8 }}
               />
+              <Select
+                value={filterParams.category}
+                style={{ width: isMobile ? "100%" : 170 }}
+                onChange={(val) => handleFilterChange({ category: val })}
+                loading={categoriesLoading}
+                disabled={categoriesLoading}
+              >
+                <Option value="all">All Categories</Option>
+                {categoriesList.map((cat) => (
+                  <Option key={cat.key} value={cat.key}>{cat.name}</Option>
+                ))}
+              </Select>
               <Select
                 value={filterParams.status}
                 style={{ width: isMobile ? "100%" : 160 }}
@@ -1462,9 +1625,20 @@ const BusinessListings = () => {
                 value={filterParams.province}
                 onChange={(val) => handleFilterChange({ province: val })}
               >
-                {["AB","BC","MB","NB","NL","NS","ON","PE","QC","SK"].map(p => (
+                {["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"].map((p) => (
                   <Option key={p} value={p}>{p}</Option>
                 ))}
+              </Select>
+              <Select
+                placeholder="Revenue tier"
+                allowClear
+                style={{ width: isMobile ? "100%" : 160 }}
+                value={filterParams.revenue_tier}
+                onChange={(val) => handleFilterChange({ revenue_tier: val })}
+              >
+                <Option value="under_1k">&lt; $1,000</Option>
+                <Option value="1k_10k">$1k – $10k</Option>
+                <Option value="10k_plus">$10k+</Option>
               </Select>
               <Select
                 placeholder="Verification"
@@ -1549,7 +1723,7 @@ const BusinessListings = () => {
 
         <DetailDrawerModal
           open={detailDrawerOpen}
-          onClose={() => setDetailDrawerOpen(false)}
+          onClose={closeDetailDrawer}
           business={selectedBusiness}
           isLoading={detailsLoading}
           isMobile={isMobile}
@@ -1560,6 +1734,7 @@ const BusinessListings = () => {
             handleFeatureBusiness,
           }}
           onViewOwnerProfile={handleViewOwnerProfile}
+          onImpersonate={handleImpersonateOwner}
         />
 
         <Modal

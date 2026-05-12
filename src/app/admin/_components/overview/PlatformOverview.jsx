@@ -21,8 +21,8 @@ import {
 } from "lucide-react";
 import { Card, Typography, Radio } from "antd";
 import {
-  AreaChart,
-  Area,
+  Bar,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -32,9 +32,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  defs,
-  linearGradient,
-  stop,
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import AdminMetricCards from "../shared/AdminMetricCards";
@@ -653,7 +650,7 @@ export default function PlatformOverview() {
         periodBadge: "All-time",
         tooltip:
           "“Active” subtext counts businesses that logged in within the last 30 days as owner or accepted staff and have ever received at least one booking.",
-        footer: `${stats.activeBusinesses30d.toLocaleString()} logged in last 30d AND ever booked`,
+        footer: `${stats.activeBusinesses30d.toLocaleString()} engaged · 30d & booked`,
       },
       {
         label: "Bookings",
@@ -795,17 +792,11 @@ export default function PlatformOverview() {
               <ChartContainer>
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="gradBookings" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={colors.primary} stopOpacity={0.15} />
-                          <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={colors.success} stopOpacity={0.15} />
-                          <stop offset="95%" stopColor={colors.success} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
+                    <ComposedChart
+                      data={chartData}
+                      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                      barGap={4}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
                       <XAxis
                         dataKey="name"
@@ -832,32 +823,26 @@ export default function PlatformOverview() {
                       <RechartsTooltip content={<CustomTooltip />} />
                       <Legend
                         wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                        iconType="circle"
+                        iconType="square"
                         iconSize={7}
                       />
-                      <Area
+                      <Bar
                         yAxisId="left"
-                        type="monotone"
                         dataKey="businesses"
                         name="Businesses"
-                        stroke={colors.primary}
-                        strokeWidth={2}
-                        fill="url(#gradBookings)"
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        fill={colors.primary}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={36}
                       />
-                      <Area
+                      <Bar
                         yAxisId="right"
-                        type="monotone"
                         dataKey="revenue"
                         name="Revenue"
-                        stroke={colors.success}
-                        strokeWidth={2}
-                        fill="url(#gradRevenue)"
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        fill={colors.success}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={36}
                       />
-                    </AreaChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: colors.textTertiary, fontSize: 13 }}>

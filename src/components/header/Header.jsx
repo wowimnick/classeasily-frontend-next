@@ -302,8 +302,9 @@ const LogoContainer = styled.div`
     }
   }
 `;
-const AuthLink = styled.span`
-  color: ${(props) => props.color};
+/** Next.js `Link` with homepage nav chrome — avoids `legacyBehavior` so prefetch works reliably. */
+const HeaderNavLink = styled(Link)`
+  color: ${(props) => props.$navColor};
   font-weight: 600;
   font-size: ${(props) => (props.$isScrolled ? "0.85rem" : "0.95rem")};
   cursor: pointer;
@@ -312,7 +313,9 @@ const AuthLink = styled.span`
   border: 1px solid transparent;
   display: inline-block;
   transition: all 0.3s ease;
+  text-decoration: none;
   &:hover {
+    color: ${(props) => props.$navColor};
     background-color: ${(props) =>
       props.$onLightHero ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.15)"};
   }
@@ -490,6 +493,11 @@ const HeaderContent = ({
     setIsMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    router.prefetch("/corporate");
+    router.prefetch("/business");
+  }, [router]);
+
   // FIX: This listener was closing the menu when clicking inside CustomUserMenu because
   // CustomUserMenu is a Portal (physically outside menuTriggerRef).
   useEffect(() => {
@@ -573,28 +581,24 @@ const HeaderContent = ({
         <Spacer />
 
         <Selection>
-          <Link href="/corporate" legacyBehavior>
-            <AuthLink
-              color={activeColor}
-              $borderColor="transparent"
-              $hoverColor="rgba(255,255,255,0.2)"
-              $isScrolled={isScrolled}
-              $onLightHero={heroLightChrome}
-            >
-              Corporate
-            </AuthLink>
-          </Link>
-          <Link href="/business" legacyBehavior>
-            <AuthLink
-              color={activeColor}
-              $borderColor="transparent"
-              $hoverColor="rgba(255,255,255,0.2)"
-              $isScrolled={isScrolled}
-              $onLightHero={heroLightChrome}
-            >
-              Become a host
-            </AuthLink>
-          </Link>
+          <HeaderNavLink
+            href="/corporate"
+            prefetch
+            $navColor={activeColor}
+            $isScrolled={isScrolled}
+            $onLightHero={heroLightChrome}
+          >
+            Corporate
+          </HeaderNavLink>
+          <HeaderNavLink
+            href="/business"
+            prefetch
+            $navColor={activeColor}
+            $isScrolled={isScrolled}
+            $onLightHero={heroLightChrome}
+          >
+            Become a host
+          </HeaderNavLink>
 
           <AuthContainer key="auth">
             <RoundedButton
