@@ -825,7 +825,8 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
 
         <InfoGroup>
           <InfoGroupTitle>
-            <Star /> Reviews ({classData.reviews?.length || 0})
+            <Star /> Reviews (
+            {classData.review_count ?? classData.reviews?.length ?? 0})
           </InfoGroupTitle>
           {(classData.reviews?.length ?? 0) > 0 ? (
             classData.reviews.map((review) => (
