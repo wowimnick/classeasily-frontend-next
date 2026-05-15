@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import {
   Menu,
   MapPin,
+  Globe,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import {
   useSearch,
   SUGGESTED_AREAS,
+  ANYWHERE_EXPLORE_AREA,
   ICON_PALETTE,
   formatCollectionDisplayName,
   summarizeCollectionsForPill,
@@ -1047,6 +1049,7 @@ function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
   const raw = (selectedLocation?.displayName || searchTerm || "").trim();
   if (!raw) return "Start your search";
   const city = raw.split(",")[0].trim();
+  if (/^anywhere$/i.test(city)) return "Experiences within 100 km of Toronto";
   return `Experiences in ${city}`;
 }
 
@@ -1429,10 +1432,35 @@ function ExploreHeaderContent({
         );
       });
     }
-    return SUGGESTED_AREAS.map((area, idx) => {
-      const isToronto = idx === 0;
-      const colorTheme = area.lucideColorTheme;
-      return (
+    return (
+      <>
+        <LocationOption
+          key="explore-anywhere"
+          onClick={() => {
+            handleLocationSelect(ANYWHERE_EXPLORE_AREA.displayName, {
+              coordinates: ANYWHERE_EXPLORE_AREA.coords,
+              citySlug: ANYWHERE_EXPLORE_AREA.citySlug,
+              provinceSlug: ANYWHERE_EXPLORE_AREA.provinceSlug,
+            });
+            closeActiveField();
+          }}
+        >
+          <IconBox $bgColor="#f1f5f9" $iconColor="#0f172a">
+            <Globe size={18} strokeWidth={2.5} />
+          </IconBox>
+          <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
+              {ANYWHERE_EXPLORE_AREA.displayName}
+            </span>
+            <span style={{ fontSize: 12, color: "#717171" }}>
+              {ANYWHERE_EXPLORE_AREA.description}
+            </span>
+          </div>
+        </LocationOption>
+        {SUGGESTED_AREAS.map((area, idx) => {
+          const isToronto = idx === 0;
+          const colorTheme = area.lucideColorTheme;
+          return (
         <LocationOption
           key={idx}
           onClick={() => {
@@ -1457,8 +1485,10 @@ function ExploreHeaderContent({
             <span style={{ fontSize: 12, color: "#717171" }}>{area.description}</span>
           </div>
         </LocationOption>
-      );
-    });
+          );
+        })}
+      </>
+    );
   };
 
   return (

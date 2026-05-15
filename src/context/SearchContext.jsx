@@ -200,6 +200,16 @@ export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
   citySlug: preset.citySlug,
 }));
 
+/** Broad search — Toronto centroid + explicit 100 km radius on submit (see performSearch). */
+export const ANYWHERE_EXPLORE_AREA = {
+  name: "Anywhere",
+  displayName: "Anywhere",
+  description: "Within 100 km of Toronto",
+  coords: { lat: GTA_PRESETS[0].coords.lat, lng: GTA_PRESETS[0].coords.lng },
+  provinceSlug: GTA_PRESETS[0].provinceSlug,
+  citySlug: GTA_PRESETS[0].citySlug,
+};
+
 /** Default GTA hub used when submitting explore search with no location picked (see performSearch). */
 export function getDefaultTorontoSearchLocation() {
   const t = GTA_PRESETS[0];
@@ -459,6 +469,10 @@ export const SearchProvider = ({ children }) => {
     if (coordinates && typeof coordinates.lat === "number" && typeof coordinates.lng === "number") {
       params.set("lat", coordinates.lat.toString());
       params.set("lng", coordinates.lng.toString());
+    }
+
+    if ((displayName || term).trim() === ANYWHERE_EXPLORE_AREA.displayName) {
+      params.set("radius", "100");
     }
 
     let path = "/explore";

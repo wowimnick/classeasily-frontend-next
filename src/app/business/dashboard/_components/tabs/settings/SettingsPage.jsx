@@ -11,7 +11,7 @@ import React, {
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Building, MapPin, SlidersHorizontal, CreditCard, Mail, Link2 } from "lucide-react";
+import { Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
 
@@ -24,9 +24,6 @@ const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
 const LocationsSettingsTab = React.lazy(() => import("./LocationsSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() => import("./PreferencesSettingsTab"));
 const PlanBillingSettingsTab = React.lazy(() => import("./PlanBillingSettingsTab"));
-const StripeConnectionSettingsTab = React.lazy(() =>
-  import("./StripeConnectionSettingsTab"),
-);
 const EmailBrandingSettingsTab = React.lazy(() => import("./EmailBrandingSettingsTab"));
 
 const { useBreakpoint } = Grid;
@@ -225,7 +222,7 @@ const TabLoader = () => (
 
 /* ─── Settings Page Component ────────────────────────────────────── */
 
-const VALID_SETTINGS_TABS = ["general", "locations", "preferences", "billing", "stripe", "email"];
+const VALID_SETTINGS_TABS = ["general", "locations", "preferences", "billing", "email"];
 
 const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addonReturn = false }, ref) => {
   const router = useRouter();
@@ -234,7 +231,12 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const [generalForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
   const tabFromUrl = searchParams.get("tab");
-  const normalizedTab = tabFromUrl === "location" ? "locations" : tabFromUrl;
+  const normalizedTab =
+    tabFromUrl === "location"
+      ? "locations"
+      : tabFromUrl === "stripe"
+        ? "billing"
+        : tabFromUrl;
   const initialTab = VALID_SETTINGS_TABS.includes(normalizedTab) ? normalizedTab : defaultTab;
   const [currentTab, setCurrentTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -252,11 +254,19 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   useEffect(() => {
     const raw = searchParams.get("tab");
+    if (raw === "stripe") {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.set("tab", "billing");
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+      if (currentTab !== "billing") setCurrentTab("billing");
+      return;
+    }
     const tabFromUrl = raw === "location" ? "locations" : raw;
     if (VALID_SETTINGS_TABS.includes(tabFromUrl) && tabFromUrl !== currentTab) {
       setCurrentTab(tabFromUrl);
     }
-  }, [searchParams, currentTab]);
+  }, [searchParams, currentTab, pathname, router]);
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
@@ -667,7 +677,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     { key: "locations", label: "Locations", icon: <MapPin /> },
     { key: "preferences", label: "Preferences", icon: <SlidersHorizontal /> },
     { key: "billing", label: "Plan & Billing", icon: <CreditCard /> },
-    { key: "stripe", label: "Stripe", icon: <Link2 size={18} /> },
   ];
   const emailTab = hasEmailAddon ? [{ key: "email", label: "Email Branding", icon: <Mail />, $gradient: true }] : [];
   const showAutoSaveIndicator = ["general", "preferences"].includes(currentTab);
@@ -740,13 +749,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               addons={addons}
               addonsLoading={addonsLoading}
               refetchAddons={refetchAddons}
-            />
-          </Suspense>
-        ) : currentTab === "stripe" ? (
-          <Suspense fallback={<TabLoader />}>
-            <StripeConnectionSettingsTab
-              stripeStatus={stripeAccountStatus}
-              onRefresh={fetchBusinessData}
             />
           </Suspense>
         ) : currentTab === "email" ? (

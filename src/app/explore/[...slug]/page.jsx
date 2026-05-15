@@ -298,6 +298,7 @@ async function fetchServerData({ params, searchParams }) {
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
+    initialGeoSearchNotice: classesResponse.geo_search_notice || null,
     collections: collectionLists.collections || [],
     collectionsIWant: collectionLists.collectionsIWant || [],
     locationName,
@@ -453,6 +454,7 @@ export default async function ExplorePage({ params, searchParams }) {
           initialNextPageUrl={serverData.nextPageUrl}
           initialCollections={serverData.collections}
           initialCollectionsIWant={serverData.collectionsIWant}
+          initialGeoSearchNotice={serverData.initialGeoSearchNotice}
           routeParams={serverData.routeParams}
         />
       </Suspense>

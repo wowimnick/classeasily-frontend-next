@@ -1129,6 +1129,7 @@ export const classManagementService = {
    * @param {string} params.category - Filter by category
    * @param {string} params.status - Filter by status
    * @param {boolean} params.featured - Filter by featured status
+   * @param {string} params.collection_ids - Comma-separated collection IDs (class in any)
    */
   getClasses: async (params = {}) => {
     try {
