@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Grid, Button, Table, Tag, Space, Popconfirm, Switch } from "antd";
-import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Grid, Button, Table, Tag, Space, Popconfirm, Switch, Tooltip } from "antd";
+import { Plus, Edit, Trash2, RefreshCw, Users, Radio } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
 import { useUrlState } from "@/hooks/useUrlState";
@@ -25,6 +27,23 @@ import {
 } from "./membershipDashboardShared";
 
 const { useBreakpoint } = Grid;
+
+function estimatePlanMrr(r) {
+  const price = Number(r.price);
+  const c = Number(r.active_members_count ?? 0);
+  if (!Number.isFinite(price) || !c) return "—";
+  const monthly = r.billing_interval === "year" ? price / 12 : price;
+  return `$${(monthly * c).toFixed(2)}`;
+}
+
+function formatUpdatedAt(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return "—";
+  }
+}
 
 const PlanCard = styled.article`
   padding: 16px;
@@ -63,6 +82,7 @@ const PlanCardActions = styled.div`
 `;
 
 export default function MembershipProducts({ noWrapperPadding }) {
+  const router = useRouter();
   const [productIdRaw, setProductIdParam] = useUrlState("membershipProductId");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +153,14 @@ export default function MembershipProducts({ noWrapperPadding }) {
     } else message.error(res.error || "Failed to update");
   };
 
+  const handleSyncStripe = async (record) => {
+    const res = await businessMembershipService.syncStripe(record.id);
+    if (res.success) {
+      message.success("Synced with Stripe");
+      load();
+    } else message.error(res.error || "Stripe sync failed");
+  };
+
   const columns = [
     {
       title: "Name",
@@ -162,6 +190,28 @@ export default function MembershipProducts({ noWrapperPadding }) {
       render: (n) => n ?? 0,
     },
     {
+      title: "Est. MRR",
+      key: "mrr",
+      width: 100,
+      render: (_, r) => estimatePlanMrr(r),
+    },
+    {
+      title: "Churn (30d)",
+      key: "churn",
+      width: 110,
+      render: () => (
+        <Tooltip title="Canceled-member rate coming soon — use Stripe/exports for now.">
+          <span style={{ color: "#94a3b8" }}>—</span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: "Stripe sync",
+      key: "updated_at",
+      width: 150,
+      render: (_, r) => formatUpdatedAt(r.updated_at),
+    },
+    {
       title: "Status",
       key: "status",
       render: (_, r) => (
@@ -173,6 +223,21 @@ export default function MembershipProducts({ noWrapperPadding }) {
       key: "actions",
       render: (_, record) => (
         <Space size={4}>
+          <Button
+            type="link"
+            size="small"
+            icon={<Users size={14} />}
+            onClick={() =>
+              router.push(
+                `/business/dashboard/memberships/members?membershipProductId=${encodeURIComponent(record.id)}`,
+              )
+            }
+          >
+            Members
+          </Button>
+          <Button type="link" size="small" icon={<RefreshCw size={14} />} onClick={() => handleSyncStripe(record)}>
+            Sync
+          </Button>
           <Button type="link" size="small" icon={<Edit size={14} />} onClick={() => handleEdit(record)}>
             Edit
           </Button>
@@ -195,8 +260,31 @@ export default function MembershipProducts({ noWrapperPadding }) {
   const renderMobilePlans = () => {
     if (products.length === 0) {
       return (
-        <div style={{ padding: 32, textAlign: "center", color: "#64748b", fontSize: 14 }}>
-          No membership plans yet. Create one to get started.
+        <div
+          style={{
+            padding: 36,
+            textAlign: "center",
+            background: "linear-gradient(180deg,#f8fafc 0%,#fff 100%)",
+            borderRadius: 12,
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Memberships live here</div>
+          <p style={{ fontSize: 14, color: "#64748b", maxWidth: 440, margin: "0 auto 20px", lineHeight: 1.55 }}>
+            Create a plan to sell recurring access, credits, and member-only perks. You need a{" "}
+            <strong>Growth</strong> or <strong>Advanced</strong> widget subscription.
+          </p>
+          <Space wrap size={[10, 10]} style={{ justifyContent: "center" }}>
+            <Button type="primary" icon={<Plus size={16} />} onClick={handleCreate}>
+              Create membership plan
+            </Button>
+            <Link href="/booking-widget" style={{ display: "inline-flex" }}>
+              <Button icon={<Radio size={16} />}>Widget & pricing</Button>
+            </Link>
+            <Link href="/business/dashboard/settings?tab=billing" style={{ display: "inline-flex" }}>
+              <Button>Plan &amp; billing</Button>
+            </Link>
+          </Space>
         </div>
       );
     }

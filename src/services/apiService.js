@@ -68,6 +68,8 @@ export const API_ENDPOINTS = {
   BUSINESS_ROLES: "/business/roles/",
   ACCEPT_INVITE: "/business/accept-invitation/",
   MY_BUSINESS_WIDGET_CONFIG: "/my-business/widget-config/",
+  MY_BUSINESS_WIDGET_DIAGNOSTICS: "/my-business/widget-diagnostics/",
+  WIDGET_V1_PLANS: "/widget/v1/plans/",
   MY_BUSINESS_EMAIL_BRANDING_PREVIEW: "/my-business/email-branding/preview/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION: "/my-business/widget-subscription/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_CANCEL: "/my-business/widget-subscription/cancel/",
@@ -824,6 +826,24 @@ export const businessService = {
     }
   },
 
+  getWidgetDiagnostics: async (referrer) => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_DIAGNOSTICS,
+        { params: referrer ? { referrer } : undefined },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.message ||
+          "Failed to load widget diagnostics.",
+      };
+    }
+  },
+
   previewEmailBranding: async ({ branding, emailType }) => {
     try {
       const response = await axiosInstance.post(
@@ -840,6 +860,24 @@ export const businessService = {
         success: false,
         error:
           error.response?.data?.detail || "Failed to load email preview.",
+      };
+    }
+  },
+
+  /**
+   * Public Stripe-backed SaaS plan prices (no auth). Fallback for marketing UIs.
+   */
+  getPublicWidgetPlans: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.WIDGET_V1_PLANS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.message ||
+          "Failed to load public plan prices.",
       };
     }
   },

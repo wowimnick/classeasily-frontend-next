@@ -17,6 +17,7 @@ import {
   Select,
   ConfigProvider,
   Grid,
+  Modal,
 } from "antd";
 import {
   RefreshCw,
@@ -31,6 +32,7 @@ import {
   ChevronRight,
   Calendar,
   Hash,
+  Sparkles,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -265,6 +267,11 @@ export default function WidgetSubscriptionsTab() {
   const [filterStatus, setFilterStatus] = useState(undefined);
   const [selected, setSelected] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [compModalOpen, setCompModalOpen] = useState(false);
+  const [compTarget, setCompTarget] = useState(null);
+  const [compPlanId, setCompPlanId] = useState("growth");
+  const [compReason, setCompReason] = useState("");
+  const [compSubmitting, setCompSubmitting] = useState(false);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
@@ -287,6 +294,60 @@ export default function WidgetSubscriptionsTab() {
   useEffect(() => {
     fetchSubscriptions();
   }, [fetchSubscriptions]);
+
+  const openCompModal = (record) => {
+    setCompTarget(record);
+    const pid = (record?.plan_id || "growth").toLowerCase();
+    setCompPlanId(["basic", "growth", "advanced"].includes(pid) ? pid : "growth");
+    setCompReason("");
+    setCompModalOpen(true);
+  };
+
+  const submitCompOverride = async () => {
+    const reason = (compReason || "").trim();
+    if (!compTarget?.business_id) {
+      message.error("Missing business");
+      return;
+    }
+    if (!reason) {
+      message.error("A comp reason is required (for audit).");
+      return;
+    }
+    setCompSubmitting(true);
+    try {
+      const res = await adminWidgetSubscriptionService.compOverride({
+        business_id: compTarget.business_id,
+        plan_id: compPlanId,
+        comp_reason: reason,
+      });
+      if (res.success) {
+        const updatedBusinessId = compTarget.business_id;
+        message.success("Complimentary plan applied");
+        setCompModalOpen(false);
+        setCompTarget(null);
+        fetchSubscriptions();
+        setSelected((prev) =>
+          prev && prev.business_id === updatedBusinessId
+            ? {
+                ...prev,
+                plan_id: res.data?.plan_id || compPlanId,
+                status: res.data?.status || "active",
+                comp_reason: res.data?.comp_reason || reason,
+                payment_grace_until: null,
+              }
+            : prev,
+        );
+      } else {
+        message.error(
+          typeof res.error === "string" ? res.error : "Failed to apply complimentary plan",
+        );
+      }
+    } catch {
+      message.error("Request failed");
+    } finally {
+      setCompSubmitting(false);
+    }
+  };
 
   const openDrawer = (record) => {
     setSelected(record);
@@ -408,9 +469,41 @@ export default function WidgetSubscriptionsTab() {
       render: (v) => (v ? <Tag color="orange" style={{ fontSize: 11 }}>Yes</Tag> : <Text style={{ fontSize: 12, color: colors.textSecondary }}>—</Text>),
     },
     {
+      title: "Grace",
+      dataIndex: "payment_grace_until",
+      key: "payment_grace_until",
+      width: 108,
+      render: (v) =>
+        v ? (
+          <Tooltip title={dayjs(v).format("MMM D, YYYY h:mm A")}>
+            <Tag color="gold" style={{ fontSize: 10, margin: 0 }}>
+              Until {dayjs(v).format("MMM D")}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>—</Text>
+        ),
+    },
+    {
+      title: "Comp",
+      dataIndex: "comp_reason",
+      key: "comp_reason",
+      width: 70,
+      render: (r) =>
+        r ? (
+          <Tooltip title={r}>
+            <Tag color="purple" style={{ fontSize: 10, margin: 0 }}>
+              Yes
+            </Tag>
+          </Tooltip>
+        ) : (
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>—</Text>
+        ),
+    },
+    {
       title: "",
       key: "actions",
-      width: 80,
+      width: 120,
       render: (_, record) => (
         <Space size={4}>
           {record.business_slug && (
@@ -426,6 +519,17 @@ export default function WidgetSubscriptionsTab() {
               />
             </Tooltip>
           )}
+          <Tooltip title="Comp / override plan">
+            <Button
+              type="text"
+              size="small"
+              icon={<Sparkles size={14} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                openCompModal(record);
+              }}
+            />
+          </Tooltip>
           <Button
             type="text"
             size="small"
@@ -520,6 +624,18 @@ export default function WidgetSubscriptionsTab() {
               <InfoValue>{dayjs(selected.canceled_at).format("MMM D, YYYY")}</InfoValue>
             </InfoRow>
           )}
+          {selected.payment_grace_until && (
+            <InfoRow>
+              <InfoLabel>Payment grace until</InfoLabel>
+              <InfoValue>{dayjs(selected.payment_grace_until).format("MMM D, YYYY h:mm A")}</InfoValue>
+            </InfoRow>
+          )}
+          {Boolean(selected.comp_reason) && (
+            <InfoRow>
+              <InfoLabel>Comp reason</InfoLabel>
+              <InfoValue style={{ textAlign: "left", maxWidth: "100%" }}>{selected.comp_reason}</InfoValue>
+            </InfoRow>
+          )}
         </InfoCard>
 
         {selected.stripe_subscription_id && (
@@ -534,7 +650,15 @@ export default function WidgetSubscriptionsTab() {
           </InfoCard>
         )}
 
-        <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+        <div style={{ display: "flex", gap: 8, paddingTop: 4, flexWrap: "wrap" }}>
+          <Button
+            type="primary"
+            icon={<Sparkles size={14} />}
+            onClick={() => openCompModal(selected)}
+            style={{ borderRadius: 8, flex: 1, fontSize: 13, minWidth: 120 }}
+          >
+            Comp / override
+          </Button>
           {selected.business_slug && (
             <Button
               icon={<ExternalLink size={14} />}
@@ -656,6 +780,41 @@ export default function WidgetSubscriptionsTab() {
             )}
           </Drawer.Portal>
         </Drawer.Root>
+        <Modal
+          title="Complimentary / override plan"
+          open={compModalOpen}
+          onCancel={() => !compSubmitting && setCompModalOpen(false)}
+          onOk={submitCompOverride}
+          confirmLoading={compSubmitting}
+          okText="Apply"
+          destroyOnClose
+        >
+          <div style={{ marginBottom: 12 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Business
+            </Text>
+            <div style={{ fontWeight: 600 }}>
+              {compTarget?.business_name || (compTarget ? `Business #${compTarget.business_id}` : "—")}
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 6, fontSize: 12 }}>Plan</div>
+            <Select value={compPlanId} onChange={setCompPlanId} style={{ width: "100%" }}>
+              <Option value="basic">Basic</Option>
+              <Option value="growth">Growth</Option>
+              <Option value="advanced">Advanced</Option>
+            </Select>
+          </div>
+          <div>
+            <div style={{ marginBottom: 6, fontSize: 12 }}>Reason (required — audit log)</div>
+            <Input.TextArea
+              rows={3}
+              value={compReason}
+              onChange={(e) => setCompReason(e.target.value)}
+              placeholder="e.g. Partnership pilot — approved by …"
+            />
+          </div>
+        </Modal>
       </DashboardWrapper>
     </ConfigProvider>
   );

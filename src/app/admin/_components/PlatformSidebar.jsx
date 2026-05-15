@@ -667,7 +667,8 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     (key) => {
       const required = ADMIN_TAB_PERMISSIONS[key];
       if (!required) return true;
-      return permissions.some((p) => p === required);
+      const reqs = Array.isArray(required) ? required : [required];
+      return reqs.some((perm) => permissions.some((p) => p === perm));
     },
     [permissions]
   );

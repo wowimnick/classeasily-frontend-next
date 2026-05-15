@@ -863,6 +863,7 @@ const DetailDrawerContent = ({
                       {(() => {
                         const gross = Number(payment.amount || 0);
                         const plat = Number(payment.platform_fee_amount || 0);
+                        const platTax = Number(payment.platform_fee_tax || 0);
                         const stripeAmt = stripeProcessingResolved.amount;
                         const net = Number(payment.net_payout_amount || 0);
                         const line = (label, val, neg) => (
@@ -896,6 +897,9 @@ const DetailDrawerContent = ({
                           >
                             {line("Gross amount", gross, false)}
                             {line("Platform fee", plat, true)}
+                            {platTax > 0.009
+                              ? line("Tax on platform fee (HST)", platTax, true)
+                              : null}
                             {line(
                               stripeProcessingResolved.estimated
                                 ? "Stripe fee (est.)"

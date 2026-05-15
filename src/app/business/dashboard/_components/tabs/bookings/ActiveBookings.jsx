@@ -16,6 +16,7 @@ import {
   Skeleton,
   Empty,
   Divider,
+  Tooltip,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -720,7 +721,12 @@ const ActiveBookings = ({
           <div>
             <PageTitle>Active Bookings</PageTitle>
             <HeaderSubtitle>
-              View and manage upcoming confirmed bookings
+              View and manage upcoming confirmed bookings.{" "}
+              <Tooltip title="No-show rates and one-click refunds from this list are planned — use Stripe/support for manual refunds today.">
+                <span style={{ textDecoration: "underline", textDecorationStyle: "dashed", cursor: "help" }}>
+                  Refunds &amp; no-shows
+                </span>
+              </Tooltip>
             </HeaderSubtitle>
           </div>
         </DashboardHeader>

@@ -29,10 +29,29 @@ export default function DashboardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { hasWidgetAccess, hasEmailMarketingAccess, loading: subLoading } = useSubscription();
+  const { hasWidgetAccess, hasEmailMarketingAccess, hasMembershipAccess, loading: subLoading } = useSubscription();
 
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
+  const initialMembershipProductId = searchParams.get("membershipProductId") || undefined;
+
+  useEffect(() => {
+    if (subLoading) return;
+    const mid = searchParams.get("membershipProductId");
+    if (!mid) return;
+    if (activeKey === "memberships" || activeKey === "memberships/products") {
+      const q = searchParams.toString();
+      router.replace(`/business/dashboard/memberships/members${q ? `?${q}` : ""}`);
+    }
+  }, [activeKey, searchParams, subLoading, router]);
+
+  useEffect(() => {
+    if (subLoading) return;
+    if (!activeKey.startsWith("memberships")) return;
+    if (!hasMembershipAccess) {
+      router.replace("/business/dashboard/settings?tab=billing");
+    }
+  }, [activeKey, hasMembershipAccess, subLoading, router]);
 
   // When user has no widget access, redirect away from widget tab (e.g. direct URL /business/dashboard/widget)
   useEffect(() => {
@@ -167,6 +186,7 @@ export default function DashboardPage() {
         <TabGlassWrapper>
           <MembershipsDashboard
             defaultActiveKey={activeKey === "memberships/members" ? "members" : "products"}
+            initialMembershipProductId={initialMembershipProductId}
           />
         </TabGlassWrapper>
       );

@@ -969,8 +969,16 @@ const menuItemPermissions = {
   staff:       "manage_business_staff",
   messages:    "view_own_business_bookings",
   settings:    "manage_own_business_profile",
-  "memberships/products": "manage_own_classes",
-  "memberships/members":  "manage_own_classes",
+  "memberships/products": [
+    "view_business_members",
+    "manage_business_members",
+    "manage_own_classes",
+  ],
+  "memberships/members": [
+    "view_business_members",
+    "manage_business_members",
+    "manage_own_classes",
+  ],
 };
 
 /* ─── Component ────────────────────────────────────────────────── */

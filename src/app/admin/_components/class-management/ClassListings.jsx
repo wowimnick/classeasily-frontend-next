@@ -1756,6 +1756,14 @@ export default function ClassListings() {
             <List.Item
               actions={[
                 <Button
+                  key="schedules"
+                  icon={<Calendar size={14} />}
+                  type="primary"
+                  onClick={() => openScheduleManager(item)}
+                >
+                  Manage schedules
+                </Button>,
+                <Button
                   key="view"
                   type="primary"
                   ghost

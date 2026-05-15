@@ -11,7 +11,7 @@ import React, {
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
+import { Building, MapPin, SlidersHorizontal, CreditCard, Mail, Link2 } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
 
@@ -222,7 +222,7 @@ const TabLoader = () => (
 
 /* ─── Settings Page Component ────────────────────────────────────── */
 
-const VALID_SETTINGS_TABS = ["general", "locations", "preferences", "billing", "email"];
+const VALID_SETTINGS_TABS = ["general", "locations", "preferences", "billing", "stripe", "email"];
 
 const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addonReturn = false }, ref) => {
   const router = useRouter();
@@ -664,6 +664,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     { key: "locations", label: "Locations", icon: <MapPin /> },
     { key: "preferences", label: "Preferences", icon: <SlidersHorizontal /> },
     { key: "billing", label: "Plan & Billing", icon: <CreditCard /> },
+    { key: "stripe", label: "Stripe", icon: <Link2 size={18} /> },
   ];
   const emailTab = hasEmailAddon ? [{ key: "email", label: "Email Branding", icon: <Mail />, $gradient: true }] : [];
   const showAutoSaveIndicator = ["general", "preferences"].includes(currentTab);
@@ -736,6 +737,13 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               addons={addons}
               addonsLoading={addonsLoading}
               refetchAddons={refetchAddons}
+            />
+          </Suspense>
+        ) : currentTab === "stripe" ? (
+          <Suspense fallback={<TabLoader />}>
+            <StripeConnectionSettingsTab
+              stripeStatus={stripeAccountStatus}
+              onRefresh={fetchBusinessData}
             />
           </Suspense>
         ) : currentTab === "email" ? (

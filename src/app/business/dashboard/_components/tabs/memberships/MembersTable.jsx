@@ -139,6 +139,13 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
   }, [loadProducts]);
 
   useEffect(() => {
+    if (propProductId) {
+      setProductFilter(propProductId);
+      setPage(1);
+    }
+  }, [propProductId]);
+
+  useEffect(() => {
     load();
   }, [load]);
 

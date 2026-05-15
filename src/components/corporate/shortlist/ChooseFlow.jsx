@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Button, ConfigProvider, Form, Input, InputNumber, Select } from "antd";
+import { Alert, Button, ConfigProvider, Form, Input, Select } from "antd";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,9 +58,7 @@ const LeftColumnWrap = styled.div`
   min-width: 0;
 
   @media (max-width: 1023px) {
-    .ant-input,
-    .ant-input-affix-wrapper input,
-    .ant-input-number-input {
+    .ant-input-affix-wrapper input {
       font-size: 16px !important;
     }
   }
@@ -161,7 +159,8 @@ const DesktopSummaryCard = styled.div`
   margin: 0 auto;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  box-shadow: none;
   padding: 18px 20px;
   box-sizing: border-box;
 `;
@@ -538,6 +537,98 @@ const FooterNote = styled.p`
 
 const COLLAPSE = { duration: 0.25, ease: [0.4, 0, 0.2, 1] };
 
+const GuestStepperWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+`;
+
+const GuestStepperBtn = styled.button`
+  flex: 0 0 48px;
+  height: 48px;
+  border: none;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: -2px;
+  }
+`;
+
+const GuestStepperValue = styled.div`
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  min-width: 0;
+  padding: 0 8px;
+`;
+
+/** Controlled +/- stepper for Form.Item `headcount`. */
+function GuestStepper({ value, onChange, min = 1, max }) {
+  const n = Number(value);
+  const safe =
+    Number.isFinite(n) && n >= min ? n : min;
+  const atMax = max != null && Number.isFinite(max) && safe >= max;
+  const atMin = safe <= min;
+
+  const dec = () => {
+    if (!atMin) onChange?.(safe - 1);
+  };
+  const inc = () => {
+    if (!atMax) onChange?.(safe + 1);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      dec();
+    }
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+      e.preventDefault();
+      inc();
+    }
+  };
+
+  return (
+    <GuestStepperWrap
+      role="group"
+      aria-label="Number of guests"
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+    >
+      <GuestStepperBtn type="button" onClick={dec} disabled={atMin} aria-label="Decrease guests">
+        −
+      </GuestStepperBtn>
+      <GuestStepperValue aria-live="polite">{safe}</GuestStepperValue>
+      <GuestStepperBtn type="button" onClick={inc} disabled={atMax} aria-label="Increase guests">
+        +
+      </GuestStepperBtn>
+    </GuestStepperWrap>
+  );
+}
+
 function computeDeposit(totalCents, pct) {
   const t = Number(totalCents) || 0;
   const p = Math.min(100, Math.max(1, Number(pct) || 25));
@@ -655,21 +746,18 @@ export default function ChooseFlow({
       <DesktopSummarySection>
         <DesktopPriceHeader>Price details</DesktopPriceHeader>
         <DesktopPriceRow>
-          <DesktopPriceText>Total (estimate)</DesktopPriceText>
+          <DesktopPriceText>Total</DesktopPriceText>
           <DesktopPriceText>{formatMoney(total, currency)}</DesktopPriceText>
         </DesktopPriceRow>
+        <DesktopTotalRow style={{ marginTop: 10 }}>
+          <DesktopTotalLabel>Deposit due today</DesktopTotalLabel>
+          <DesktopTotalAmount>{formatMoney(deposit, currency)}</DesktopTotalAmount>
+        </DesktopTotalRow>
         <DesktopPriceRow>
           <DesktopPriceText>Balance after deposit</DesktopPriceText>
           <DesktopPriceText>{formatMoney(balance, currency)}</DesktopPriceText>
         </DesktopPriceRow>
       </DesktopSummarySection>
-      <DesktopSummaryDivider />
-      <DesktopTotalRow>
-        <DesktopTotalLabel>
-          Due today <span className="currency-code">{cur}</span>
-        </DesktopTotalLabel>
-        <DesktopTotalAmount>{formatMoney(deposit, currency)}</DesktopTotalAmount>
-      </DesktopTotalRow>
       {compact ? (
         <p
           style={{
@@ -796,6 +884,89 @@ export default function ChooseFlow({
 
                     <SectionCard>
                       <SectionHeader>
+                        <h3>Event details</h3>
+                      </SectionHeader>
+                      <SectionContentInner>
+                        <CheckoutFieldRow>
+                          <Form.Item
+                            name="headcount"
+                            label={<FieldLabel>Number of guests</FieldLabel>}
+                            rules={[
+                              { required: true, message: "Enter guest count" },
+                              ...(minHc != null && Number.isFinite(minHc)
+                                ? [{ type: "number", min: minHc, message: `At least ${minHc} guests` }]
+                                : []),
+                              ...(maxHc != null && Number.isFinite(maxHc)
+                                ? [{ type: "number", max: maxHc, message: `At most ${maxHc} guests` }]
+                                : []),
+                            ]}
+                            style={{ marginBottom: 0 }}
+                          >
+                            <GuestStepper
+                              min={minHc != null && Number.isFinite(minHc) ? minHc : 1}
+                              max={maxHc != null && Number.isFinite(maxHc) ? maxHc : undefined}
+                            />
+                          </Form.Item>
+                        </CheckoutFieldRow>
+
+                        {!hasDates ? (
+                          <CheckoutFieldRow>
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="No proposed times yet"
+                              description="Please contact your representative to confirm availability before completing this step."
+                              style={{ borderRadius: 8 }}
+                            />
+                          </CheckoutFieldRow>
+                        ) : (
+                          <CheckoutFieldRow>
+                            <Form.Item
+                              name="confirmed_datetime"
+                              label={<FieldLabel>Date &amp; time</FieldLabel>}
+                              rules={[{ required: true, message: "Select a time" }]}
+                              extra={
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#6b7280",
+                                    display: "block",
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  Pick one of the host&apos;s proposed times.
+                                </span>
+                              }
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Select
+                                options={dateChoices}
+                                placeholder="Choose a proposed time"
+                                size="large"
+                                style={{ width: "100%" }}
+                              />
+                            </Form.Item>
+                          </CheckoutFieldRow>
+                        )}
+
+                        <CheckoutFieldRow>
+                          <Form.Item
+                            name="special_requests"
+                            label={<FieldLabel>Notes for your host (optional)</FieldLabel>}
+                            style={{ marginBottom: 0 }}
+                          >
+                            <Input.TextArea
+                              rows={4}
+                              placeholder="Accessibility, dietary needs, AV or room setup, parking, arrival window, surprises — anything logistics teams should know."
+                              style={{ borderRadius: 8 }}
+                            />
+                          </Form.Item>
+                        </CheckoutFieldRow>
+                      </SectionContentInner>
+                    </SectionCard>
+
+                    <SectionCard style={{ marginTop: 24 }}>
+                      <SectionHeader>
                         <h3>Experience details</h3>
                       </SectionHeader>
                       <SectionContentInner>
@@ -837,7 +1008,7 @@ export default function ChooseFlow({
                         ) : null}
                         {pricePerPerson != null ? (
                           <SummaryDataRow>
-                            <span className="label">Price per person (estimate)</span>
+                            <span className="label">Price per person</span>
                             <span className="value">{formatMoney(pricePerPerson, currency)}</span>
                           </SummaryDataRow>
                         ) : null}
@@ -886,74 +1057,6 @@ export default function ChooseFlow({
                             </span>
                           </SummaryDataRow>
                         ) : null}
-                      </SectionContentInner>
-                    </SectionCard>
-
-                    <SectionCard style={{ marginTop: 24 }}>
-                      <SectionHeader>
-                        <h3>Event details</h3>
-                      </SectionHeader>
-                      <SectionContentInner>
-                        <CheckoutFieldRow>
-                          <Form.Item
-                            name="headcount"
-                            label={<FieldLabel>Number of guests</FieldLabel>}
-                            rules={[
-                              { required: true, message: "Enter guest count" },
-                              ...(minHc != null && Number.isFinite(minHc)
-                                ? [{ type: "number", min: minHc, message: `At least ${minHc} guests` }]
-                                : []),
-                              ...(maxHc != null && Number.isFinite(maxHc)
-                                ? [{ type: "number", max: maxHc, message: `At most ${maxHc} guests` }]
-                                : []),
-                            ]}
-                            style={{ marginBottom: 0 }}
-                          >
-                            <InputNumber
-                              min={minHc != null && Number.isFinite(minHc) ? minHc : 1}
-                              max={maxHc != null && Number.isFinite(maxHc) ? maxHc : undefined}
-                              style={{ width: "100%" }}
-                              size="middle"
-                            />
-                          </Form.Item>
-                        </CheckoutFieldRow>
-
-                        {!hasDates ? (
-                          <CheckoutFieldRow>
-                            <Alert
-                              type="warning"
-                              showIcon
-                              message="No proposed times yet"
-                              description="Please contact your representative to confirm availability before completing this step."
-                              style={{ borderRadius: 8 }}
-                            />
-                          </CheckoutFieldRow>
-                        ) : (
-                          <CheckoutFieldRow>
-                            <Form.Item
-                              name="confirmed_datetime"
-                              label={<FieldLabel>Date &amp; time</FieldLabel>}
-                              rules={[{ required: true, message: "Select a time" }]}
-                              style={{ marginBottom: 0 }}
-                            >
-                              <Select options={dateChoices} placeholder="Choose a proposed time" size="middle" />
-                            </Form.Item>
-                          </CheckoutFieldRow>
-                        )}
-
-                        <CheckoutFieldRow>
-                          <Form.Item
-                            name="special_requests"
-                            label={<FieldLabel>Notes for your host (optional)</FieldLabel>}
-                            style={{ marginBottom: 0 }}
-                          >
-                            <Input.TextArea
-                              rows={4}
-                              placeholder="Accessibility, dietary needs, AV or room setup, parking, arrival window, surprises — anything logistics teams should know."
-                              style={{ borderRadius: 8 }}
-                            />
-                          </Form.Item>
-                        </CheckoutFieldRow>
                       </SectionContentInner>
                     </SectionCard>
 

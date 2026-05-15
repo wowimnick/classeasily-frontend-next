@@ -3,6 +3,7 @@
 import Link from "next/link";
 import styled from "styled-components";
 import { motion } from "framer-motion";
+import { Sparkles, Wallet } from "lucide-react";
 import ClassPageHeroImageBlock from "@/app/classes/_components/ClassPageHeroImageBlock";
 import { formatMoney } from "./formatMoney";
 
@@ -18,6 +19,9 @@ const T = {
 
 /** Highlight fill — lighter than `rowLine` (#F3F4F6) so bottom borders stay visible */
 const COL_HIGHLIGHT = T.bgMuted;
+
+/** Subtle band for Experience body rows (label + cells stay aligned). */
+const SECTION_EXP = "#FAFAFA";
 
 function computePricingBreakdown(totalCents, depPct) {
   const t = Number(totalCents) || 0;
@@ -225,7 +229,11 @@ const PcTdFeature = styled.td`
   line-height: 1.35;
   position: sticky;
   left: 0;
-  background: ${T.white};
+  background: ${(p) => {
+    if (p.$highlight) return COL_HIGHLIGHT;
+    if (p.$section === "experience") return SECTION_EXP;
+    return T.white;
+  }};
   z-index: 1;
   width: 28%;
   min-width: 0;
@@ -234,6 +242,7 @@ const PcTdFeature = styled.td`
   word-break: break-word;
   hyphens: auto;
   box-shadow: 1px 0 0 ${T.rowLine};
+  transition: background 0.15s ease;
 
   @media (max-width: 480px) {
     width: 26%;
@@ -252,7 +261,11 @@ const PcTdMark = styled.td`
   font-variant-numeric: tabular-nums;
   min-width: 0;
   box-sizing: border-box;
-  background: ${(p) => (p.$highlight ? COL_HIGHLIGHT : T.white)};
+  background: ${(p) => {
+    if (p.$highlight) return COL_HIGHLIGHT;
+    if (p.$section === "experience") return SECTION_EXP;
+    return T.white;
+  }};
   transition: background 0.15s ease;
 
   @media (max-width: 480px) {
@@ -277,18 +290,42 @@ const PcTdMarkInnerLeft = styled.span`
   min-height: 22px;
 `;
 
-/** Full-width section band — same treatment for every block (Experience, Pricing, …). */
+/** Full-width section band — Experience / Pricing with icon. */
+const SectionHeadInner = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+`;
+
 const SectionHeadCell = styled.th`
-  padding: 12px 14px 11px 18px;
+  padding: 10px 14px 9px 18px;
   font-weight: 700;
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: ${T.text};
   background: ${T.bgMuted};
-  border-top: 2px solid ${T.border};
+  border-top: 3px solid ${T.border};
   border-bottom: 1px solid ${T.border};
   text-align: left;
+
+  svg {
+    flex-shrink: 0;
+    color: ${T.sub};
+    width: 15px;
+    height: 15px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px 7px 14px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+
+    svg {
+      width: 13px;
+      height: 13px;
+    }
+  }
 `;
 
 const TaglineClamp = styled.span`
@@ -392,6 +429,13 @@ const TableBtn = styled.button`
     outline: 2px solid #000000;
     outline-offset: 2px;
   }
+
+  ${(p) =>
+    p.$primary
+      ? `
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  `
+      : ""}
 
   @media (min-width: 900px) {
     padding: 9px 12px;
@@ -609,14 +653,18 @@ export default function ShortlistComparisonTable({
             <MotionTbody variants={tbodyOrchestra} initial="hidden" animate="visible">
               <MotionTr variants={sectionBandReveal}>
                 <SectionHeadCell colSpan={n + 1} scope="colgroup">
-                  Experience
+                  <SectionHeadInner>
+                    <Sparkles aria-hidden />
+                    Experience
+                  </SectionHeadInner>
                 </SectionHeadCell>
               </MotionTr>
             <MotionTr variants={tableRowReveal}>
-              <PcTdFeature>Host</PcTdFeature>
+              <PcTdFeature $section="experience">Host</PcTdFeature>
               {options.map((opt) => (
                 <PcTdMark
                   key={`host-${opt.id}`}
+                  $section="experience"
                   $highlight={isHighlighted(opt)}
                   onMouseEnter={() => onHighlight?.(opt)}
                 >
@@ -626,13 +674,14 @@ export default function ShortlistComparisonTable({
             </MotionTr>
             {options.some((o) => String(o.tagline || "").trim() || String(o.description || "").trim()) ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Summary</PcTdFeature>
+                <PcTdFeature $section="experience">Summary</PcTdFeature>
                 {options.map((opt) => {
                   const summaryText =
                     String(opt.tagline || "").trim() || String(opt.description || "").trim();
                   return (
                     <PcTdMark
                       key={`tag-${opt.id}`}
+                      $section="experience"
                       $highlight={isHighlighted(opt)}
                       onMouseEnter={() => onHighlight?.(opt)}
                     >
@@ -647,10 +696,11 @@ export default function ShortlistComparisonTable({
 
             {anyLocation ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Area</PcTdFeature>
+                <PcTdFeature $section="experience">Area</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`loc-${opt.id}`}
+                    $section="experience"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -678,10 +728,11 @@ export default function ShortlistComparisonTable({
 
             {anyDuration ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Duration</PcTdFeature>
+                <PcTdFeature $section="experience">Duration</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`dur-${opt.id}`}
+                    $section="experience"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -693,10 +744,11 @@ export default function ShortlistComparisonTable({
 
             {anyHeadcount ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Group size</PcTdFeature>
+                <PcTdFeature $section="experience">Group size</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`hc-${opt.id}`}
+                    $section="experience"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -708,10 +760,11 @@ export default function ShortlistComparisonTable({
 
             {anyInclusions ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Included</PcTdFeature>
+                <PcTdFeature $section="experience">Included</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`inc-${opt.id}`}
+                    $section="experience"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                     style={{ textAlign: "left", verticalAlign: "top" }}
@@ -730,10 +783,11 @@ export default function ShortlistComparisonTable({
 
             {anyProposedDates ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Proposed dates</PcTdFeature>
+                <PcTdFeature $section="experience">Proposed dates</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`dates-${opt.id}`}
+                    $section="experience"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                     style={{ textAlign: "left", verticalAlign: "top" }}
@@ -752,14 +806,18 @@ export default function ShortlistComparisonTable({
 
             <MotionTr variants={sectionBandReveal}>
               <SectionHeadCell colSpan={n + 1} scope="colgroup">
-                Pricing
+                <SectionHeadInner>
+                  <Wallet aria-hidden />
+                  Pricing
+                </SectionHeadInner>
               </SectionHeadCell>
             </MotionTr>
             <MotionTr variants={tableRowReveal}>
-              <PcTdFeature>Total (estimate)</PcTdFeature>
+              <PcTdFeature $section="pricing">Total</PcTdFeature>
               {options.map((opt) => (
                 <PcTdMark
                   key={`tot-${opt.id}`}
+                  $section="pricing"
                   $highlight={isHighlighted(opt)}
                   onMouseEnter={() => onHighlight?.(opt)}
                 >
@@ -771,10 +829,11 @@ export default function ShortlistComparisonTable({
             </MotionTr>
             {anyPerPerson ? (
               <MotionTr variants={tableRowReveal}>
-                <PcTdFeature>Per person (estimate)</PcTdFeature>
+                <PcTdFeature $section="pricing">Per person</PcTdFeature>
                 {options.map((opt) => (
                   <PcTdMark
                     key={`ppp-${opt.id}`}
+                    $section="pricing"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -790,12 +849,13 @@ export default function ShortlistComparisonTable({
               </MotionTr>
             ) : null}
             <MotionTr variants={tableRowReveal}>
-              <PcTdFeature>Deposit ({depPct}%)</PcTdFeature>
+              <PcTdFeature $section="pricing">Deposit ({depPct}%)</PcTdFeature>
               {options.map((opt) => {
                 const { depositCents } = computePricingBreakdown(opt.price_total_cents, depPct);
                 return (
                   <PcTdMark
                     key={`dep-${opt.id}`}
+                    $section="pricing"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -805,12 +865,13 @@ export default function ShortlistComparisonTable({
               })}
             </MotionTr>
             <MotionTr variants={tableRowReveal}>
-              <PcTdFeature>Balance (invoiced)</PcTdFeature>
+              <PcTdFeature $section="pricing">Balance (invoiced)</PcTdFeature>
               {options.map((opt) => {
                 const { balanceCents } = computePricingBreakdown(opt.price_total_cents, depPct);
                 return (
                   <PcTdMark
                     key={`bal-${opt.id}`}
+                    $section="pricing"
                     $highlight={isHighlighted(opt)}
                     onMouseEnter={() => onHighlight?.(opt)}
                   >
@@ -820,10 +881,11 @@ export default function ShortlistComparisonTable({
               })}
             </MotionTr>
             <MotionTr variants={tableRowReveal}>
-              <PcTdFeature>Next step</PcTdFeature>
+              <PcTdFeature $section="pricing">Next step</PcTdFeature>
               {options.map((opt) => (
                 <PcTdMark
                   key={`act-${opt.id}`}
+                  $section="pricing"
                   $highlight={isHighlighted(opt)}
                   onMouseEnter={() => onHighlight?.(opt)}
                   style={{ verticalAlign: "top", paddingTop: 12, paddingBottom: 14 }}

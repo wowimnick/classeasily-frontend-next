@@ -13,7 +13,10 @@ export const ADMIN_TAB_PERMISSIONS = {
   "corporate-inquiries": "quickstart.access_corporate_admin",
   payments: "quickstart.access_payment_admin",
   payouts: "quickstart.access_payout_admin",
-  "widget-subscriptions": "quickstart.view_businessinfo",
+  "widget-subscriptions": [
+    "quickstart.view_widgetsubscription",
+    "quickstart.view_businessinfo",
+  ],
   "global-discounts": "quickstart.access_global_discount_admin",
   blog: "quickstart.access_blog_admin",
   support: "quickstart.access_support_admin",

@@ -2688,6 +2688,23 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <PlanBillingSection>
                 <PlanCurrentPlanInner>
                   <PlanBillingSectionLabel>Current plan</PlanBillingSectionLabel>
+                  {subscription.paymentGraceUntil && (subscription.status || "").toLowerCase() === "past_due" && (
+                    <div
+                      style={{
+                        marginBottom: 12,
+                        padding: "10px 12px",
+                        background: T.amberBg,
+                        borderRadius: 8,
+                        fontSize: 13,
+                        color: T.amber,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      <strong>Payment issue:</strong> Widget access is in a grace period until{" "}
+                      {new Date(subscription.paymentGraceUntil).toLocaleString()}. Update your default card below
+                      (Manage cards &amp; subscriptions) to avoid losing access.
+                    </div>
+                  )}
                   <PlanTitleBlock style={{ gap: 2 }}>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", rowGap: 4 }}>
                       <PlanNameText>{currentPlan?.name ?? subscription.planId}</PlanNameText>
