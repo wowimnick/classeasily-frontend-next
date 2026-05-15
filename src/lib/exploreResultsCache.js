@@ -6,7 +6,7 @@ const MAX_ENTRIES = 5;
 
 /**
  * @param {string} canonQueryString stripPageKey(searchParams.toString())
- * @param {{ results?: unknown[]; count?: number; next?: string | null }} payload
+ * @param {{ results?: unknown[]; count?: number; next?: string | null; geo_search_notice?: unknown }} payload
  */
 export function stashExploreSearchResults(canonQueryString, payload) {
   if (typeof sessionStorage === "undefined") return;
@@ -18,6 +18,7 @@ export function stashExploreSearchResults(canonQueryString, payload) {
         results: payload.results || [],
         count: typeof payload.count === "number" ? payload.count : 0,
         next: payload.next ?? null,
+        geo_search_notice: payload.geo_search_notice ?? null,
         t: Date.now(),
       }),
     );
@@ -42,7 +43,7 @@ export function stashExploreSearchResults(canonQueryString, payload) {
 
 /**
  * @param {string} canonQueryString
- * @returns {{ results: unknown[]; count: number; next: string | null } | null}
+ * @returns {{ results: unknown[]; count: number; next: string | null; geo_search_notice?: unknown } | null}
  */
 export function peekExploreSearchResults(canonQueryString) {
   if (typeof sessionStorage === "undefined") return null;
@@ -56,6 +57,7 @@ export function peekExploreSearchResults(canonQueryString) {
       count:
         typeof parsed.count === "number" ? parsed.count : parsed.results.length,
       next: parsed.next ?? null,
+      geo_search_notice: parsed.geo_search_notice ?? null,
     };
   } catch {
     return null;

@@ -13,6 +13,7 @@ const SubscriptionContext = createContext({
   hasMembershipAccess: false,
   hasEmailMarketingAccess: false,
   hasStripeSubscription: false,
+  publicWidgetPlans: null,
   loading: true,
   error: null,
   refetch: () => {},
@@ -37,12 +38,21 @@ export function SubscriptionProvider({ children }) {
   const [hasMembershipAccess, setHasMembershipAccess] = useState(false);
   const [hasEmailMarketingAccess, setHasEmailMarketingAccess] = useState(false);
   const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
+  const [publicWidgetPlans, setPublicWidgetPlans] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const canManageSubscription = Boolean(isAuthenticated && user?.has_business);
 
   const refetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const plansResult = await businessService.getPublicWidgetPlans();
+    if (plansResult.success && plansResult.data) {
+      setPublicWidgetPlans(plansResult.data);
+    } else {
+      setPublicWidgetPlans(null);
+    }
     if (!canManageSubscription) {
       setSubscription(null);
       setScheduledDowngrade(null);
@@ -56,8 +66,6 @@ export function SubscriptionProvider({ children }) {
       setError(null);
       return;
     }
-    setLoading(true);
-    setError(null);
     const result = await businessService.getWidgetSubscription();
     setLoading(false);
     if (result.success && result.data) {
@@ -98,6 +106,7 @@ export function SubscriptionProvider({ children }) {
       hasMembershipAccess,
       hasEmailMarketingAccess,
       hasStripeSubscription,
+      publicWidgetPlans,
       loading,
       error,
       refetch,
@@ -112,6 +121,7 @@ export function SubscriptionProvider({ children }) {
       hasMembershipAccess,
       hasEmailMarketingAccess,
       hasStripeSubscription,
+      publicWidgetPlans,
       loading,
       error,
       refetch,

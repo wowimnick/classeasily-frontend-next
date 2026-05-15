@@ -84,23 +84,6 @@ export const businessManagementService = {
     }
   },
 
-  getGeographicalData: async () => {
-    try {
-      const response = await axiosInstance.get("/admin/geographical-data/");
-      // The backend view returns an object with two keys: { province_data, city_data }
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        "Error fetching geographical data:",
-        error.response?.data || error
-      );
-      return {
-        success: false,
-        error: error.response?.data?.detail || "Failed to fetch map data",
-      };
-    }
-  },
-
   /**
    * Get platform metrics for business dashboard
    */
@@ -159,7 +142,6 @@ export const businessManagementService = {
       const response = await axiosInstance.get("/admin/businesses/growth/", {
         params: { timeframe },
       });
-      console.log(response.data);
       return {
         success: true,
         data: response.data,
@@ -1147,6 +1129,7 @@ export const classManagementService = {
    * @param {string} params.category - Filter by category
    * @param {string} params.status - Filter by status
    * @param {boolean} params.featured - Filter by featured status
+   * @param {string} params.collection_ids - Comma-separated collection IDs (class in any)
    */
   getClasses: async (params = {}) => {
     try {
@@ -1160,6 +1143,22 @@ export const classManagementService = {
       return {
         success: false,
         error: error.response?.data?.error || "Failed to fetch classes",
+      };
+    }
+  },
+
+  getClass: async (classId) => {
+    try {
+      const response = await axiosInstance.get(`/admin/classes/${classId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching class:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to fetch class",
       };
     }
   },
@@ -2345,7 +2344,7 @@ export const adminPayoutService = {
   },
 
   /**
-   * (Placeholder) Retry a failed payout transfer
+   * Retry a failed payout transfer (POST /admin/payouts/:id/retry/)
    * @param {string} payoutId - The ID of the failed payout
    */
   retryFailedPayout: async (payoutId) => {
@@ -2788,6 +2787,23 @@ export const adminWidgetSubscriptionService = {
       };
     }
   },
+  compOverride: async ({ business_id, plan_id, comp_reason }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/admin/widget-subscriptions/comp-override/",
+        { business_id, plan_id, comp_reason },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to apply complimentary subscription",
+      };
+    }
+  },
 };
 
 export const notificationService = {
@@ -2913,7 +2929,6 @@ export const notificationService = {
    */
   sendNotification: async (notificationId, extraData = {}) => {
     try {
-      console.log("Sending notification:", notificationId, extraData);
       const response = await axiosInstance.post(
         `/admin/notifications/${notificationId}/send/`,
         extraData

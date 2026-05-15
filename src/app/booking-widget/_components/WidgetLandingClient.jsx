@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styled, { css, ThemeProvider } from 'styled-components';
@@ -2169,6 +2169,16 @@ function renderLandingCompareCell(row, pid) {
   );
 }
 
+function formatWidgetPlanMoney(amount, currency) {
+  if (amount == null || Number.isNaN(Number(amount))) return null;
+  const cur = (currency || 'CAD').toUpperCase();
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: cur }).format(Number(amount));
+  } catch {
+    return `$${Number(amount).toFixed(0)}`;
+  }
+}
+
 const PLAN_CARDS = [
   { id: 'basic', name: 'Basic', price: '$29', commission: '4%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', footnote: 'Need more bookings?', featured: false },
   { id: 'growth', name: 'Growth', price: '$49', commission: '3%', gradient: 'none', footnote: 'Best value for growing studios.', featured: true },
@@ -2179,8 +2189,20 @@ const PLAN_CARDS = [
 const WIDGET_PLAN_BILLING_HREF = '/business/dashboard/settings?tab=billing';
 
 function PricingAndPath() {
-  const { subscription } = useSubscription();
+  const { subscription, publicWidgetPlans } = useSubscription();
   const currentPlanId = subscription?.planId;
+
+  const displayCards = useMemo(() => {
+    const byId = {};
+    for (const p of publicWidgetPlans?.plans || []) {
+      byId[p.plan_id] = p;
+    }
+    return PLAN_CARDS.map((plan) => {
+      const live = byId[plan.id];
+      const livePrice = live ? formatWidgetPlanMoney(live.amount, live.currency) : null;
+      return { ...plan, price: livePrice || plan.price };
+    });
+  }, [publicWidgetPlans]);
 
   const getCta = (planId) => {
     const isCurrent = currentPlanId === planId;
@@ -2223,7 +2245,7 @@ function PricingAndPath() {
         >
             <PricingMobileLayout>
                 <PricingCardsGrid>
-                  {PLAN_CARDS.map((plan) => {
+                  {displayCards.map((plan) => {
                     const isCurrent = currentPlanId === plan.id;
                     const cta = getCta(plan.id);
                     return (
@@ -2281,7 +2303,7 @@ function PricingAndPath() {
             <PricingDesktopLayout>
               <PricingDesktopGrid>
                 <PricingDesktopCorner aria-hidden />
-                {PLAN_CARDS.map((plan, planIdx) => {
+                {displayCards.map((plan, planIdx) => {
                   const isCurrent = currentPlanId === plan.id;
                   const cta = getCta(plan.id);
                   return (

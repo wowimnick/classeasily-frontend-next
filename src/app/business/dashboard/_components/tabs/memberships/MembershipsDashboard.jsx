@@ -21,7 +21,7 @@ const TabWrapper = styled.div`
 const TAB_PRODUCTS = "products";
 const TAB_MEMBERS = "members";
 
-export default function MembershipsDashboard({ defaultActiveKey = TAB_PRODUCTS }) {
+export default function MembershipsDashboard({ defaultActiveKey = TAB_PRODUCTS, initialMembershipProductId }) {
   const items = useMemo(
     () => [
       {
@@ -32,10 +32,10 @@ export default function MembershipsDashboard({ defaultActiveKey = TAB_PRODUCTS }
       {
         key: TAB_MEMBERS,
         label: "Members",
-        children: <MembersTable noWrapperPadding />,
+        children: <MembersTable noWrapperPadding productId={initialMembershipProductId} />,
       },
     ],
-    []
+    [initialMembershipProductId]
   );
 
   return (

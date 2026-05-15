@@ -78,6 +78,17 @@ const FetchErrorBanner = styled.div`
   border-bottom: 1px solid #fecaca;
 `;
 
+const GeoSearchNoticeBanner = styled.div`
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 14px;
+  text-align: center;
+  border-bottom: 1px solid #bfdbfe;
+  line-height: 1.45;
+`;
+
 const BreadcrumbContainer = styled.div`
   position: absolute;
   width: 1px;
@@ -258,6 +269,7 @@ function ExploreClientContent({
   initialNextPageUrl,
   initialCollections = [],
   initialCollectionsIWant = [],
+  initialGeoSearchNotice = null,
   routeParams,
 }) {
   /** Mobile Safari: `ClassesDisplay` must not clear body overflow on list view — document scroll steals the chrome. */
@@ -306,6 +318,9 @@ function ExploreClientContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [geoSearchNotice, setGeoSearchNotice] = useState(
+    initialGeoSearchNotice ?? null,
+  );
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // --- REFS (used by the IO callback so it never needs to be recreated) ---
@@ -388,8 +403,15 @@ function ExploreClientContent({
       setLoading(false);
       setFetchError(null);
       setIsSearching(false);
+      setGeoSearchNotice(initialGeoSearchNotice ?? null);
     }
-  }, [initialClasses, initialTotalCount, initialNextPageUrl, setIsSearching]);
+  }, [
+    initialClasses,
+    initialTotalCount,
+    initialNextPageUrl,
+    initialGeoSearchNotice,
+    setIsSearching,
+  ]);
 
   // =====================================================================
   // FETCH — completely stable identity (no URL-derived deps).
@@ -416,6 +438,7 @@ function ExploreClientContent({
         } else {
           setDisplayClasses(response.results || []);
           setTotalClassesCount(response.count || 0);
+          setGeoSearchNotice(response.geo_search_notice || null);
         }
         const newNext = response.next || null;
         setNextPageUrl(newNext);
@@ -429,6 +452,7 @@ function ExploreClientContent({
               results: response.results || [],
               count: response.count || 0,
               next: newNext,
+              geo_search_notice: response.geo_search_notice || null,
             });
           } catch {
             /* non-fatal */
@@ -441,6 +465,7 @@ function ExploreClientContent({
             setFetchError(
               "We couldn't refresh results. Check your connection and try again.",
             );
+            setGeoSearchNotice(null);
           }
         }
       } finally {
@@ -500,6 +525,7 @@ function ExploreClientContent({
       setTotalClassesCount(cached.count ?? 0);
       setNextPageUrl(cached.next ?? null);
       nextPageUrlRef.current = cached.next ?? null;
+      setGeoSearchNotice(cached.geo_search_notice ?? null);
     }
 
     const apiParams = buildApiParamsFromSearchParams(
@@ -763,6 +789,15 @@ function ExploreClientContent({
         {fetchError && !showSkeleton && (
           <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>
         )}
+        {geoSearchNotice?.kind === "boundary_empty_nearest_in_province" &&
+          totalClassesCount > 0 &&
+          geoSearchNotice.area_label &&
+          !showSkeleton && (
+            <GeoSearchNoticeBanner role="status">
+              No experiences found in {geoSearchNotice.area_label}. But we found{" "}
+              {totalClassesCount} nearby.
+            </GeoSearchNoticeBanner>
+          )}
         <ExploreResultsPane>
           <ClassesDisplay {...classesDisplayProps} />
         </ExploreResultsPane>

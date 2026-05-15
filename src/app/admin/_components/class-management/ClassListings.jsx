@@ -591,6 +591,18 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+/** Uses API `active_schedules_count` (future scheduled instances). */
+const ClassListingStatusCell = ({ status, activeSchedulesCount }) => (
+  <Space direction="vertical" size={2}>
+    <StatusBadge status={status} />
+    {!activeSchedulesCount ? (
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        No schedules
+      </Text>
+    ) : null}
+  </Space>
+);
+
 // --- NEW SCHEDULE TABLE COLUMNS ---
 const scheduleColumns = (themeTokens) => [
   {
@@ -813,7 +825,8 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
 
         <InfoGroup>
           <InfoGroupTitle>
-            <Star /> Reviews ({classData.reviews?.length || 0})
+            <Star /> Reviews (
+            {classData.review_count ?? classData.reviews?.length ?? 0})
           </InfoGroupTitle>
           {(classData.reviews?.length ?? 0) > 0 ? (
             classData.reviews.map((review) => (
@@ -948,6 +961,7 @@ export default function ClassListings() {
     search: "",
     status: "all",
     featured: false,
+    collectionIds: [],
   });
   const [selectedClassDetails, setSelectedClassDetails] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -980,6 +994,20 @@ export default function ClassListings() {
     return map;
   }, [allCollections]);
 
+  const collectionFilterOptions = useMemo(() => {
+    return [...allCollections]
+      .sort((a, b) => {
+        const ao = a.sort_order ?? 0;
+        const bo = b.sort_order ?? 0;
+        if (ao !== bo) return ao - bo;
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      })
+      .map((c) => ({
+        value: c.id,
+        label: c.parent_name ? `${c.parent_name} › ${c.name}` : c.name,
+      }));
+  }, [allCollections]);
+
   const handleFilterChange = (updates) => {
     setFilterParams((prev) => ({ ...prev, ...updates }));
     setPagination((p) => ({ ...p, current: 1 }));
@@ -995,6 +1023,10 @@ export default function ClassListings() {
         status:
           currentFilters.status !== "all" ? currentFilters.status : undefined,
         featured: currentFilters.featured || undefined,
+        collection_ids:
+          currentFilters.collectionIds?.length > 0
+            ? currentFilters.collectionIds.join(",")
+            : undefined,
         ordering: currentSorter.order
           ? `${currentSorter.order === "descend" ? "-" : ""}${
               currentSorter.columnKey
@@ -1522,7 +1554,12 @@ export default function ClassListings() {
       sorter: true,
       columnKey: "status",
       sortOrder: sortedInfo.columnKey === "status" ? sortedInfo.order : null,
-      render: (s) => <StatusBadge status={s} />,
+      render: (s, record) => (
+        <ClassListingStatusCell
+          status={s}
+          activeSchedulesCount={record.active_schedules_count}
+        />
+      ),
     },
     {
       title: "Actions",
@@ -1647,7 +1684,10 @@ export default function ClassListings() {
         <MobileCardRow>
           <MobileCardLabel>Status</MobileCardLabel>
           <MobileCardValue>
-            <StatusBadge status={item.status} />
+            <ClassListingStatusCell
+              status={item.status}
+              activeSchedulesCount={item.active_schedules_count}
+            />
           </MobileCardValue>
         </MobileCardRow>
         <MobileCardFooter>
@@ -1755,6 +1795,14 @@ export default function ClassListings() {
           renderItem={(item) => (
             <List.Item
               actions={[
+                <Button
+                  key="schedules"
+                  icon={<Calendar size={14} />}
+                  type="primary"
+                  onClick={() => openScheduleManager(item)}
+                >
+                  Manage schedules
+                </Button>,
                 <Button
                   key="view"
                   type="primary"
@@ -1898,6 +1946,20 @@ export default function ClassListings() {
                 <Option value="inactive">Inactive</Option>
                 <Option value="suspended">Suspended</Option>
               </Select>
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="Collections"
+                value={filterParams.collectionIds}
+                options={collectionFilterOptions}
+                onChange={(vals) =>
+                  handleFilterChange({ collectionIds: vals ?? [] })
+                }
+                style={{ width: isMobile ? "100%" : 280 }}
+                maxTagCount="responsive"
+                optionFilterProp="label"
+                showSearch
+              />
               <Checkbox
                 checked={filterParams.featured}
                 onChange={(e) =>

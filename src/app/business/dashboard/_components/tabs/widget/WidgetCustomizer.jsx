@@ -400,8 +400,29 @@ export default function WidgetCustomizer() {
   const [bulkCopyLabel, setBulkCopyLabel] = useState(false);
   const [bulkApplyLoading, setBulkApplyLoading] = useState(false);
   const [installSpecificClassId, setInstallSpecificClassId] = useState("");
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagData, setDiagData] = useState(null);
+  const [diagReferrer, setDiagReferrer] = useState("");
   const embedSaveTimersRef = useRef({});
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (diagReferrer || typeof window === "undefined") return;
+    setDiagReferrer(window.location.origin);
+  }, [diagReferrer]);
+
+  const runWidgetDiagnostics = useCallback(async () => {
+    setDiagLoading(true);
+    setDiagData(null);
+    try {
+      const ref = (diagReferrer || "").trim();
+      const res = await businessService.getWidgetDiagnostics(ref || undefined);
+      if (res.success) setDiagData(res.data);
+      else antMessage.error(res.error || "Diagnostics failed");
+    } finally {
+      setDiagLoading(false);
+    }
+  }, [diagReferrer]);
 
   const allowedDomainsArray = (form.allowed_widget_origins || "")
     .split(/\r?\n/)
@@ -807,6 +828,60 @@ export default function WidgetCustomizer() {
 
   const installTab = (
     <div style={{ display: "flex", flexDirection: "column", gap: 28, width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+      <div
+        style={{
+          padding: "14px 16px",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
+          background: "#f8fafc",
+        }}
+      >
+        <SectionTitle
+          title="0. Test installation"
+          subtitle="Paste your live page URL to see if it matches Allowed Website Domains and review recent widget funnel events."
+        />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          <Input
+            size="small"
+            style={{ flex: 1, minWidth: 220 }}
+            placeholder="https://www.yourstudio.com/classes"
+            value={diagReferrer}
+            onChange={(e) => setDiagReferrer(e.target.value)}
+          />
+          <Button size="small" loading={diagLoading} onClick={runWidgetDiagnostics} style={{ background: SEL_COLOR }}>
+            Run diagnostics
+          </Button>
+        </div>
+        {diagData && (
+          <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.55 }}>
+            <div>
+              <strong>Referrer host:</strong> {diagData.referrer_host || "—"}
+            </div>
+            <div>
+              <strong>Matches allow list:</strong>{" "}
+              {diagData.referrer_matches_allowlist ? (
+                <span style={{ color: "#16a34a", fontWeight: 600 }}>Yes</span>
+              ) : (
+                <span style={{ color: "#dc2626", fontWeight: 600 }}>No</span>
+              )}
+            </div>
+            <div>
+              <strong>Last booking:</strong> {diagData.last_booking_date || "—"}
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <strong>Recent widget events</strong>
+            </div>
+            <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>
+              {(diagData.recent_widget_events || []).slice(0, 6).map((ev, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>
+                  {ev.event} · {ev.step} · {ev.created_at || ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       <div
         style={{
           padding: "14px 16px",

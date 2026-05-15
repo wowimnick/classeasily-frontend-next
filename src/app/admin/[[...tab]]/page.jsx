@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import styled from "styled-components";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Result, Button } from "antd";
 import PlatformSidebar from "../_components/PlatformSidebar";
 import { theme as appTheme } from "@/components/theme";
 import dynamic from "next/dynamic";
@@ -147,10 +147,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (permissions.length === 0) return;
+    const req = ADMIN_TAB_PERMISSIONS[activeKey];
+    const reqs = Array.isArray(req) ? req : req ? [req] : [];
     const isCurrentTabVisible =
       ADMIN_TAB_KEYS.includes(activeKey) &&
-      (!ADMIN_TAB_PERMISSIONS[activeKey] ||
-        permissions.includes(ADMIN_TAB_PERMISSIONS[activeKey]));
+      (reqs.length === 0 || reqs.some((p) => permissions.includes(p)));
     if (!isCurrentTabVisible) {
       router.replace("/admin/overview");
     }
@@ -224,7 +225,18 @@ export default function AdminPage() {
         content = <GlobalDiscountsManagement />;
         break;
       default:
-        content = <div>Loading or Access Denied...</div>;
+        content = (
+          <Result
+            status="404"
+            title="Page not found"
+            subTitle={`The admin tab "${activeKey}" does not exist or you may not have access.`}
+            extra={
+              <Button type="primary" onClick={() => router.push("/admin/overview")}>
+                Back to overview
+              </Button>
+            }
+          />
+        );
     }
     return <TabGlassWrapper>{content}</TabGlassWrapper>;
   };

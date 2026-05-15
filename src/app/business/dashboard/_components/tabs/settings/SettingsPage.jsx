@@ -231,7 +231,12 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const [generalForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
   const tabFromUrl = searchParams.get("tab");
-  const normalizedTab = tabFromUrl === "location" ? "locations" : tabFromUrl;
+  const normalizedTab =
+    tabFromUrl === "location"
+      ? "locations"
+      : tabFromUrl === "stripe"
+        ? "billing"
+        : tabFromUrl;
   const initialTab = VALID_SETTINGS_TABS.includes(normalizedTab) ? normalizedTab : defaultTab;
   const [currentTab, setCurrentTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -249,11 +254,19 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   useEffect(() => {
     const raw = searchParams.get("tab");
+    if (raw === "stripe") {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.set("tab", "billing");
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+      if (currentTab !== "billing") setCurrentTab("billing");
+      return;
+    }
     const tabFromUrl = raw === "location" ? "locations" : raw;
     if (VALID_SETTINGS_TABS.includes(tabFromUrl) && tabFromUrl !== currentTab) {
       setCurrentTab(tabFromUrl);
     }
-  }, [searchParams, currentTab]);
+  }, [searchParams, currentTab, pathname, router]);
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'

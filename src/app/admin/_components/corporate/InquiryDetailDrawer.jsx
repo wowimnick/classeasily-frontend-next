@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { CopyOutlined } from "@ant-design/icons";
-import { Button, Divider, Drawer, Space, Typography, message } from "antd";
+import { Button, Divider, Drawer, Space, Typography, Tag, message } from "antd";
 import dayjs from "dayjs";
 import { corporateAdminService } from "@/services/adminDash";
 import ShortlistComposer from "./ShortlistComposer";
@@ -22,7 +22,10 @@ function validateShortlistReady(sl) {
   if (!ok) {
     return { ok: false, detail: "Options must have positions 1…N with no gaps." };
   }
-  return { ok: true, detail: "Ready to send." };
+  return {
+    ok: true,
+    detail: `Ready to send (${n} option${n === 1 ? "" : "s"}, slots 1–${n} filled).`,
+  };
 }
 
 export default function InquiryDetailDrawer({
@@ -34,7 +37,10 @@ export default function InquiryDetailDrawer({
   onRefreshShortlist,
   onShortlistCreated,
 }) {
+  const [pendingAddSlot, setPendingAddSlot] = useState(null);
   const [sending, setSending] = useState(false);
+
+  const consumePendingSlot = useCallback(() => setPendingAddSlot(null), []);
 
   const siteBase = useMemo(() => {
     const raw = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -200,12 +206,38 @@ export default function InquiryDetailDrawer({
               </div>
               <Divider style={{ margin: "16px 0" }} />
               <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Slots
+              </Text>
+              <Space wrap style={{ marginTop: 8, marginBottom: 4 }}>
+                {[1, 2, 3].map((p) => {
+                  const opts = (shortlist.options || []).filter((o) => !o.is_archived);
+                  const hit = opts.find((o) => o.position === p);
+                  if (hit) {
+                    return (
+                      <Tag key={p} style={{ margin: 0 }}>
+                        Slot {p}: {hit.title?.slice?.(0, 28) || "Filled"}
+                      </Tag>
+                    );
+                  }
+                  return (
+                    <Button key={p} size="small" onClick={() => setPendingAddSlot(p)}>
+                      Empty slot {p} — add class
+                    </Button>
+                  );
+                })}
+              </Space>
+              <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginTop: 12 }}>
                 Compose shortlist
               </Text>
               {slLoading ? (
                 <Text type="secondary">Loading shortlist…</Text>
               ) : (
-                <ShortlistComposer shortlist={shortlist} onRefresh={onRefreshShortlist} />
+                <ShortlistComposer
+                  shortlist={shortlist}
+                  onRefresh={onRefreshShortlist}
+                  pendingOpenSlot={pendingAddSlot}
+                  onConsumedPendingSlot={consumePendingSlot}
+                />
               )}
             </>
           ) : slLoading ? (

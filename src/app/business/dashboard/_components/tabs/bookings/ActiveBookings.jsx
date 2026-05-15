@@ -7,7 +7,6 @@ import {
   Button,
   DatePicker,
   Card,
-  Typography,
   Spin,
   Select,
   Badge,
@@ -46,7 +45,6 @@ import {
 } from "../../shared/MetricPeriodBadge";
 
 const { RangePicker } = DatePicker;
-const { Title, Text } = Typography;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 
@@ -99,19 +97,6 @@ const PageTitle = styled.h1`
   @media (max-width: 480px) {
     font-size: 20px;
     margin-bottom: 4px;
-  }
-`;
-
-const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
-  display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
   }
 `;
 
@@ -719,9 +704,6 @@ const ActiveBookings = ({
         <DashboardHeader>
           <div>
             <PageTitle>Active Bookings</PageTitle>
-            <HeaderSubtitle>
-              View and manage upcoming confirmed bookings
-            </HeaderSubtitle>
           </div>
         </DashboardHeader>
 

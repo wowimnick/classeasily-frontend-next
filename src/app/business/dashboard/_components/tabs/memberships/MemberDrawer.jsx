@@ -474,6 +474,10 @@ export default function MemberDrawer({ memberId, open, onClose, onUpdated, produ
       return null;
     }
 
+    const payments = Array.isArray(member.payments) ? member.payments : [];
+    const ltv = payments.reduce((sum, p) => sum + (parseFloat(String(p.amount), 10) || 0), 0);
+    const lastPayment = payments.length ? payments[0] : null;
+
     const statusLabel = formatMemberStatusLabel(member.status);
 
     return (
@@ -531,13 +535,30 @@ export default function MemberDrawer({ memberId, open, onClose, onUpdated, produ
                 </InfoValue>
               </InfoCell>
             )}
-            <InfoCell style={{ gridColumn: "1 / -1" }}>
+            <InfoCell>
               <InfoLabel>
                 <Hash size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
                 Source
               </InfoLabel>
               <InfoValue>{formatSourceLabel(member.source)}</InfoValue>
             </InfoCell>
+            <InfoCell>
+              <InfoLabel>Lifetime paid (est.)</InfoLabel>
+              <InfoValue>{payments.length ? `$${ltv.toFixed(2)}` : "—"}</InfoValue>
+            </InfoCell>
+            <InfoCell>
+              <InfoLabel>Next renewal</InfoLabel>
+              <InfoValue>{formatDrawerDate(member.current_period_end)}</InfoValue>
+            </InfoCell>
+            {lastPayment ? (
+              <InfoCell style={{ gridColumn: "1 / -1" }}>
+                <InfoLabel>Last invoice</InfoLabel>
+                <InfoValue>
+                  {(lastPayment.status || "—").toString()} · $
+                  {lastPayment.amount != null ? lastPayment.amount : "—"}
+                </InfoValue>
+              </InfoCell>
+            ) : null}
           </InfoGrid>
           {member.notes ? (
             <>
