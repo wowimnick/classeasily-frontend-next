@@ -24,6 +24,9 @@ const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
 const LocationsSettingsTab = React.lazy(() => import("./LocationsSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() => import("./PreferencesSettingsTab"));
 const PlanBillingSettingsTab = React.lazy(() => import("./PlanBillingSettingsTab"));
+const StripeConnectionSettingsTab = React.lazy(() =>
+  import("./StripeConnectionSettingsTab"),
+);
 const EmailBrandingSettingsTab = React.lazy(() => import("./EmailBrandingSettingsTab"));
 
 const { useBreakpoint } = Grid;

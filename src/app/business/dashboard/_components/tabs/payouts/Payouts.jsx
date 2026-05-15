@@ -906,11 +906,7 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       render: (text) => dayjs(text).format("MMM D, YYYY"),
     },
     {
-      title: (
-        <Tooltip title="Net to you after Stripe card fees. Platform / subscription fees depend on your widget plan and may be settled separately in Stripe reporting.">
-          <span style={{ cursor: "help", borderBottom: "1px dashed #94a3b8" }}>NET PAYOUT</span>
-        </Tooltip>
-      ),
+      title: "NET PAYOUT",
       dataIndex: "net_amount_for_payout",
       key: "net",
       align: "right",

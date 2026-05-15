@@ -78,7 +78,6 @@ import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoade
 import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
-import { useSubscription } from "@/context/SubscriptionContext";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -1202,7 +1201,6 @@ const AnimatedNumberFlow = ({
 
 const Overview = forwardRef((props, ref) => {
   const { user: currentUser } = useAuth();
-  const { subscription, hasMembershipAccess } = useSubscription();
   const { openSettingsDrawer } = useContext(DashboardContext) || {};
   const router = useRouter();
 
@@ -1421,26 +1419,6 @@ const Overview = forwardRef((props, ref) => {
           <WelcomeSubtitle>
             Here&apos;s what&apos;s happening with your business today.
           </WelcomeSubtitle>
-          {subscription?.planId && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: "12px 16px",
-                background: "#f1f5f9",
-                borderRadius: 12,
-                fontSize: 13,
-                color: "#475569",
-                maxWidth: 560,
-                lineHeight: 1.5,
-              }}
-            >
-              <strong>Widget:</strong> {String(subscription.planId).replace(/^\w/, (c) => c.toUpperCase())}
-              {subscription.status
-                ? ` · ${String(subscription.status).replace(/_/g, " ")}`
-                : ""}
-              {hasMembershipAccess ? " · Memberships feature on" : ""}
-            </div>
-          )}
         </WelcomeSection>
 
         <div ref={overviewTitleRef} />
