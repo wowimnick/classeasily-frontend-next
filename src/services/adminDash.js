@@ -2114,6 +2114,97 @@ export const paymentService = {
   },
 };
 
+/**
+ * Platform-wide revenue stats (admin).
+ */
+export const revenueAnalyticsService = {
+  getOverview: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/revenue/overview/", {
+        params,
+        timeout: 120000,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching revenue overview:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to load revenue overview",
+      };
+    }
+  },
+
+  getTimeseries: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/revenue/timeseries/", {
+        params,
+        timeout: 120000,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching revenue timeseries:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to load revenue timeseries",
+      };
+    }
+  },
+
+  getTop: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/revenue/top/", {
+        params,
+        timeout: 120000,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching revenue top lists:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to load revenue top lists",
+      };
+    }
+  },
+
+  exportCsv: async (body = {}) => {
+    try {
+      const response = await axiosInstance.post("/admin/revenue/export/", body, {
+        responseType: "blob",
+        timeout: 120000,
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const start = body.start_date || "export";
+      const end = body.end_date || "";
+      link.setAttribute("download", `platform-revenue-${start}-${end}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return { success: true };
+    } catch (error) {
+      console.error("Error exporting revenue CSV:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.message ||
+          "Failed to export revenue CSV",
+      };
+    }
+  },
+};
+
 export const adminBookingService = {
   /**
    * Get all bookings with optional filtering

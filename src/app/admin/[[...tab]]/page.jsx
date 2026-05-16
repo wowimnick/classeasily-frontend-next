@@ -76,6 +76,10 @@ const PaymentManagement = dynamic(
   () => import("../_components/payment-management/PaymentManagement"),
   { ssr: false }
 );
+const RevenueStats = dynamic(
+  () => import("../_components/revenue-management/RevenueStats"),
+  { ssr: false }
+);
 const CorporateInquiriesTab = dynamic(
   () => import("../_components/corporate/CorporateInquiriesTab"),
   { ssr: false }
@@ -217,6 +221,9 @@ export default function AdminPage() {
         break;
       case "payments":
         content = <PaymentManagement />;
+        break;
+      case "revenue":
+        content = <RevenueStats />;
         break;
       case "widget-subscriptions":
         content = <WidgetSubscriptionsTab />;

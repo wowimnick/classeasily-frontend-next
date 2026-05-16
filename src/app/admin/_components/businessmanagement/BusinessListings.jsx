@@ -16,7 +16,6 @@ import {
   MapPin,
   Star,
   Award,
-  Clock,
   Mail,
   AlertCircle,
   Trash2,
@@ -63,11 +62,17 @@ const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph, Link } = Typography;
 
-const OPERATIONAL_TOOLTIPS = {
-  closed: "Account deactivated — customers cannot book.",
-  open: "Active with at least one active schedule — bookable on the platform.",
-  noSchedules: "Active but no active schedules — nothing bookable until schedules exist.",
+const BOOKABILITY_TOOLTIPS = {
+  bookable:
+    "Customers can book: business account is on and at least one class has upcoming scheduled sessions.",
+  notBookable:
+    "Customers cannot book: business is off and/or there are no upcoming scheduled sessions.",
 };
+
+/** True when customers can book on the platform (active account + active schedules). */
+function isBusinessBookable(b) {
+  return Boolean(b?.isActive && b?.has_active_schedules);
+}
 
 // --- STYLING & THEME (ADAPTED FROM BOOKINGSLIST) ---
 const colors = {
@@ -477,24 +482,6 @@ const StatusPill = styled.span`
   color: ${(p) => p.$color || colors.textPrimary};
 `;
 
-const HoursInfo = styled.div`
-  font-size: 0.95rem;
-  color: #4a5568;
-  line-height: 1.7;
-`;
-const HoursLine = styled.div`
-  display: flex;
-  justify-content: space-between;
-  max-width: 300px;
-`;
-const HoursDays = styled.span`
-  font-weight: 600;
-  color: #1a1a1a;
-`;
-const HoursTimes = styled.span`
-  font-weight: 500;
-`;
-
 // --- MOBILE COMPONENTS ---
 const MobileCard = styled(Card)`
   margin-bottom: 12px;
@@ -536,65 +523,6 @@ const socialIcons = {
 const formatDate = (dateString) =>
   dateString ? dayjs(dateString).format("MMM D, YYYY") : "N/A";
 
-const formatTime = (timeString) => {
-  if (!timeString) return "N/A";
-  try {
-    const [hours, minutes] = timeString.split(":");
-    const date = new Date();
-    date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch (e) {
-    return timeString;
-  }
-};
-
-const formatBusinessHours = (hours) => {
-  if (!hours || !Array.isArray(hours) || hours.length === 0) return [];
-  const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const groupedByTime = hours.reduce((acc, day) => {
-    const timeRange = day.isOpen
-      ? `${formatTime(day.open)} - ${formatTime(day.close)}`
-      : "Closed";
-    if (!acc[timeRange]) acc[timeRange] = [];
-    acc[timeRange].push(day.day);
-    return acc;
-  }, {});
-
-  const formattedLines = [];
-  for (const timeRange in groupedByTime) {
-    const days = groupedByTime[timeRange].sort(
-      (a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)
-    );
-    let currentGroup = [],
-      dayGroups = [];
-    days.forEach((day, index) => {
-      if (
-        index > 0 &&
-        dayOrder.indexOf(day) === dayOrder.indexOf(days[index - 1]) + 1
-      ) {
-        currentGroup.push(day);
-      } else {
-        if (currentGroup.length > 0) dayGroups.push(currentGroup);
-        currentGroup = [day];
-      }
-    });
-    dayGroups.push(currentGroup);
-    const dayString = dayGroups
-      .map((group) =>
-        group.length > 2
-          ? `${group[0]} - ${group[group.length - 1]}`
-          : group.join(", ")
-      )
-      .join(", ");
-    formattedLines.push({ days: dayString, times: timeRange });
-  }
-  return formattedLines;
-};
-
 // --- DETAIL DRAWER ---
 const BusinessDetailDrawerContent = ({
   business,
@@ -630,11 +558,9 @@ const BusinessDetailDrawerContent = ({
     featured,
     owner_email,
     owner_id,
-    businessHours,
   } = business;
 
   const location = [businessCity, businessState].filter(Boolean).join(", ");
-  const formattedHours = formatBusinessHours(businessHours);
   const isVerified = verificationStatus === "verified";
 
   return (
@@ -714,20 +640,6 @@ const BusinessDetailDrawerContent = ({
             )}
           </InfoGrid>
         </InfoGroup>
-
-        {formattedHours.length > 0 && (
-          <InfoGroup>
-            <SectionTitle><Clock size={12} /> Hours of Operation</SectionTitle>
-            <HoursInfo>
-              {formattedHours.map((line, index) => (
-                <HoursLine key={index}>
-                  <HoursDays>{line.days}</HoursDays>
-                  <HoursTimes>{line.times}</HoursTimes>
-                </HoursLine>
-              ))}
-            </HoursInfo>
-          </InfoGroup>
-        )}
 
         <InfoGroup>
           <SectionTitle><Phone size={12} /> Contact</SectionTitle>
@@ -1384,17 +1296,17 @@ const BusinessListings = () => {
           {b.verificationStatus === "pending" && (
             <Tag color="blue">Pending Review</Tag>
           )}
-          {!b.isActive ? (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
-              <span><Tag color="error">Closed</Tag></span>
-            </Tooltip>
-          ) : b.has_active_schedules ? (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
-              <span><Tag color="success">Open</Tag></span>
+          {isBusinessBookable(b) ? (
+            <Tooltip title={BOOKABILITY_TOOLTIPS.bookable}>
+              <span>
+                <Tag color="success">Bookable</Tag>
+              </span>
             </Tooltip>
           ) : (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
-              <span><Tag color="warning">No Schedules</Tag></span>
+            <Tooltip title={BOOKABILITY_TOOLTIPS.notBookable}>
+              <span>
+                <Tag>Not bookable</Tag>
+              </span>
             </Tooltip>
           )}
           {b.featured && (
@@ -1489,17 +1401,17 @@ const BusinessListings = () => {
             {b.verificationStatus === "pending" && (
               <Tag color="blue">Pending</Tag>
             )}
-            {!b.isActive ? (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
-                <span><Tag color="error">Closed</Tag></span>
-              </Tooltip>
-            ) : b.has_active_schedules ? (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
-                <span><Tag color="success">Open</Tag></span>
+            {!isBusinessBookable(b) ? (
+              <Tooltip title={BOOKABILITY_TOOLTIPS.notBookable}>
+                <span>
+                  <Tag>Not bookable</Tag>
+                </span>
               </Tooltip>
             ) : (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
-                <span><Tag color="warning">No Schedules</Tag></span>
+              <Tooltip title={BOOKABILITY_TOOLTIPS.bookable}>
+                <span>
+                  <Tag color="success">Bookable</Tag>
+                </span>
               </Tooltip>
             )}
           </Space>
@@ -1582,7 +1494,10 @@ const BusinessListings = () => {
               <Building /> All Businesses
             </TableTitle>
             <TableDescription>
-              Search and manage businesses. Closed / Open / No schedules reflect listing availability (hover tags for detail).
+              Each row shows <Text strong>Bookable</Text> or{" "}
+              <Text strong>Not bookable</Text> — whether customers can book right
+              now (active business + upcoming schedules). Verification and
+              featured tags are separate.
             </TableDescription>
           </TableHeader>
           <FilterBar>
@@ -1609,14 +1524,14 @@ const BusinessListings = () => {
               </Select>
               <Select
                 value={filterParams.status}
-                style={{ width: isMobile ? "100%" : 160 }}
+                style={{ width: isMobile ? "100%" : 220 }}
                 onChange={(val) => handleFilterChange({ status: val })}
               >
-                <Option value="all">All Statuses</Option>
-                <Option value="active">Active</Option>
-                <Option value="no_schedules">No Schedules</Option>
-                <Option value="inactive">Inactive</Option>
-                <Option value="pending">Pending</Option>
+                <Option value="all">All businesses</Option>
+                <Option value="active">Bookable only</Option>
+                <Option value="no_schedules">Not bookable · no schedules</Option>
+                <Option value="inactive">Not bookable · inactive account</Option>
+                <Option value="pending">Pending verification</Option>
               </Select>
               <Select
                 placeholder="Province"
