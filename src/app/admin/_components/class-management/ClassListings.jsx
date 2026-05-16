@@ -58,7 +58,6 @@ import {
   Briefcase,
   DollarSign,
   Plus,
-  SlidersHorizontal,
 } from "lucide-react";
 import { classManagementService, userAdminService } from "@/services/adminDash";
 import { useAuthStore } from "@/lib/auth-client";
@@ -84,9 +83,31 @@ const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
 
+/** Coerce API business active flag (handles snake_case / string booleans). */
+function coerceBusinessIsActive(item) {
+  const v =
+    item?.businessIsActive ??
+    item?.business_is_active ??
+    item?.businessIsactive;
+  if (v === false || v === 0) return false;
+  if (v === true || v === 1) return true;
+  if (v === "false" || v === "0") return false;
+  if (v === "true" || v === "1") return true;
+  return true;
+}
+
+/** Normalize class status from API for comparisons. */
+function normalizeClassStatus(status) {
+  const s = String(status ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "active" || s === "inactive" || s === "suspended") return s;
+  return s || "active";
+}
+
 /** Status badge for schedule warning rows (class lifecycle). */
 function scheduleWarningStatusTag(status) {
-  switch (status) {
+  switch (normalizeClassStatus(status)) {
     case "active":
       return <Tag color="success">Active</Tag>;
     case "inactive":
@@ -985,39 +1006,31 @@ export default function ClassListings() {
   const [lockForm] = Form.useForm();
   const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
-  const [scheduleWarningHideFilters, setScheduleWarningHideFilters] = useState({
-    inactiveClasses: false,
-    suspendedClasses: false,
-    inactiveBusinesses: false,
-  });
+  /** Exclude from schedule warning list: 'inactive' | 'suspended' | 'inactiveBiz' */
+  const [scheduleWarningExclude, setScheduleWarningExclude] = useState([]);
   const filteredScheduleWarnings = useMemo(() => {
     const raw = classStats.classesWithLowSchedules ?? [];
+    const ex = new Set(
+      Array.isArray(scheduleWarningExclude) ? scheduleWarningExclude : [],
+    );
     return raw.filter((item) => {
-      if (
-        scheduleWarningHideFilters.inactiveClasses &&
-        item.status === "inactive"
-      ) {
+      const status = normalizeClassStatus(
+        item.status ?? item.class_status ?? item.classStatus,
+      );
+      const businessOk = coerceBusinessIsActive(item);
+
+      if (ex.has("inactive") && status === "inactive") {
         return false;
       }
-      if (
-        scheduleWarningHideFilters.suspendedClasses &&
-        item.status === "suspended"
-      ) {
+      if (ex.has("suspended") && status === "suspended") {
         return false;
       }
-      if (
-        scheduleWarningHideFilters.inactiveBusinesses &&
-        item.businessIsActive === false
-      ) {
+      if (ex.has("inactiveBiz") && !businessOk) {
         return false;
       }
       return true;
     });
-  }, [classStats.classesWithLowSchedules, scheduleWarningHideFilters]);
-  const scheduleWarningFiltersActive = useMemo(
-    () => Object.values(scheduleWarningHideFilters).some(Boolean),
-    [scheduleWarningHideFilters],
-  );
+  }, [classStats.classesWithLowSchedules, scheduleWarningExclude]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1812,221 +1825,164 @@ export default function ClassListings() {
       return null;
     }
 
-    const setHideFilter = (key, checked) => {
-      setScheduleWarningHideFilters((prev) => ({ ...prev, [key]: checked }));
-    };
-
     return (
       <Card
+        size="small"
         style={{
-          borderRadius: "16px",
+          borderRadius: 12,
           border: `1px solid ${colors.border}`,
-          marginTop: "24px",
+          marginTop: 16,
         }}
-        bodyStyle={{ paddingTop: 16 }}
+        bodyStyle={{ padding: "12px 14px" }}
       >
-        <Card.Meta
-          avatar={
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 8,
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
+          <Space size={8} align="center">
             <IconContainer
               color={colors.warning}
               background={hexToRgba(colors.warning, 0.1)}
+              style={{ width: 32, height: 32, borderRadius: 8 }}
             >
-              <ShieldAlert size={20} />
+              <ShieldAlert size={16} />
             </IconContainer>
-          }
-          title={
-            <Title level={5} style={{ margin: 0 }}>
-              Schedule attention needed
-            </Title>
-          }
-          description={
-            <Space direction="vertical" size={4} style={{ width: "100%" }}>
-              <Paragraph style={{ marginBottom: 0 }}>
-                {totalCount}{" "}
-                {totalCount === 1 ? "class has" : "classes have"} fewer than two
-                weeks of upcoming scheduled sessions, or none at all.
-              </Paragraph>
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                {filteredScheduleWarnings.length === totalCount
-                  ? `Showing all ${totalCount}.`
-                  : `Showing ${filteredScheduleWarnings.length} of ${totalCount} (filters hide the rest).`}
+            <div>
+              <Title level={5} style={{ margin: 0, fontSize: 15 }}>
+                Schedule attention
+              </Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {totalCount} need follow-up
+                {filteredScheduleWarnings.length !== totalCount
+                  ? ` · ${filteredScheduleWarnings.length} shown`
+                  : ""}
               </Text>
-            </Space>
-          }
-        />
-
-        <div
-          style={{
-            marginTop: 16,
-            padding: "12px 14px",
-            borderRadius: 12,
-            background: hexToRgba(colors.border, 0.06),
-            border: `1px solid ${hexToRgba(colors.border, 0.5)}`,
-          }}
-        >
-          <Space wrap size={[12, 8]} align="center">
-            <SlidersHorizontal size={16} style={{ color: colors.textSecondary }} />
-            <Text strong style={{ marginRight: 4 }}>
-              Hide from list
-            </Text>
-            <Checkbox
-              checked={scheduleWarningHideFilters.inactiveClasses}
-              onChange={(e) =>
-                setHideFilter("inactiveClasses", e.target.checked)
-              }
-            >
-              Inactive classes
-            </Checkbox>
-            <Checkbox
-              checked={scheduleWarningHideFilters.suspendedClasses}
-              onChange={(e) =>
-                setHideFilter("suspendedClasses", e.target.checked)
-              }
-            >
-              Suspended classes
-            </Checkbox>
-            <Checkbox
-              checked={scheduleWarningHideFilters.inactiveBusinesses}
-              onChange={(e) =>
-                setHideFilter("inactiveBusinesses", e.target.checked)
-              }
-            >
-              Classes on inactive businesses
-            </Checkbox>
-            {scheduleWarningFiltersActive ? (
-              <Button
-                type="link"
-                size="small"
-                style={{ paddingInline: 8 }}
-                onClick={() =>
-                  setScheduleWarningHideFilters({
-                    inactiveClasses: false,
-                    suspendedClasses: false,
-                    inactiveBusinesses: false,
-                  })
-                }
-              >
-                Clear filters
-              </Button>
-            ) : null}
+            </div>
           </Space>
+          <Tooltip title="Hide matching rows from this list (does not change data).">
+            <Select
+              mode="multiple"
+              allowClear
+              size="small"
+              placeholder="Exclude…"
+              style={{ minWidth: 160, maxWidth: 320 }}
+              value={scheduleWarningExclude}
+              onChange={(v) => setScheduleWarningExclude(v)}
+              options={[
+                { value: "inactive", label: "Inactive class" },
+                { value: "suspended", label: "Suspended" },
+                { value: "inactiveBiz", label: "Inactive business" },
+              ]}
+            />
+          </Tooltip>
         </div>
 
         {filteredScheduleWarnings.length === 0 ? (
           <Empty
-            style={{ marginTop: 24 }}
+            style={{ margin: "8px 0" }}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <span>
-                No warnings match these filters. Turn off one or more
-                &quot;Hide&quot; options above to see classes again.
-              </span>
-            }
+            description="Nothing left with these exclusions. Clear “Exclude” to see all."
           />
         ) : (
           <List
-            itemLayout="vertical"
+            itemLayout="horizontal"
+            size="small"
             dataSource={filteredScheduleWarnings}
-            pagination={{ pageSize: 6, size: "small", showSizeChanger: false }}
+            pagination={{
+              pageSize: 6,
+              size: "small",
+              showSizeChanger: false,
+              style: { marginBottom: 0 },
+            }}
             renderItem={(item) => {
               const hasUpcoming = Boolean(item.lastScheduleDate);
               const runwayText = !hasUpcoming
                 ? "No upcoming sessions"
                 : item.daysRemaining > 0
-                  ? `${item.daysRemaining} day${
-                      item.daysRemaining === 1 ? "" : "s"
-                    } until next session`
-                  : "Next session is today";
+                  ? `${item.daysRemaining}d to next`
+                  : "Next session today";
               const runwayType = !hasUpcoming ? "danger" : "warning";
+              const bizOn = coerceBusinessIsActive(item);
 
               return (
                 <List.Item
-                  key={item.classId}
+                  key={item.classId ?? item.class_id}
+                  style={{ padding: "10px 0", gap: 8 }}
                   actions={[
                     <Button
                       key="schedules"
+                      type="link"
+                      size="small"
                       icon={<Calendar size={14} />}
-                      type="primary"
                       onClick={() => openScheduleManager(item)}
+                      style={{ paddingInline: 4 }}
                     >
-                      Manage schedules
+                      Schedules
                     </Button>,
                     <Button
                       key="view"
-                      type="primary"
-                      ghost
+                      type="link"
+                      size="small"
                       onClick={() =>
                         showClassDetails({
-                          classId: item.classId,
+                          classId: item.classId ?? item.class_id,
                           title: item.title,
                         })
                       }
+                      style={{ paddingInline: 4 }}
                     >
-                      View class
+                      View
                     </Button>,
                     item.ownerId ? (
                       <Button
                         key="login-as"
+                        type="link"
+                        size="small"
                         icon={<LogIn size={14} />}
                         onClick={() => handleLoginAsOwner(item.ownerId)}
+                        style={{ paddingInline: 4 }}
                       >
-                        Login as owner
+                        Login
                       </Button>
                     ) : null,
                   ].filter(Boolean)}
-                  style={{
-                    paddingLeft: 0,
-                    paddingRight: 0,
-                    borderBottom: `1px solid ${hexToRgba(colors.border, 0.6)}`,
-                  }}
                 >
                   <List.Item.Meta
                     title={
-                      <Space wrap size={8} align="center">
-                        <Text strong style={{ fontSize: 15 }}>
+                      <Space size={6} wrap>
+                        <Text strong style={{ fontSize: 14 }}>
                           {item.title}
                         </Text>
                         {scheduleWarningStatusTag(item.status)}
-                        {item.businessIsActive === false ? (
-                          <Tag color="volcano">Inactive business</Tag>
-                        ) : null}
+                        {!bizOn ? <Tag color="volcano">Biz off</Tag> : null}
                       </Space>
                     }
                     description={
-                      <Space
-                        direction="vertical"
-                        size={6}
-                        style={{ width: "100%", marginTop: 4 }}
-                      >
+                      <Space wrap size="small" style={{ fontSize: 12 }}>
+                        <Text type="secondary">{item.businessName}</Text>
                         <Text type="secondary">
-                          <Briefcase size={12} style={{ marginRight: 6 }} />
-                          {item.businessName}
+                          {hasUpcoming
+                            ? `Next: ${new Date(
+                                item.lastScheduleDate,
+                              ).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                              })}`
+                            : "No dates"}
                         </Text>
-                        <Space wrap size="middle">
-                          <Text type="secondary">
-                            <Calendar size={12} style={{ marginRight: 6 }} />
-                            {hasUpcoming
-                              ? `Next session: ${new Date(
-                                  item.lastScheduleDate,
-                                ).toLocaleDateString(undefined, {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}`
-                              : "No future dates on the calendar"}
-                          </Text>
-                          <Text type={runwayType} strong>
-                            {runwayText}
-                          </Text>
-                        </Space>
+                        <Text type={runwayType}>{runwayText}</Text>
                       </Space>
                     }
                   />
                 </List.Item>
               );
             }}
-            style={{ marginTop: 12 }}
           />
         )}
       </Card>
