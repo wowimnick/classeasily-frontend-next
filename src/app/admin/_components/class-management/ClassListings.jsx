@@ -58,6 +58,7 @@ import {
   Briefcase,
   DollarSign,
   Plus,
+  SlidersHorizontal,
 } from "lucide-react";
 import { classManagementService, userAdminService } from "@/services/adminDash";
 import { useAuthStore } from "@/lib/auth-client";
@@ -82,6 +83,20 @@ const ScheduleCalendarView = dynamic(
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
+
+/** Status badge for schedule warning rows (class lifecycle). */
+function scheduleWarningStatusTag(status) {
+  switch (status) {
+    case "active":
+      return <Tag color="success">Active</Tag>;
+    case "inactive":
+      return <Tag>Inactive</Tag>;
+    case "suspended":
+      return <Tag color="warning">Suspended</Tag>;
+    default:
+      return status ? <Tag>{status}</Tag> : null;
+  }
+}
 
 // --- STYLING & THEME ---
 const colors = {
@@ -970,6 +985,39 @@ export default function ClassListings() {
   const [lockForm] = Form.useForm();
   const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
+  const [scheduleWarningHideFilters, setScheduleWarningHideFilters] = useState({
+    inactiveClasses: false,
+    suspendedClasses: false,
+    inactiveBusinesses: false,
+  });
+  const filteredScheduleWarnings = useMemo(() => {
+    const raw = classStats.classesWithLowSchedules ?? [];
+    return raw.filter((item) => {
+      if (
+        scheduleWarningHideFilters.inactiveClasses &&
+        item.status === "inactive"
+      ) {
+        return false;
+      }
+      if (
+        scheduleWarningHideFilters.suspendedClasses &&
+        item.status === "suspended"
+      ) {
+        return false;
+      }
+      if (
+        scheduleWarningHideFilters.inactiveBusinesses &&
+        item.businessIsActive === false
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [classStats.classesWithLowSchedules, scheduleWarningHideFilters]);
+  const scheduleWarningFiltersActive = useMemo(
+    () => Object.values(scheduleWarningHideFilters).some(Boolean),
+    [scheduleWarningHideFilters],
+  );
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1755,12 +1803,19 @@ export default function ClassListings() {
   ];
 
   const renderScheduleWarnings = () => {
-    if (
-      !classStats.classesWithLowSchedules ||
-      classStats.classesWithLowSchedules.length === 0
-    ) {
+    const rawWarnings = classStats.classesWithLowSchedules;
+    const totalCount =
+      typeof classStats.scheduleWarningsCount === "number"
+        ? classStats.scheduleWarningsCount
+        : rawWarnings?.length ?? 0;
+    if (!rawWarnings || rawWarnings.length === 0) {
       return null;
     }
+
+    const setHideFilter = (key, checked) => {
+      setScheduleWarningHideFilters((prev) => ({ ...prev, [key]: checked }));
+    };
+
     return (
       <Card
         style={{
@@ -1781,83 +1836,199 @@ export default function ClassListings() {
           }
           title={
             <Title level={5} style={{ margin: 0 }}>
-              Schedule Attention Needed
+              Schedule attention needed
             </Title>
           }
-          description={`${classStats.scheduleWarningsCount} ${
-            classStats.scheduleWarningsCount === 1 ? "class is" : "classes are"
-          } running out of scheduled dates.`}
+          description={
+            <Space direction="vertical" size={4} style={{ width: "100%" }}>
+              <Paragraph style={{ marginBottom: 0 }}>
+                {totalCount}{" "}
+                {totalCount === 1 ? "class has" : "classes have"} fewer than two
+                weeks of upcoming scheduled sessions, or none at all.
+              </Paragraph>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                {filteredScheduleWarnings.length === totalCount
+                  ? `Showing all ${totalCount}.`
+                  : `Showing ${filteredScheduleWarnings.length} of ${totalCount} (filters hide the rest).`}
+              </Text>
+            </Space>
+          }
         />
-        <List
-          itemLayout="horizontal"
-          dataSource={classStats.classesWithLowSchedules}
-          pagination={{ pageSize: 4, size: "small" }}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Button
-                  key="schedules"
-                  icon={<Calendar size={14} />}
-                  type="primary"
-                  onClick={() => openScheduleManager(item)}
-                >
-                  Manage schedules
-                </Button>,
-                <Button
-                  key="view"
-                  type="primary"
-                  ghost
-                  onClick={() =>
-                    showClassDetails({
-                      classId: item.classId,
-                      title: item.title,
-                    })
-                  }
-                >
-                  View Class
-                </Button>,
-                item.ownerId && (
-                  <Button
-                    key="login-as"
-                    icon={<LogIn size={14} />}
-                    onClick={() => handleLoginAsOwner(item.ownerId)}
-                  >
-                    Login as them
-                  </Button>
-                ),
-              ].filter(Boolean)}
-              style={{ paddingLeft: 0, paddingRight: 0 }}
+
+        <div
+          style={{
+            marginTop: 16,
+            padding: "12px 14px",
+            borderRadius: 12,
+            background: hexToRgba(colors.border, 0.06),
+            border: `1px solid ${hexToRgba(colors.border, 0.5)}`,
+          }}
+        >
+          <Space wrap size={[12, 8]} align="center">
+            <SlidersHorizontal size={16} style={{ color: colors.textSecondary }} />
+            <Text strong style={{ marginRight: 4 }}>
+              Hide from list
+            </Text>
+            <Checkbox
+              checked={scheduleWarningHideFilters.inactiveClasses}
+              onChange={(e) =>
+                setHideFilter("inactiveClasses", e.target.checked)
+              }
             >
-              <List.Item.Meta
-                title={<Text strong>{item.title}</Text>}
-                description={
-                  <Space size="middle" wrap>
-                    <Text type="secondary">
-                      <Briefcase size={12} style={{ marginRight: 4 }} />
-                      {item.businessName}
-                    </Text>
-                    <Text type="secondary">
-                      <Calendar size={12} style={{ marginRight: 4 }} />
-                      {item.lastScheduleDate
-                        ? `Last on ${new Date(
-                            item.lastScheduleDate
-                          ).toLocaleDateString()}`
-                        : "No future dates"}
-                    </Text>
-                    <Text type="danger" strong>
-                      {item.daysRemaining > 0
-                        ? `${item.daysRemaining} ${
-                            item.daysRemaining === 1 ? "day" : "days"
-                          } left`
-                        : "Expired"}
-                    </Text>
-                  </Space>
+              Inactive classes
+            </Checkbox>
+            <Checkbox
+              checked={scheduleWarningHideFilters.suspendedClasses}
+              onChange={(e) =>
+                setHideFilter("suspendedClasses", e.target.checked)
+              }
+            >
+              Suspended classes
+            </Checkbox>
+            <Checkbox
+              checked={scheduleWarningHideFilters.inactiveBusinesses}
+              onChange={(e) =>
+                setHideFilter("inactiveBusinesses", e.target.checked)
+              }
+            >
+              Classes on inactive businesses
+            </Checkbox>
+            {scheduleWarningFiltersActive ? (
+              <Button
+                type="link"
+                size="small"
+                style={{ paddingInline: 8 }}
+                onClick={() =>
+                  setScheduleWarningHideFilters({
+                    inactiveClasses: false,
+                    suspendedClasses: false,
+                    inactiveBusinesses: false,
+                  })
                 }
-              />
-            </List.Item>
-          )}
-          style={{ marginTop: "8px" }}
-        />
+              >
+                Clear filters
+              </Button>
+            ) : null}
+          </Space>
+        </div>
+
+        {filteredScheduleWarnings.length === 0 ? (
+          <Empty
+            style={{ marginTop: 24 }}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span>
+                No warnings match these filters. Turn off one or more
+                &quot;Hide&quot; options above to see classes again.
+              </span>
+            }
+          />
+        ) : (
+          <List
+            itemLayout="vertical"
+            dataSource={filteredScheduleWarnings}
+            pagination={{ pageSize: 6, size: "small", showSizeChanger: false }}
+            renderItem={(item) => {
+              const hasUpcoming = Boolean(item.lastScheduleDate);
+              const runwayText = !hasUpcoming
+                ? "No upcoming sessions"
+                : item.daysRemaining > 0
+                  ? `${item.daysRemaining} day${
+                      item.daysRemaining === 1 ? "" : "s"
+                    } until next session`
+                  : "Next session is today";
+              const runwayType = !hasUpcoming ? "danger" : "warning";
+
+              return (
+                <List.Item
+                  key={item.classId}
+                  actions={[
+                    <Button
+                      key="schedules"
+                      icon={<Calendar size={14} />}
+                      type="primary"
+                      onClick={() => openScheduleManager(item)}
+                    >
+                      Manage schedules
+                    </Button>,
+                    <Button
+                      key="view"
+                      type="primary"
+                      ghost
+                      onClick={() =>
+                        showClassDetails({
+                          classId: item.classId,
+                          title: item.title,
+                        })
+                      }
+                    >
+                      View class
+                    </Button>,
+                    item.ownerId ? (
+                      <Button
+                        key="login-as"
+                        icon={<LogIn size={14} />}
+                        onClick={() => handleLoginAsOwner(item.ownerId)}
+                      >
+                        Login as owner
+                      </Button>
+                    ) : null,
+                  ].filter(Boolean)}
+                  style={{
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                    borderBottom: `1px solid ${hexToRgba(colors.border, 0.6)}`,
+                  }}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space wrap size={8} align="center">
+                        <Text strong style={{ fontSize: 15 }}>
+                          {item.title}
+                        </Text>
+                        {scheduleWarningStatusTag(item.status)}
+                        {item.businessIsActive === false ? (
+                          <Tag color="volcano">Inactive business</Tag>
+                        ) : null}
+                      </Space>
+                    }
+                    description={
+                      <Space
+                        direction="vertical"
+                        size={6}
+                        style={{ width: "100%", marginTop: 4 }}
+                      >
+                        <Text type="secondary">
+                          <Briefcase size={12} style={{ marginRight: 6 }} />
+                          {item.businessName}
+                        </Text>
+                        <Space wrap size="middle">
+                          <Text type="secondary">
+                            <Calendar size={12} style={{ marginRight: 6 }} />
+                            {hasUpcoming
+                              ? `Next session: ${new Date(
+                                  item.lastScheduleDate,
+                                ).toLocaleDateString(undefined, {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}`
+                              : "No future dates on the calendar"}
+                          </Text>
+                          <Text type={runwayType} strong>
+                            {runwayText}
+                          </Text>
+                        </Space>
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+            style={{ marginTop: 12 }}
+          />
+        )}
       </Card>
     );
   };
