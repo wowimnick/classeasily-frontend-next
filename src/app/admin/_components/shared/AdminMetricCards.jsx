@@ -144,7 +144,7 @@ const MetricValue = ({ card, isReadyForAnimation }) => {
       <NumberFlow
         value={isReadyForAnimation ? card.value : 0}
         duration={800}
-        prefix="$"
+        prefix={card.currencyPrefix ?? "$"}
         numberFormatOptions={{
           minimumFractionDigits: card.minimumFractionDigits ?? 0,
           maximumFractionDigits: card.maximumFractionDigits ?? 2,

@@ -10,6 +10,7 @@ import {
   Checkbox,
   Col,
   DatePicker,
+  Divider,
   Empty,
   Grid,
   Radio,
@@ -46,7 +47,6 @@ import {
   RefreshCw,
   TrendingDown,
   TrendingUp,
-  Landmark,
 } from "lucide-react";
 import { revenueAnalyticsService } from "@/services/adminDash";
 import AdminMetricCards from "../shared/AdminMetricCards";
@@ -62,7 +62,7 @@ const ALL_SOURCES = ["marketplace", "widget", "corporate", "membership", "saas",
 const SOURCE_LABELS = {
   marketplace: "Platform bookings",
   widget: "Widget bookings",
-  corporate: "Corporate (USD)",
+  corporate: "Corporate",
   membership: "Memberships",
   saas: "Widget SaaS (accrual)",
   addon: "Addons (accrual)",
@@ -85,18 +85,119 @@ const colors = {
   textTertiary: "#94a3b8",
 };
 
-const DashboardWrapper = styled.div`
-  padding: 24px;
-  background: #fff;
-  @media (max-width: 768px) {
-    padding: 16px;
+function cadFmt(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—";
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function cadFmtCompact(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  if (Math.abs(n) >= 100000) {
+    return new Intl.NumberFormat("en-CA", {
+      notation: "compact",
+      compactDisplay: "short",
+      style: "currency",
+      currency: "CAD",
+      maximumFractionDigits: 1,
+    }).format(n);
   }
+  return cadFmt(n);
+}
+
+const DashboardWrapper = styled.div`
+  padding: 0;
+  background: #f8fafc;
+  min-height: 100%;
 `;
 
 const ContentLayer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 16px 20px 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 12px 14px 20px;
+  }
+`;
+
+const TrendsCard = styled(Card)`
+  border-radius: 12px !important;
+  border: 1px solid ${colors.border} !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  .ant-card-body {
+    padding: 12px 10px 10px !important;
+  }
+`;
+
+const LeaderboardCard = styled(Card)`
+  border-radius: 12px !important;
+  border: 1px solid ${colors.border} !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  .ant-card-head {
+    min-height: 46px;
+    padding: 0 14px;
+    margin-bottom: 0;
+    border-bottom-color: ${colors.border};
+    font-weight: 600;
+    font-size: 14px;
+    color: ${colors.textPrimary};
+    background: #fafbfc;
+  }
+
+  .ant-card-body {
+    padding: 0 !important;
+  }
+
+  .ant-table-small .ant-table-thead > tr > th {
+    background: #f8fafc !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: ${colors.textTertiary};
+    font-weight: 700;
+    border-bottom: 1px solid ${colors.border};
+  }
+
+  .ant-table-small .ant-table-tbody > tr > td {
+    border-bottom-color: #f1f5f9;
+  }
+
+  .ant-table-small .ant-table-tbody > tr:last-child > td {
+    border-bottom: none;
+  }
+
+  .ant-table-small .ant-table-tbody > tr:hover > td {
+    background: #fafbfc !important;
+  }
+`;
+
+const InsightCard = styled(Card)`
+  border-radius: 12px !important;
+  border: 1px solid ${colors.border} !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  .ant-card-head {
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom-color: ${colors.border};
+    background: #fafbfc;
+  }
+
+  .ant-card-body {
+    padding: 14px 16px !important;
+  }
 `;
 
 const HeaderRow = styled.div`
@@ -163,6 +264,75 @@ function SparklineMini({ values }) {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+function RevenueChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const stackItems = payload.filter(
+    (p) =>
+      p &&
+      typeof p.value === "number" &&
+      p.dataKey &&
+      !["_cumulative", "_periodTotal"].includes(String(p.dataKey)),
+  );
+  const cumulative = payload.find((p) => p.dataKey === "_cumulative");
+  const periodRow = payload.find((p) => p.dataKey === "_periodTotal");
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: `1px solid ${colors.border}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+        fontSize: 12,
+        boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+        maxWidth: 300,
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 10, color: colors.textPrimary }}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {stackItems.map((p) => (
+          <div
+            key={String(p.dataKey)}
+            style={{ display: "flex", justifyContent: "space-between", gap: 16 }}
+          >
+            <span style={{ color: p.color || colors.textSecondary }}>{p.name}</span>
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(p.value)}</span>
+          </div>
+        ))}
+      </div>
+      {periodRow != null && typeof periodRow.value === "number" ? (
+        <div
+          style={{
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: `1px solid ${colors.border}`,
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: 600,
+          }}
+        >
+          <span>Bucket total</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(periodRow.value)}</span>
+        </div>
+      ) : null}
+      {cumulative != null && typeof cumulative.value === "number" ? (
+        <div
+          style={{
+            marginTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            color: colors.textSecondary,
+            fontSize: 11,
+          }}
+        >
+          <span>Cumulative</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(cumulative.value)}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -311,17 +481,15 @@ export default function RevenueStats() {
   );
 
   const cadKpis = overview?.kpis_cad || {};
-  const corpKpis = overview?.kpis_corporate_usd || {};
   const deltasCad = overview?.deltas_vs_previous_period_cad || {};
-  const deltasCorp = overview?.deltas_vs_previous_period_corporate_usd || {};
   const advanced = overview?.advanced || {};
 
   const metricCardsCad = [
     {
       key: "commission",
-      label: "Commission (CAD)",
+      label: "Commission",
       tooltip:
-        "Sum of booking & membership platform_fee_amount plus accrued SaaS/addon estimates — excludes USD corporate.",
+        "Booking & widget platform fees, memberships, corporate platform fees, plus widget SaaS and marketplace-email addon revenue accrued from Stripe Prices.",
       value: cadKpis.commission ?? 0,
       growth: deltasCad.commission_pct,
       icon: DollarSign,
@@ -330,8 +498,9 @@ export default function RevenueStats() {
     },
     {
       key: "commission_tax",
-      label: "Commission + tax on fee (CAD)",
-      tooltip: "platform_fee_amount + platform_fee_tax on card payments; memberships omit fee-tax split.",
+      label: "Commission + tax on fee",
+      tooltip:
+        "Adds GST/HST on the platform fee where we track it (card bookings and corporate legs). Membership rows typically omit fee-tax split.",
       value: cadKpis.commission_plus_tax ?? 0,
       growth: deltasCad.commission_plus_tax_pct,
       icon: Receipt,
@@ -340,9 +509,9 @@ export default function RevenueStats() {
     },
     {
       key: "net_stripe",
-      label: "Net after Stripe (est.) CAD",
+      label: "Net after Stripe (est.)",
       tooltip:
-        "Commission minus estimated Stripe processing (2.9% + $0.30 on charges). Membership uses formula on invoice totals.",
+        "Commission minus an estimated Stripe processing fee (2.9% + $0.30 pattern). Membership uses the same formula on charge totals.",
       value: cadKpis.net_after_stripe ?? 0,
       growth: deltasCad.net_after_stripe_pct,
       icon: PiggyBank,
@@ -351,7 +520,9 @@ export default function RevenueStats() {
     },
     {
       key: "gmv",
-      label: "Gross GMV (CAD streams)",
+      label: "Gross GMV (booking streams)",
+      tooltip:
+        "Payment totals for marketplace/widget flows plus corporate gross on deposit/balance legs; SaaS/add-on subscription GMV is counted separately in commission.",
       value: cadKpis.gross_gmv ?? 0,
       icon: Layers,
       color: "#0ea5e9",
@@ -359,7 +530,7 @@ export default function RevenueStats() {
     },
     {
       key: "avg_day",
-      label: "Avg commission / day (CAD)",
+      label: "Avg commission / day",
       value: overview?.averages_cad?.per_day ?? 0,
       icon: TrendingUp,
       color: "#f59e0b",
@@ -367,7 +538,7 @@ export default function RevenueStats() {
     },
     {
       key: "avg_tx",
-      label: "Avg commission / txn (CAD)",
+      label: "Avg commission / txn",
       value: overview?.averages_cad?.per_transaction ?? 0,
       icon: Percent,
       color: "#64748b",
@@ -392,63 +563,9 @@ export default function RevenueStats() {
     icon: c.icon,
     color: c.color,
     isCurrency: c.isCurrency,
+    currencyPrefix: c.isCurrency ? "CA$" : undefined,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-    footer:
-      c.key === "commission" ? (
-        <Text type="secondary" style={{ fontSize: 11 }}>
-          Stripe fees are estimates — see backend meta.
-        </Text>
-      ) : null,
-  }));
-
-  const metricCardsUsd = [
-    {
-      key: "corp_commission",
-      title: "Corporate commission (USD)",
-      tooltip:
-        "Deposit + balance legs × CORPORATE_PLATFORM_FEE_PERCENT with HST on fee — separate currency.",
-      value: corpKpis.commission ?? 0,
-      growth: deltasCorp.commission_pct,
-      icon: Landmark,
-      color: "#f97316",
-      renderValue: (v, anim) =>
-        anim ? (
-          <span style={{ fontWeight: 700 }}>
-            US$
-            {(Number(v) || 0).toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        ) : (
-          "US$0"
-        ),
-    },
-    {
-      key: "corp_net",
-      title: "Corporate net after Stripe (est. USD)",
-      value: corpKpis.net_after_stripe ?? 0,
-      growth: deltasCorp.net_after_stripe_pct,
-      icon: PiggyBank,
-      color: "#ea580c",
-      renderValue: (v, anim) =>
-        anim ? (
-          <span style={{ fontWeight: 700 }}>
-            US$
-            {(Number(v) || 0).toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        ) : (
-          "US$0"
-        ),
-    },
-  ].map((c) => ({
-    ...c,
-    growth: typeof c.growth === "number" ? c.growth : undefined,
-    label: c.title,
   }));
 
   const onExport = async () => {
@@ -471,8 +588,9 @@ export default function RevenueStats() {
           <TitleBlock>
             <PageTitle>Revenue stats</PageTitle>
             <PageSubtitle>
-              Platform revenue (not gross GMV) across marketplace, widget, corporate (USD),
-              memberships, widget SaaS accrual, and addons. Tune SaaS/add-on amounts via backend env vars.
+              Platform revenue (not GMV) across marketplace, widget, corporate, memberships, widget SaaS,
+              and addons. SaaS and addon accruals use each subscription&apos;s Stripe Price (monthly
+              equivalent).
             </PageSubtitle>
           </TitleBlock>
           <Space wrap>
@@ -484,10 +602,6 @@ export default function RevenueStats() {
             </Button>
           </Space>
         </HeaderRow>
-
-        {overview?.meta?.currency_note ? (
-          <Alert type="info" showIcon message={overview.meta.currency_note} />
-        ) : null}
 
         <FilterCard size="small" title="Filters">
           <Row gutter={[12, 12]}>
@@ -542,9 +656,21 @@ export default function RevenueStats() {
               <SectionLabel>Granularity</SectionLabel>
               <Segmented
                 options={[
-                  { label: "Daily", value: "day" },
-                  { label: "Weekly", value: "week" },
-                  { label: "Monthly", value: "month" },
+                  {
+                    label: "Daily",
+                    value: "day",
+                    title: "Each column is one calendar day.",
+                  },
+                  {
+                    label: "Weekly",
+                    value: "week",
+                    title: "Buckets follow ISO weeks (year-Www).",
+                  },
+                  {
+                    label: "Monthly",
+                    value: "month",
+                    title: "Buckets are calendar months (YYYY-MM).",
+                  },
                 ]}
                 value={granularity}
                 onChange={setGranularity}
@@ -554,9 +680,23 @@ export default function RevenueStats() {
               <SectionLabel>Chart metric</SectionLabel>
               <Segmented
                 options={[
-                  { label: "Commission", value: "commission" },
-                  { label: "+ Tax", value: "commission_plus_tax" },
-                  { label: "Net − Stripe", value: "net_after_stripe" },
+                  {
+                    label: "Commission",
+                    value: "commission",
+                    title:
+                      "Platform fee amounts before GST/HST on the fee where that tax is tracked separately.",
+                  },
+                  {
+                    label: "+ Tax",
+                    value: "commission_plus_tax",
+                    title: "Adds GST/HST on platform fees for bookings and corporate legs.",
+                  },
+                  {
+                    label: "Net − Stripe",
+                    value: "net_after_stripe",
+                    title:
+                      "After an estimated Stripe processing fee (2.9% + $0.30 — memberships use the same pattern).",
+                  },
                 ]}
                 value={metric}
                 onChange={setMetric}
@@ -572,7 +712,11 @@ export default function RevenueStats() {
                 setSources(new Set(vals.length ? vals : ALL_SOURCES))
               }
             >
-              <Space wrap>
+              <Space
+                wrap
+                split={<Divider type="vertical" style={{ margin: 0, height: 14 }} />}
+                size={[10, 10]}
+              >
                 {ALL_SOURCES.map((s) => (
                   <Checkbox key={s} value={s}>
                     {SOURCE_LABELS[s]}
@@ -586,28 +730,32 @@ export default function RevenueStats() {
         {error ? <Alert type="error" message={error} showIcon /> : null}
 
         <Spin spinning={loading}>
-          <SectionLabel>CAD headline KPIs</SectionLabel>
+          <SectionLabel>Platform KPIs (CAD)</SectionLabel>
           <AdminMetricCards cards={metricCardsCad} loading={loading} isReadyForAnimation={readyAnim} />
 
-          <div style={{ marginTop: 16 }}>
-            <SectionLabel>Corporate (USD)</SectionLabel>
-            <AdminMetricCards cards={metricCardsUsd} loading={loading} isReadyForAnimation={readyAnim} />
-          </div>
-
-          <Divider />
+          <SectionDivider />
 
           <SectionLabel>Trends</SectionLabel>
-          <Card styles={{ body: { padding: isMobile ? 8 : 16 } }} style={{ borderRadius: 12 }}>
+          <TrendsCard>
             {chartData.length === 0 ? (
               <Empty description="No data for this range" />
             ) : (
-              <ResponsiveContainer width="100%" height={380}>
-                <ComposedChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `$${Number(v).toFixed(2)}`} />
-                  <Legend />
+              <ResponsiveContainer width="100%" height={400}>
+                <ComposedChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis
+                    dataKey="bucket"
+                    tick={{ fontSize: 11, fill: colors.textSecondary }}
+                    tickMargin={8}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: colors.textSecondary }}
+                    tickFormatter={(v) => cadFmtCompact(v)}
+                    width={isMobile ? 56 : 72}
+                  />
+                  <Tooltip content={RevenueChartTooltip} />
+                  <Legend wrapperStyle={{ paddingTop: 16 }} iconType="circle" />
                   {chartSources.map((s) => (
                     <Bar
                       key={s}
@@ -615,44 +763,55 @@ export default function RevenueStats() {
                       name={SOURCE_LABELS[s]}
                       stackId="rev"
                       fill={SOURCE_COLORS[s]}
-                      radius={[2, 2, 0, 0]}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={56}
                     />
                   ))}
                   <Line
                     type="monotone"
                     dataKey="_cumulative"
-                    name="Cumulative"
-                    stroke="#111827"
+                    name="Cumulative (CAD)"
+                    stroke="#0f172a"
                     strokeWidth={2}
                     dot={false}
+                    activeDot={{ r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             )}
-          </Card>
+          </TrendsCard>
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24} lg={10}>
-              <Card title="Mix by source" style={{ borderRadius: 12 }}>
+              <InsightCard title="Mix by source">
                 {pieData.length === 0 ? (
                   <Empty />
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie dataKey="value" data={pieData} outerRadius={100}>
+                      <Pie
+                        dataKey="value"
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={54}
+                        outerRadius={92}
+                        paddingAngle={2}
+                      >
                         {pieData.map((entry) => (
-                          <Cell key={entry.key} fill={SOURCE_COLORS[entry.key] || "#ccc"} />
+                          <Cell key={entry.key} fill={SOURCE_COLORS[entry.key] || "#cbd5e1"} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v) => `$${Number(v).toFixed(2)}`} />
+                      <Tooltip formatter={(value) => cadFmt(value)} />
+                      <Legend layout="horizontal" verticalAlign="bottom" iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
-              </Card>
+              </InsightCard>
             </Col>
             <Col xs={24} lg={14}>
-              <Card title="Signals & cohorts" style={{ borderRadius: 12 }}>
-                <Space direction="vertical" size={10} style={{ width: "100%" }}>
+              <InsightCard title="Signals & cohorts">
+                <Space direction="vertical" size={12} style={{ width: "100%" }}>
                   <div>
                     <Text strong>Booking take rate </Text>
                     <Tag color="blue">
@@ -666,13 +825,13 @@ export default function RevenueStats() {
                     <Tag>
                       7d:{" "}
                       {advanced.rolling_avg_commission_per_day_7d != null
-                        ? `$${advanced.rolling_avg_commission_per_day_7d.toFixed(2)}`
+                        ? cadFmt(advanced.rolling_avg_commission_per_day_7d)
                         : "—"}
                     </Tag>
                     <Tag style={{ marginLeft: 8 }}>
                       30d:{" "}
                       {advanced.rolling_avg_commission_per_day_30d != null
-                        ? `$${advanced.rolling_avg_commission_per_day_30d.toFixed(2)}`
+                        ? cadFmt(advanced.rolling_avg_commission_per_day_30d)
                         : "—"}
                     </Tag>
                   </div>
@@ -680,67 +839,55 @@ export default function RevenueStats() {
                     <Text strong>Best / worst day (booking streams) </Text>
                     <Tag color="green">
                       {advanced.best_day
-                        ? `${advanced.best_day.day} · $${advanced.best_day.commission?.toFixed?.(2)}`
+                        ? `${advanced.best_day.day} · ${cadFmt(advanced.best_day.commission)}`
                         : "—"}
                     </Tag>
                     <Tag color="red" style={{ marginLeft: 8 }}>
                       {advanced.worst_day
-                        ? `${advanced.worst_day.day} · $${advanced.worst_day.commission?.toFixed?.(2)}`
+                        ? `${advanced.worst_day.day} · ${cadFmt(advanced.worst_day.commission)}`
                         : "—"}
                     </Tag>
                   </div>
                   <div>
                     <Text strong>New vs established businesses (booking commission) </Text>
                     <Paragraph style={{ marginBottom: 0 }} type="secondary">
-                      New (biz created in range): $
-                      {(advanced.new_business_booking_commission ?? 0).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      · Established: $
-                      {(advanced.established_business_booking_commission ?? 0).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      · Share new:{" "}
+                      New (biz created in range): {cadFmt(advanced.new_business_booking_commission ?? 0)}{" "}
+                      · Established: {cadFmt(advanced.established_business_booking_commission ?? 0)} · Share
+                      new:{" "}
                       {advanced.new_business_booking_commission_pct_of_bookings != null
                         ? `${advanced.new_business_booking_commission_pct_of_bookings.toFixed(1)}%`
                         : "—"}
                     </Paragraph>
                   </div>
-                  {overview?.meta?.saas_monthly_amounts_configured === false ? (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      message="Widget SaaS monthly amounts not configured"
-                      description="Set REVENUE_REPORTING_WIDGET_*_MONTHLY_CAD in backend env for accruals."
-                    />
-                  ) : null}
                 </Space>
-              </Card>
+              </InsightCard>
             </Col>
           </Row>
 
-          <Divider />
+          <SectionDivider />
 
           <SectionLabel>Leaderboards</SectionLabel>
           <Row gutter={[16, 16]}>
             <Col xs={24} xl={12}>
-              <Card title="Top businesses (booking commission)" style={{ borderRadius: 12 }}>
+              <LeaderboardCard title="Top businesses (booking commission)">
                 <Table
                   size="small"
                   pagination={false}
                   rowKey="business_id"
+                  showHeader
                   dataSource={topPack?.top_businesses_by_booking_revenue || []}
                   columns={[
                     { title: "#", render: (_, __, i) => i + 1, width: 44 },
-                    { title: "Business", dataIndex: "name" },
+                    { title: "Business", dataIndex: "name", ellipsis: true },
                     {
                       title: "Commission",
                       dataIndex: "total",
-                      render: (v) => `$${Number(v).toFixed(2)}`,
+                      align: "right",
+                      render: (v) => (
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(v)}</span>
+                      ),
                     },
-                    { title: "Txns", dataIndex: "transactions", width: 72 },
+                    { title: "Txns", dataIndex: "transactions", width: 72, align: "right" },
                     {
                       title: "7d",
                       dataIndex: "sparkline_commission",
@@ -749,14 +896,15 @@ export default function RevenueStats() {
                     },
                   ]}
                 />
-              </Card>
+              </LeaderboardCard>
             </Col>
             <Col xs={24} xl={12}>
-              <Card title="Top classes" style={{ borderRadius: 12 }}>
+              <LeaderboardCard title="Top classes">
                 <Table
                   size="small"
                   pagination={false}
                   rowKey="class_id"
+                  showHeader
                   dataSource={topPack?.top_classes || []}
                   columns={[
                     { title: "#", render: (_, __, i) => i + 1, width: 44 },
@@ -764,54 +912,61 @@ export default function RevenueStats() {
                     {
                       title: "Commission",
                       dataIndex: "total",
-                      render: (v) => `$${Number(v).toFixed(2)}`,
+                      align: "right",
+                      render: (v) => (
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(v)}</span>
+                      ),
                     },
-                    { title: "Txns", dataIndex: "transactions", width: 72 },
+                    { title: "Txns", dataIndex: "transactions", width: 72, align: "right" },
                   ]}
                 />
-              </Card>
+              </LeaderboardCard>
             </Col>
             <Col xs={24} xl={12}>
-              <Card title="Corporate clients (USD commission)" style={{ borderRadius: 12 }}>
+              <LeaderboardCard title="Corporate clients">
                 <Table
                   size="small"
                   pagination={false}
                   rowKey="name"
-                  dataSource={topPack?.corporate_clients_usd || []}
+                  showHeader
+                  dataSource={topPack?.corporate_clients || []}
                   columns={[
                     { title: "#", render: (_, __, i) => i + 1, width: 44 },
                     { title: "Company", dataIndex: "name", ellipsis: true },
                     {
-                      title: "Commission USD",
-                      dataIndex: "total_usd",
-                      render: (v) =>
-                        `US$${Number(v).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`,
+                      title: "Commission",
+                      dataIndex: "total",
+                      align: "right",
+                      render: (v) => (
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(v)}</span>
+                      ),
                     },
                   ]}
                 />
-              </Card>
+              </LeaderboardCard>
             </Col>
             <Col xs={24} xl={12}>
-              <Card title="Top membership businesses" style={{ borderRadius: 12 }}>
+              <LeaderboardCard title="Top membership businesses">
                 <Table
                   size="small"
                   pagination={false}
                   rowKey="business_id"
+                  showHeader
                   dataSource={topPack?.top_membership_businesses || []}
                   columns={[
                     { title: "#", render: (_, __, i) => i + 1, width: 44 },
-                    { title: "Business", dataIndex: "name" },
+                    { title: "Business", dataIndex: "name", ellipsis: true },
                     {
                       title: "Commission",
                       dataIndex: "total",
-                      render: (v) => `$${Number(v).toFixed(2)}`,
+                      align: "right",
+                      render: (v) => (
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(v)}</span>
+                      ),
                     },
                   ]}
                 />
-              </Card>
+              </LeaderboardCard>
             </Col>
           </Row>
         </Spin>
@@ -820,7 +975,7 @@ export default function RevenueStats() {
   );
 }
 
-function Divider() {
+function SectionDivider() {
   return (
     <hr
       style={{
