@@ -70,6 +70,15 @@ import AdminMetricCards from "../shared/AdminMetricCards";
 import { AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
+/** Calendar dates from the API are YYYY-MM-DD; avoid Date()/moment(iso) UTC midnight shifting the displayed day. */
+function formatPlatformLocalDate(dateStr, format = "MMM D, YYYY") {
+  if (!dateStr) return "";
+  const strict = moment(dateStr, "YYYY-MM-DD", true);
+  if (strict.isValid()) return strict.format(format);
+  const loose = moment(dateStr);
+  return loose.isValid() ? loose.format(format) : String(dateStr);
+}
+
 const ScheduleCalendarView = dynamic(
   () =>
     import(
@@ -639,9 +648,7 @@ const ClassListingStatusCell = ({
     furthestFutureInstanceDate;
   const endLabel =
     showingScheduleEnd &&
-    `Schedules ending on ${moment(furthestFutureInstanceDate).format(
-      "MMM D, YYYY"
-    )}`;
+    `Schedules ending on ${formatPlatformLocalDate(furthestFutureInstanceDate)}`;
   const showNoSchedules =
     status === "active" && activeSchedulesCount === 0;
 
@@ -670,7 +677,7 @@ const scheduleColumns = (themeTokens) => [
       <div>
         <Text strong>
           {record.date
-            ? moment(record.date).format("ddd, MMM D, YYYY")
+            ? formatPlatformLocalDate(record.date, "ddd, MMM D, YYYY")
             : record.day}
         </Text>
         <Text type="secondary" style={{ display: "block", fontSize: "13px" }}>
@@ -1921,12 +1928,19 @@ export default function ClassListings() {
               style: { marginBottom: 0 },
             }}
             renderItem={(item) => {
-              const hasUpcoming = Boolean(item.lastScheduleDate);
+              const endIso =
+                item.furthestScheduledSessionDate ??
+                item.lastScheduleDate ??
+                item.scheduleEndDate;
+              const hasUpcoming = Boolean(endIso);
+              const endDatePretty = hasUpcoming
+                ? formatPlatformLocalDate(endIso)
+                : "";
               const runwayText = !hasUpcoming
                 ? "No upcoming sessions"
                 : item.daysRemaining > 0
-                  ? `${item.daysRemaining}d to next`
-                  : "Next session today";
+                  ? `${item.daysRemaining}d until last scheduled session`
+                  : "Last scheduled session is today";
               const runwayType = !hasUpcoming ? "danger" : "warning";
               const bizOn = coerceBusinessIsActive(item);
 
@@ -1988,12 +2002,7 @@ export default function ClassListings() {
                         <Text type="secondary">{item.businessName}</Text>
                         <Text type="secondary">
                           {hasUpcoming
-                            ? `Next: ${new Date(
-                                item.lastScheduleDate,
-                              ).toLocaleDateString(undefined, {
-                                month: "short",
-                                day: "numeric",
-                              })}`
+                            ? `Last scheduled session: ${endDatePretty}`
                             : "No dates"}
                         </Text>
                         <Text type={runwayType}>{runwayText}</Text>
