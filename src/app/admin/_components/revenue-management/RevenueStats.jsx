@@ -19,7 +19,6 @@ import {
   Space,
   Spin,
   Table,
-  Tag,
   Typography,
   message,
 } from "antd";
@@ -62,7 +61,7 @@ import { adminColors as colors } from "../shared/adminColors";
 import { formatCurrency } from "../shared/adminUtils";
 
 const { RangePicker } = DatePicker;
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { useBreakpoint } = Grid;
 
 const ALL_SOURCES = ["marketplace", "widget", "corporate", "membership", "saas", "addon"];
@@ -87,6 +86,12 @@ const SOURCE_COLORS = {
 
 function cadFmt(v) {
   return formatCurrency(v);
+}
+
+/** KPI/chart payloads may arrive as strings from serializers or proxies — normalize for UI math. */
+function finiteNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function cadFmtCompact(v) {
@@ -333,12 +338,14 @@ function RevenueChartTooltip({ active, payload, label, chartSources = [] }) {
 }
 
 function pivotTimeseries(rows, metricKey, activeSources) {
-  const filtered = rows.filter((r) => activeSources.has(r.source));
+  const filtered = rows.filter(
+    (r) => r && activeSources.has(String(r.source || "").trim()),
+  );
   const srcs = ALL_SOURCES.filter((s) => activeSources.has(s));
   const buckets = [...new Set(filtered.map((r) => r.bucket))].sort();
   const idx = {};
   filtered.forEach((r) => {
-    idx[`${r.bucket}__${r.source}`] = r[metricKey] ?? 0;
+    idx[`${r.bucket}__${r.source}`] = finiteNum(r[metricKey]);
   });
 
   let cumulative = 0;
@@ -347,7 +354,7 @@ function pivotTimeseries(rows, metricKey, activeSources) {
     let periodTotal = 0;
     srcs.forEach((s) => {
       const raw = idx[`${b}__${s}`] ?? 0;
-      const v = typeof raw === "number" ? raw : Number(raw) || 0;
+      const v = finiteNum(raw);
       row[s] = v;
       periodTotal += v;
     });
@@ -363,7 +370,7 @@ function pieFromBySource(bySource, metricKey, activeSources) {
   return ALL_SOURCES.filter((s) => activeSources.has(s) && bySource[s]).map((s) => ({
     name: SOURCE_LABELS[s] || s,
     key: s,
-    value: bySource[s]?.[metricKey] ?? 0,
+    value: finiteNum(bySource[s]?.[metricKey]),
   }));
 }
 
@@ -404,7 +411,6 @@ export default function RevenueStats() {
   const [seriesPack, setSeriesPack] = useState(null);
   const [topPack, setTopPack] = useState(null);
   const [error, setError] = useState(null);
-  const [readyAnim, setReadyAnim] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
 
   const [rangeStart, rangeEnd] = useMemo(
@@ -425,7 +431,6 @@ export default function RevenueStats() {
     async function run() {
       setLoading(true);
       setError(null);
-      setReadyAnim(false);
       try {
         const [ov, ts, tp] = await Promise.all([
           revenueAnalyticsService.getOverview(queryParams),
@@ -443,9 +448,6 @@ export default function RevenueStats() {
         setOverview(ov.data);
         setSeriesPack(ts.data);
         setTopPack(tp.data);
-        setTimeout(() => {
-          if (!cancelled) setReadyAnim(true);
-        }, 50);
       } catch (e) {
         if (!cancelled) {
           const msgText = e.message || "Failed to load revenue data";
@@ -465,7 +467,7 @@ export default function RevenueStats() {
 
   const handleRefresh = () => setRefreshTick((t) => t + 1);
 
-  const chartRows = seriesPack?.rows || [];
+  const chartRows = Array.isArray(seriesPack?.rows) ? seriesPack.rows : [];
   const chartData = useMemo(
     () => pivotTimeseries(chartRows, metric, sources),
     [chartRows, metric, sources],
@@ -478,7 +480,6 @@ export default function RevenueStats() {
 
   const cadKpis = overview?.kpis_cad || {};
   const deltasCad = overview?.deltas_vs_previous_period_cad || {};
-  const advanced = overview?.advanced || {};
 
   const metricCardsCad = [
     {
@@ -486,7 +487,7 @@ export default function RevenueStats() {
       label: "Platform Commission",
       tooltip:
         "Booking & widget platform fees, memberships, corporate platform fees, plus widget SaaS and marketplace-email addon revenue accrued from Stripe Prices.",
-      value: cadKpis.commission ?? 0,
+      value: finiteNum(cadKpis.commission),
       growth: deltasCad.commission_pct,
       icon: DollarSign,
       color: colors.primary,
@@ -497,7 +498,7 @@ export default function RevenueStats() {
       label: "Commission + tax on fee",
       tooltip:
         "Adds GST/HST on the platform fee where we track it (card bookings and corporate legs). Membership rows typically omit fee-tax split.",
-      value: cadKpis.commission_plus_tax ?? 0,
+      value: finiteNum(cadKpis.commission_plus_tax),
       growth: deltasCad.commission_plus_tax_pct,
       icon: Receipt,
       color: "#6366f1",
@@ -508,7 +509,7 @@ export default function RevenueStats() {
       label: "Net after Stripe (est.)",
       tooltip:
         "Commission minus an estimated Stripe processing fee (2.9% + $0.30 pattern). Membership uses the same formula on charge totals.",
-      value: cadKpis.net_after_stripe ?? 0,
+      value: finiteNum(cadKpis.net_after_stripe),
       growth: deltasCad.net_after_stripe_pct,
       icon: PiggyBank,
       color: "#10b981",
@@ -519,7 +520,7 @@ export default function RevenueStats() {
       label: "Gross GMV (booking streams)",
       tooltip:
         "Payment totals for marketplace/widget flows plus corporate gross on deposit/balance legs; SaaS/add-on subscription GMV is counted separately in commission.",
-      value: cadKpis.gross_gmv ?? 0,
+      value: finiteNum(cadKpis.gross_gmv),
       icon: Layers,
       color: "#0ea5e9",
       isCurrency: true,
@@ -527,7 +528,7 @@ export default function RevenueStats() {
     {
       key: "avg_day",
       label: "Avg commission / day",
-      value: overview?.averages_cad?.per_day ?? 0,
+      value: finiteNum(overview?.averages_cad?.per_day),
       icon: TrendingUp,
       color: "#f59e0b",
       isCurrency: true,
@@ -535,7 +536,7 @@ export default function RevenueStats() {
     {
       key: "avg_tx",
       label: "Avg commission / txn",
-      value: overview?.averages_cad?.per_transaction ?? 0,
+      value: finiteNum(overview?.averages_cad?.per_transaction),
       icon: Percent,
       color: "#64748b",
       isCurrency: true,
@@ -544,7 +545,7 @@ export default function RevenueStats() {
       key: "refunds",
       label: "Refunds volume (range)",
       tooltip: "Sum of refunded_amount on payments whose refund_date falls in range.",
-      value: overview?.refunds_volume ?? 0,
+      value: finiteNum(overview?.refunds_volume),
       icon: TrendingDown,
       color: "#ef4444",
       isCurrency: true,
@@ -554,8 +555,8 @@ export default function RevenueStats() {
     title: c.label,
     label: c.label,
     tooltip: c.tooltip,
-    value: typeof c.value === "number" ? c.value : 0,
-    growth: typeof c.growth === "number" ? c.growth : undefined,
+    value: finiteNum(c.value),
+    growth: typeof c.growth === "number" && Number.isFinite(c.growth) ? c.growth : undefined,
     icon: c.icon,
     color: c.color,
     isCurrency: c.isCurrency,
@@ -727,19 +728,11 @@ export default function RevenueStats() {
 
         <Spin spinning={loading}>
           <SectionLabel>Platform KPIs (CAD)</SectionLabel>
-          <AdminMetricCards cards={metricCardsCad} loading={loading} isReadyForAnimation={readyAnim} />
+          <AdminMetricCards cards={metricCardsCad} loading={loading} isReadyForAnimation={!loading} />
 
           <SectionDivider />
 
           <SectionLabel>Trends</SectionLabel>
-          <Text type="secondary" style={{ fontSize: 12, marginTop: -4, marginBottom: 12, display: "block", maxWidth: 900 }}>
-            Includes marketplace bookings (&quot;Platform bookings&quot;), widget, corporate, memberships, SaaS, and
-            addons—toggle each under Sources. Bars use the{" "}
-            <span style={{ fontWeight: 600, color: colors.textSecondary }}>left axis</span> (per bucket); the cumulative
-            line uses the{" "}
-            <span style={{ fontWeight: 600, color: colors.textSecondary }}>right axis</span> so it doesn&apos;t shrink the
-            bars.
-          </Text>
           <TrendsCard>
             {chartData.length === 0 ? (
               <Empty description="No data for this range" />
@@ -802,20 +795,20 @@ export default function RevenueStats() {
           </TrendsCard>
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            <Col xs={24} lg={10}>
+            <Col xs={24}>
               <InsightCard title="Mix by source">
                 {pieData.length === 0 ? (
                   <Empty />
                 ) : (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={380}>
                     <PieChart>
                       <Pie
                         dataKey="value"
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius="60%"
-                        outerRadius="85%"
+                        innerRadius="58%"
+                        outerRadius="88%"
                         paddingAngle={5}
                         stroke="none"
                         cornerRadius={5}
@@ -837,59 +830,6 @@ export default function RevenueStats() {
                     </PieChart>
                   </ResponsiveContainer>
                 )}
-              </InsightCard>
-            </Col>
-            <Col xs={24} lg={14}>
-              <InsightCard title="Signals & cohorts">
-                <Space direction="vertical" size={12} style={{ width: "100%" }}>
-                  <div>
-                    <Text strong>Booking take rate </Text>
-                    <Tag color="blue">
-                      {advanced.booking_take_rate_percent != null
-                        ? `${advanced.booking_take_rate_percent.toFixed(2)}%`
-                        : "—"}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>Rolling avg commission / day </Text>
-                    <Tag>
-                      7d:{" "}
-                      {advanced.rolling_avg_commission_per_day_7d != null
-                        ? cadFmt(advanced.rolling_avg_commission_per_day_7d)
-                        : "—"}
-                    </Tag>
-                    <Tag style={{ marginLeft: 8 }}>
-                      30d:{" "}
-                      {advanced.rolling_avg_commission_per_day_30d != null
-                        ? cadFmt(advanced.rolling_avg_commission_per_day_30d)
-                        : "—"}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>Best / worst day (booking streams) </Text>
-                    <Tag color="green">
-                      {advanced.best_day
-                        ? `${advanced.best_day.day} · ${cadFmt(advanced.best_day.commission)}`
-                        : "—"}
-                    </Tag>
-                    <Tag color="red" style={{ marginLeft: 8 }}>
-                      {advanced.worst_day
-                        ? `${advanced.worst_day.day} · ${cadFmt(advanced.worst_day.commission)}`
-                        : "—"}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>New vs established businesses (booking commission) </Text>
-                    <Paragraph style={{ marginBottom: 0 }} type="secondary">
-                      New (biz created in range): {cadFmt(advanced.new_business_booking_commission ?? 0)}{" "}
-                      · Established: {cadFmt(advanced.established_business_booking_commission ?? 0)} · Share
-                      new:{" "}
-                      {advanced.new_business_booking_commission_pct_of_bookings != null
-                        ? `${advanced.new_business_booking_commission_pct_of_bookings.toFixed(1)}%`
-                        : "—"}
-                    </Paragraph>
-                  </div>
-                </Space>
               </InsightCard>
             </Col>
           </Row>
