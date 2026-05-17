@@ -51,6 +51,7 @@ const HomeClassCard = ({
   categoryLabel = null,
   showPopularBadge = false,
   /** Shortest schedule duration in minutes (public API); explore meta shows as hours */
+  listing_duration_minutes = null,
   /** Instagram follower count from business (shown when review_count < 100) */
   instagramFollowerCount = null,
 }) => {
