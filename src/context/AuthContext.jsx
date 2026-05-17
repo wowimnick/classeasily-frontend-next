@@ -14,8 +14,7 @@ import { useRouter } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
 import {
   useAuthStore,
-  getRedirectPath,
-  clearRedirectPath,
+  handlePostLoginRedirect,
 } from "@/lib/auth-client";
 
 const AuthContext = createContext(null);
@@ -60,48 +59,14 @@ export const AuthProvider = ({ children }) => {
 
       console.log("[AuthContext] User authenticated, checking for redirect...");
 
-      // Get redirect data
-      const { path: redirectPath, requiredPermission } = getRedirectPath();
-
-      // Close modal first
       setIsAuthModalVisible(false);
 
-      // Execute any callback
       if (typeof onSuccessCallback === "function") {
         onSuccessCallback();
         setOnSuccessCallback(null);
       }
 
-      if (user.has_business) {
-        if (redirectPath && redirectPath.startsWith("/business/")) {
-          clearRedirectPath();
-          router.push(redirectPath);
-        } else {
-          console.log(
-            "[AuthContext] User has business, redirecting to business dashboard"
-          );
-          clearRedirectPath();
-          router.push("/business/dashboard/overview");
-        }
-      } else if (redirectPath && redirectPath !== "/") {
-        // If they came from /business (e.g. Become a host), send to registration flow
-        const targetPath =
-          redirectPath === "/business" ? "/business/register" : redirectPath;
-        if (requiredPermission) {
-          if (user?.permissions?.includes(requiredPermission)) {
-            clearRedirectPath();
-            router.push(targetPath);
-          } else {
-            clearRedirectPath();
-          }
-        } else {
-          clearRedirectPath();
-          router.push(targetPath);
-        }
-      } else {
-        // No redirect needed
-        clearRedirectPath();
-      }
+      handlePostLoginRedirect(user, router);
     }
   }, [isAuthenticated, user, isAuthModalVisible, onSuccessCallback, router, authModalMode]); // Added authModalMode dependency
 

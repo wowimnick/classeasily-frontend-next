@@ -605,6 +605,9 @@ const ClassesDisplay = ({
               min_session_price={classItem.min_session_price}
               min_course_price={classItem.min_course_price}
               totalReviews={Math.max(0, Number(classItem.review_count) || 0)}
+              instagramFollowerCount={
+                classItem.business_instagram_follower_count ?? null
+              }
               business_name={classItem.business_name}
               city={classItem.city}
               state={classItem.state}

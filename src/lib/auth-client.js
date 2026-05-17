@@ -11,6 +11,19 @@ import axiosInstance from "./axiosInstance";
 const REDIRECT_PATH_KEY = "redirectAfterLogin";
 const REDIRECT_PERMISSION_KEY = "redirectRequiredPermission";
 
+/** Default landing route for accounts with platform admin access. */
+export const ADMIN_DASHBOARD_PATH = "/admin/overview";
+
+/**
+ * Django permission as returned by `CustomUserDetailsSerializer.permissions`
+ * (formatted `app_label.codename`).
+ */
+export const ADMIN_DASHBOARD_PERM = "quickstart.access_admin_dashboard";
+
+export function userMayAccessPlatformAdmin(user) {
+  return Boolean(user?.permissions?.includes(ADMIN_DASHBOARD_PERM));
+}
+
 export const saveRedirectPath = (path, requiredPermission = null) => {
   if (typeof window === "undefined") return;
 
@@ -46,10 +59,46 @@ export const clearRedirectPath = () => {
   localStorage.removeItem(REDIRECT_PERMISSION_KEY);
 };
 
-const handlePostLoginRedirect = (user, router) => {
-  if (typeof window === "undefined") return;
+export const handlePostLoginRedirect = (user, router) => {
+  if (typeof window === "undefined") return false;
 
   const { path: redirectPath, requiredPermission } = getRedirectPath();
+
+  if (userMayAccessPlatformAdmin(user)) {
+    if (redirectPath && redirectPath.startsWith("/business/")) {
+      clearRedirectPath();
+      router.push(redirectPath);
+      return true;
+    }
+    if (
+      redirectPath &&
+      (redirectPath.startsWith("/admin") || redirectPath.startsWith("/admin/"))
+    ) {
+      clearRedirectPath();
+      router.push(
+        redirectPath === "/admin"
+          ? ADMIN_DASHBOARD_PATH
+          : redirectPath.startsWith("/admin/")
+          ? redirectPath
+          : ADMIN_DASHBOARD_PATH,
+      );
+      return true;
+    }
+    if (
+      redirectPath &&
+      redirectPath !== "/" &&
+      requiredPermission &&
+      user?.permissions?.includes(requiredPermission)
+    ) {
+      clearRedirectPath();
+      router.push(redirectPath);
+      return true;
+    }
+    console.log("[Auth] Platform admin user — redirect to admin dashboard");
+    clearRedirectPath();
+    router.push(ADMIN_DASHBOARD_PATH);
+    return true;
+  }
 
   if (user?.has_business) {
     if (redirectPath && redirectPath.startsWith("/business/")) {
@@ -63,39 +112,23 @@ const handlePostLoginRedirect = (user, router) => {
     return true;
   }
 
-  // Non-business users: honor saved redirect if any
-
-  // Clear redirect data
-  clearRedirectPath();
-
-  // Check if we have a saved redirect path (for non-business users)
   if (redirectPath && redirectPath !== "/") {
-    console.log("[Auth] Checking redirect:", {
-      redirectPath,
-      requiredPermission,
-    });
-
-    // If a permission was required, verify user has it
+    const targetPath =
+      redirectPath === "/business" ? "/business/register" : redirectPath;
+    clearRedirectPath();
     if (requiredPermission) {
       if (user?.permissions?.includes(requiredPermission)) {
-        console.log(
-          "[Auth] User has permission, redirecting to:",
-          redirectPath,
-        );
-        router.push(redirectPath);
+        router.push(targetPath);
         return true;
-      } else {
-        console.log("[Auth] User lacks permission, staying on current page");
-        return false;
       }
+      console.log("[Auth] User lacks permission for saved redirect");
+      return false;
     }
-
-    // No permission required - redirect to original path
-    console.log("[Auth] No permission required, redirecting to:", redirectPath);
-    router.push(redirectPath);
+    router.push(targetPath);
     return true;
   }
 
+  clearRedirectPath();
   return false;
 };
 
@@ -602,6 +635,47 @@ export const refreshUser = async () => {
     throw error;
   }
 };
+
+/**
+ * Complete admin → business impersonation: sync client store with rotated cookies when possible,
+ * then land on the host dashboard so RSC/nav matches the impersonated JWT.
+ *
+ * Important: avoids `refreshUser()` which clears auth on transient refresh failure right after impersonate sets cookies.
+ */
+export async function applyImpersonationSession(userPayload, router) {
+  if (typeof window === "undefined") return;
+
+  useAuthStore.setState({
+    user: userPayload,
+    isAuthenticated: true,
+    isImpersonating: true,
+    isLoading: false,
+  });
+
+  if (!router) return;
+
+  try {
+    console.log("[Auth] applyImpersonationSession — token refresh sync");
+    const response = await axiosInstance.post("/token/refresh/");
+    if (response.data?.user) {
+      useAuthStore.setState({
+        user: response.data.user,
+        isImpersonating: true,
+      });
+    }
+  } catch (error) {
+    console.warn(
+      "[Auth] applyImpersonationSession refresh skipped:",
+      error?.message || error,
+    );
+    useAuthStore.setState({ isImpersonating: true });
+  }
+
+  router.push("/business/dashboard/overview");
+  if (typeof router.refresh === "function") {
+    router.refresh();
+  }
+}
 
 // ============================================================================
 // REACT HOOK for components

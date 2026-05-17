@@ -290,6 +290,9 @@ const FavoritesModal = ({ isOpen, onClose }) => {
             <HomeClassCard
               key={classItem.classId}
               {...classItem}
+              instagramFollowerCount={
+                classItem.business_instagram_follower_count ?? null
+              }
               is_favorited={true}
               onFavoriteChange={(isFavorited) =>
                 handleFavoriteChange(classItem.classId, isFavorited)

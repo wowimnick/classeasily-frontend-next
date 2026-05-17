@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import styled from "styled-components";
-import { Building2 } from "lucide-react";
+import { Building2, Instagram } from "lucide-react";
 import { Skeleton } from "antd";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -25,6 +25,23 @@ function getFirstName(displayName) {
   return parts[0] || "your host";
 }
 
+function ensureHttpUrl(u) {
+  if (!u || typeof u !== "string") return "#";
+  const t = u.trim();
+  if (!t) return "#";
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://${t}`;
+}
+
+function formatIgFollowers(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(num);
+}
+
 const HostSectionWrapper = styled(motion.section)`
   background: #ffffff;
   padding: 0 0 2rem;
@@ -33,6 +50,20 @@ const HostSectionWrapper = styled(motion.section)`
   @media (max-width: 768px) {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
+  }
+`;
+
+const InstagramFollowersLine = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #717171;
+  text-decoration: none;
+  &:hover {
+    color: #e1306c;
   }
 `;
 
@@ -191,6 +222,8 @@ const HostInfo = React.memo(
       typeLabel,
       slug,
       isLoading,
+      instagramFollowerCount,
+      instagramUrl,
     } = useMemo(() => {
       if (!businessData) return { isLoading: true };
 
@@ -207,6 +240,8 @@ const HostInfo = React.memo(
             ? BUSINESS_TYPE_LABELS[businessType]
             : null,
         slug: businessData.slug || null,
+        instagramFollowerCount: businessData.instagram_follower_count ?? null,
+        instagramUrl: businessData.social_media_links?.instagram || null,
       };
     }, [businessData]);
 
@@ -253,6 +288,20 @@ const HostInfo = React.memo(
         </HostAvatar>
         <HostName>{hostDisplayName}</HostName>
         {typeLabel ? <HostTagline>{typeLabel}</HostTagline> : null}
+        {instagramFollowerCount != null &&
+        Number(instagramFollowerCount) > 0 &&
+        instagramUrl ? (
+          <InstagramFollowersLine
+            href={ensureHttpUrl(instagramUrl)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Instagram size={14} aria-hidden />
+            <span>
+              {formatIgFollowers(instagramFollowerCount)} followers on Instagram
+            </span>
+          </InstagramFollowersLine>
+        ) : null}
       </>
     );
 

@@ -60,7 +60,7 @@ import {
   Plus,
 } from "lucide-react";
 import { classManagementService, userAdminService } from "@/services/adminDash";
-import { useAuthStore } from "@/lib/auth-client";
+import { applyImpersonationSession } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
@@ -628,16 +628,38 @@ const StatusBadge = ({ status }) => {
 };
 
 /** Uses API `active_schedules_count` (future scheduled instances). */
-const ClassListingStatusCell = ({ status, activeSchedulesCount }) => (
-  <Space direction="vertical" size={2}>
-    <StatusBadge status={status} />
-    {!activeSchedulesCount ? (
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        No schedules
-      </Text>
-    ) : null}
-  </Space>
-);
+const ClassListingStatusCell = ({
+  status,
+  activeSchedulesCount,
+  furthestFutureInstanceDate,
+}) => {
+  const showingScheduleEnd =
+    status === "active" &&
+    activeSchedulesCount > 0 &&
+    furthestFutureInstanceDate;
+  const endLabel =
+    showingScheduleEnd &&
+    `Schedules ending on ${moment(furthestFutureInstanceDate).format(
+      "MMM D, YYYY"
+    )}`;
+  const showNoSchedules =
+    status === "active" && activeSchedulesCount === 0;
+
+  return (
+    <Space direction="vertical" size={2}>
+      <StatusBadge status={status} />
+      {endLabel ? (
+        <Text type="secondary" style={{ fontSize: 11, lineHeight: 1.3 }}>
+          {endLabel}
+        </Text>
+      ) : showNoSchedules ? (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          No schedules
+        </Text>
+      ) : null}
+    </Space>
+  );
+};
 
 // --- NEW SCHEDULE TABLE COLUMNS ---
 const scheduleColumns = (themeTokens) => [
@@ -1357,14 +1379,10 @@ export default function ClassListings() {
     try {
       const result = await userAdminService.impersonateUser(ownerId);
       if (result.success && result.data?.user) {
-        useAuthStore.setState({
-          user: result.data.user,
-          isAuthenticated: true,
-          isImpersonating: true,
-          isLoading: false,
-        });
-        message.success("Now logged in as business owner. Add schedules, then use the banner to return to admin.");
-        router.push("/");
+        message.success(
+          "Now logged in as business owner. Add schedules, then use the banner to return to admin."
+        );
+        await applyImpersonationSession(result.data.user, router);
       } else {
         message.error(result.error || "Could not log in as user.");
       }
@@ -1619,6 +1637,7 @@ export default function ClassListings() {
         <ClassListingStatusCell
           status={s}
           activeSchedulesCount={record.active_schedules_count}
+          furthestFutureInstanceDate={record.furthest_future_instance_date}
         />
       ),
     },
@@ -1748,6 +1767,7 @@ export default function ClassListings() {
             <ClassListingStatusCell
               status={item.status}
               activeSchedulesCount={item.active_schedules_count}
+              furthestFutureInstanceDate={item.furthest_future_instance_date}
             />
           </MobileCardValue>
         </MobileCardRow>

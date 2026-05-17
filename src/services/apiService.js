@@ -51,6 +51,7 @@ export const API_ENDPOINTS = {
   BUSINESS_REGISTER: "/business/register/",
   MY_BUSINESSES: "/my-businesses/",
   MY_BUSINESS_PROFILE: "/my-business/profile/",
+  MY_BUSINESS_INSTAGRAM_FOLLOWERS_SYNC: "/my-business/instagram-followers-sync/",
   MY_BUSINESS_LOCATIONS: "/my-business/locations/",
   MY_BUSINESS_LOCATION: (id) => `/my-business/locations/${id}/`,
   MY_BUSINESS_OVERVIEW: "/my-business/overview/",
@@ -653,6 +654,27 @@ export const businessService = {
       return {
         success: false,
         error: error.response?.data || "Failed to update profile",
+      };
+    }
+  },
+
+  syncInstagramFollowers: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_INSTAGRAM_FOLLOWERS_SYNC,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error scheduling Instagram follower sync:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to schedule sync",
       };
     }
   },

@@ -770,6 +770,12 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
                       onFieldBlur={onGeneralFieldBlur}
                       onFieldChange={onGeneralFieldChange}
                       onLogoRemove={onLogoRemove}
+                      instagramMeta={{
+                        followerCount: initialBusinessData?.instagram_follower_count,
+                        syncedAt: initialBusinessData?.instagram_followers_synced_at,
+                        status: initialBusinessData?.instagram_sync_status,
+                      }}
+                      onInstagramSyncComplete={fetchBusinessData}
                     />
                   </Suspense>
                 )}

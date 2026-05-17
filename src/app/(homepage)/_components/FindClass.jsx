@@ -292,6 +292,9 @@ const FindClass = ({
                     location={cls.location || cls.business_city}
                     rating={cls.average_rating}
                     totalReviews={cls.review_count}
+                    instagramFollowerCount={
+                      cls.business_instagram_follower_count ?? null
+                    }
                     distance={dist}
                     priority={index < 4}
                   />

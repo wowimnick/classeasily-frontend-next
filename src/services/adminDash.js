@@ -85,6 +85,99 @@ export const businessManagementService = {
   },
 
   /**
+   * Partial update: Google Maps URL only (used by admin business listings).
+   */
+  updateBusinessGoogleMapsUrl: async (businessId, url) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/admin/businesses/${businessId}/`,
+        { google_maps_url: url || null }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error updating Google Maps URL:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to update Google Maps URL",
+      };
+    }
+  },
+
+  /**
+   * Queue Celery task to scrape Google reviews via Apify for this business.
+   */
+  syncBusinessGoogleReviews: async (businessId) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/businesses/${businessId}/google-reviews-sync/`,
+        {},
+        { timeout: 60000 }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error queueing Google reviews sync:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to queue Google reviews sync",
+      };
+    }
+  },
+
+  /**
+   * Queue Google reviews Apify sync: all businesses with Maps URL, or one business (Celery).
+   */
+  queueGoogleReviewsSync: async ({ all, businessId } = {}) => {
+    try {
+      const body = all ? { all: true } : { business_id: businessId };
+      const response = await axiosInstance.post(
+        "/admin/sync-google-reviews-queue/",
+        body,
+        { timeout: 60000 }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error queueing Google reviews sync:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to queue Google reviews sync",
+      };
+    }
+  },
+
+  /**
+   * Queue Instagram follower Apify sync: all with Instagram link, or one business (Celery).
+   */
+  queueInstagramFollowersSync: async ({ all, businessId } = {}) => {
+    try {
+      const body = all ? { all: true } : { business_id: businessId };
+      const response = await axiosInstance.post(
+        "/admin/sync-instagram-followers-queue/",
+        body,
+        { timeout: 60000 }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error queueing Instagram followers sync:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to queue Instagram sync",
+      };
+    }
+  },
+
+  /**
    * Get platform metrics for business dashboard
    */
   getPlatformMetrics: async (params = {}) => {

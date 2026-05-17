@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUrlState } from "@/hooks/useUrlState";
+import { formatDistanceToNow } from "date-fns";
 import styled from "styled-components";
-import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
+import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List, Radio } from 'antd';
 import message from '@/lib/message';
 import {
   Search,
@@ -49,7 +50,7 @@ import {
 } from "lucide-react";
 import { businessManagementService, userAdminService } from "@/services/adminDash";
 import { businessClassService } from "@/services/apiService";
-import { useAuthStore } from "@/lib/auth-client";
+import { applyImpersonationSession } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { RefreshCw } from "lucide-react";
 import { Drawer as VaulDrawer } from "vaul";
@@ -381,7 +382,47 @@ const BusinessDetailDrawerContent = ({
   onAction,
   onViewOwnerProfile,
   onImpersonate,
+  onRefreshBusinessDetail,
 }) => {
+  const [gmapsDraft, setGmapsDraft] = useState("");
+  const [savingGmaps, setSavingGmaps] = useState(false);
+  const [refreshingReviews, setRefreshingReviews] = useState(false);
+
+  useEffect(() => {
+    setGmapsDraft(business?.google_maps_url || "");
+  }, [business?.businessId, business?.google_maps_url]);
+
+  const handleSaveGmapsUrl = async () => {
+    if (!business?.businessId) return;
+    setSavingGmaps(true);
+    const trimmed = (gmapsDraft || "").trim();
+    const res = await businessManagementService.updateBusinessGoogleMapsUrl(
+      business.businessId,
+      trimmed || null
+    );
+    setSavingGmaps(false);
+    if (res.success) {
+      message.success("Google Maps URL saved.");
+      await onRefreshBusinessDetail?.();
+    } else {
+      message.error(res.error || "Could not save URL.");
+    }
+  };
+
+  const handleQueueGoogleReviewsSync = async () => {
+    if (!business?.businessId) return;
+    setRefreshingReviews(true);
+    const res = await businessManagementService.syncBusinessGoogleReviews(
+      business.businessId
+    );
+    setRefreshingReviews(false);
+    if (res.success) {
+      message.success("Google reviews sync queued. Updates run in the background.");
+      await onRefreshBusinessDetail?.();
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
   if (!business) {
     return (
       <Empty description="No business selected" style={{ paddingTop: 100 }} />
@@ -534,6 +575,52 @@ const BusinessDetailDrawerContent = ({
           </InfoGrid>
         </InfoGroup>
 
+        <InfoGroup>
+          <SectionTitle>
+            <Star size={12} /> Google Reviews Sync
+          </SectionTitle>
+          <Input
+            placeholder="https://www.google.com/maps/place/..."
+            value={gmapsDraft}
+            onChange={(e) => setGmapsDraft(e.target.value)}
+            disabled={savingGmaps}
+            style={{ width: "100%" }}
+          />
+          <Space wrap style={{ marginTop: 8 }}>
+            <Button
+              type="primary"
+              loading={savingGmaps}
+              onClick={handleSaveGmapsUrl}
+            >
+              Save URL
+            </Button>
+            <Button
+              icon={<RefreshCw size={14} />}
+              loading={refreshingReviews}
+              disabled={!(business?.google_maps_url || "").trim()}
+              onClick={handleQueueGoogleReviewsSync}
+            >
+              Refresh reviews now
+            </Button>
+          </Space>
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, display: "block", marginTop: 8 }}
+          >
+            Status: {business?.google_reviews_sync_status || "pending"}
+            {" · "}
+            Last synced:{" "}
+            {business?.google_reviews_synced_at
+              ? formatDistanceToNow(new Date(business.google_reviews_synced_at), {
+                  addSuffix: true,
+                })
+              : "never"}
+            {" · "}
+            Last scrape: {business?.google_reviews_last_scraped_count ?? 0} review
+            {(business?.google_reviews_last_scraped_count ?? 0) === 1 ? "" : "s"}
+          </Text>
+        </InfoGroup>
+
         {social_media_links &&
           Object.values(social_media_links).some((v) => v) && (
             <InfoGroup>
@@ -622,6 +709,7 @@ const DetailDrawerModal = ({
   isActionLoading,
   onViewOwnerProfile,
   onImpersonate,
+  onRefreshBusinessDetail,
 }) => {
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) onClose();
@@ -663,6 +751,7 @@ const DetailDrawerModal = ({
             onAction={onAction}
             onViewOwnerProfile={onViewOwnerProfile}
             onImpersonate={onImpersonate}
+            onRefreshBusinessDetail={onRefreshBusinessDetail}
           />
         )}
       </BusinessDrawerBodyScroll>
@@ -739,15 +828,9 @@ const BusinessListings = () => {
         setIsActionLoading(true);
         const result = await userAdminService.impersonateUser(userId);
         if (result.success && result.data?.user) {
-          useAuthStore.setState({
-            user: result.data.user,
-            isAuthenticated: true,
-            isImpersonating: true,
-            isLoading: false,
-          });
           message.success("Now impersonating owner.");
           closeDetailDrawer();
-          router.push("/");
+          await applyImpersonationSession(result.data.user, router);
         } else {
           message.error(result.error || "Could not start impersonation.");
         }
@@ -761,6 +844,13 @@ const BusinessListings = () => {
     [router, closeDetailDrawer]
   );
 
+  const refreshBusinessDetailQuiet = useCallback(async () => {
+    const bid = selectedBusiness?.businessId;
+    if (bid == null) return;
+    const r = await businessManagementService.getBusinessDetails(bid);
+    if (r.success) setSelectedBusiness(r.data);
+  }, [selectedBusiness?.businessId]);
+
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importBusinesses, setImportBusinesses] = useState([]);
   const [importBusinessesLoading, setImportBusinessesLoading] = useState(false);
@@ -768,6 +858,17 @@ const BusinessListings = () => {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  const [googleQueueModalOpen, setGoogleQueueModalOpen] = useState(false);
+  const [instagramQueueModalOpen, setInstagramQueueModalOpen] = useState(false);
+  const [adminQueueBusinesses, setAdminQueueBusinesses] = useState([]);
+  const [adminQueueBusinessesLoading, setAdminQueueBusinessesLoading] = useState(false);
+  const [googleQueueScope, setGoogleQueueScope] = useState("all");
+  const [googleQueueBusinessId, setGoogleQueueBusinessId] = useState(undefined);
+  const [instagramQueueScope, setInstagramQueueScope] = useState("all");
+  const [instagramQueueBusinessId, setInstagramQueueBusinessId] = useState(undefined);
+  const [googleQueueSubmitting, setGoogleQueueSubmitting] = useState(false);
+  const [instagramQueueSubmitting, setInstagramQueueSubmitting] = useState(false);
 
   const [filterParams, setFilterParams] = useState({
     search: "",
@@ -1019,6 +1120,92 @@ const BusinessListings = () => {
         .finally(() => setImportBusinessesLoading(false));
     }
   }, [importModalOpen]);
+
+  useEffect(() => {
+    if (!googleQueueModalOpen && !instagramQueueModalOpen) {
+      setAdminQueueBusinesses([]);
+    }
+  }, [googleQueueModalOpen, instagramQueueModalOpen]);
+
+  useEffect(() => {
+    if (
+      !(googleQueueModalOpen || instagramQueueModalOpen) ||
+      adminQueueBusinesses.length > 0
+    ) {
+      return;
+    }
+    setAdminQueueBusinessesLoading(true);
+    businessManagementService
+      .getBusinesses({ page_size: 500 })
+      .then((res) => {
+        if (res.success && res.data) {
+          const list = res.data.results || res.data;
+          setAdminQueueBusinesses(Array.isArray(list) ? list : []);
+        }
+      })
+      .finally(() => setAdminQueueBusinessesLoading(false));
+  }, [
+    googleQueueModalOpen,
+    instagramQueueModalOpen,
+    adminQueueBusinesses.length,
+  ]);
+
+  const adminQueueBusinessOptions = useMemo(
+    () =>
+      adminQueueBusinesses.map((b) => ({
+        value: b.businessId ?? b.id,
+        label: b.businessName
+          ? `${b.businessName} (ID: ${b.businessId ?? b.id})`
+          : `Business ${b.businessId ?? b.id}`,
+      })),
+    [adminQueueBusinesses]
+  );
+
+  const handleSubmitGoogleQueue = async () => {
+    if (googleQueueScope === "one" && googleQueueBusinessId == null) {
+      message.error("Select a business.");
+      return;
+    }
+    setGoogleQueueSubmitting(true);
+    const res =
+      googleQueueScope === "all"
+        ? await businessManagementService.queueGoogleReviewsSync({ all: true })
+        : await businessManagementService.queueGoogleReviewsSync({
+            businessId: googleQueueBusinessId,
+          });
+    setGoogleQueueSubmitting(false);
+    if (res.success) {
+      message.success(res.data?.message || "Google reviews sync queued.");
+      setGoogleQueueModalOpen(false);
+      setGoogleQueueScope("all");
+      setGoogleQueueBusinessId(undefined);
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
+
+  const handleSubmitInstagramQueue = async () => {
+    if (instagramQueueScope === "one" && instagramQueueBusinessId == null) {
+      message.error("Select a business.");
+      return;
+    }
+    setInstagramQueueSubmitting(true);
+    const res =
+      instagramQueueScope === "all"
+        ? await businessManagementService.queueInstagramFollowersSync({ all: true })
+        : await businessManagementService.queueInstagramFollowersSync({
+            businessId: instagramQueueBusinessId,
+          });
+    setInstagramQueueSubmitting(false);
+    if (res.success) {
+      message.success(res.data?.message || "Instagram sync queued.");
+      setInstagramQueueModalOpen(false);
+      setInstagramQueueScope("all");
+      setInstagramQueueBusinessId(undefined);
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
 
   const handleImportFileChange = (e) => {
     const f = e.target.files?.[0];
@@ -1323,12 +1510,38 @@ const BusinessListings = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <RefreshButton
-              icon={<Upload size={16} />}
-              onClick={() => setImportModalOpen(true)}
-            >
-              {!isMobile && "Import Reviews"}
-            </RefreshButton>
+            <Tooltip title="Queue Google reviews sync (Apify, uses each business’s Maps URL)">
+              <RefreshButton
+                icon={<Star size={16} />}
+                onClick={() => {
+                  setGoogleQueueScope("all");
+                  setGoogleQueueBusinessId(undefined);
+                  setGoogleQueueModalOpen(true);
+                }}
+              >
+                {!isMobile && "Google reviews"}
+              </RefreshButton>
+            </Tooltip>
+            <Tooltip title="Queue Instagram follower count sync (Apify)">
+              <RefreshButton
+                icon={<Instagram size={16} />}
+                onClick={() => {
+                  setInstagramQueueScope("all");
+                  setInstagramQueueBusinessId(undefined);
+                  setInstagramQueueModalOpen(true);
+                }}
+              >
+                {!isMobile && "Instagram"}
+              </RefreshButton>
+            </Tooltip>
+            <Tooltip title="Upload CSV or JSON from a manual Apify export">
+              <RefreshButton
+                icon={<Upload size={16} />}
+                onClick={() => setImportModalOpen(true)}
+              >
+                {!isMobile && "Import"}
+              </RefreshButton>
+            </Tooltip>
             <RefreshButton
               icon={<RefreshCw size={16} />}
               onClick={refreshData}
@@ -1501,7 +1714,146 @@ const BusinessListings = () => {
           }}
           onViewOwnerProfile={handleViewOwnerProfile}
           onImpersonate={handleImpersonateOwner}
+          onRefreshBusinessDetail={refreshBusinessDetailQuiet}
         />
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Star size={20} />
+              Queue Google reviews sync
+            </span>
+          }
+          open={googleQueueModalOpen}
+          onCancel={() => {
+            setGoogleQueueModalOpen(false);
+            setGoogleQueueScope("all");
+            setGoogleQueueBusinessId(undefined);
+          }}
+          footer={null}
+          width={520}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Runs in the background via Celery. Each business must have a{" "}
+            <strong>Google Maps URL</strong> saved (Business detail drawer). Single-business
+            sync still queues if that business has a URL.
+          </Text>
+          <Radio.Group
+            value={googleQueueScope}
+            onChange={(e) => {
+              setGoogleQueueScope(e.target.value);
+              if (e.target.value === "all") setGoogleQueueBusinessId(undefined);
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}
+          >
+            <Radio value="all">
+              All businesses with a Google Maps URL
+            </Radio>
+            <Radio value="one">One business</Radio>
+          </Radio.Group>
+          {googleQueueScope === "one" ? (
+            <div style={{ marginBottom: 16 }}>
+              <Text strong style={{ display: "block", marginBottom: 6 }}>
+                <Building2 size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+                Business
+              </Text>
+              <Select
+                placeholder="Select a business"
+                value={googleQueueBusinessId ?? undefined}
+                onChange={setGoogleQueueBusinessId}
+                options={adminQueueBusinessOptions}
+                loading={adminQueueBusinessesLoading}
+                style={{ width: "100%" }}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, opt) =>
+                  (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </div>
+          ) : null}
+          <Space wrap>
+            <Button onClick={() => setGoogleQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              icon={<Star size={16} />}
+              loading={googleQueueSubmitting}
+              onClick={handleSubmitGoogleQueue}
+            >
+              Queue sync
+            </Button>
+          </Space>
+        </Modal>
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Instagram size={20} />
+              Queue Instagram follower sync
+            </span>
+          }
+          open={instagramQueueModalOpen}
+          onCancel={() => {
+            setInstagramQueueModalOpen(false);
+            setInstagramQueueScope("all");
+            setInstagramQueueBusinessId(undefined);
+          }}
+          footer={null}
+          width={520}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Runs in the background via Celery. <strong>All businesses</strong> means every
+            account with an Instagram URL in social links. For one business, the Instagram
+            field is still used if set.
+          </Text>
+          <Radio.Group
+            value={instagramQueueScope}
+            onChange={(e) => {
+              setInstagramQueueScope(e.target.value);
+              if (e.target.value === "all") setInstagramQueueBusinessId(undefined);
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}
+          >
+            <Radio value="all">
+              All businesses with an Instagram URL
+            </Radio>
+            <Radio value="one">One business</Radio>
+          </Radio.Group>
+          {instagramQueueScope === "one" ? (
+            <div style={{ marginBottom: 16 }}>
+              <Text strong style={{ display: "block", marginBottom: 6 }}>
+                <Building2 size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+                Business
+              </Text>
+              <Select
+                placeholder="Select a business"
+                value={instagramQueueBusinessId ?? undefined}
+                onChange={setInstagramQueueBusinessId}
+                options={adminQueueBusinessOptions}
+                loading={adminQueueBusinessesLoading}
+                style={{ width: "100%" }}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, opt) =>
+                  (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </div>
+          ) : null}
+          <Space wrap>
+            <Button onClick={() => setInstagramQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              icon={<Instagram size={16} />}
+              loading={instagramQueueSubmitting}
+              onClick={handleSubmitInstagramQueue}
+            >
+              Queue sync
+            </Button>
+          </Space>
+        </Modal>
 
         <Modal
           title={
@@ -1592,6 +1944,10 @@ const BusinessListings = () => {
                 </ImportLogPre>
               ) : importResult?.data?.output ? (
                 <ImportLogPre>{importResult.data.output}</ImportLogPre>
+              ) : importResult?.data?.stats ? (
+                <ImportLogPre>
+                  {JSON.stringify(importResult.data.stats, null, 2)}
+                </ImportLogPre>
               ) : importResult?.success ? (
                 <Alert
                   type="success"

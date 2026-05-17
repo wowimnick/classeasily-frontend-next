@@ -77,7 +77,7 @@ import { userAdminService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
-import { useAuthStore } from "@/lib/auth-client";
+import { applyImpersonationSession } from "@/lib/auth-client";
 import { useUrlState, useReplaceSearchParams } from "@/hooks/useUrlState";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -1026,15 +1026,8 @@ const UserManagementDashboard = () => {
       const result = await userAdminService.impersonateUser(userId);
 
       if (result.success && result.data?.user) {
-        useAuthStore.setState({
-          user: result.data.user,
-          isAuthenticated: true,
-          isImpersonating: true,
-          isLoading: false,
-        });
-
         message.success("Now impersonating user.");
-        router.push("/");
+        await applyImpersonationSession(result.data.user, router);
       } else {
         message.error(result.error || "Could not start impersonation.");
       }
