@@ -34,12 +34,27 @@ const Glass = styled.div`
   }
 `;
 
+/** Flat shell for platform admin: avoids double border/padding with inner tab layouts. */
+const AdminShell = styled.div`
+  flex: 1;
+  min-height: 100%;
+  min-width: 0;
+`;
+
 /**
  * @param {object} props
  * @param {boolean} [props.unclipped] — If true, `overflow: visible` so children can use `position: sticky`
  *   (e.g. widget save bar). Default keeps `overflow: hidden` for frosted panel clipping.
+ * @param {"default"|"admin"} [props.variant] — `admin` skips frosted outer panel (single inner container).
  */
-export default function TabGlassWrapper({ children, unclipped = false }) {
+export default function TabGlassWrapper({
+  children,
+  unclipped = false,
+  variant = "default",
+}) {
+  if (variant === "admin") {
+    return <AdminShell>{children}</AdminShell>;
+  }
   return (
     <Outer>
       <Glass $unclipped={unclipped}>{children}</Glass>

@@ -25,6 +25,7 @@ import {
   Pie,
   Cell,
   BarChart,
+  Label,
 } from "recharts";
 import {
   AdminMetricCardsSkeleton,
@@ -38,24 +39,17 @@ import {
 import { businessManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme"; // Adjust path
 import AdminMetricCards from "../shared/AdminMetricCards";
+import {
+  AdminBusinessChartTooltip,
+  BUSINESS_CHART_THEME,
+  getChartTotal,
+} from "../shared/AdminBusinessCharts";
+import { adminColors as colors } from "../shared/adminColors";
+import { formatCurrency } from "../shared/adminUtils";
+import { ActionButtonsContainer } from "../shared/AdminButtons";
 
 const { useBreakpoint } = Grid;
 const { Text } = Typography;
-
-// --- THEME COLORS ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  purple: "#8b5cf6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#111827",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
 
 // --- MAIN PAGE STYLED COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -111,12 +105,6 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-`;
-
 // --- CONTENT SECTION WRAPPER ---
 const ContentSection = styled.div`
   background: white;
@@ -135,51 +123,13 @@ const ChartGrid = styled.div`
 `;
 
 const ChartCard = styled(Card)`
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   .ant-card-body {
     padding: 16px 20px !important;
   }
 `;
-
-// --- UTILITY & HELPER FUNCTIONS ---
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "8px 12px",
-          border: `1px solid ${colors.border}`,
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-        }}
-      >
-        <p style={{ margin: 0, fontWeight: 600 }}>{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} style={{ margin: "6px 0 0 0", color: entry.color }}>
-            {`${entry.name}: `}
-            <strong>
-              {entry.name.toLowerCase().includes("revenue")
-                ? formatCurrency(entry.value)
-                : new Intl.NumberFormat().format(entry.value)}
-            </strong>
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
 
 // --- MAIN COMPONENT ---
 const BusinessManagement = () => {
@@ -375,15 +325,46 @@ const BusinessManagement = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={metrics.growth_trend}
-                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                     barGap={4}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
-                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} width={28} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} width={40} />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} iconSize={7} iconType="square" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={BUSINESS_CHART_THEME.border} vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: colors.textSecondary }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={10}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      tick={{ fontSize: 12, fill: colors.textSecondary }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={36}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12, fill: colors.textSecondary }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                      width={44}
+                    />
+                    <RechartsTooltip
+                      content={
+                        <AdminBusinessChartTooltip
+                          formatItemValue={(entry) =>
+                            String(entry.name || "").toLowerCase().includes("revenue")
+                              ? formatCurrency(entry.value)
+                              : new Intl.NumberFormat().format(entry.value)
+                          }
+                        />
+                      }
+                      cursor={{ stroke: BUSINESS_CHART_THEME.border }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} iconType="circle" />
                     <Bar yAxisId="left" dataKey="businesses" name="Businesses" fill={colors.info} radius={[4, 4, 0, 0]} maxBarSize={36} />
                     <Bar yAxisId="right" dataKey="revenue" name="Revenue" fill={colors.success} radius={[4, 4, 0, 0]} maxBarSize={36} />
                   </ComposedChart>
@@ -408,16 +389,34 @@ const BusinessManagement = () => {
                       dataKey="value"
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
+                      innerRadius="60%"
+                      outerRadius="85%"
+                      paddingAngle={5}
+                      stroke="none"
+                      cornerRadius={5}
                     >
                       {(metrics.collection_distribution || []).map((entry) => (
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
+                      <Label
+                        value={new Intl.NumberFormat().format(
+                          getChartTotal(metrics.collection_distribution || []),
+                        )}
+                        position="center"
+                        fill={colors.textPrimary}
+                        style={{ fontSize: "18px", fontWeight: "bold" }}
+                      />
                     </Pie>
-                    <RechartsTooltip formatter={(v) => [`${v} classes`]} contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
-                    <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} iconType="circle" />
+                    <RechartsTooltip
+                      content={
+                        <AdminBusinessChartTooltip
+                          formatItemValue={(entry) =>
+                            `${new Intl.NumberFormat().format(entry.value ?? 0)} classes`
+                          }
+                        />
+                      }
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -457,21 +456,30 @@ const BusinessManagement = () => {
                     <BarChart
                       layout="vertical"
                       data={provinceBarData}
-                      margin={{ left: 4, right: 12, top: 4, bottom: 4 }}
+                      margin={{ left: 4, right: 30, top: 4, bottom: 4 }}
+                      barSize={20}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} horizontal />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: colors.textTertiary }} allowDecimals={false} />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={BUSINESS_CHART_THEME.border} />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
                       <YAxis
                         type="category"
                         dataKey="province"
-                        width={36}
-                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        width={40}
+                        tick={{ fontSize: 12, fill: colors.textSecondary, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <RechartsTooltip
-                        formatter={(v) => [`${v} businesses`, "Count"]}
-                        contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }}
+                        content={<AdminBusinessChartTooltip />}
+                        cursor={{ fill: BUSINESS_CHART_THEME.lightBg }}
                       />
-                      <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={22}>
+                      <Bar dataKey="count" name="Businesses" radius={[0, 4, 4, 0]} maxBarSize={22}>
                         {provinceBarData.map((p) => (
                           <Cell key={p.province} fill={p.count === 0 ? "#fecaca" : colors.info} />
                         ))}

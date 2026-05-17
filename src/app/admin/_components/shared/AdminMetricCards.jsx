@@ -6,27 +6,8 @@ import NumberFlow from "@number-flow/react";
 import { Card, Popover, Tag, Tooltip } from "antd";
 import { AdminCardSkeleton } from "./AdminSkeletons";
 import { TrendingDown, TrendingUp, Info } from "lucide-react";
-
-export const adminColors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) {
-    return `rgba(148, 163, 184, ${alpha})`;
-  }
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+import { adminColors } from "./adminColors";
+import { hexToRgba } from "./adminUtils";
 
 const StatsGrid = styled.div`
   display: grid;
@@ -135,8 +116,12 @@ const MetricValue = ({ card, isReadyForAnimation }) => {
     return card.renderValue(card.value, isReadyForAnimation);
   }
 
+  if (card.value == null || card.value === "") {
+    return "—";
+  }
+
   if (typeof card.value !== "number") {
-    return card.value ?? "N/A";
+    return card.value;
   }
 
   if (card.isCurrency) {
@@ -144,10 +129,11 @@ const MetricValue = ({ card, isReadyForAnimation }) => {
       <NumberFlow
         value={isReadyForAnimation ? card.value : 0}
         duration={800}
-        prefix={card.currencyPrefix ?? "$"}
         numberFormatOptions={{
+          style: "currency",
+          currency: card.currency ?? "CAD",
           minimumFractionDigits: card.minimumFractionDigits ?? 0,
-          maximumFractionDigits: card.maximumFractionDigits ?? 2,
+          maximumFractionDigits: card.maximumFractionDigits ?? 0,
         }}
       />
     );

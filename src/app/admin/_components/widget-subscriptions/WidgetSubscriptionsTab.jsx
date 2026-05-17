@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import {
-  Table,
   Card,
   Button,
   Tag,
@@ -40,6 +39,7 @@ import { adminWidgetSubscriptionService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 
 const { Text, Title: AntTitle } = Typography;
 const { Option } = Select;
@@ -122,25 +122,9 @@ const FilterRow = styled.div`
   flex-wrap: wrap;
 `;
 
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: ${colors.lightBg};
-    color: ${colors.textSecondary};
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 10px 14px;
-  }
-
+const ClickableAdminTable = styled(AdminCompactTable)`
   .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    font-size: 13px;
     cursor: pointer;
-  }
-
-  .ant-table-tbody > tr:hover > td {
-    background: ${colors.lightBg};
   }
 `;
 
@@ -733,7 +717,7 @@ export default function WidgetSubscriptionsTab() {
               <Option value="incomplete">Incomplete</Option>
             </Select>
           </FilterRow>
-          <StyledTable
+          <ClickableAdminTable
             rowKey="id"
             columns={columns}
             dataSource={filtered}

@@ -70,6 +70,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Label,
 } from "recharts";
 import { RefreshCw } from "lucide-react";
 import { userAdminService } from "@/services/adminDash";
@@ -84,28 +85,35 @@ import ShadowUserModal from "./ShadowUserModal";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { AdminAreaChartSkeleton, AdminPieChartSkeleton, AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
+import {
+  AdminBusinessChartTooltip,
+  BUSINESS_CHART_THEME,
+  getChartTotal,
+} from "../shared/AdminBusinessCharts";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba, formatDate as formatDateUtil } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import { ActionButtonsContainer, RefreshButton } from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardRow,
+  MobileCardLabel,
+  MobileCardFooter,
+} from "../shared/adminMobileStyles";
 
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
-
-// --- STYLING & THEME ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  pink: "#ec4899",
-  purple: "#8b5cf6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
 
 const USER_ROLE_PIE_COLORS = [
   colors.info,
@@ -116,12 +124,17 @@ const USER_ROLE_PIE_COLORS = [
   colors.error,
 ];
 
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+const PIE_COLORS = [
+  colors.primary,
+  colors.success,
+  colors.warning,
+  colors.info,
+  colors.purple,
+  colors.error,
+  colors.pink,
+];
+
+const formatDate = (dateString) => formatDateUtil(dateString, "Never");
 
 // --- LAYOUT COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -172,12 +185,6 @@ const HeaderSubtitle = styled(Text)`
   @media (max-width: 480px) {
     font-size: 14px;
   }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
 `;
 
 // --- SKELETON STYLES (MATCHING ACTIVE BOOKINGS) ---
@@ -601,9 +608,9 @@ const generateSkeletonData = (count = 10) => {
 };
 
 const ChartCard = styled(Card)`
-  border-radius: 12px;
+  border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   .ant-card-body {
     padding: 16px 20px !important;
@@ -651,78 +658,6 @@ const HelpText = styled(Text)`
   display: block;
 `;
 
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-`;
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-`;
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-`;
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-`;
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #f8fafc !important;
-    color: ${colors.textSecondary};
-    font-weight: 600;
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid ${colors.border};
-    &::before { display: none; }
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    font-size: 13px;
-    color: ${colors.textPrimary};
-    border-bottom: 1px solid ${colors.border};
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #f8fafc;
-  }
-  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
-    background: white;
-  }
-`;
-
 const UserRoleTag = styled(Tag)`
   font-weight: 500;
   border: none !important;
@@ -747,42 +682,14 @@ const StatusTag = styled(Tag)`
 const MobileCardList = styled.div`
   padding: 8px;
 `;
-const MobileUserCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
 const MobileCardHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 `;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-`;
-const MobileCardLabel = styled(Text)`
-  color: ${colors.textSecondary};
-  font-size: 13px;
-`;
-const MobileCardFooter = styled.div`
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-`;
 
 // --- UTILITY FUNCTIONS ---
-const formatDate = (dateString) => {
-  if (!dateString) return "Never";
-  return dayjs(dateString).format("MMM D, YYYY");
-};
 const getColorForRole = (roleName) =>
   ({
     Admin: "#ef4444",
@@ -793,9 +700,6 @@ const getColorForRole = (roleName) =>
     Student: "#10b981",
     "Content Creator": "#06b6d4",
   }[roleName] || "#64748b");
-const PIE_COLORS = Object.values(colors).filter(
-  (c) => typeof c === "string" && c.startsWith("#")
-);
 
 // --- MAIN COMPONENT ---
 const UserManagementDashboard = () => {
@@ -1466,7 +1370,7 @@ const UserManagementDashboard = () => {
   );
 
   const renderMobileUserCard = (user) => (
-    <MobileUserCard key={user.userId}>
+    <MobileCard key={user.userId}>
       {React.isValidElement(user.first_name) ? (
         // SKELETON CARD FOR MOBILE
         <>
@@ -1547,7 +1451,7 @@ const UserManagementDashboard = () => {
           </MobileCardFooter>
         </>
       )}
-    </MobileUserCard>
+    </MobileCard>
   );
 
   const daysInPeriod =
@@ -1584,20 +1488,24 @@ const UserManagementDashboard = () => {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={72}
-              paddingAngle={1}
+              innerRadius="58%"
+              outerRadius="82%"
+              paddingAngle={5}
+              stroke="none"
+              cornerRadius={5}
             >
               {pieData.map((entry, i) => (
                 <Cell key={i} fill={entry.fill} />
               ))}
+              <Label
+                value={String(getChartTotal(pieData))}
+                position="center"
+                fill={BUSINESS_CHART_THEME.textPrimary}
+                style={{ fontSize: "16px", fontWeight: "bold" }}
+              />
             </Pie>
-            <RechartsTooltip
-              contentStyle={{
-                background: "#fff",
-                borderRadius: 8,
-                border: `1px solid ${colors.border}`,
-              }}
-            />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+            <RechartsTooltip content={<AdminBusinessChartTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -1938,13 +1846,13 @@ const UserManagementDashboard = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <Button
+            <RefreshButton
               icon={<RefreshCw size={14} />}
               onClick={() => fetchMetrics(getMetricsDateRange())}
               loading={metricsLoading}
             >
               Refresh
-            </Button>
+            </RefreshButton>
             <Button
               type="primary"
               icon={<UserPlus size={14} />}
@@ -2008,25 +1916,32 @@ const UserManagementDashboard = () => {
                     />
                     <XAxis
                       dataKey="day"
-                      tick={{ fontSize: 10, fill: colors.textTertiary }}
+                      tick={{ fontSize: 12, fill: colors.textSecondary }}
                       tickFormatter={(tick) => dayjs(tick).format("MMM D")}
                       axisLine={false}
                       tickLine={false}
+                      dy={10}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: colors.textTertiary }}
+                      tick={{ fontSize: 12, fill: colors.textSecondary }}
                       axisLine={false}
                       tickLine={false}
                       allowDecimals={false}
-                      width={28}
+                      width={36}
                     />
                     <RechartsTooltip
-                      content={renderLineChartTooltip}
-                      cursor={{ stroke: colors.primary, strokeDasharray: "3 3" }}
+                      content={
+                        <AdminBusinessChartTooltip
+                          formatLabel={(label) => dayjs(label).format("MMM D, YYYY")}
+                          formatItemValue={(entry) => entry.value}
+                        />
+                      }
+                      cursor={{ stroke: BUSINESS_CHART_THEME.border }}
                     />
                     <Area
                       type="monotone"
                       dataKey="registrations"
+                      name="Registrations"
                       stroke={colors.primary}
                       strokeWidth={2}
                       fill="url(#gradReg)"
@@ -2060,9 +1975,11 @@ const UserManagementDashboard = () => {
                       dataKey="count"
                       cx="50%"
                       cy="50%"
-                      innerRadius={isMobile ? 50 : 60}
-                      outerRadius={isMobile ? 70 : 85}
-                      paddingAngle={2}
+                      innerRadius={isMobile ? "52%" : "60%"}
+                      outerRadius={isMobile ? "78%" : "85%"}
+                      paddingAngle={5}
+                      stroke="none"
+                      cornerRadius={5}
                       onClick={handlePieClick}
                     >
                       {metrics.role_distribution.map((entry, index) => (
@@ -2075,15 +1992,15 @@ const UserManagementDashboard = () => {
                           style={{ cursor: "pointer" }}
                         />
                       ))}
+                      <Label
+                        value={String(getChartTotal(metrics.role_distribution, "count"))}
+                        position="center"
+                        fill={BUSINESS_CHART_THEME.textPrimary}
+                        style={{ fontSize: isMobile ? "16px" : "18px", fontWeight: "bold" }}
+                      />
                     </Pie>
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: "#fff",
-                        borderRadius: "12px",
-                        border: `1px solid ${colors.border}`,
-                      }}
-                    />
-                    <Legend iconSize={10} wrapperStyle={{ fontSize: "12px" }} />
+                    <RechartsTooltip content={<AdminBusinessChartTooltip />} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -2095,9 +2012,7 @@ const UserManagementDashboard = () => {
 
         <Divider style={{ margin: "16px 0" }} />
 
-        <TableSection
-          transition={{ duration: 0.4 }}
-        >
+        <TableSection>
           <TableHeader>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
@@ -2108,13 +2023,13 @@ const UserManagementDashboard = () => {
                   Search, filter, and manage all users on the platform.
                 </TableDescription>
               </div>
-              <Button
+              <RefreshButton
                 icon={<RefreshCw size={14} />}
                 onClick={() => fetchUsers(pagination.current, pagination.pageSize)}
                 loading={loading}
               >
                 Refresh
-              </Button>
+              </RefreshButton>
             </div>
           </TableHeader>
           <FilterBar>
@@ -2178,7 +2093,7 @@ const UserManagementDashboard = () => {
               )}
             </MobileCardList>
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={
                 loading ? generateSkeletonData(pagination.pageSize) : users
@@ -2367,31 +2282,6 @@ const UserManagementDashboard = () => {
       />
     </ConfigProvider>
   );
-};
-
-// Recharts tooltip component
-const renderLineChartTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        style={{
-          background: "white",
-          padding: "8px 12px",
-          border: `1px solid ${colors.border}`,
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-        }}
-      >
-        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 12 }}>
-          {dayjs(label).format("MMM D, YYYY")}
-        </p>
-        <p style={{ margin: 0, color: colors.textPrimary, fontWeight: 500 }}>
-          Registrations: <strong>{payload[0].value}</strong>
-        </p>
-      </div>
-    );
-  }
-  return null;
 };
 
 export default UserManagementDashboard;

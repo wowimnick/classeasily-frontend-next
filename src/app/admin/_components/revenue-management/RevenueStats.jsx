@@ -32,10 +32,11 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
   Cell,
+  Label,
 } from "recharts";
 import {
   DollarSign,
@@ -52,6 +53,13 @@ import { revenueAnalyticsService } from "@/services/adminDash";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import { theme as appTheme } from "@/components/theme";
+import {
+  AdminBusinessChartTooltip,
+  BUSINESS_CHART_THEME,
+  getChartTotal,
+} from "../shared/AdminBusinessCharts";
+import { adminColors as colors } from "../shared/adminColors";
+import { formatCurrency } from "../shared/adminUtils";
 
 const { RangePicker } = DatePicker;
 const { Text, Paragraph } = Typography;
@@ -77,23 +85,8 @@ const SOURCE_COLORS = {
   addon: appTheme.token.colorChart6,
 };
 
-const colors = {
-  primary: "#ff385c",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
 function cadFmt(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+  return formatCurrency(v);
 }
 
 function cadFmtCompact(v) {
@@ -131,12 +124,12 @@ const ContentLayer = styled.div`
 `;
 
 const TrendsCard = styled(Card)`
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   border: 1px solid ${colors.border} !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   .ant-card-body {
-    padding: 12px 10px 10px !important;
+    padding: 16px 20px 18px !important;
   }
 `;
 
@@ -268,27 +261,31 @@ function SparklineMini({ values }) {
   );
 }
 
-function RevenueChartTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const stackItems = payload.filter(
-    (p) =>
-      p &&
-      typeof p.value === "number" &&
-      p.dataKey &&
-      !["_cumulative", "_periodTotal"].includes(String(p.dataKey)),
-  );
-  const cumulative = payload.find((p) => p.dataKey === "_cumulative");
-  const periodRow = payload.find((p) => p.dataKey === "_periodTotal");
+function RevenueChartTooltip({ active, payload, label, chartSources = [] }) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row || !chartSources.length) return null;
+
+  const stackItems = chartSources.map((key) => ({
+    key,
+    name: SOURCE_LABELS[key] || key,
+    value: typeof row[key] === "number" ? row[key] : Number(row[key]) || 0,
+    color: SOURCE_COLORS[key],
+  }));
+
+  const periodTotal =
+    typeof row._periodTotal === "number" ? row._periodTotal : Number(row._periodTotal) || 0;
+  const cumulative =
+    typeof row._cumulative === "number" ? row._cumulative : Number(row._cumulative) || 0;
 
   return (
     <div
       style={{
         background: "#fff",
-        border: `1px solid ${colors.border}`,
-        borderRadius: 10,
-        padding: "12px 14px",
-        fontSize: 12,
-        boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+        border: `1px solid ${BUSINESS_CHART_THEME.border}`,
+        borderRadius: 12,
+        padding: "12px 16px",
+        fontSize: 13,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
         maxWidth: 300,
       }}
     >
@@ -296,7 +293,7 @@ function RevenueChartTooltip({ active, payload, label }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {stackItems.map((p) => (
           <div
-            key={String(p.dataKey)}
+            key={p.key}
             style={{ display: "flex", justifyContent: "space-between", gap: 16 }}
           >
             <span style={{ color: p.color || colors.textSecondary }}>{p.name}</span>
@@ -304,43 +301,41 @@ function RevenueChartTooltip({ active, payload, label }) {
           </div>
         ))}
       </div>
-      {periodRow != null && typeof periodRow.value === "number" ? (
-        <div
-          style={{
-            marginTop: 10,
-            paddingTop: 10,
-            borderTop: `1px solid ${colors.border}`,
-            display: "flex",
-            justifyContent: "space-between",
-            fontWeight: 600,
-          }}
-        >
-          <span>Bucket total</span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(periodRow.value)}</span>
-        </div>
-      ) : null}
-      {cumulative != null && typeof cumulative.value === "number" ? (
-        <div
-          style={{
-            marginTop: 8,
-            display: "flex",
-            justifyContent: "space-between",
-            color: colors.textSecondary,
-            fontSize: 11,
-          }}
-        >
-          <span>Cumulative</span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(cumulative.value)}</span>
-        </div>
-      ) : null}
+      <div
+        style={{
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: `1px solid ${colors.border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          fontWeight: 600,
+        }}
+      >
+        <span>Bucket total</span>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(periodTotal)}</span>
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          paddingTop: 8,
+          borderTop: `1px solid ${colors.border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          color: colors.textSecondary,
+          fontSize: 11,
+        }}
+      >
+        <span>Cumulative (running total · right axis)</span>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>{cadFmt(cumulative)}</span>
+      </div>
     </div>
   );
 }
 
 function pivotTimeseries(rows, metricKey, activeSources) {
   const filtered = rows.filter((r) => activeSources.has(r.source));
+  const srcs = ALL_SOURCES.filter((s) => activeSources.has(s));
   const buckets = [...new Set(filtered.map((r) => r.bucket))].sort();
-  const srcs = [...new Set(filtered.map((r) => r.source))];
   const idx = {};
   filtered.forEach((r) => {
     idx[`${r.bucket}__${r.source}`] = r[metricKey] ?? 0;
@@ -351,7 +346,8 @@ function pivotTimeseries(rows, metricKey, activeSources) {
     const row = { bucket: b };
     let periodTotal = 0;
     srcs.forEach((s) => {
-      const v = idx[`${b}__${s}`] ?? 0;
+      const raw = idx[`${b}__${s}`] ?? 0;
+      const v = typeof raw === "number" ? raw : Number(raw) || 0;
       row[s] = v;
       periodTotal += v;
     });
@@ -487,7 +483,7 @@ export default function RevenueStats() {
   const metricCardsCad = [
     {
       key: "commission",
-      label: "Commission",
+      label: "Platform Commission",
       tooltip:
         "Booking & widget platform fees, memberships, corporate platform fees, plus widget SaaS and marketplace-email addon revenue accrued from Stripe Prices.",
       value: cadKpis.commission ?? 0,
@@ -736,29 +732,52 @@ export default function RevenueStats() {
           <SectionDivider />
 
           <SectionLabel>Trends</SectionLabel>
+          <Text type="secondary" style={{ fontSize: 12, marginTop: -4, marginBottom: 12, display: "block", maxWidth: 900 }}>
+            Includes marketplace bookings (&quot;Platform bookings&quot;), widget, corporate, memberships, SaaS, and
+            addons—toggle each under Sources. Bars use the{" "}
+            <span style={{ fontWeight: 600, color: colors.textSecondary }}>left axis</span> (per bucket); the cumulative
+            line uses the{" "}
+            <span style={{ fontWeight: 600, color: colors.textSecondary }}>right axis</span> so it doesn&apos;t shrink the
+            bars.
+          </Text>
           <TrendsCard>
             {chartData.length === 0 ? (
               <Empty description="No data for this range" />
             ) : (
               <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <ComposedChart data={chartData} margin={{ top: 12, right: 44, left: 4, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={BUSINESS_CHART_THEME.border} vertical={false} />
                   <XAxis
                     dataKey="bucket"
-                    tick={{ fontSize: 11, fill: colors.textSecondary }}
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
                     tickMargin={8}
                     interval="preserveStartEnd"
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: colors.textSecondary }}
+                    yAxisId="period"
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
                     tickFormatter={(v) => cadFmtCompact(v)}
                     width={isMobile ? 56 : 72}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <Tooltip content={RevenueChartTooltip} />
-                  <Legend wrapperStyle={{ paddingTop: 16 }} iconType="circle" />
+                  <YAxis
+                    yAxisId="cumulative"
+                    orientation="right"
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
+                    tickFormatter={(v) => cadFmtCompact(v)}
+                    width={isMobile ? 44 : 56}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <RechartsTooltip content={(props) => <RevenueChartTooltip {...props} chartSources={chartSources} />} />
+                  <Legend wrapperStyle={{ paddingTop: 12, fontSize: 12 }} iconType="circle" />
                   {chartSources.map((s) => (
                     <Bar
                       key={s}
+                      yAxisId="period"
                       dataKey={s}
                       name={SOURCE_LABELS[s]}
                       stackId="rev"
@@ -768,6 +787,7 @@ export default function RevenueStats() {
                     />
                   ))}
                   <Line
+                    yAxisId="cumulative"
                     type="monotone"
                     dataKey="_cumulative"
                     name="Cumulative (CAD)"
@@ -794,16 +814,26 @@ export default function RevenueStats() {
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={54}
-                        outerRadius={92}
-                        paddingAngle={2}
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={5}
+                        stroke="none"
+                        cornerRadius={5}
                       >
                         {pieData.map((entry) => (
                           <Cell key={entry.key} fill={SOURCE_COLORS[entry.key] || "#cbd5e1"} />
                         ))}
+                        <Label
+                          value={cadFmt(getChartTotal(pieData))}
+                          position="center"
+                          fill={colors.textPrimary}
+                          style={{ fontSize: "17px", fontWeight: "bold" }}
+                        />
                       </Pie>
-                      <Tooltip formatter={(value) => cadFmt(value)} />
-                      <Legend layout="horizontal" verticalAlign="bottom" iconType="circle" />
+                      <RechartsTooltip
+                        content={<AdminBusinessChartTooltip formatItemValue={(entry) => cadFmt(entry.value)} />}
+                      />
+                      <Legend layout="horizontal" verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 )}

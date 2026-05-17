@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUrlState } from "@/hooks/useUrlState";
 import styled from "styled-components";
-import dayjs from "dayjs";
-import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
+import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
 import message from '@/lib/message';
 import {
   Search,
@@ -57,6 +56,27 @@ import { Drawer as VaulDrawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { bookingTheme } from "@/app/business/dashboard/_components/tabs/classes/_shared/BookingFlowDesign";
 import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
+import { adminColors as colors } from "../shared/adminColors";
+import { formatDate } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+} from "../shared/adminMobileStyles";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -73,20 +93,6 @@ const BOOKABILITY_TOOLTIPS = {
 function isBusinessBookable(b) {
   return Boolean(b?.isActive && b?.has_active_schedules);
 }
-
-// --- STYLING & THEME (ADAPTED FROM BOOKINGSLIST) ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -136,135 +142,6 @@ const HeaderSubtitle = styled(Text)`
   color: ${colors.textSecondary};
   @media (max-width: 480px) {
     font-size: 14px;
-  }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-  @media (max-width: 768px) {
-    font-size: 16px !important;
-  }
-`;
-
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #f8fafc !important;
-    color: ${colors.textSecondary};
-    font-weight: 600;
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid ${colors.border};
-    &::before { display: none; }
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 13px;
-    color: ${colors.textPrimary};
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #f8fafc;
-  }
-  .ant-empty {
-    padding: 40px 20px;
   }
 `;
 
@@ -482,28 +359,6 @@ const StatusPill = styled.span`
   color: ${(p) => p.$color || colors.textPrimary};
 `;
 
-// --- MOBILE COMPONENTS ---
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
 const FeaturedTag = styled(Tag)`
   display: inline-flex;
   align-items: center;
@@ -518,10 +373,6 @@ const socialIcons = {
   linkedin: <Linkedin />,
   youtube: <Youtube />,
 };
-
-// --- UTILITIES ---
-const formatDate = (dateString) =>
-  dateString ? dayjs(dateString).format("MMM D, YYYY") : "N/A";
 
 // --- DETAIL DRAWER ---
 const BusinessDetailDrawerContent = ({
@@ -1619,7 +1470,7 @@ const BusinessListings = () => {
           ) : loading ? (
             <AdminTableSkeleton rows={8} />
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={businesses}
               rowKey="businessId"

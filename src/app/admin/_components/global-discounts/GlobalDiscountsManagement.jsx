@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import {
-  Table,
   Card,
   Button,
   Modal,
@@ -26,31 +25,27 @@ import {
   Tooltip,
   message as antMessage,
 } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { Plus, Edit, Trash2, BarChart3, Ticket, TrendingUp, Percent, Calendar, DollarSign, Search, RefreshCw } from "lucide-react";
 import { globalDiscountAdminService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { ConfigProvider } from "antd";
 import dayjs from "dayjs";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { adminColors as colors } from "../shared/adminColors";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+} from "../shared/adminTableStyles";
+import { RefreshButton } from "../shared/AdminButtons";
 
 const { Option } = Select;
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
 
 const message = antMessage;
-
-// --- Colors (match business dashboard)
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
 
 // --- Styled components (match business dashboard tabs)
 const DashboardWrapper = styled.div`
@@ -99,55 +94,6 @@ const ActionButton = styled(Button)`
   height: 40px;
   border-radius: 10px;
   font-weight: 500;
-`;
-
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled.h2`
-  font-size: 18px;
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  margin: 0;
-`;
-
-const TableDescription = styled(Text)`
-  font-size: 14px;
-  color: ${colors.textSecondary};
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: ${colors.lightBg};
-    color: ${colors.textSecondary};
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 10px 14px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: ${colors.lightBg};
-  }
 `;
 
 const FilterRow = styled.div`
@@ -620,9 +566,9 @@ export default function GlobalDiscountsManagement() {
             </HeaderSubtitle>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <Button icon={<RefreshCw size={14} />} onClick={fetchList} loading={loading} style={{ borderRadius: 8 }}>
+            <RefreshButton icon={<RefreshCw size={14} />} onClick={fetchList} loading={loading}>
               {!isMobile && "Refresh"}
-            </Button>
+            </RefreshButton>
             <ActionButton type="primary" icon={<Plus size={16} />} onClick={openCreate}>
               {!isMobile ? "Create Discount" : "New"}
             </ActionButton>
@@ -698,7 +644,7 @@ export default function GlobalDiscountsManagement() {
               )}
             </div>
           ) : (
-            <StyledTable
+            <AdminCompactTable
               rowKey="id"
               columns={columns}
               dataSource={filteredList}

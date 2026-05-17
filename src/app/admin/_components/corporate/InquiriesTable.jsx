@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Input, Table, Tag } from "antd";
+import { Input, Tag } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import dayjs from "dayjs";
 import StatusPill from "./StatusPill";
 
@@ -51,7 +52,7 @@ export default function InquiriesTable({ loading, inquiries, onOpenRow }) {
         onChange={(e) => setQ(e.target.value)}
         style={{ maxWidth: 360, marginBottom: 16 }}
       />
-      <Table
+      <AdminCompactTable
         rowKey="id"
         loading={loading}
         dataSource={filtered()}
