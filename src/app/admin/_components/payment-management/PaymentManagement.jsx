@@ -58,7 +58,7 @@ const { RangePicker } = DatePicker;
 const { Text, Title, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 
-// --- LAYOUT ---
+const statusColors = {
   succeeded: "success",
   pending: "warning",
   failed: "error",
