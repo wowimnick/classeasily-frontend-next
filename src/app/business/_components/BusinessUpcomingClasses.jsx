@@ -188,6 +188,9 @@ const BusinessUpcomingClasses = ({ classes = [], businessName, handleFavoriteCha
                   min_session_price={cls.min_session_price}
                   min_course_price={cls.min_course_price}
                   totalReviews={cls.review_count}
+                  instagramFollowerCount={
+                    cls.business_instagram_follower_count ?? null
+                  }
                   business_name={businessName}
                   is_favorited={cls.is_favorited}
                   soonest_next_week={cls.soonest_next_week}

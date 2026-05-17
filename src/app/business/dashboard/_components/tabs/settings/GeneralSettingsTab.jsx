@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import { Form, Input, Select, Button, Upload, Space, InputNumber } from "antd";
 import message from "@/lib/message";
@@ -25,6 +25,8 @@ import {
   validatePhoneNumber,
 } from "./formValidators";
 import { theme } from "@/components/theme";
+import { businessService } from "@/services/apiService";
+import { formatDistanceToNow } from "date-fns";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -200,7 +202,62 @@ const StyledTagsSelect = styled(Select)`
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
-const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, onFieldBlur, onFieldChange, onLogoRemove }) => {
+const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, onFieldBlur, onFieldChange, onLogoRemove, instagramMeta, onInstagramSyncComplete }) => {
+  const [igSyncLoading, setIgSyncLoading] = useState(false);
+  const socialInstagram = Form.useWatch("social_instagram", form);
+
+  const igHint = useMemo(() => {
+    if (!socialInstagram || !String(socialInstagram).trim()) return null;
+    const st = instagramMeta?.status;
+    const n = instagramMeta?.followerCount;
+    const synced = instagramMeta?.syncedAt;
+    if (st === "private") {
+      return "This Instagram profile is private — follower count can’t be shown.";
+    }
+    if (st === "not_found") {
+      return "We couldn’t load this Instagram profile. Double-check the URL.";
+    }
+    if (st === "error") {
+      return "Last sync failed. Try Refresh, or try again later.";
+    }
+    if (n != null && Number(n) > 0 && synced) {
+      try {
+        const label = new Intl.NumberFormat("en-US", {
+          notation: "compact",
+          maximumFractionDigits: 1,
+        }).format(Number(n));
+        const when = formatDistanceToNow(new Date(synced), { addSuffix: true });
+        return `Last synced: ${label} followers · ${when}`;
+      } catch {
+        return `Last synced ${Number(n).toLocaleString("en-US")} followers.`;
+      }
+    }
+    if (st === "pending" || !synced) {
+      return "Follower count appears after sync. Save your link or tap Refresh.";
+    }
+    return null;
+  }, [socialInstagram, instagramMeta]);
+
+  const handleIgRefresh = async () => {
+    setIgSyncLoading(true);
+    try {
+      const r = await businessService.syncInstagramFollowers();
+      if (r.success) {
+        message.success("Follower sync started. This page will update in a moment.");
+        window.setTimeout(() => onInstagramSyncComplete?.(), 12000);
+      } else {
+        message.error(
+          typeof r.error === "string" ? r.error : "Could not start follower sync",
+        );
+      }
+    } catch {
+      message.error("Could not start follower sync");
+    } finally {
+      setIgSyncLoading(false);
+    }
+  };
+
+  const showIgTools = Boolean(socialInstagram && String(socialInstagram).trim());
   const handleLogoChange = async (file) => {
     const fileExtension = file.name.toLowerCase().split(".").pop();
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -452,6 +509,31 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
                 </Form.Item>
               )}
             </FieldGrid>
+
+            {showIgTools ? (
+              <div style={{ marginTop: 4, marginBottom: 12 }}>
+                {igHint ? (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 8,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {igHint}
+                  </div>
+                ) : null}
+                <Button
+                  type="default"
+                  size="small"
+                  loading={igSyncLoading}
+                  onClick={handleIgRefresh}
+                >
+                  Refresh follower count
+                </Button>
+              </div>
+            ) : null}
 
             <FieldGrid>
               {field(

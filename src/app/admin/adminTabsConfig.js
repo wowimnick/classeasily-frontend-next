@@ -12,6 +12,7 @@ export const ADMIN_TAB_PERMISSIONS = {
   "all-bookings": "quickstart.view_booking",
   "corporate-inquiries": "quickstart.access_corporate_admin",
   payments: "quickstart.access_payment_admin",
+  revenue: "quickstart.view_platform_revenue",
   payouts: "quickstart.access_payout_admin",
   "widget-subscriptions": [
     "quickstart.view_widgetsubscription",

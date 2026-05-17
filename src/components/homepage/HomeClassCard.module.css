@@ -409,6 +409,19 @@
   font-weight: 400;
 }
 
+.igFollowerBadge {
+  color: #e1306c;
+  font-weight: 600;
+}
+
+.igFollowerBadge .exploreRatingNum {
+  color: #e1306c;
+}
+
+.igIcon {
+  flex-shrink: 0;
+}
+
 .explorePriceRow {
   font-size: 13px;
   line-height: 1.35;

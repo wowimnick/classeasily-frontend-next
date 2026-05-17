@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -17,7 +17,6 @@ import {
   Empty,
   DatePicker,
   Divider,
-  Descriptions,
   Tooltip,
   Tag,
   Typography,
@@ -37,11 +36,8 @@ import {
   XCircle,
   Repeat,
   Eye,
-  Hash,
-  BookOpen,
   Building,
   ExternalLink,
-  Users,
   X,
   Play,
 } from "lucide-react";
@@ -51,6 +47,7 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
   AdminTableSkeleton,
@@ -58,38 +55,38 @@ import {
   AdminMetricCardsSkeleton,
   SkeletonBlock,
 } from "../shared/AdminSkeletons";
+import { adminColors as colors } from "../shared/adminColors";
+import {
+  hexToRgba,
+  formatCurrency,
+  formatDate,
+  formatDatetime as formatDateTime,
+} from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+  ExportButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+} from "../shared/adminMobileStyles";
 
 dayjs.extend(utc);
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { RangePicker } = DatePicker;
 const { Text, Title: AntTitle, Paragraph } = Typography;
-
-// --- STYLING (MATCHING BOOKINGSLIST) ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0px); }
-`;
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -133,211 +130,76 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ManualPayoutButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
 // --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
+const DetailDrawerScroll = styled.div`
+  padding: 16px;
+`;
+
+const PayoutHero = styled.div`
+  border-radius: 14px;
   border: 1px solid ${colors.border};
-`;
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-const TableTitle = styled(AntTitle).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-`;
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-`;
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 16px 24px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-`;
-
-const DrawerHeader = styled.div`
-  background: white;
-  border-bottom: 1px solid ${colors.border};
-  padding: 20px 24px;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-`;
-
-const DrawerHeaderTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: ${colors.textPrimary};
-  font-size: 20px;
-  font-weight: 600;
-`;
-
-const CloseButton = styled(Button)`
-  padding: 8px;
-  height: auto;
-  border: none;
-  background: none;
-  &:hover {
-    background: ${colors.border};
-  }
-`;
-
-const DrawerContentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  flex: 1;
   overflow: hidden;
+  margin-bottom: 14px;
+  background: white;
 `;
 
-const DrawerContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: #fff;
-  padding: 24px;
-  animation: ${fadeIn} 0.5s 0.1s ease-out both;
-  border-radius: 0 0 16px 16px;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
+const PayoutHeroAccent = styled.div`
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    ${colors.primary} 0%,
+    ${hexToRgba(colors.info, 0.85)} 55%,
+    ${colors.success} 100%
+  );
 `;
-const InfoGroup = styled.div`
+
+const PayoutHeroBody = styled.div`
+  padding: 16px 18px;
+  background: linear-gradient(
+    165deg,
+    ${hexToRgba(colors.primary, 0.06)} 0%,
+    #ffffff 52%
+  );
+`;
+
+const DetailCard = styled.div`
   background: white;
-  padding: 20px;
   border-radius: 12px;
   border: 1px solid ${colors.border};
-  margin-bottom: 20px;
+  padding: 16px;
+  margin-bottom: 12px;
 `;
-const InfoGroupTitle = styled.h3`
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  margin: 0 0 16px 0;
+
+const DetailCardTitle = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: ${colors.textTertiary};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+`;
+
+const SummaryRow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 8px;
-  svg {
-    width: 18px;
-    height: 18px;
-    color: ${colors.primary};
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 9px 0;
+  font-size: 13px;
+  border-bottom: 1px solid ${colors.border};
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
   }
+`;
+
+const MetaStrip = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: ${colors.textSecondary};
 `;
 
 const LoaderWrapper = styled.div`
@@ -348,48 +210,12 @@ const LoaderWrapper = styled.div`
   padding: 40px;
 `;
 
-// --- MOBILE COMPONENTS ---
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-
 const StatusTag = styled(Tag)`
   display: inline-flex;
   align-items: center;
   gap: 5px;
   font-weight: 500;
 `;
-
-// --- UTILITY FUNCTIONS ---
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-  }).format(value ?? 0);
-const formatDate = (dateString) =>
-  dateString ? dayjs(dateString).format("MMM D, YYYY") : "N/A";
-const formatDateTime = (dateString) =>
-  dateString
-    ? dayjs.utc(dateString).local().format("MMM D, YYYY h:mm A")
-    : "N/A";
 
 const getPayoutStatusTag = (status) => {
   const statusMap = {
@@ -477,80 +303,119 @@ const PayoutDetailContent = ({ payout, isMobile }) => {
     },
   ];
 
+  const bookingCount = payout.bookings?.length ?? 0;
+  const netRollup = Array.isArray(payout.bookings)
+    ? payout.bookings.reduce((sum, b) => sum + Number(b?.net_amount ?? 0), 0)
+    : 0;
+
   return (
     <>
-      <div
-        style={{
-          marginBottom: 16,
-          padding: 16,
-          background: "white",
-          borderRadius: 12,
-          border: `1px solid ${colors.border}`,
-        }}
-      >
-        <Space align="start" size={16} wrap>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 12,
-              background: hexToRgba(colors.info, 0.12),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Building size={28} color={colors.info} />
-          </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <AntTitle level={4} style={{ margin: 0 }}>
-              {payout.business_name}
-            </AntTitle>
-            <div style={{ marginTop: 6 }}>
-              <Text strong style={{ fontSize: 22 }}>
-                {formatCurrency(payout.amount)}
-              </Text>
+      <PayoutHero>
+        <PayoutHeroAccent />
+        <PayoutHeroBody>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: hexToRgba(colors.primary, 0.1),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Building size={24} color={colors.primary} />
             </div>
-            <div style={{ marginTop: 8 }}>{getPayoutStatusTag(payout.status)}</div>
-            <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 13 }}>
-              Initiated {formatDateTime(payout.created_at)}
-              {payout.arrival_date
-                ? ` · Expected arrival ${formatDate(payout.arrival_date)}`
-                : ""}
-            </Text>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  fontWeight: 700,
+                }}
+              >
+                Business payout
+              </Text>
+              <AntTitle level={4} style={{ margin: "4px 0 0", fontWeight: 700 }}>
+                {payout.business_name || "—"}
+              </AntTitle>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 800,
+                    color: colors.textPrimary,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {formatCurrency(payout.amount)}
+                </span>
+                {getPayoutStatusTag(payout.status)}
+              </div>
+              <MetaStrip>
+                <span>
+                  <strong style={{ color: colors.textPrimary }}>Initiated</strong> ·{" "}
+                  {formatDateTime(payout.created_at)}
+                </span>
+                <span>
+                  <strong style={{ color: colors.textPrimary }}>Arrival</strong> ·{" "}
+                  {payout.arrival_date ? formatDate(payout.arrival_date) : "—"}
+                </span>
+                <span>
+                  <strong style={{ color: colors.textPrimary }}>Line items</strong> · {bookingCount}{" "}
+                  booking{bookingCount !== 1 ? "s" : ""}
+                </span>
+              </MetaStrip>
+            </div>
           </div>
-        </Space>
-      </div>
+        </PayoutHeroBody>
+      </PayoutHero>
 
-      <InfoGroup>
-        <InfoGroupTitle>
-          <Hash /> Payout summary
-        </InfoGroupTitle>
-        <Descriptions bordered column={1} size="middle">
-          <Descriptions.Item label="Stripe transfer ID">
-            <Text copyable={{ text: payout.stripe_transfer_id }}>
-              {payout.stripe_transfer_id || "—"}
-            </Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Amount">
-            {formatCurrency(payout.amount)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Status">
-            {getPayoutStatusTag(payout.status)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Initiated">
-            {formatDateTime(payout.created_at)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Expected arrival">
-            {payout.arrival_date ? formatDate(payout.arrival_date) : "—"}
-          </Descriptions.Item>
-        </Descriptions>
-      </InfoGroup>
+      <DetailCard>
+        <DetailCardTitle>Transfer & timing</DetailCardTitle>
+        <SummaryRow>
+          <span style={{ color: colors.textSecondary }}>Stripe transfer ID</span>
+          <Text
+            copyable={
+              payout.stripe_transfer_id ? { text: payout.stripe_transfer_id } : undefined
+            }
+            style={{ maxWidth: "62%", textAlign: "right", wordBreak: "break-all" }}
+          >
+            {payout.stripe_transfer_id || "—"}
+          </Text>
+        </SummaryRow>
+        <SummaryRow>
+          <span style={{ color: colors.textSecondary }}>Payout amount</span>
+          <Text strong>{formatCurrency(payout.amount)}</Text>
+        </SummaryRow>
+        <SummaryRow>
+          <span style={{ color: colors.textSecondary }}>Lifecycle status</span>
+          <span>{getPayoutStatusTag(payout.status)}</span>
+        </SummaryRow>
+        {bookingCount > 0 && (
+          <SummaryRow>
+            <span style={{ color: colors.textSecondary }}>Sum of booking nets (table)</span>
+            <Text>{formatCurrency(netRollup)}</Text>
+          </SummaryRow>
+        )}
+      </DetailCard>
 
-      <InfoGroup>
-        <InfoGroupTitle>
-          <BookOpen /> Included bookings ({payout.bookings?.length || 0})
-        </InfoGroupTitle>
+      <DetailCard style={{ padding: 12 }}>
+        <DetailCardTitle style={{ paddingLeft: 4, marginBottom: 10 }}>
+          Included bookings ({bookingCount})
+        </DetailCardTitle>
         <Table
           columns={bookingColumns}
           dataSource={payout.bookings}
@@ -559,7 +424,7 @@ const PayoutDetailContent = ({ payout, isMobile }) => {
           size="small"
           scroll={{ x: isMobile ? 720 : "auto" }}
         />
-      </InfoGroup>
+      </DetailCard>
     </>
   );
 };
@@ -579,15 +444,13 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
   if (!shouldRender) return null;
 
   const renderDrawerContent = () => (
-    <DrawerContentContainer>
-      <DrawerContent>
-        {isLoading ? (
-          <AdminDrawerContentSkeleton />
-        ) : (
-          <PayoutDetailContent payout={payout} isMobile={isMobile} />
-        )}
-      </DrawerContent>
-    </DrawerContentContainer>
+    <DetailDrawerScroll>
+      {isLoading ? (
+        <AdminDrawerContentSkeleton />
+      ) : (
+        <PayoutDetailContent payout={payout} isMobile={isMobile} />
+      )}
+    </DetailDrawerScroll>
   );
 
   const hasPayout = payout && !isLoading;
@@ -645,6 +508,7 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
         titleIcon={<DollarSign size={18} />}
         isMobile={isMobile}
         width="min(760px, 96vw)"
+        dense
         footer={drawerFooter}
       >
         {renderDrawerContent()}
@@ -1075,13 +939,13 @@ const PayoutsList = () => {
                 cancelText="Cancel"
                 onConfirm={handleTriggerManualPayout}
               >
-                <ManualPayoutButton
+                <ExportButton
                   type="primary"
                   icon={<Play size={16} />}
                   loading={manualPayoutTriggering}
                 >
                   {!isMobile && "Run payout job"}
-                </ManualPayoutButton>
+                </ExportButton>
               </Popconfirm>
             )}
             <ExportButton
@@ -1235,7 +1099,7 @@ const PayoutsList = () => {
           ) : loading ? (
             <AdminTableSkeleton rows={8} columns={7} />
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={payouts}
               rowKey="id"

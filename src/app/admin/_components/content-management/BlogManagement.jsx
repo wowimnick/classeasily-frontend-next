@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 
-import { Table, Card, Tabs, Button, Modal, Form, Input, Select, Grid, Space, Popconfirm, Tag, Divider, Avatar, Typography, ConfigProvider, DatePicker, Row, Col, Empty, Skeleton,  } from 'antd';
+import { Card, Tabs, Button, Modal, Form, Input, Select, Grid, Space, Popconfirm, Tag, Divider, Avatar, Typography, ConfigProvider, DatePicker, Row, Col, Empty, Skeleton,  } from 'antd';
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from '@/lib/message';
 import {
   BookOpen,
@@ -22,25 +23,31 @@ import {
 } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import dayjs from "dayjs";
+import { adminColors as colors } from "../shared/adminColors";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+  MobileCardFooter,
+} from "../shared/adminMobileStyles";
 
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { TextArea } = Input;
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
-
-// --- STYLING & THEME (FROM BOOKINGSLIST) ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
 
 // --- MAIN PAGE COMPONENTS (FROM BOOKINGSLIST) ---
 const DashboardWrapper = styled.div`
@@ -84,162 +91,7 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px !important;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 16px 24px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-  .ant-empty {
-    padding: 40px 20px;
-  }
-`;
-
-// Mobile Components
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-const MobileCardFooter = styled.div`
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-`;
-
-// --- NEW STYLED COMPONENTS FOR PREVIEW ---
+// --- Preview / article preview pane ---
 const PreviewPane = styled.div`
   flex: 1;
   min-width: 0;
@@ -834,7 +686,7 @@ const BlogManagement = () => {
                   )}
                 </div>
               ) : (
-                <StyledTable
+                <AdminCompactTable
                   dataSource={posts}
                   columns={postColumns}
                   loading={{
@@ -883,7 +735,7 @@ const BlogManagement = () => {
                   )}
                 </div>
               ) : (
-                <StyledTable
+                <AdminCompactTable
                   dataSource={categories}
                   columns={categoryColumns}
                   rowKey="id"

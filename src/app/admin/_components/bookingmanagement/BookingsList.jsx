@@ -10,7 +10,6 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import NumberFlow from "@number-flow/react";
 import {
-  Table,
   Card,
   Input,
   Select,
@@ -47,7 +46,6 @@ import {
   BookOpen,
   Hash,
   BarChart2,
-  TrendingUp,
   TrendingDown,
   Building,
   Info,
@@ -70,12 +68,39 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
   AdminTableSkeleton,
   AdminMetricCardsSkeleton,
   SkeletonBlock,
 } from "../shared/AdminSkeletons";
+import { adminColors as colors } from "../shared/adminColors";
+import {
+  hexToRgba,
+  formatCurrency,
+  formatDate,
+  formatDatetime as formatDateTime,
+} from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainerWideMobile as ActionButtonsContainer,
+  RefreshButton,
+  ExportButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+} from "../shared/adminMobileStyles";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -84,27 +109,6 @@ const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { RangePicker } = DatePicker;
 const { Text, Title: AntTitle, Paragraph } = Typography;
-
-// --- THEME COLORS ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 // --- MAIN PAGE COMPONENTS (STYLED LIKE PAYOUTS) ---
 const DashboardWrapper = styled.div`
@@ -151,162 +155,8 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-
-  @media (max-width: 768px) {
-    width: 50%;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
 // --- STATS CARDS ---
 // --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(AntTitle).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px !important;
-  }
-`;
-
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textSecondary};
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 13px;
-  }
-
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-
-  .ant-empty {
-    padding: 40px 20px;
-  }
-`;
-
 const DrawerHeaderSection = styled.div`
   background: white;
   border-bottom: 1px solid #f0f0f0;
@@ -344,16 +194,6 @@ const DrawerScrollContent = styled.div`
   background-color: ${colors.lightBg};
 `;
 
-const DrawerFooter = styled.div`
-  padding: 16px 24px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-  background: white;
-`;
-
 const DrawerTwoCol = styled.div`
   display: flex;
   flex: 1;
@@ -365,9 +205,9 @@ const DrawerTwoCol = styled.div`
 const DrawerLeftCol = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 16px;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 14px;
   }
 `;
 const DrawerRightCol = styled.div`
@@ -375,13 +215,13 @@ const DrawerRightCol = styled.div`
   flex-shrink: 0;
   background: white;
   border-left: 1px solid ${colors.border};
-  padding: 20px;
+  padding: 16px;
   overflow-y: auto;
   @media (max-width: 768px) {
     width: 100%;
     border-left: none;
     border-top: 1px solid ${colors.border};
-    padding: 16px;
+    padding: 14px;
   }
 `;
 const BookerViewCard = styled.div`
@@ -475,6 +315,61 @@ const InfoValue = styled(Paragraph)`
   }
 `;
 
+const DrawerInfoCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  border: 1px solid ${colors.border};
+  padding: 16px;
+  margin-bottom: 12px;
+`;
+
+const DrawerInfoCardTitle = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: ${colors.textTertiary};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+`;
+
+const FeeBreakdownBar = styled.div`
+  display: flex;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: ${colors.border};
+`;
+
+const FeeSegment = styled.div`
+  height: 100%;
+  min-width: 2px;
+  background: ${(p) => p.$color || colors.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+`;
+
+const FeeRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid ${colors.border};
+  &:last-child {
+    border-bottom: none;
+    font-weight: 700;
+    color: ${colors.textPrimary};
+    font-size: 14px;
+    padding-top: 8px;
+  }
+`;
+
 const ParticipantListItem = styled(List.Item)`
   .ant-list-item-meta-title {
     font-weight: 500;
@@ -493,46 +388,7 @@ const StatusTag = styled(Tag)`
   border: none;
 `;
 
-// Mobile Components
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-
 // --- UTILITY FUNCTIONS ---
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    value ?? 0
-  );
-
-const formatDate = (dateString) =>
-  dateString ? dayjs(dateString).format("MMM D, YYYY") : "N/A";
-
-const formatDateTime = (dateString) =>
-  dateString
-    ? dayjs.utc(dateString).local().format("MMM D, YYYY h:mm A")
-    : "N/A";
-
 const formatTimeInTimezone = (date, time, tz, formatStr = "h:mm A zzz") => {
   if (!date || !time || !tz) return "N/A";
   const dateTimeStr = `${date}T${time}`;
@@ -629,6 +485,23 @@ const DetailDrawerContent = ({
         };
       })()
     : { amount: 0, estimated: true };
+
+  const paymentFeeBreakdown =
+    payment &&
+    (() => {
+      const gross = Number(payment.amount || 0);
+      const platformFee = Number(payment.platform_fee_amount || 0);
+      const platTax = Number(payment.platform_fee_tax || 0);
+      const taxAmt = Number(payment.tax_amount || 0);
+      const stripeAmt = stripeProcessingResolved.amount;
+      const net = Number(payment.net_payout_amount || 0);
+      const subtotalApprox = Math.max(0, gross - taxAmt);
+      const feePctLabel =
+        subtotalApprox > 0 && platformFee > 0
+          ? ((platformFee / subtotalApprox) * 100).toFixed(1)
+          : null;
+      return { gross, platformFee, platTax, stripeAmt, net, feePctLabel };
+    })();
 
   const bookerCard = (
     <BookerViewCard>
@@ -797,176 +670,157 @@ const DetailDrawerContent = ({
             </InfoGroup>
 
             {payment && (
-              <InfoGroup>
-                <InfoGroupTitle>
-                  <CreditCard />
-                  Payment Details
-                </InfoGroupTitle>
-                <InfoGrid>
-                  <InfoItem>
-                    <InfoIcon>
-                      <Hash />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Stripe Transaction ID</InfoLabel>
-                      <InfoValue>{payment.stripe_payment_intent_id}</InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <DollarSign />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Total Paid</InfoLabel>
-                      <InfoValue>{formatCurrency(payment.amount)}</InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <Percent />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Platform Fee</InfoLabel>
-                      <InfoValue>
-                        {formatCurrency(payment.platform_fee_amount)}
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <CreditCard />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>
-                        Stripe processing fee
-                        {stripeProcessingResolved.estimated ? " (est.)" : ""}
-                      </InfoLabel>
-                      <InfoValue>
-                        −
-                        {formatCurrency(stripeProcessingResolved.amount)}
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <TrendingUp />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Net Payout to Business</InfoLabel>
-                      <InfoValue>
-                        {formatCurrency(payment.net_payout_amount)}
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem style={{ gridColumn: "1 / -1" }}>
-                    <InfoContent>
-                      {(() => {
-                        const gross = Number(payment.amount || 0);
-                        const plat = Number(payment.platform_fee_amount || 0);
-                        const platTax = Number(payment.platform_fee_tax || 0);
-                        const stripeAmt = stripeProcessingResolved.amount;
-                        const net = Number(payment.net_payout_amount || 0);
-                        const line = (label, val, neg) => (
-                          <div
-                            key={label}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 16,
-                            }}
+              <>
+                <InfoGroup>
+                  <InfoGroupTitle>
+                    <CreditCard />
+                    Payment Details
+                  </InfoGroupTitle>
+                  <InfoGrid>
+                    <InfoItem>
+                      <InfoIcon>
+                        <Hash />
+                      </InfoIcon>
+                      <InfoContent>
+                        <InfoLabel>Stripe Transaction ID</InfoLabel>
+                        <InfoValue>{payment.stripe_payment_intent_id}</InfoValue>
+                      </InfoContent>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoIcon>
+                        <DollarSign />
+                      </InfoIcon>
+                      <InfoContent>
+                        <InfoLabel>Total Paid</InfoLabel>
+                        <InfoValue>{formatCurrency(payment.amount)}</InfoValue>
+                      </InfoContent>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoIcon>
+                        <TrendingDown />
+                      </InfoIcon>
+                      <InfoContent>
+                        <InfoLabel>Refunded</InfoLabel>
+                        <InfoValue>
+                          {formatCurrency(payment.refunded_amount)}
+                        </InfoValue>
+                      </InfoContent>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoIcon>
+                        <CreditCard />
+                      </InfoIcon>
+                      <InfoContent>
+                        <InfoLabel>Method</InfoLabel>
+                        <InfoValue>
+                          {payment.card_details?.display_name || "N/A"}
+                        </InfoValue>
+                      </InfoContent>
+                    </InfoItem>
+                    <InfoItem style={{ gridColumn: "1 / -1" }}>
+                      <InfoIcon>
+                        <ExternalLink />
+                      </InfoIcon>
+                      <InfoContent>
+                        <InfoLabel>Stripe Receipt</InfoLabel>
+                        <InfoValue>
+                          <Button
+                            type="link"
+                            style={{ padding: 0, height: "auto" }}
+                            href={payment.receipt_url}
+                            target="_blank"
                           >
-                            <span style={{ color: colors.textSecondary }}>{label}</span>
-                            <span style={{ color: neg ? colors.error : colors.textPrimary }}>
-                              {neg ? "−" : ""}
-                              {formatCurrency(neg ? Math.abs(val) : val)}
-                            </span>
-                          </div>
-                        );
-                        return (
-                          <div
-                            style={{
-                              fontSize: 13,
-                              lineHeight: 1.75,
-                              background: "#f8fafc",
-                              padding: 12,
-                              borderRadius: 8,
-                              border: `1px solid ${colors.border}`,
-                              fontFamily:
-                                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                            }}
-                          >
-                            {line("Gross amount", gross, false)}
-                            {line("Platform fee", plat, true)}
-                            {platTax > 0.009
-                              ? line("Tax on platform fee (HST)", platTax, true)
-                              : null}
-                            {line(
-                              stripeProcessingResolved.estimated
-                                ? "Stripe fee (est.)"
-                                : "Stripe fee",
-                              stripeAmt,
-                              true
-                            )}
-                            <div
-                              style={{
-                                borderTop: `1px solid ${colors.border}`,
-                                marginTop: 8,
-                                paddingTop: 8,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontWeight: 600,
-                              }}
-                            >
-                              <span>Net to business</span>
-                              <span>{formatCurrency(net)}</span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <TrendingDown />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Refunded</InfoLabel>
-                      <InfoValue>
-                        {formatCurrency(payment.refunded_amount)}
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem>
-                    <InfoIcon>
-                      <CreditCard />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Method</InfoLabel>
-                      <InfoValue>
-                        {payment.card_details?.display_name || "N/A"}
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                  <InfoItem style={{ gridColumn: "1 / -1" }}>
-                    <InfoIcon>
-                      <ExternalLink />
-                    </InfoIcon>
-                    <InfoContent>
-                      <InfoLabel>Stripe Receipt</InfoLabel>
-                      <InfoValue>
-                        <Button
-                          type="link"
-                          style={{ padding: 0, height: "auto" }}
-                          href={payment.receipt_url}
-                          target="_blank"
+                            View on Stripe
+                          </Button>
+                        </InfoValue>
+                      </InfoContent>
+                    </InfoItem>
+                  </InfoGrid>
+                </InfoGroup>
+
+                <DrawerInfoCard>
+                  <DrawerInfoCardTitle>Payout model</DrawerInfoCardTitle>
+                  <p style={{ margin: 0, fontSize: 12, color: colors.textSecondary, lineHeight: 1.5 }}>
+                    Marketplace default: ClassEasily commission is platform revenue. Stripe card fees
+                    {stripeProcessingResolved.estimated ? " (estimated below)" : ""} reduce the host&apos;s net payout.
+                  </p>
+                </DrawerInfoCard>
+
+                {paymentFeeBreakdown && (
+                  <DrawerInfoCard>
+                    <DrawerInfoCardTitle>Fee breakdown</DrawerInfoCardTitle>
+                    {paymentFeeBreakdown.gross > 0 && (
+                      <FeeBreakdownBar>
+                        <FeeSegment
+                          $color={colors.success}
+                          style={{
+                            width: `${(paymentFeeBreakdown.net / paymentFeeBreakdown.gross) * 100}%`,
+                          }}
+                          title={`Net: ${formatCurrency(paymentFeeBreakdown.net)}`}
                         >
-                          View on Stripe
-                        </Button>
-                      </InfoValue>
-                    </InfoContent>
-                  </InfoItem>
-                </InfoGrid>
-              </InfoGroup>
+                          {((paymentFeeBreakdown.net / paymentFeeBreakdown.gross) * 100).toFixed(0)}%
+                        </FeeSegment>
+                        <FeeSegment
+                          $color={colors.warning}
+                          style={{
+                            width: `${(paymentFeeBreakdown.platformFee / paymentFeeBreakdown.gross) * 100}%`,
+                          }}
+                          title={`Platform: ${formatCurrency(paymentFeeBreakdown.platformFee)}`}
+                        >
+                          {((paymentFeeBreakdown.platformFee / paymentFeeBreakdown.gross) * 100).toFixed(0)}%
+                        </FeeSegment>
+                        <FeeSegment
+                          $color={colors.error}
+                          style={{
+                            width: `${(paymentFeeBreakdown.stripeAmt / paymentFeeBreakdown.gross) * 100}%`,
+                          }}
+                          title={`Stripe: ${formatCurrency(paymentFeeBreakdown.stripeAmt)}`}
+                        >
+                          {((paymentFeeBreakdown.stripeAmt / paymentFeeBreakdown.gross) * 100).toFixed(0)}%
+                        </FeeSegment>
+                      </FeeBreakdownBar>
+                    )}
+                    <FeeRow>
+                      <span style={{ color: colors.textSecondary }}>Gross amount</span>
+                      <span style={{ fontWeight: 600 }}>{formatCurrency(paymentFeeBreakdown.gross)}</span>
+                    </FeeRow>
+                    <FeeRow>
+                      <span style={{ color: colors.textSecondary }}>
+                        Platform commission
+                        {paymentFeeBreakdown.feePctLabel != null
+                          ? ` (~${paymentFeeBreakdown.feePctLabel}% of pre-tax)`
+                          : ""}
+                      </span>
+                      <span style={{ color: colors.error }}>
+                        - {formatCurrency(paymentFeeBreakdown.platformFee)}
+                      </span>
+                    </FeeRow>
+                    {paymentFeeBreakdown.platTax > 0.009 && (
+                      <FeeRow>
+                        <span style={{ color: colors.textSecondary }}>Tax on platform fee (HST)</span>
+                        <span style={{ color: colors.error }}>
+                          - {formatCurrency(paymentFeeBreakdown.platTax)}
+                        </span>
+                      </FeeRow>
+                    )}
+                    <FeeRow>
+                      <span style={{ color: colors.textSecondary }}>
+                        Stripe processing
+                        {stripeProcessingResolved.estimated ? " (est.)" : ""}
+                      </span>
+                      <span style={{ color: colors.error }}>
+                        - {formatCurrency(paymentFeeBreakdown.stripeAmt)}
+                      </span>
+                    </FeeRow>
+                    <FeeRow>
+                      <span>Net payout to business</span>
+                      <span style={{ color: colors.success }}>
+                        {formatCurrency(paymentFeeBreakdown.net)}
+                      </span>
+                    </FeeRow>
+                  </DrawerInfoCard>
+                )}
+              </>
             )}
 
             <InfoGroup>
@@ -1102,7 +956,7 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
   const { payment } = booking;
 
   const drawerFooter = (
-    <DrawerFooter>
+    <>
       <Button
         danger
         icon={<XCircle size={16} />}
@@ -1127,7 +981,7 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
       >
         Process Refund
       </Button>
-    </DrawerFooter>
+    </>
   );
 
   return (
@@ -1138,6 +992,7 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
       titleIcon={<Hash size={20} style={{ color: colors.primary }} />}
       isMobile={isMobile}
       width="860px"
+      dense
       footer={drawerFooter}
       showCopyLink
     >
@@ -1616,8 +1471,8 @@ const BookingsList = () => {
     }
   }, []);
 
-  const totalRevenue = dashboardStats.total_confirmed_revenue ?? dashboardStats.confirmed_bookings * Number(dashboardStats.average_booking_value);
-  const platformFees = dashboardStats.total_platform_fees ?? totalRevenue * 0.08;
+  const totalRevenue = dashboardStats.total_confirmed_revenue ?? null;
+  const platformFees = dashboardStats.total_platform_fees ?? null;
   const stripeFees = dashboardStats.total_stripe_fees ?? 0;
   const statsRangeLabel =
     filterParams.startDate && filterParams.endDate
@@ -1669,14 +1524,14 @@ const BookingsList = () => {
       title: "Gross Revenue",
       icon: DollarSign,
       value: totalRevenue,
-      growth: dashboardStats.booking_growth,
+      growth: dashboardStats.revenue_growth ?? null,
       footer: "Total GMV",
       color: "#8b5cf6",
       isCurrency: true,
       periodBadge: metricsPeriodBadge,
     },
     {
-      title: "Platform Fees",
+      title: "Platform Commission",
       icon: Percent,
       value: platformFees,
       footer: "Collected by platform",
@@ -1997,7 +1852,7 @@ const BookingsList = () => {
           ) : loading ? (
             <AdminTableSkeleton rows={8} />
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={bookings}
               rowKey="id"

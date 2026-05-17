@@ -10,7 +10,6 @@ import React, {
 import { useAuthStore } from "@/lib/auth-client";
 import styled, { keyframes } from "styled-components";
 import {
-  Table,
   Card,
   Select,
   Button,
@@ -33,6 +32,7 @@ import {
   Collapse,
   Avatar,
 } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from "@/lib/message";
 import {
   Shield,
@@ -71,23 +71,33 @@ import { LordIcon } from "@/services/ReactUtils";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
+import { adminColors as colors } from "../shared/adminColors";
+import { formatDate } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+  MobileCardFooter,
+} from "../shared/adminMobileStyles";
+
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
-// --- STYLING & THEME ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
 const roleColorOptions = [
   "#ef4444",
   "#f97316",
@@ -140,31 +150,6 @@ const HeaderSubtitle = styled(Text)`
   color: ${colors.textSecondary};
   @media (max-width: 480px) {
     font-size: 14px;
-  }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
   }
 `;
 
@@ -275,83 +260,7 @@ const DrawerFooter = styled.div`
   gap: 12px;
 `;
 
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-`;
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-`;
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 16px 24px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-  /* Prevent table collapse on empty/loading */
-  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
-    background: white;
-  }
-`;
+// --- MODAL & PERMISSION STYLES ---
 const RoleTag = styled(Tag)`
   border: none !important;
   font-weight: 500;
@@ -367,7 +276,6 @@ const UserCount = styled.div`
   font-size: 13px;
 `;
 
-// --- MODAL & PERMISSION STYLES ---
 const PermissionsContainer = styled.div`
   background: ${colors.lightBg};
   border: 1px solid ${colors.border};
@@ -409,37 +317,6 @@ const DragHandleButton = styled(Button)`
   }
 `;
 
-// --- MOBILE COMPONENTS ---
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-const MobileCardFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid ${colors.border};
-`;
-
 // --- GENERATORS ---
 const generateSkeletonData = (count = 5) => {
   return Array.from({ length: count }, (_, i) => ({
@@ -454,12 +331,6 @@ const generateSkeletonData = (count = 5) => {
 
 // --- DND & UTILITIES ---
 const RowContext = React.createContext({});
-const formatDate = (dateString) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(dateString));
 
 const DragHandle = () => {
   const { setActivatorNodeRef, listeners } = useContext(RowContext);
@@ -1227,7 +1098,7 @@ const RolesManagement = () => {
                 items={roles.map((r) => r.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <StyledTable
+                <AdminCompactTable
                   columns={columns}
                   dataSource={
                     loading ? generateSkeletonData(roles.length || 5) : roles

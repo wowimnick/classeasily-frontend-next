@@ -6,7 +6,6 @@ import styled, { ThemeProvider } from "styled-components";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 import {
-  Table,
   Card,
   Button,
   Modal,
@@ -24,6 +23,7 @@ import {
   Typography,
   Skeleton,
 } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from "@/lib/message";
 import {
   Activity,
@@ -59,31 +59,31 @@ import {
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+  MobileCardFooter,
+} from "../shared/adminMobileStyles";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph, Link } = Typography;
-
-// --- THEME COLORS ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 // --- MAIN PAGE STYLED COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -127,114 +127,6 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-`;
-
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-  }
-`;
-
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 16px 24px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-`;
-
 const VerificationTag = styled(Tag)`
   font-weight: 600;
   border-radius: 6px;
@@ -245,44 +137,6 @@ const VerificationTag = styled(Tag)`
   align-items: center;
   gap: 5px;
   border: none;
-`;
-
-// --- MOBILE CARD STYLES ---
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  .ant-card-body {
-    padding: 16px !important;
-  }
-`;
-
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-
-const MobileCardFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid ${colors.border};
 `;
 
 // --- DETAIL DRAWER STYLES ---
@@ -1145,7 +999,7 @@ const UserAccessControl = () => {
               )}
             </div>
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={verificationRequests}
               rowKey="id"

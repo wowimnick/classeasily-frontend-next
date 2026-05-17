@@ -44,6 +44,15 @@ const HIGHLIGHT_ICON_LOCATION = {
   delay: 2000,
 };
 
+function formatIgFollowersCompact(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(num);
+}
+
 // --- GLOBAL STYLES ---
 const GlobalStyles = createGlobalStyle`
   body {
@@ -535,9 +544,11 @@ const BusinessPageClient = ({ initialData, slug }) => {
     widget_api_key,
     social_media_links = {},
     locations = [],
+    instagram_follower_count,
   } = businessData;
 
   const ratingAsNumber = average_rating ? parseFloat(average_rating) : 0;
+  const igFollowersCompact = formatIgFollowersCompact(instagram_follower_count);
 
   const displayLocations = useMemo(
     () => dedupeBusinessLocationsForDisplay(locations),
@@ -663,6 +674,20 @@ const BusinessPageClient = ({ initialData, slug }) => {
                   </div>
                 </HighlightItem>
               )}
+              {igFollowersCompact ? (
+                <HighlightItem>
+                  <div
+                    className="icon"
+                    style={{ color: "#E1306C", display: "flex" }}
+                  >
+                    <Instagram size={24} strokeWidth={1.75} />
+                  </div>
+                  <div className="content">
+                    <h3>{igFollowersCompact} Instagram followers</h3>
+                    <p>Active community on Instagram.</p>
+                  </div>
+                </HighlightItem>
+              ) : null}
               <HighlightItem>
                 <div className="icon">
                   <LordIcon
@@ -911,11 +936,34 @@ const BusinessPageClient = ({ initialData, slug }) => {
 
                 {Object.keys(social_media_links).length > 0 && (
                   <SocialRow>
-                    {Object.entries(social_media_links).map(([key, url]) => (
+                    {Object.entries(social_media_links).map(([key, url]) =>
                       url && socialIcons[key] ? (
-                        <SocialLink key={key} href={url} target="_blank" rel="noreferrer">{socialIcons[key]}</SocialLink>
-                      ) : null
-                    ))}
+                        <SocialLink
+                          key={key}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          {socialIcons[key]}
+                          {key === "instagram" && igFollowersCompact ? (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: "#E1306C",
+                              }}
+                            >
+                              {igFollowersCompact}
+                            </span>
+                          ) : null}
+                        </SocialLink>
+                      ) : null,
+                    )}
                   </SocialRow>
                 )}
 

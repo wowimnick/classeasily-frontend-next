@@ -246,6 +246,7 @@ const ClassesTab = ({ classes, businessName, handleFavoriteChange }) => {
       min_session_price={cls.min_session_price}
       min_course_price={cls.min_course_price}
       totalReviews={cls.review_count}
+      instagramFollowerCount={cls.business_instagram_follower_count ?? null}
       business_name={businessName}
       is_favorited={cls.is_favorited}
       onFavoriteChange={(isNowFavorite) =>
@@ -301,6 +302,9 @@ const ClassesTab = ({ classes, businessName, handleFavoriteChange }) => {
                         {...cls}
                         rating={parseFloat(cls.average_rating) || 0}
                         totalReviews={cls.review_count}
+                        instagramFollowerCount={
+                          cls.business_instagram_follower_count ?? null
+                        }
                         business_name={businessName}
                         onFavoriteChange={(isNowFavorite) =>
                           handleFavoriteChange(cls.classId, isNowFavorite)

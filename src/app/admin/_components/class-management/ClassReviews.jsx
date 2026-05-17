@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import dayjs from "dayjs";
 import {
-  Table,
   Card,
   Input,
   Select,
@@ -28,6 +26,7 @@ import {
   Divider,
   Pagination,
 } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from "@/lib/message";
 import {
   Search,
@@ -61,30 +60,21 @@ import {
 } from "@/components/common/GlobalLoader";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba, formatDate } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import { ActionButtonsContainer, RefreshButton } from "../shared/AdminButtons";
+
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
-
-// --- STYLING & THEME (FROM BOOKINGSLIST) ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  if (!hex?.slice) return `rgba(100, 116, 139, ${alpha})`;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -122,105 +112,6 @@ const PageTitle = styled.h1`
   margin: 0;
   @media (max-width: 768px) {
     font-size: 18px;
-  }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-  @media (max-width: 768px) {
-    font-size: 16px !important;
-  }
-`;
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
-`;
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textSecondary};
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 13px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-  .ant-empty {
-    padding: 40px 20px;
   }
 `;
 
@@ -319,11 +210,6 @@ const StyledModal = styled(Modal)`
 `;
 
 // --- UTILITY FUNCTIONS ---
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
-  return dayjs(dateString).format("MMM D, YYYY");
-};
-
 const formatStatus = (status) => {
   if (!status) return "N/A";
   return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -784,14 +670,13 @@ const ClassReviews = () => {
             <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Monitor and moderate user reviews across the platform.</div>
           </div>
           <ActionButtonsContainer>
-            <Button
+            <RefreshButton
               icon={<RefreshCw size={15} />}
               onClick={refreshData}
               loading={statsLoading || loading}
-              style={{ borderRadius: 8 }}
             >
               {!isMobile && "Refresh"}
-            </Button>
+            </RefreshButton>
           </ActionButtonsContainer>
         </DashboardHeader>
 
@@ -891,7 +776,7 @@ const ClassReviews = () => {
               )}
             </div>
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={reviews}
               rowKey="reviewId"

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import {
   Users,
@@ -10,8 +9,6 @@ import {
   DollarSign,
   ShieldCheck,
   MessageSquare,
-  Wallet,
-  ArrowRight,
   UserPlus,
   Activity,
   BarChart2,
@@ -32,10 +29,17 @@ import {
   PieChart,
   Pie,
   Cell,
+  Label,
 } from "recharts";
-import NumberFlow from "@number-flow/react";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import { AdminOverviewSkeleton } from "../shared/AdminSkeletons";
+import {
+  AdminBusinessChartTooltip,
+  BUSINESS_CHART_THEME,
+  BusinessChartCard,
+  BusinessChartPlot,
+  getChartTotal,
+} from "../shared/AdminBusinessCharts";
 import {
   userAdminService,
   businessManagementService,
@@ -49,24 +53,12 @@ import {
 import { useAuth } from "@/lib/auth-client";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba, formatCurrencyKPI } from "../shared/adminUtils";
 
 dayjs.extend(relativeTime);
 
 const { Text } = Typography;
-
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  purple: "#8b5cf6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#111827",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
 
 const USER_ROLE_PIE_COLORS = [
   colors.info,
@@ -77,28 +69,11 @@ const USER_ROLE_PIE_COLORS = [
   colors.error,
 ];
 
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-function formatCurrency(value) {
-  if (value == null || isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 function formatCompact(value) {
   if (value == null || isNaN(value)) return "—";
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return formatCurrency(value);
+  return formatCurrencyKPI(value);
 }
 
 const DashboardWrapper = styled.div`
@@ -191,57 +166,6 @@ const IconContainer = styled.div`
   }
 `;
 
-const MetricLabel = styled.div`
-  font-size: 11px;
-  color: ${colors.textTertiary};
-  font-weight: 500;
-  margin-bottom: 3px;
-`;
-
-const MetricValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  line-height: 1.15;
-  @media (max-width: 768px) {
-    font-size: 18px;
-  }
-`;
-
-const FooterNote = styled.div`
-  font-size: 11px;
-  color: ${colors.textTertiary};
-`;
-
-/* ── Quick action cards ── */
-const QuickActionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-`;
-
-const QuickActionCard = styled(Card)`
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid ${colors.border};
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
-  }
-  .ant-card-body {
-    padding: 14px 16px;
-  }
-`;
-
 /* ── Charts ── */
 const ChartAndFeedGrid = styled.div`
   display: grid;
@@ -257,30 +181,6 @@ const ChartsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-`;
-
-const ChartCard = styled(Card)`
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid ${colors.border};
-  .ant-card-body {
-    padding: 16px 20px;
-  }
-`;
-
-const ChartContainer = styled.div`
-  height: 240px;
-  width: 100%;
-  margin-top: 14px;
-`;
-
-const CustomTooltipBox = styled.div`
-  background: #ffffff;
-  border: 1px solid ${colors.border};
-  border-radius: 10px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  font-size: 12px;
 `;
 
 /* ── Activity feed ── */
@@ -376,25 +276,6 @@ function getAuditIcon(action) {
   return { icon: Activity, color: colors.info };
 }
 
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <CustomTooltipBox>
-      <div style={{ fontWeight: 600, color: colors.textPrimary, marginBottom: 6, fontSize: 12 }}>
-        {label}
-      </div>
-      {payload.map((entry) => (
-        <div key={entry.dataKey} style={{ color: entry.color, marginBottom: 2, fontSize: 12 }}>
-          {entry.name}:{" "}
-          <strong>
-            {entry.dataKey === "revenue" ? formatCompact(entry.value) : entry.value}
-          </strong>
-        </div>
-      ))}
-    </CustomTooltipBox>
-  );
-}
-
 const PERIOD_OPTIONS = [
   { label: "30d", value: "30d" },
   { label: "90d", value: "90d" },
@@ -402,7 +283,6 @@ const PERIOD_OPTIONS = [
 ];
 
 export default function PlatformOverview() {
-  const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState("30d");
@@ -547,33 +427,6 @@ export default function PlatformOverview() {
     return () => { cancelled = true; };
   }, [chartPeriod]);
 
-  const quickActions = [
-    {
-      label: "Pending Verifications",
-      value: stats.pendingVerifications,
-      path: "/admin/business-verification",
-      icon: ShieldCheck,
-      color: stats.pendingVerifications > 0 ? colors.error : colors.warning,
-      note: stats.pendingVerifications > 0 ? "Requires attention" : "Up to date",
-    },
-    {
-      label: "Open Support Tickets",
-      value: stats.openTickets,
-      path: "/admin/support",
-      icon: MessageSquare,
-      color: colors.info,
-      note: "Awaiting response",
-    },
-    {
-      label: "Pending Payouts",
-      value: stats.pendingPayoutsCount,
-      path: "/admin/payouts",
-      icon: Wallet,
-      color: colors.success,
-      note: "Ready to process",
-    },
-  ];
-
   const userRolePopoverContent = useMemo(() => {
     const dist = stats.roleDistribution || [];
     if (!dist.length) {
@@ -605,14 +458,24 @@ export default function PlatformOverview() {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={72}
-              paddingAngle={1}
+              innerRadius="58%"
+              outerRadius="82%"
+              paddingAngle={5}
+              stroke="none"
+              cornerRadius={5}
             >
               {pieData.map((entry, i) => (
                 <Cell key={i} fill={entry.fill} />
               ))}
+              <Label
+                value={String(getChartTotal(pieData))}
+                position="center"
+                fill={BUSINESS_CHART_THEME.textPrimary}
+                style={{ fontSize: "17px", fontWeight: "bold" }}
+              />
             </Pie>
-            <RechartsTooltip />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+            <RechartsTooltip content={<AdminBusinessChartTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -741,35 +604,6 @@ export default function PlatformOverview() {
 
         <Divider />
 
-        {/* Quick actions */}
-        <SectionLabel>Needs attention</SectionLabel>
-        <QuickActionGrid style={{ marginBottom: 20 }}>
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <QuickActionCard key={action.path} onClick={() => router.push(action.path)}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <IconContainer $bg={hexToRgba(action.color, 0.1)} $color={action.color}>
-                      <Icon />
-                    </IconContainer>
-                    <div>
-                      <MetricLabel>{action.label}</MetricLabel>
-                      <MetricValue style={{ fontSize: 18 }}>
-                        <NumberFlow value={action.value} />
-                      </MetricValue>
-                      <FooterNote>{action.note}</FooterNote>
-                    </div>
-                  </div>
-                  <ArrowRight size={16} style={{ color: colors.textTertiary }} />
-                </div>
-              </QuickActionCard>
-            );
-          })}
-        </QuickActionGrid>
-
-        <Divider />
-
         {/* Chart + Activity Feed side by side; stack on mobile */}
         <ChartAndFeedGrid>
           <div>
@@ -788,43 +622,58 @@ export default function PlatformOverview() {
                 style={{ fontSize: 11 }}
               />
             </SectionRow>
-            <ChartCard>
-              <ChartContainer>
+            <BusinessChartCard $height={304} $compactBody>
+              <BusinessChartPlot $height={240}>
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                       data={chartData}
-                      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                       barGap={4}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={BUSINESS_CHART_THEME.border}
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
                         axisLine={false}
                         tickLine={false}
+                        dy={10}
                       />
                       <YAxis
                         yAxisId="left"
-                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
                         axisLine={false}
                         tickLine={false}
-                        width={32}
+                        width={36}
                       />
                       <YAxis
                         yAxisId="right"
                         orientation="right"
-                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
-                        width={40}
+                        width={44}
                       />
-                      <RechartsTooltip content={<CustomTooltip />} />
+                      <RechartsTooltip
+                        content={
+                          <AdminBusinessChartTooltip
+                            formatItemValue={(entry) =>
+                              entry.dataKey === "revenue"
+                                ? formatCompact(entry.value)
+                                : entry.value
+                            }
+                          />
+                        }
+                        cursor={{ stroke: BUSINESS_CHART_THEME.border }}
+                      />
                       <Legend
-                        wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                        iconType="square"
-                        iconSize={7}
+                        wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                        iconType="circle"
                       />
                       <Bar
                         yAxisId="left"
@@ -849,8 +698,8 @@ export default function PlatformOverview() {
                     No trend data available
                   </div>
                 )}
-              </ChartContainer>
-            </ChartCard>
+              </BusinessChartPlot>
+            </BusinessChartCard>
           </div>
 
           {/* Activity Feed */}

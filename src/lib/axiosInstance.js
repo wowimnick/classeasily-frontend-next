@@ -23,7 +23,8 @@ function getTimeoutMsForUrl(url) {
     lower.includes("upload-url") ||
     lower.includes("/upload") ||
     lower.includes("/business/classes") ||
-    lower.includes("/admin/classes");
+    lower.includes("/admin/classes") ||
+    lower.includes("/admin/revenue");
   return needsLong ? LONG_API_TIMEOUT_MS : DEFAULT_API_TIMEOUT_MS;
 }
 

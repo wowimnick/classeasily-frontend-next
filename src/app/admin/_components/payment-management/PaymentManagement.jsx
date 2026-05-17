@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import {
-  Table,
   Card,
   Input,
   Select,
@@ -43,42 +42,21 @@ import { paymentService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba, formatCurrency } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBarFlexStart,
+} from "../shared/adminTableStyles";
 
 const { RangePicker } = DatePicker;
 const { Text, Title, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
-
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  if (!hex?.slice) return `rgba(100, 116, 139, ${alpha})`;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-function formatCurrency(value) {
-  if (value == null || isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 const statusColors = {
   succeeded: "success",
@@ -132,101 +110,8 @@ const ActionRow = styled.div`
   }
 `;
 
-// --- TABLE ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textSecondary};
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 13px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background: ${colors.lightBg};
-`;
-
-const DrawerBodyInner = styled.div`
+const DrawerScrollInner = styled.div`
   padding: 20px;
-`;
-
-const DrawerFooter = styled.div`
-  padding: 14px 20px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  background: white;
 `;
 
 const InfoCard = styled.div`
@@ -310,7 +195,6 @@ export default function PaymentManagement() {
     successfulCount: 0,
     platformRevenue: 0,
     stripeFees: 0,
-    netPlatformProfit: 0,
   });
   const [payments, setPayments] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -348,7 +232,6 @@ export default function PaymentManagement() {
           successfulCount: d.successful_transactions ?? d.successful_count ?? 0,
           platformRevenue: d.platform_revenue ?? d.platform_fees ?? 0,
           stripeFees: d.stripe_fees ?? 0,
-          netPlatformProfit: d.net_platform_profit ?? d.platform_fees ?? 0,
         });
       }
     } finally {
@@ -467,9 +350,8 @@ export default function PaymentManagement() {
     { title: "Successful", value: stats.successfulCount, icon: CheckCircle, color: colors.success, isCurrency: false, footer: "Transactions" },
     { title: "Pending", value: stats.pendingCount, icon: Clock, color: colors.warning, isCurrency: false, footer: "Awaiting" },
     { title: "Refunded", value: stats.totalRefunded, icon: RotateCcw, color: colors.error, isCurrency: true, footer: "Total refunds" },
-    { title: "Platform Revenue", value: stats.platformRevenue, icon: TrendingUp, color: "#8b5cf6", isCurrency: true, footer: "ClassEasily commission (your revenue)" },
+    { title: "Platform Commission", value: stats.platformRevenue, icon: TrendingUp, color: "#8b5cf6", isCurrency: true, footer: "ClassEasily commission (your revenue)" },
     { title: "Stripe Fees", value: stats.stripeFees, icon: CreditCard, color: colors.textSecondary, isCurrency: true, footer: "Passthrough — deducted from host payout, not platform revenue" },
-    { title: "Net Platform Profit", value: stats.netPlatformProfit, icon: DollarSign, color: colors.success, isCurrency: true, footer: "Same as platform commission (Stripe is not our income)" },
   ];
 
   const columns = [
@@ -538,17 +420,16 @@ export default function PaymentManagement() {
   const renderDrawerContent = () => {
     if (detailLoading) {
       return (
-        <DrawerBody>
-          <DrawerBodyInner>
-            <AdminDrawerContentSkeleton />
-          </DrawerBodyInner>
-        </DrawerBody>
+        <DrawerScrollInner>
+          <AdminDrawerContentSkeleton />
+        </DrawerScrollInner>
       );
     }
     if (!payment) return null;
 
     const gross = payment.amount ?? 0;
     const platformFee = payment.platform_fee_amount ?? 0;
+    const platTax = Number(payment.platform_fee_tax ?? 0);
     const taxAmt = payment.tax_amount ?? 0;
     const storedStripe =
       payment.stripe_processing_fee != null && payment.stripe_processing_fee !== ""
@@ -572,154 +453,157 @@ export default function PaymentManagement() {
         : null;
 
     return (
-      <>
-        <DrawerBody>
-          <DrawerBodyInner>
-            <InfoCard>
-              <InfoCardTitle>Payment Info</InfoCardTitle>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>Stripe Payment Intent</div>
-                <CopyableId
-                  title="Click to copy"
-                  onClick={() => { navigator.clipboard.writeText(payment.stripe_payment_intent_id ?? ""); }}
-                >
-                  {payment.stripe_payment_intent_id ?? "—"}
-                </CopyableId>
-              </div>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary }}>Status</div>
-                  <Tag color={statusColors[payment.status] || "default"} style={{ marginTop: 4 }}>{payment.status}</Tag>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary }}>Date</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{payment.created_at ? dayjs(payment.created_at).format("MMM D, YYYY HH:mm") : "—"}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary }}>Method</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{payment.card_details?.display_name ?? "Card"}</div>
-                </div>
-              </div>
-            </InfoCard>
-
-            <InfoCard>
-              <InfoCardTitle>Payout model</InfoCardTitle>
-              <p style={{ margin: 0, fontSize: 12, color: colors.textSecondary, lineHeight: 1.5 }}>
-                Marketplace default: partner tier commission (e.g. 12%) is ClassEasily revenue.
-                Stripe card fees (~2.9% + 30¢ per charge) are estimated and deducted from the
-                host&apos;s net payout — they are not taken from the platform commission.
-              </p>
-            </InfoCard>
-
-            <InfoCard>
-              <InfoCardTitle>Fee Breakdown</InfoCardTitle>
-              {gross > 0 && (
-                <FeeBreakdownBar>
-                  <FeeSegment $color={colors.success} style={{ width: `${(net / gross) * 100}%` }} title={`Net: ${formatCurrency(net)}`}>
-                    {((net / gross) * 100).toFixed(0)}%
-                  </FeeSegment>
-                  <FeeSegment $color={colors.warning} style={{ width: `${(platformFee / gross) * 100}%` }} title={`Platform: ${formatCurrency(platformFee)}`}>
-                    {((platformFee / gross) * 100).toFixed(0)}%
-                  </FeeSegment>
-                  <FeeSegment $color={colors.error} style={{ width: `${(stripeFee / gross) * 100}%` }} title={`Stripe: ${formatCurrency(stripeFee)}`}>
-                    {((stripeFee / gross) * 100).toFixed(0)}%
-                  </FeeSegment>
-                </FeeBreakdownBar>
-              )}
-              <FeeRow>
-                <span style={{ color: colors.textSecondary }}>Gross Amount</span>
-                <span style={{ fontWeight: 600 }}>{formatCurrency(gross)}</span>
-              </FeeRow>
-              <FeeRow>
-                <span style={{ color: colors.textSecondary }}>
-                  Platform commission{feePctLabel != null ? ` (~${feePctLabel}% of pre-tax)` : ""}
-                </span>
-                <span style={{ color: colors.error }}>- {formatCurrency(platformFee)}</span>
-              </FeeRow>
-              <FeeRow>
-                <span style={{ color: colors.textSecondary }}>Stripe Processing</span>
-                <span style={{ color: colors.error }}>- {formatCurrency(stripeFee)}</span>
-              </FeeRow>
-              <FeeRow>
-                <span>Net Payout to Business</span>
-                <span style={{ color: colors.success }}>{formatCurrency(net)}</span>
-              </FeeRow>
-            </InfoCard>
-
-            {payment.refunded_amount != null && payment.refunded_amount > 0 && (
-              <InfoCard>
-                <InfoCardTitle>Refund History</InfoCardTitle>
-                <FeeRow>
-                  <span style={{ color: colors.textSecondary }}>Total Refunded</span>
-                  <span style={{ color: colors.error, fontWeight: 600 }}>{formatCurrency(payment.refunded_amount)}</span>
-                </FeeRow>
-                {payment.available_refund_amount != null && (
-                  <FeeRow>
-                    <span style={{ color: colors.textSecondary }}>Remaining Refundable</span>
-                    <span>{formatCurrency(payment.available_refund_amount)}</span>
-                  </FeeRow>
-                )}
-              </InfoCard>
-            )}
-
-            {(payment.business_name || payment.user_email) && (
-              <InfoCard>
-                <InfoCardTitle>Linked Entities</InfoCardTitle>
-                {payment.business_name && (
-                  <FeeRow>
-                    <span style={{ color: colors.textSecondary }}>Business</span>
-                    <span style={{ fontWeight: 500 }}>{payment.business_name}</span>
-                  </FeeRow>
-                )}
-                {payment.user_email && (
-                  <FeeRow>
-                    <span style={{ color: colors.textSecondary }}>User</span>
-                    <span style={{ fontWeight: 500 }}>{payment.user_email}</span>
-                  </FeeRow>
-                )}
-                {payment.booking_id && (
-                  <div style={{ marginTop: 10 }}>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<ExternalLink size={13} />}
-                      onClick={() => router.push(`/admin/all-bookings?bookingId=${payment.booking_id}`)}
-                      style={{ padding: 0 }}
-                    >
-                      View linked booking
-                    </Button>
-                  </div>
-                )}
-              </InfoCard>
-            )}
-
-            {payment.receipt_url && (
-              <Button type="link" icon={<ExternalLink size={14} />} href={payment.receipt_url} target="_blank" style={{ padding: 0 }}>
-                View Stripe receipt
-              </Button>
-            )}
-          </DrawerBodyInner>
-        </DrawerBody>
-
-        {!detailLoading && payment && (
-          <DrawerFooter>
-            <Button onClick={handleMarkPaid} disabled={!canMarkPaid}>
-              Mark as paid
-            </Button>
-            <Button
-              type="primary"
-              danger
-              disabled={!canRefund}
-              onClick={() => setRefundModalOpen(true)}
-              icon={<RotateCcw size={14} />}
+      <DrawerScrollInner>
+        <InfoCard>
+          <InfoCardTitle>Payment Info</InfoCardTitle>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>Stripe Payment Intent</div>
+            <CopyableId
+              title="Click to copy"
+              onClick={() => { navigator.clipboard.writeText(payment.stripe_payment_intent_id ?? ""); }}
             >
-              Process Refund
-            </Button>
-          </DrawerFooter>
+              {payment.stripe_payment_intent_id ?? "—"}
+            </CopyableId>
+          </div>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 11, color: colors.textSecondary }}>Status</div>
+              <Tag color={statusColors[payment.status] || "default"} style={{ marginTop: 4 }}>{payment.status}</Tag>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: colors.textSecondary }}>Date</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{payment.created_at ? dayjs(payment.created_at).format("MMM D, YYYY HH:mm") : "—"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: colors.textSecondary }}>Method</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{payment.card_details?.display_name ?? "Card"}</div>
+            </div>
+          </div>
+        </InfoCard>
+
+        <InfoCard>
+          <InfoCardTitle>Payout model</InfoCardTitle>
+          <p style={{ margin: 0, fontSize: 12, color: colors.textSecondary, lineHeight: 1.5 }}>
+            Marketplace default: partner tier commission (e.g. 13%) is ClassEasily revenue.
+            Stripe card fees (~2.9% + 30¢ per charge) are estimated and deducted from the
+            host&apos;s net payout — they are not taken from the platform commission.
+          </p>
+        </InfoCard>
+
+        <InfoCard>
+          <InfoCardTitle>Fee Breakdown</InfoCardTitle>
+          {gross > 0 && (
+            <FeeBreakdownBar>
+              <FeeSegment $color={colors.success} style={{ width: `${(net / gross) * 100}%` }} title={`Net: ${formatCurrency(net)}`}>
+                {((net / gross) * 100).toFixed(0)}%
+              </FeeSegment>
+              <FeeSegment $color={colors.warning} style={{ width: `${(platformFee / gross) * 100}%` }} title={`Platform: ${formatCurrency(platformFee)}`}>
+                {((platformFee / gross) * 100).toFixed(0)}%
+              </FeeSegment>
+              <FeeSegment $color={colors.error} style={{ width: `${(stripeFee / gross) * 100}%` }} title={`Stripe: ${formatCurrency(stripeFee)}`}>
+                {((stripeFee / gross) * 100).toFixed(0)}%
+              </FeeSegment>
+            </FeeBreakdownBar>
+          )}
+          <FeeRow>
+            <span style={{ color: colors.textSecondary }}>Gross Amount</span>
+            <span style={{ fontWeight: 600 }}>{formatCurrency(gross)}</span>
+          </FeeRow>
+          <FeeRow>
+            <span style={{ color: colors.textSecondary }}>
+              Platform commission{feePctLabel != null ? ` (~${feePctLabel}% of pre-tax)` : ""}
+            </span>
+            <span style={{ color: colors.error }}>- {formatCurrency(platformFee)}</span>
+          </FeeRow>
+          {platTax > 0.009 && (
+            <FeeRow>
+              <span style={{ color: colors.textSecondary }}>Tax on platform fee (HST)</span>
+              <span style={{ color: colors.error }}>- {formatCurrency(platTax)}</span>
+            </FeeRow>
+          )}
+          <FeeRow>
+            <span style={{ color: colors.textSecondary }}>Stripe Processing</span>
+            <span style={{ color: colors.error }}>- {formatCurrency(stripeFee)}</span>
+          </FeeRow>
+          <FeeRow>
+            <span>Net Payout to Business</span>
+            <span style={{ color: colors.success }}>{formatCurrency(net)}</span>
+          </FeeRow>
+        </InfoCard>
+
+        {payment.refunded_amount != null && payment.refunded_amount > 0 && (
+          <InfoCard>
+            <InfoCardTitle>Refund History</InfoCardTitle>
+            <FeeRow>
+              <span style={{ color: colors.textSecondary }}>Total Refunded</span>
+              <span style={{ color: colors.error, fontWeight: 600 }}>{formatCurrency(payment.refunded_amount)}</span>
+            </FeeRow>
+            {payment.available_refund_amount != null && (
+              <FeeRow>
+                <span style={{ color: colors.textSecondary }}>Remaining Refundable</span>
+                <span>{formatCurrency(payment.available_refund_amount)}</span>
+              </FeeRow>
+            )}
+          </InfoCard>
         )}
-      </>
+
+        {(payment.business_name || payment.user_email) && (
+          <InfoCard>
+            <InfoCardTitle>Linked Entities</InfoCardTitle>
+            {payment.business_name && (
+              <FeeRow>
+                <span style={{ color: colors.textSecondary }}>Business</span>
+                <span style={{ fontWeight: 500 }}>{payment.business_name}</span>
+              </FeeRow>
+            )}
+            {payment.user_email && (
+              <FeeRow>
+                <span style={{ color: colors.textSecondary }}>User</span>
+                <span style={{ fontWeight: 500 }}>{payment.user_email}</span>
+              </FeeRow>
+            )}
+            {payment.booking_id && (
+              <div style={{ marginTop: 10 }}>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<ExternalLink size={13} />}
+                  onClick={() => router.push(`/admin/all-bookings?bookingId=${payment.booking_id}`)}
+                  style={{ padding: 0 }}
+                >
+                  View linked booking
+                </Button>
+              </div>
+            )}
+          </InfoCard>
+        )}
+
+        {payment.receipt_url && (
+          <Button type="link" icon={<ExternalLink size={14} />} href={payment.receipt_url} target="_blank" style={{ padding: 0 }}>
+            View Stripe receipt
+          </Button>
+        )}
+      </DrawerScrollInner>
     );
   };
+
+  const paymentDrawerFooter =
+    !detailLoading && payment ? (
+      <>
+        <Button onClick={handleMarkPaid} disabled={!canMarkPaid}>
+          Mark as paid
+        </Button>
+        <Button
+          type="primary"
+          danger
+          disabled={!canRefund}
+          onClick={() => setRefundModalOpen(true)}
+          icon={<RotateCcw size={14} />}
+        >
+          Process Refund
+        </Button>
+      </>
+    ) : null;
 
   return (
     <ConfigProvider theme={appTheme}>
@@ -775,7 +659,7 @@ export default function PaymentManagement() {
                 </Text>
               </div>
             </TableHeader>
-            <FilterBar>
+            <FilterBarFlexStart>
               <Input
                 prefix={<Search size={13} />}
                 placeholder="Search..."
@@ -848,11 +732,11 @@ export default function PaymentManagement() {
               >
                 Apply
               </Button>
-            </FilterBar>
+            </FilterBarFlexStart>
             {loading ? (
               <AdminTableSkeleton rows={8} />
             ) : (
-            <StyledTable
+            <AdminCompactTable
               rowKey="id"
               columns={columns}
               dataSource={payments}
@@ -878,6 +762,8 @@ export default function PaymentManagement() {
           titleIcon={<CreditCard size={16} color={colors.primary} />}
           isMobile={isMobile}
           width="560px"
+          dense
+          footer={paymentDrawerFooter}
         >
           {renderDrawerContent()}
         </AdminResponsiveDrawer>

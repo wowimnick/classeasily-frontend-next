@@ -64,7 +64,7 @@ const DrawerHandle = styled.div`
 
 const DrawerHeader = styled.div`
   border-bottom: 1px solid #f1f5f9;
-  padding: 20px 24px;
+  padding: ${(p) => (p.$dense ? "12px 16px" : "20px 24px")};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -76,7 +76,7 @@ const HeaderTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 18px;
+  font-size: ${(p) => (p.$dense ? "16px" : "18px")};
   font-weight: 700;
   color: #334155;
 `;
@@ -101,7 +101,7 @@ const DrawerBody = styled.div`
 
 const DrawerFooter = styled.div`
   border-top: 1px solid #f1f5f9;
-  padding: 14px 24px;
+  padding: ${(p) => (p.$dense ? "10px 16px" : "14px 24px")};
   background: white;
   display: flex;
   justify-content: flex-end;
@@ -120,11 +120,12 @@ const AdminResponsiveDrawer = ({
   width,
   hideHeader = false,
   showCopyLink = false,
+  dense = false,
 }) => {
   const renderHeader = () =>
     !hideHeader && (
-      <DrawerHeader>
-        <HeaderTitle>
+      <DrawerHeader $dense={dense}>
+        <HeaderTitle $dense={dense}>
           {titleIcon}
           <span>{title}</span>
         </HeaderTitle>
@@ -153,14 +154,14 @@ const AdminResponsiveDrawer = ({
             <DrawerHandle />
             {renderHeader()}
             <DrawerBody>{children}</DrawerBody>
-            {footer ? <DrawerFooter>{footer}</DrawerFooter> : null}
+            {footer ? <DrawerFooter $dense={dense}>{footer}</DrawerFooter> : null}
           </MobileDrawerContent>
         ) : (
           <DesktopDrawerContent style={width ? { width } : undefined}>
             <DesktopDrawerInner>
               {renderHeader()}
               <DrawerBody>{children}</DrawerBody>
-              {footer ? <DrawerFooter>{footer}</DrawerFooter> : null}
+              {footer ? <DrawerFooter $dense={dense}>{footer}</DrawerFooter> : null}
             </DesktopDrawerInner>
           </DesktopDrawerContent>
         )}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Select, Table } from "antd";
+import { Select } from "antd";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import dayjs from "dayjs";
 import { corporateAdminService } from "@/services/adminDash";
 import MoneyChip from "./MoneyChip";
@@ -95,7 +96,7 @@ export default function BookingsTable({ onOpenRow, reloadNonce = 0 }) {
           { value: "refunded", label: "Refunded" },
         ]}
       />
-      <Table
+      <AdminCompactTable
         rowKey="id"
         loading={loading}
         dataSource={rows}

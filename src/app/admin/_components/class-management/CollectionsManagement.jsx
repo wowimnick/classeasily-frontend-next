@@ -16,7 +16,6 @@ import styled, { ThemeProvider } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
-  Table,
   Card,
   Input,
   Button,
@@ -40,6 +39,7 @@ import {
   Collapse,
 } from "antd";
 import message from "@/lib/message";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { theme as antdComponentTheme } from "@/components/theme";
 import {
   Plus,
@@ -93,32 +93,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { adminColors as colors } from "../shared/adminColors";
+import { hexToRgba } from "../shared/adminUtils";
+import { TableSection, TableHeader } from "../shared/adminTableStyles";
 
 const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
-
-// --- STYLING & THEME ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  purple: "#8b5cf6", // Added for AI features
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  if (!hex?.slice) return `rgba(100, 116, 139, ${alpha})`;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 const iconPreviewCache = new Map();
 
@@ -220,45 +200,6 @@ const ChartHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
-`;
-
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  background: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
 `;
 
 const SectionTitle = styled(Title).attrs({ level: 5 })`
@@ -1886,23 +1827,34 @@ const CollectionsManagement = () => {
 
           <TableSection>
             <TableHeader>
-              <div style={{ flex: 1 }}>
-                <Text type="secondary" style={{ fontSize: 14 }}>
-                  Drag rows to reorder. Hover the{" "}
-                  <CircleHelp
-                    size={14}
-                    style={{ verticalAlign: "text-bottom", opacity: 0.65 }}
-                  />{" "}
-                  icon on a column header to see what each toggle does.
-                </Text>
-              </div>
-              <Button
-                type="primary"
-                icon={<Plus size={16} />}
-                onClick={() => openDrawer(null)}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 16,
+                  width: "100%",
+                }}
               >
-                Add Collection
-              </Button>
+                <div style={{ flex: 1 }}>
+                  <Text type="secondary" style={{ fontSize: 14 }}>
+                    Drag rows to reorder. Hover the{" "}
+                    <CircleHelp
+                      size={14}
+                      style={{ verticalAlign: "text-bottom", opacity: 0.65 }}
+                    />{" "}
+                    icon on a column header to see what each toggle does.
+                  </Text>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<Plus size={16} />}
+                  onClick={() => openDrawer(null)}
+                >
+                  Add Collection
+                </Button>
+              </div>
             </TableHeader>
 
             <DndContext
@@ -1916,7 +1868,7 @@ const CollectionsManagement = () => {
                   items={rootIdsOrdered}
                   strategy={verticalListSortingStrategy}
                 >
-                  <Table
+                  <AdminCompactTable
                     columns={collectionColumns}
                     dataSource={orderedCollections}
                     rowKey="id"

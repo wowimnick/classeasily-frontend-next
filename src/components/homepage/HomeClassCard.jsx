@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Star, Navigation } from "lucide-react";
+import { Heart, Star, Navigation, Instagram } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
 import message from "@/lib/message";
@@ -17,6 +17,15 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService.js";
 import { saveBeforeNavigate } from "@/lib/scrollRestoration";
 import { formatCityForExploreListing, formatDurationHoursForListing } from "@/lib/formatClassLocationForListing";
+
+function formatCompactFollowers(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(num);
+}
 
 const HomeClassCard = ({
   classId,
@@ -43,6 +52,8 @@ const HomeClassCard = ({
   showPopularBadge = false,
   /** Shortest schedule duration in minutes (public API); explore meta shows as hours */
   listing_duration_minutes = null,
+  /** Instagram follower count from business (shown when review_count < 100) */
+  instagramFollowerCount = null,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,6 +105,69 @@ const HomeClassCard = ({
     if (dur) parts.push(dur);
     return parts.join(" · ");
   }, [categoryLabel, exploreCityOnly, listing_duration_minutes, distance]);
+
+  const nReviews = Math.max(0, Number(totalReviews) || 0);
+  const igCount = Math.max(0, Number(instagramFollowerCount) || 0);
+  const showIgBadge = nReviews < 100 && igCount > 0;
+  const igCompact = showIgBadge ? formatCompactFollowers(igCount) : null;
+
+  const exploreTitleTrailing = useMemo(() => {
+    if (nReviews >= 100 && rating > 0) {
+      return (
+        <div className={styles.exploreRatingInline}>
+          <Star size={12} fill="#111111" color="#111111" />
+          <span>{Number(rating).toFixed(2)}</span>
+        </div>
+      );
+    }
+    if (showIgBadge && igCompact) {
+      return (
+        <div
+          className={`${styles.exploreRatingInline} ${styles.igFollowerBadge}`}
+        >
+          <Instagram size={12} className={styles.igIcon} aria-hidden />
+          <span>{igCompact} followers</span>
+        </div>
+      );
+    }
+    if (rating > 0) {
+      return (
+        <div className={styles.exploreRatingInline}>
+          <Star size={12} fill="#111111" color="#111111" />
+          <span>{Number(rating).toFixed(2)}</span>
+        </div>
+      );
+    }
+    return null;
+  }, [nReviews, rating, showIgBadge, igCompact]);
+
+  const exploreRatingOrIgBlock = useMemo(() => {
+    if (showIgBadge && igCompact) {
+      return (
+        <div
+          className={`${styles.exploreRatingBlock} ${styles.igFollowerBadge}`}
+        >
+          <Instagram size={11} className={styles.igIcon} aria-hidden />
+          <span className={styles.exploreRatingNum}>{igCompact} followers</span>
+        </div>
+      );
+    }
+    if (rating > 0) {
+      return (
+        <div className={styles.exploreRatingBlock}>
+          <Star size={11} fill="#111111" color="#111111" aria-hidden />
+          <span className={styles.exploreRatingNum}>
+            {Number(rating).toFixed(2)}
+          </span>
+          <span className={styles.exploreRatingSep}> · </span>
+          <span className={styles.exploreReviewCount}>
+            {Number(totalReviews).toLocaleString("en-US")} reviews
+          </span>
+        </div>
+      );
+    }
+    return null;
+  }, [showIgBadge, igCompact, rating, totalReviews]);
 
   const explorePrice = useMemo(() => {
     const session =
@@ -253,30 +327,14 @@ const HomeClassCard = ({
       <div className={styles.exploreCopy}>
         <div className={styles.exploreTitleRow}>
           <div className={styles.exploreTitle}>{title}</div>
-          {rating > 0 && (
-            <div className={styles.exploreRatingInline}>
-              <Star size={12} fill="#111111" color="#111111" />
-              <span>{Number(rating).toFixed(2)}</span>
-            </div>
-          )}
+          {exploreTitleTrailing}
         </div>
 
         {exploreMetaLine ? (
           <p className={styles.exploreMeta}>{exploreMetaLine}</p>
         ) : null}
 
-        {rating > 0 && (
-          <div className={styles.exploreRatingBlock}>
-            <Star size={11} fill="#111111" color="#111111" aria-hidden />
-            <span className={styles.exploreRatingNum}>
-              {Number(rating).toFixed(2)}
-            </span>
-            <span className={styles.exploreRatingSep}> · </span>
-            <span className={styles.exploreReviewCount}>
-              {Number(totalReviews).toLocaleString("en-US")} reviews
-            </span>
-          </div>
-        )}
+        {exploreRatingOrIgBlock}
 
         <div className={styles.explorePriceRow}>
           {explorePrice ? (
@@ -354,13 +412,27 @@ const HomeClassCard = ({
       <div className={styles.contentContainer}>
         <div className={styles.topRow}>
           <div className={styles.title}>{title}</div>
-          {rating > 0 && (
+          {nReviews >= 100 && rating > 0 ? (
             <div className={styles.ratingBlock}>
               <Star size={12} fill="#222" />
               <span>{Number(rating).toFixed(1)}</span>
               <span className={styles.reviewCount}>({totalReviews})</span>
             </div>
-          )}
+          ) : showIgBadge && igCompact ? (
+            <div
+              className={`${styles.ratingBlock} ${styles.igFollowerBadge}`}
+            >
+              <Instagram size={12} className={styles.igIcon} aria-hidden />
+              <span>{igCompact}</span>
+              <span className={styles.reviewCount}>followers</span>
+            </div>
+          ) : rating > 0 ? (
+            <div className={styles.ratingBlock}>
+              <Star size={12} fill="#222" />
+              <span>{Number(rating).toFixed(1)}</span>
+              <span className={styles.reviewCount}>({totalReviews})</span>
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.locationRow}>

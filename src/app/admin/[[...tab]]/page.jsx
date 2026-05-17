@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import styled from "styled-components";
 import { ConfigProvider, Result, Button } from "antd";
@@ -76,6 +76,10 @@ const PaymentManagement = dynamic(
   () => import("../_components/payment-management/PaymentManagement"),
   { ssr: false }
 );
+const RevenueStats = dynamic(
+  () => import("../_components/revenue-management/RevenueStats"),
+  { ssr: false }
+);
 const CorporateInquiriesTab = dynamic(
   () => import("../_components/corporate/CorporateInquiriesTab"),
   { ssr: false }
@@ -129,21 +133,22 @@ const MainContent = styled.main`
 export default function AdminPage() {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
-  const params = useParams();
   const pathname = usePathname();
   const router = useRouter();
 
-  const activeKey =
-    pathname?.replace(/^\/admin\/?/, "").split("/")[0] ||
-    params.tab?.[0] ||
-    "overview";
+  /** First URL segment under `/admin` — pathname is authoritative so reload/hydration keeps the tab. */
+  const adminSegments =
+    pathname?.replace(/^\/admin\/?/, "").split("/").filter(Boolean) ?? [];
+  const activeKey = adminSegments[0] || "overview";
 
   useEffect(() => {
-    const hasTab = params.tab?.length > 0;
-    if (permissions.length > 0 && !hasTab) {
+    if (permissions.length === 0) return;
+    const segments =
+      pathname?.replace(/^\/admin\/?/, "").split("/").filter(Boolean) ?? [];
+    if (segments.length === 0) {
       router.replace("/admin/overview");
     }
-  }, [params.tab, permissions.length, router]);
+  }, [pathname, permissions.length, router]);
 
   useEffect(() => {
     if (permissions.length === 0) return;
@@ -218,6 +223,9 @@ export default function AdminPage() {
       case "payments":
         content = <PaymentManagement />;
         break;
+      case "revenue":
+        content = <RevenueStats />;
+        break;
       case "widget-subscriptions":
         content = <WidgetSubscriptionsTab />;
         break;
@@ -238,7 +246,7 @@ export default function AdminPage() {
           />
         );
     }
-    return <TabGlassWrapper>{content}</TabGlassWrapper>;
+    return <TabGlassWrapper variant="admin">{content}</TabGlassWrapper>;
   };
 
   return (

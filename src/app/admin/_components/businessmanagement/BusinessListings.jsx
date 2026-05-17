@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUrlState } from "@/hooks/useUrlState";
+import { formatDistanceToNow } from "date-fns";
 import styled from "styled-components";
-import dayjs from "dayjs";
-import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
+import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List, Radio } from 'antd';
 import message from '@/lib/message';
 import {
   Search,
@@ -16,7 +16,6 @@ import {
   MapPin,
   Star,
   Award,
-  Clock,
   Mail,
   AlertCircle,
   Trash2,
@@ -51,37 +50,50 @@ import {
 } from "lucide-react";
 import { businessManagementService, userAdminService } from "@/services/adminDash";
 import { businessClassService } from "@/services/apiService";
-import { useAuthStore } from "@/lib/auth-client";
+import { applyImpersonationSession } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { RefreshCw } from "lucide-react";
 import { Drawer as VaulDrawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { bookingTheme } from "@/app/business/dashboard/_components/tabs/classes/_shared/BookingFlowDesign";
 import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
+import { adminColors as colors } from "../shared/adminColors";
+import { formatDate } from "../shared/adminUtils";
+import {
+  TableSection,
+  TableHeader,
+  TableTitle,
+  TableDescription,
+  FilterBar,
+  SearchFilterContainer,
+} from "../shared/adminTableStyles";
+import {
+  ActionButtonsContainer,
+  RefreshButton,
+} from "../shared/AdminButtons";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+} from "../shared/adminMobileStyles";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph, Link } = Typography;
 
-const OPERATIONAL_TOOLTIPS = {
-  closed: "Account deactivated — customers cannot book.",
-  open: "Active with at least one active schedule — bookable on the platform.",
-  noSchedules: "Active but no active schedules — nothing bookable until schedules exist.",
+const BOOKABILITY_TOOLTIPS = {
+  bookable:
+    "Customers can book: business account is on and at least one class has upcoming scheduled sessions.",
+  notBookable:
+    "Customers cannot book: business is off and/or there are no upcoming scheduled sessions.",
 };
 
-// --- STYLING & THEME (ADAPTED FROM BOOKINGSLIST) ---
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8",
-};
+/** True when customers can book on the platform (active account + active schedules). */
+function isBusinessBookable(b) {
+  return Boolean(b?.isActive && b?.has_active_schedules);
+}
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -131,135 +143,6 @@ const HeaderSubtitle = styled(Text)`
   color: ${colors.textSecondary};
   @media (max-width: 480px) {
     font-size: 14px;
-  }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-// --- TABLE SECTION ---
-const TableSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-  @media (max-width: 768px) {
-    font-size: 16px !important;
-  }
-`;
-
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
-`;
-
-const FilterBar = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid ${colors.border};
-  @media (max-width: 768px) {
-    padding: 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const SearchFilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #f8fafc !important;
-    color: ${colors.textSecondary};
-    font-weight: 600;
-    font-size: 11px;
-    padding: 10px 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid ${colors.border};
-    &::before { display: none; }
-  }
-  .ant-table-tbody > tr > td {
-    padding: 10px 14px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 13px;
-    color: ${colors.textPrimary};
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #f8fafc;
-  }
-  .ant-empty {
-    padding: 40px 20px;
   }
 `;
 
@@ -477,46 +360,6 @@ const StatusPill = styled.span`
   color: ${(p) => p.$color || colors.textPrimary};
 `;
 
-const HoursInfo = styled.div`
-  font-size: 0.95rem;
-  color: #4a5568;
-  line-height: 1.7;
-`;
-const HoursLine = styled.div`
-  display: flex;
-  justify-content: space-between;
-  max-width: 300px;
-`;
-const HoursDays = styled.span`
-  font-weight: 600;
-  color: #1a1a1a;
-`;
-const HoursTimes = styled.span`
-  font-weight: 500;
-`;
-
-// --- MOBILE COMPONENTS ---
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
 const FeaturedTag = styled(Tag)`
   display: inline-flex;
   align-items: center;
@@ -532,69 +375,6 @@ const socialIcons = {
   youtube: <Youtube />,
 };
 
-// --- UTILITIES ---
-const formatDate = (dateString) =>
-  dateString ? dayjs(dateString).format("MMM D, YYYY") : "N/A";
-
-const formatTime = (timeString) => {
-  if (!timeString) return "N/A";
-  try {
-    const [hours, minutes] = timeString.split(":");
-    const date = new Date();
-    date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch (e) {
-    return timeString;
-  }
-};
-
-const formatBusinessHours = (hours) => {
-  if (!hours || !Array.isArray(hours) || hours.length === 0) return [];
-  const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const groupedByTime = hours.reduce((acc, day) => {
-    const timeRange = day.isOpen
-      ? `${formatTime(day.open)} - ${formatTime(day.close)}`
-      : "Closed";
-    if (!acc[timeRange]) acc[timeRange] = [];
-    acc[timeRange].push(day.day);
-    return acc;
-  }, {});
-
-  const formattedLines = [];
-  for (const timeRange in groupedByTime) {
-    const days = groupedByTime[timeRange].sort(
-      (a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)
-    );
-    let currentGroup = [],
-      dayGroups = [];
-    days.forEach((day, index) => {
-      if (
-        index > 0 &&
-        dayOrder.indexOf(day) === dayOrder.indexOf(days[index - 1]) + 1
-      ) {
-        currentGroup.push(day);
-      } else {
-        if (currentGroup.length > 0) dayGroups.push(currentGroup);
-        currentGroup = [day];
-      }
-    });
-    dayGroups.push(currentGroup);
-    const dayString = dayGroups
-      .map((group) =>
-        group.length > 2
-          ? `${group[0]} - ${group[group.length - 1]}`
-          : group.join(", ")
-      )
-      .join(", ");
-    formattedLines.push({ days: dayString, times: timeRange });
-  }
-  return formattedLines;
-};
-
 // --- DETAIL DRAWER ---
 const BusinessDetailDrawerContent = ({
   business,
@@ -602,7 +382,47 @@ const BusinessDetailDrawerContent = ({
   onAction,
   onViewOwnerProfile,
   onImpersonate,
+  onRefreshBusinessDetail,
 }) => {
+  const [gmapsDraft, setGmapsDraft] = useState("");
+  const [savingGmaps, setSavingGmaps] = useState(false);
+  const [refreshingReviews, setRefreshingReviews] = useState(false);
+
+  useEffect(() => {
+    setGmapsDraft(business?.google_maps_url || "");
+  }, [business?.businessId, business?.google_maps_url]);
+
+  const handleSaveGmapsUrl = async () => {
+    if (!business?.businessId) return;
+    setSavingGmaps(true);
+    const trimmed = (gmapsDraft || "").trim();
+    const res = await businessManagementService.updateBusinessGoogleMapsUrl(
+      business.businessId,
+      trimmed || null
+    );
+    setSavingGmaps(false);
+    if (res.success) {
+      message.success("Google Maps URL saved.");
+      await onRefreshBusinessDetail?.();
+    } else {
+      message.error(res.error || "Could not save URL.");
+    }
+  };
+
+  const handleQueueGoogleReviewsSync = async () => {
+    if (!business?.businessId) return;
+    setRefreshingReviews(true);
+    const res = await businessManagementService.syncBusinessGoogleReviews(
+      business.businessId
+    );
+    setRefreshingReviews(false);
+    if (res.success) {
+      message.success("Google reviews sync queued. Updates run in the background.");
+      await onRefreshBusinessDetail?.();
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
   if (!business) {
     return (
       <Empty description="No business selected" style={{ paddingTop: 100 }} />
@@ -630,11 +450,9 @@ const BusinessDetailDrawerContent = ({
     featured,
     owner_email,
     owner_id,
-    businessHours,
   } = business;
 
   const location = [businessCity, businessState].filter(Boolean).join(", ");
-  const formattedHours = formatBusinessHours(businessHours);
   const isVerified = verificationStatus === "verified";
 
   return (
@@ -715,20 +533,6 @@ const BusinessDetailDrawerContent = ({
           </InfoGrid>
         </InfoGroup>
 
-        {formattedHours.length > 0 && (
-          <InfoGroup>
-            <SectionTitle><Clock size={12} /> Hours of Operation</SectionTitle>
-            <HoursInfo>
-              {formattedHours.map((line, index) => (
-                <HoursLine key={index}>
-                  <HoursDays>{line.days}</HoursDays>
-                  <HoursTimes>{line.times}</HoursTimes>
-                </HoursLine>
-              ))}
-            </HoursInfo>
-          </InfoGroup>
-        )}
-
         <InfoGroup>
           <SectionTitle><Phone size={12} /> Contact</SectionTitle>
           <InfoGrid>
@@ -769,6 +573,52 @@ const BusinessDetailDrawerContent = ({
               </InfoItem>
             )}
           </InfoGrid>
+        </InfoGroup>
+
+        <InfoGroup>
+          <SectionTitle>
+            <Star size={12} /> Google Reviews Sync
+          </SectionTitle>
+          <Input
+            placeholder="https://www.google.com/maps/place/..."
+            value={gmapsDraft}
+            onChange={(e) => setGmapsDraft(e.target.value)}
+            disabled={savingGmaps}
+            style={{ width: "100%" }}
+          />
+          <Space wrap style={{ marginTop: 8 }}>
+            <Button
+              type="primary"
+              loading={savingGmaps}
+              onClick={handleSaveGmapsUrl}
+            >
+              Save URL
+            </Button>
+            <Button
+              icon={<RefreshCw size={14} />}
+              loading={refreshingReviews}
+              disabled={!(business?.google_maps_url || "").trim()}
+              onClick={handleQueueGoogleReviewsSync}
+            >
+              Refresh reviews now
+            </Button>
+          </Space>
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, display: "block", marginTop: 8 }}
+          >
+            Status: {business?.google_reviews_sync_status || "pending"}
+            {" · "}
+            Last synced:{" "}
+            {business?.google_reviews_synced_at
+              ? formatDistanceToNow(new Date(business.google_reviews_synced_at), {
+                  addSuffix: true,
+                })
+              : "never"}
+            {" · "}
+            Last scrape: {business?.google_reviews_last_scraped_count ?? 0} review
+            {(business?.google_reviews_last_scraped_count ?? 0) === 1 ? "" : "s"}
+          </Text>
         </InfoGroup>
 
         {social_media_links &&
@@ -859,6 +709,7 @@ const DetailDrawerModal = ({
   isActionLoading,
   onViewOwnerProfile,
   onImpersonate,
+  onRefreshBusinessDetail,
 }) => {
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) onClose();
@@ -900,6 +751,7 @@ const DetailDrawerModal = ({
             onAction={onAction}
             onViewOwnerProfile={onViewOwnerProfile}
             onImpersonate={onImpersonate}
+            onRefreshBusinessDetail={onRefreshBusinessDetail}
           />
         )}
       </BusinessDrawerBodyScroll>
@@ -976,15 +828,9 @@ const BusinessListings = () => {
         setIsActionLoading(true);
         const result = await userAdminService.impersonateUser(userId);
         if (result.success && result.data?.user) {
-          useAuthStore.setState({
-            user: result.data.user,
-            isAuthenticated: true,
-            isImpersonating: true,
-            isLoading: false,
-          });
           message.success("Now impersonating owner.");
           closeDetailDrawer();
-          router.push("/");
+          await applyImpersonationSession(result.data.user, router);
         } else {
           message.error(result.error || "Could not start impersonation.");
         }
@@ -998,6 +844,13 @@ const BusinessListings = () => {
     [router, closeDetailDrawer]
   );
 
+  const refreshBusinessDetailQuiet = useCallback(async () => {
+    const bid = selectedBusiness?.businessId;
+    if (bid == null) return;
+    const r = await businessManagementService.getBusinessDetails(bid);
+    if (r.success) setSelectedBusiness(r.data);
+  }, [selectedBusiness?.businessId]);
+
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importBusinesses, setImportBusinesses] = useState([]);
   const [importBusinessesLoading, setImportBusinessesLoading] = useState(false);
@@ -1005,6 +858,17 @@ const BusinessListings = () => {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  const [googleQueueModalOpen, setGoogleQueueModalOpen] = useState(false);
+  const [instagramQueueModalOpen, setInstagramQueueModalOpen] = useState(false);
+  const [adminQueueBusinesses, setAdminQueueBusinesses] = useState([]);
+  const [adminQueueBusinessesLoading, setAdminQueueBusinessesLoading] = useState(false);
+  const [googleQueueScope, setGoogleQueueScope] = useState("all");
+  const [googleQueueBusinessId, setGoogleQueueBusinessId] = useState(undefined);
+  const [instagramQueueScope, setInstagramQueueScope] = useState("all");
+  const [instagramQueueBusinessId, setInstagramQueueBusinessId] = useState(undefined);
+  const [googleQueueSubmitting, setGoogleQueueSubmitting] = useState(false);
+  const [instagramQueueSubmitting, setInstagramQueueSubmitting] = useState(false);
 
   const [filterParams, setFilterParams] = useState({
     search: "",
@@ -1257,6 +1121,92 @@ const BusinessListings = () => {
     }
   }, [importModalOpen]);
 
+  useEffect(() => {
+    if (!googleQueueModalOpen && !instagramQueueModalOpen) {
+      setAdminQueueBusinesses([]);
+    }
+  }, [googleQueueModalOpen, instagramQueueModalOpen]);
+
+  useEffect(() => {
+    if (
+      !(googleQueueModalOpen || instagramQueueModalOpen) ||
+      adminQueueBusinesses.length > 0
+    ) {
+      return;
+    }
+    setAdminQueueBusinessesLoading(true);
+    businessManagementService
+      .getBusinesses({ page_size: 500 })
+      .then((res) => {
+        if (res.success && res.data) {
+          const list = res.data.results || res.data;
+          setAdminQueueBusinesses(Array.isArray(list) ? list : []);
+        }
+      })
+      .finally(() => setAdminQueueBusinessesLoading(false));
+  }, [
+    googleQueueModalOpen,
+    instagramQueueModalOpen,
+    adminQueueBusinesses.length,
+  ]);
+
+  const adminQueueBusinessOptions = useMemo(
+    () =>
+      adminQueueBusinesses.map((b) => ({
+        value: b.businessId ?? b.id,
+        label: b.businessName
+          ? `${b.businessName} (ID: ${b.businessId ?? b.id})`
+          : `Business ${b.businessId ?? b.id}`,
+      })),
+    [adminQueueBusinesses]
+  );
+
+  const handleSubmitGoogleQueue = async () => {
+    if (googleQueueScope === "one" && googleQueueBusinessId == null) {
+      message.error("Select a business.");
+      return;
+    }
+    setGoogleQueueSubmitting(true);
+    const res =
+      googleQueueScope === "all"
+        ? await businessManagementService.queueGoogleReviewsSync({ all: true })
+        : await businessManagementService.queueGoogleReviewsSync({
+            businessId: googleQueueBusinessId,
+          });
+    setGoogleQueueSubmitting(false);
+    if (res.success) {
+      message.success(res.data?.message || "Google reviews sync queued.");
+      setGoogleQueueModalOpen(false);
+      setGoogleQueueScope("all");
+      setGoogleQueueBusinessId(undefined);
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
+
+  const handleSubmitInstagramQueue = async () => {
+    if (instagramQueueScope === "one" && instagramQueueBusinessId == null) {
+      message.error("Select a business.");
+      return;
+    }
+    setInstagramQueueSubmitting(true);
+    const res =
+      instagramQueueScope === "all"
+        ? await businessManagementService.queueInstagramFollowersSync({ all: true })
+        : await businessManagementService.queueInstagramFollowersSync({
+            businessId: instagramQueueBusinessId,
+          });
+    setInstagramQueueSubmitting(false);
+    if (res.success) {
+      message.success(res.data?.message || "Instagram sync queued.");
+      setInstagramQueueModalOpen(false);
+      setInstagramQueueScope("all");
+      setInstagramQueueBusinessId(undefined);
+    } else {
+      message.error(res.error || "Could not queue sync.");
+    }
+  };
+
   const handleImportFileChange = (e) => {
     const f = e.target.files?.[0];
     setImportFile(f || null);
@@ -1384,17 +1334,17 @@ const BusinessListings = () => {
           {b.verificationStatus === "pending" && (
             <Tag color="blue">Pending Review</Tag>
           )}
-          {!b.isActive ? (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
-              <span><Tag color="error">Closed</Tag></span>
-            </Tooltip>
-          ) : b.has_active_schedules ? (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
-              <span><Tag color="success">Open</Tag></span>
+          {isBusinessBookable(b) ? (
+            <Tooltip title={BOOKABILITY_TOOLTIPS.bookable}>
+              <span>
+                <Tag color="success">Bookable</Tag>
+              </span>
             </Tooltip>
           ) : (
-            <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
-              <span><Tag color="warning">No Schedules</Tag></span>
+            <Tooltip title={BOOKABILITY_TOOLTIPS.notBookable}>
+              <span>
+                <Tag>Not bookable</Tag>
+              </span>
             </Tooltip>
           )}
           {b.featured && (
@@ -1489,17 +1439,17 @@ const BusinessListings = () => {
             {b.verificationStatus === "pending" && (
               <Tag color="blue">Pending</Tag>
             )}
-            {!b.isActive ? (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.closed}>
-                <span><Tag color="error">Closed</Tag></span>
-              </Tooltip>
-            ) : b.has_active_schedules ? (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.open}>
-                <span><Tag color="success">Open</Tag></span>
+            {!isBusinessBookable(b) ? (
+              <Tooltip title={BOOKABILITY_TOOLTIPS.notBookable}>
+                <span>
+                  <Tag>Not bookable</Tag>
+                </span>
               </Tooltip>
             ) : (
-              <Tooltip title={OPERATIONAL_TOOLTIPS.noSchedules}>
-                <span><Tag color="warning">No Schedules</Tag></span>
+              <Tooltip title={BOOKABILITY_TOOLTIPS.bookable}>
+                <span>
+                  <Tag color="success">Bookable</Tag>
+                </span>
               </Tooltip>
             )}
           </Space>
@@ -1560,12 +1510,38 @@ const BusinessListings = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <RefreshButton
-              icon={<Upload size={16} />}
-              onClick={() => setImportModalOpen(true)}
-            >
-              {!isMobile && "Import Reviews"}
-            </RefreshButton>
+            <Tooltip title="Queue Google reviews sync (Apify, uses each business’s Maps URL)">
+              <RefreshButton
+                icon={<Star size={16} />}
+                onClick={() => {
+                  setGoogleQueueScope("all");
+                  setGoogleQueueBusinessId(undefined);
+                  setGoogleQueueModalOpen(true);
+                }}
+              >
+                {!isMobile && "Google reviews"}
+              </RefreshButton>
+            </Tooltip>
+            <Tooltip title="Queue Instagram follower count sync (Apify)">
+              <RefreshButton
+                icon={<Instagram size={16} />}
+                onClick={() => {
+                  setInstagramQueueScope("all");
+                  setInstagramQueueBusinessId(undefined);
+                  setInstagramQueueModalOpen(true);
+                }}
+              >
+                {!isMobile && "Instagram"}
+              </RefreshButton>
+            </Tooltip>
+            <Tooltip title="Upload CSV or JSON from a manual Apify export">
+              <RefreshButton
+                icon={<Upload size={16} />}
+                onClick={() => setImportModalOpen(true)}
+              >
+                {!isMobile && "Import"}
+              </RefreshButton>
+            </Tooltip>
             <RefreshButton
               icon={<RefreshCw size={16} />}
               onClick={refreshData}
@@ -1582,7 +1558,10 @@ const BusinessListings = () => {
               <Building /> All Businesses
             </TableTitle>
             <TableDescription>
-              Search and manage businesses. Closed / Open / No schedules reflect listing availability (hover tags for detail).
+              Each row shows <Text strong>Bookable</Text> or{" "}
+              <Text strong>Not bookable</Text> — whether customers can book right
+              now (active business + upcoming schedules). Verification and
+              featured tags are separate.
             </TableDescription>
           </TableHeader>
           <FilterBar>
@@ -1609,14 +1588,14 @@ const BusinessListings = () => {
               </Select>
               <Select
                 value={filterParams.status}
-                style={{ width: isMobile ? "100%" : 160 }}
+                style={{ width: isMobile ? "100%" : 220 }}
                 onChange={(val) => handleFilterChange({ status: val })}
               >
-                <Option value="all">All Statuses</Option>
-                <Option value="active">Active</Option>
-                <Option value="no_schedules">No Schedules</Option>
-                <Option value="inactive">Inactive</Option>
-                <Option value="pending">Pending</Option>
+                <Option value="all">All businesses</Option>
+                <Option value="active">Bookable only</Option>
+                <Option value="no_schedules">Not bookable · no schedules</Option>
+                <Option value="inactive">Not bookable · inactive account</Option>
+                <Option value="pending">Pending verification</Option>
               </Select>
               <Select
                 placeholder="Province"
@@ -1704,7 +1683,7 @@ const BusinessListings = () => {
           ) : loading ? (
             <AdminTableSkeleton rows={8} />
           ) : (
-            <StyledTable
+            <AdminCompactTable
               columns={columns}
               dataSource={businesses}
               rowKey="businessId"
@@ -1735,7 +1714,146 @@ const BusinessListings = () => {
           }}
           onViewOwnerProfile={handleViewOwnerProfile}
           onImpersonate={handleImpersonateOwner}
+          onRefreshBusinessDetail={refreshBusinessDetailQuiet}
         />
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Star size={20} />
+              Queue Google reviews sync
+            </span>
+          }
+          open={googleQueueModalOpen}
+          onCancel={() => {
+            setGoogleQueueModalOpen(false);
+            setGoogleQueueScope("all");
+            setGoogleQueueBusinessId(undefined);
+          }}
+          footer={null}
+          width={520}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Runs in the background via Celery. Each business must have a{" "}
+            <strong>Google Maps URL</strong> saved (Business detail drawer). Single-business
+            sync still queues if that business has a URL.
+          </Text>
+          <Radio.Group
+            value={googleQueueScope}
+            onChange={(e) => {
+              setGoogleQueueScope(e.target.value);
+              if (e.target.value === "all") setGoogleQueueBusinessId(undefined);
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}
+          >
+            <Radio value="all">
+              All businesses with a Google Maps URL
+            </Radio>
+            <Radio value="one">One business</Radio>
+          </Radio.Group>
+          {googleQueueScope === "one" ? (
+            <div style={{ marginBottom: 16 }}>
+              <Text strong style={{ display: "block", marginBottom: 6 }}>
+                <Building2 size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+                Business
+              </Text>
+              <Select
+                placeholder="Select a business"
+                value={googleQueueBusinessId ?? undefined}
+                onChange={setGoogleQueueBusinessId}
+                options={adminQueueBusinessOptions}
+                loading={adminQueueBusinessesLoading}
+                style={{ width: "100%" }}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, opt) =>
+                  (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </div>
+          ) : null}
+          <Space wrap>
+            <Button onClick={() => setGoogleQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              icon={<Star size={16} />}
+              loading={googleQueueSubmitting}
+              onClick={handleSubmitGoogleQueue}
+            >
+              Queue sync
+            </Button>
+          </Space>
+        </Modal>
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Instagram size={20} />
+              Queue Instagram follower sync
+            </span>
+          }
+          open={instagramQueueModalOpen}
+          onCancel={() => {
+            setInstagramQueueModalOpen(false);
+            setInstagramQueueScope("all");
+            setInstagramQueueBusinessId(undefined);
+          }}
+          footer={null}
+          width={520}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Runs in the background via Celery. <strong>All businesses</strong> means every
+            account with an Instagram URL in social links. For one business, the Instagram
+            field is still used if set.
+          </Text>
+          <Radio.Group
+            value={instagramQueueScope}
+            onChange={(e) => {
+              setInstagramQueueScope(e.target.value);
+              if (e.target.value === "all") setInstagramQueueBusinessId(undefined);
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}
+          >
+            <Radio value="all">
+              All businesses with an Instagram URL
+            </Radio>
+            <Radio value="one">One business</Radio>
+          </Radio.Group>
+          {instagramQueueScope === "one" ? (
+            <div style={{ marginBottom: 16 }}>
+              <Text strong style={{ display: "block", marginBottom: 6 }}>
+                <Building2 size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+                Business
+              </Text>
+              <Select
+                placeholder="Select a business"
+                value={instagramQueueBusinessId ?? undefined}
+                onChange={setInstagramQueueBusinessId}
+                options={adminQueueBusinessOptions}
+                loading={adminQueueBusinessesLoading}
+                style={{ width: "100%" }}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, opt) =>
+                  (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </div>
+          ) : null}
+          <Space wrap>
+            <Button onClick={() => setInstagramQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              icon={<Instagram size={16} />}
+              loading={instagramQueueSubmitting}
+              onClick={handleSubmitInstagramQueue}
+            >
+              Queue sync
+            </Button>
+          </Space>
+        </Modal>
 
         <Modal
           title={
@@ -1826,6 +1944,10 @@ const BusinessListings = () => {
                 </ImportLogPre>
               ) : importResult?.data?.output ? (
                 <ImportLogPre>{importResult.data.output}</ImportLogPre>
+              ) : importResult?.data?.stats ? (
+                <ImportLogPre>
+                  {JSON.stringify(importResult.data.stats, null, 2)}
+                </ImportLogPre>
               ) : importResult?.success ? (
                 <Alert
                   type="success"
