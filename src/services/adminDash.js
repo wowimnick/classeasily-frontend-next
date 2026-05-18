@@ -31,7 +31,7 @@ export const businessManagementService = {
    * Get all businesses with optional filtering
    * @param {Object} params - Query parameters
    * @param {string} params.search - Search term for filtering businesses
-   * @param {string} params.category - Filter by category
+   * @param {string} params.collection_ids - Comma-separated collection IDs (business has a class in any)
    * @param {string} params.status - Filter by status (active/inactive/pending)
    * @param {boolean} params.featured - Filter by featured status
    */
@@ -2511,12 +2511,19 @@ export const adminPayoutService = {
     try {
       const response = await axiosInstance.get("/admin/payouts/export/", {
         params,
-        responseType: "blob", // Important to handle the file download correctly
+        responseType: "blob",
       });
-      // The component will handle the download logic
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      link.setAttribute("download", `payouts_export_${stamp}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
       return {
         success: true,
-        data: response.data,
       };
     } catch (error) {
       console.error("Error exporting payouts data:", error);

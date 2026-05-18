@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import {
@@ -107,6 +107,26 @@ function cadFmtCompact(v) {
     }).format(n);
   }
   return cadFmt(n);
+}
+
+/** Human-readable X-axis labels for timeseries buckets (ISO day / ISO week / calendar month). */
+function formatRevenueChartBucketLabel(bucket, granularity) {
+  if (bucket == null || bucket === "") return "";
+  const b = String(bucket);
+  if (granularity === "day") {
+    const d = dayjs(b);
+    return d.isValid() ? d.format("MMM D") : b;
+  }
+  if (granularity === "week") {
+    const m = /^(\d{4})-W(\d{2})$/.exec(b);
+    if (!m) return b;
+    return `W${m[2]} ${m[1]}`;
+  }
+  if (granularity === "month") {
+    const d = dayjs(`${b}-01`, "YYYY-MM-DD");
+    return d.isValid() ? d.format("MMM YYYY") : b;
+  }
+  return b;
 }
 
 const DashboardWrapper = styled.div`
@@ -266,7 +286,7 @@ function SparklineMini({ values }) {
   );
 }
 
-function RevenueChartTooltip({ active, payload, label, chartSources = [] }) {
+function RevenueChartTooltip({ active, payload, label, chartSources = [], granularity }) {
   const row = payload?.[0]?.payload;
   if (!active || !row || !chartSources.length) return null;
 
@@ -282,6 +302,8 @@ function RevenueChartTooltip({ active, payload, label, chartSources = [] }) {
   const cumulative =
     typeof row._cumulative === "number" ? row._cumulative : Number(row._cumulative) || 0;
 
+  const title = formatRevenueChartBucketLabel(label, granularity);
+
   return (
     <div
       style={{
@@ -294,7 +316,7 @@ function RevenueChartTooltip({ active, payload, label, chartSources = [] }) {
         maxWidth: 300,
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 10, color: colors.textPrimary }}>{label}</div>
+      <div style={{ fontWeight: 700, marginBottom: 10, color: colors.textPrimary }}>{title}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {stackItems.map((p) => (
           <div
@@ -560,7 +582,7 @@ export default function RevenueStats() {
     icon: c.icon,
     color: c.color,
     isCurrency: c.isCurrency,
-    currencyPrefix: c.isCurrency ? "CA$" : undefined,
+    currencyPrefix: c.isCurrency ? "$" : undefined,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }));
@@ -577,6 +599,11 @@ export default function RevenueStats() {
   };
 
   const chartSources = ALL_SOURCES.filter((s) => sources.has(s));
+
+  const formatBucketAxis = useCallback(
+    (v) => formatRevenueChartBucketLabel(v, granularity),
+    [granularity],
+  );
 
   return (
     <DashboardWrapper>
@@ -744,7 +771,9 @@ export default function RevenueStats() {
                     dataKey="bucket"
                     tick={{ fontSize: 12, fill: colors.textSecondary }}
                     tickMargin={8}
+                    tickFormatter={formatBucketAxis}
                     interval="preserveStartEnd"
+                    minTickGap={granularity === "day" ? 18 : 8}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -765,7 +794,11 @@ export default function RevenueStats() {
                     axisLine={false}
                     tickLine={false}
                   />
-                  <RechartsTooltip content={(props) => <RevenueChartTooltip {...props} chartSources={chartSources} />} />
+                  <RechartsTooltip
+                    content={(props) => (
+                      <RevenueChartTooltip {...props} chartSources={chartSources} granularity={granularity} />
+                    )}
+                  />
                   <Legend wrapperStyle={{ paddingTop: 12, fontSize: 12 }} iconType="circle" />
                   {chartSources.map((s) => (
                     <Bar

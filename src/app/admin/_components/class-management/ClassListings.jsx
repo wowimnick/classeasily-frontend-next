@@ -901,7 +901,12 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
                     <Avatar src={review.user?.avatar_thumb_url}>
                       {review.user?.name?.[0]}
                     </Avatar>
-                    <Text strong>{review.user?.name || "Anonymous"}</Text>
+                    <Space size={6} wrap align="center">
+                      <Text strong>{review.user?.name || "Anonymous"}</Text>
+                      {review.review_source === "google" ? (
+                        <Tag color="blue">Google</Tag>
+                      ) : null}
+                    </Space>
                   </ReviewUser>
                   <Rate disabled defaultValue={review.rating} />
                 </ReviewHeader>
@@ -919,7 +924,10 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
                 <ReviewFooter>
                   <span>ID: {review.reviewId}</span>
                   <span>
-                    Posted: {new Date(review.createdAt).toLocaleDateString()}
+                    Posted:{" "}
+                    {review.createdAt
+                      ? new Date(review.createdAt).toLocaleDateString()
+                      : "—"}
                   </span>
                 </ReviewFooter>
               </ReviewCard>

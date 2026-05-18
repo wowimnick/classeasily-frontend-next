@@ -174,14 +174,14 @@ const DrawerSubtitle = styled.p`
 
 const StepsNav = styled.div`
   background: white;
-  padding: 16px 24px;
+  padding: 12px 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 10;
 
   @media (max-width: 768px) {
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 `;
 
@@ -210,10 +210,15 @@ const ScrollContainer = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  padding: 0;
+  padding: 2rem;
+  box-sizing: border-box;
 
   // Improve mobile touch scrolling
   -webkit-overflow-scrolling: touch;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
 `;
 
 const FormContainer = styled(motion.div)`
@@ -1566,6 +1571,11 @@ const DiscountsDrawer = ({
               <StyledDrawerContent>
                 <DrawerHandle />
                 <DiscountFlowWrapper
+                  key={
+                    visible
+                      ? `${editingDiscount?.id ?? "create"}`
+                      : "closed"
+                  }
                   {...{ editingDiscount, onSuccess, onClose, businessId }}
                 />
               </StyledDrawerContent>
@@ -1574,6 +1584,11 @@ const DiscountsDrawer = ({
                 <DrawerHandle />
                 <DesktopDrawerInner>
                   <DiscountFlowWrapper
+                    key={
+                      visible
+                        ? `${editingDiscount?.id ?? "create"}`
+                        : "closed"
+                    }
                     {...{ editingDiscount, onSuccess, onClose, businessId }}
                   />
                 </DesktopDrawerInner>

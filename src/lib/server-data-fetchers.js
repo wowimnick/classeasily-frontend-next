@@ -4,6 +4,24 @@ import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithA
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/** Short backoff between retries (build workers hammer the API in parallel). */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const TRANSIENT_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+function isTransientHttp(status) {
+  return typeof status === "number" && TRANSIENT_HTTP.has(status);
+}
+
+function isLikelyNetworkError(error) {
+  const msg = error?.message != null ? String(error.message) : "";
+  return /ECONNRESET|ETIMEDOUT|EPIPE|ENOTFOUND|EAI_AGAIN|fetch failed|NetworkError|terminated|abort/i.test(
+    msg,
+  );
+}
+
 // Shared cache tags for homepage-content so all callers hit the same Data Cache entry
 const HOMEPAGE_CONTENT_TAGS = ["homepage-content", "collections"];
 
@@ -545,40 +563,75 @@ export async function fetchHomepageCategories() {
 /**
  * Fetch class detail by ID or slug.
  * Cached until invalidated (revalidateTag) when class details or schedules change — no time-based revalidate so pages stay instant.
+ *
+ * Retries on transient HTTP/network failures — Next build runs many class pages in parallel and the API occasionally flakes.
  */
 export async function fetchClassDetail(classIdOrSlug) {
-  try {
-    const response = await fetch(`${BASE_URL}/classes/${classIdOrSlug}/`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "force-cache",
-      next: {
-        tags: ["classes", `class-${classIdOrSlug}`],
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return { success: false, error: "Class not found", status: 404 };
-      }
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    return {
-      success: true,
-      data: data,
-    };
-  } catch (error) {
-    console.error(`Error fetching class detail ${classIdOrSlug}:`, error);
-    return {
-      success: false,
-      error: error.message || "Failed to fetch class details",
-    };
+  if (!BASE_URL) {
+    console.error("[server-data-fetchers] NEXT_PUBLIC_API_URL is not set");
+    return { success: false, error: "API URL not configured" };
   }
+
+  const maxAttempts = 4;
+  let lastFailure = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`${BASE_URL}/classes/${classIdOrSlug}/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          tags: ["classes", `class-${classIdOrSlug}`],
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return { success: false, error: "Class not found", status: 404 };
+        }
+        if (isTransientHttp(response.status) && attempt < maxAttempts) {
+          await sleep(280 * attempt + Math.floor(Math.random() * 120));
+          continue;
+        }
+        return {
+          success: false,
+          error: `API request failed: ${response.status}`,
+        };
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        data: data,
+      };
+    } catch (error) {
+      lastFailure = error;
+      const retry =
+        attempt < maxAttempts &&
+        (error instanceof TypeError || isLikelyNetworkError(error));
+      if (retry) {
+        await sleep(280 * attempt + Math.floor(Math.random() * 120));
+        continue;
+      }
+      console.error(`Error fetching class detail ${classIdOrSlug}:`, error);
+      return {
+        success: false,
+        error: error.message || "Failed to fetch class details",
+      };
+    }
+  }
+
+  console.error(`Error fetching class detail ${classIdOrSlug}:`, lastFailure);
+  return {
+    success: false,
+    error:
+      lastFailure?.message ||
+      "Failed to fetch class details after retries",
+  };
 }
 
 /**

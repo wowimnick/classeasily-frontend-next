@@ -125,6 +125,24 @@ const MetricValue = ({ card, isReadyForAnimation }) => {
   }
 
   if (card.isCurrency) {
+    const minFD = card.minimumFractionDigits ?? 0;
+    const maxFD = card.maximumFractionDigits ?? 0;
+    if (card.currencyPrefix) {
+      return (
+        <>
+          <span style={{ marginRight: "0.125em", fontWeight: 700 }}>{card.currencyPrefix}</span>
+          <NumberFlow
+            value={isReadyForAnimation ? card.value : 0}
+            duration={800}
+            numberFormatOptions={{
+              style: "decimal",
+              minimumFractionDigits: minFD,
+              maximumFractionDigits: maxFD,
+            }}
+          />
+        </>
+      );
+    }
     return (
       <NumberFlow
         value={isReadyForAnimation ? card.value : 0}
@@ -132,8 +150,8 @@ const MetricValue = ({ card, isReadyForAnimation }) => {
         numberFormatOptions={{
           style: "currency",
           currency: card.currency ?? "CAD",
-          minimumFractionDigits: card.minimumFractionDigits ?? 0,
-          maximumFractionDigits: card.maximumFractionDigits ?? 0,
+          minimumFractionDigits: minFD,
+          maximumFractionDigits: maxFD,
         }}
       />
     );

@@ -41,6 +41,40 @@ function formatRatingOneDecimal(value) {
   return n.toFixed(1);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchClassesPageWithRetries(pageNum, attempts = 4) {
+  if (!BASE_URL) return null;
+  const url = `${BASE_URL}/classes/?page=${pageNum}&page_size=100`;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) return response;
+      const transient =
+        response.status === 429 ||
+        response.status >= 500 ||
+        response.status === 408;
+      if (transient && attempt < attempts) {
+        await sleep(280 * attempt + Math.floor(Math.random() * 120));
+        continue;
+      }
+      return response;
+    } catch {
+      if (attempt < attempts) {
+        await sleep(280 * attempt + Math.floor(Math.random() * 120));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
 // Generate static params - fetch ALL classes
 export async function generateStaticParams() {
   try {
@@ -49,34 +83,28 @@ export async function generateStaticParams() {
     let hasMore = true;
 
     while (hasMore && page <= 20) {
+      const response = await fetchClassesPageWithRetries(page);
+      if (!response?.ok) {
+        break;
+      }
+
+      let data;
       try {
-        const response = await fetch(
-          `${BASE_URL}/classes/?page=${page}&page_size=100`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-
-        if (!response.ok) {
-          break;
-        }
-
-        const data = await response.json();
-
-        if (data.results && Array.isArray(data.results)) {
-          allClasses.push(...data.results);
-          hasMore = !!data.next;
-          page++;
-        } else {
-          hasMore = false;
-        }
-
-        if (hasMore) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
+        data = await response.json();
       } catch {
         break;
+      }
+
+      if (data.results && Array.isArray(data.results)) {
+        allClasses.push(...data.results);
+        hasMore = !!data.next;
+        page++;
+      } else {
+        hasMore = false;
+      }
+
+      if (hasMore) {
+        await sleep(200);
       }
     }
 
@@ -89,13 +117,12 @@ export async function generateStaticParams() {
       return [{ slug: "__build_placeholder" }];
     }
     return slugs;
-  } catch (error) {
-    // Return one placeholder so build succeeds when API is down (e.g. ECONNREFUSED).
+  } catch {
     return [{ slug: "__build_placeholder" }];
   }
 }
 
-// UPDATED: Fetch class data with proper tagged business fetch
+// Fetch class data with proper tagged business fetch (fetch helpers swallow errors; no try/catch around notFound())
 async function getClassData(slug) {
   if (!slug) {
     notFound();
@@ -106,48 +133,37 @@ async function getClassData(slug) {
     notFound();
   }
 
-  try {
-    // USE THE FUNCTION WITH CACHE TAGS
-    const classResult = await fetchClassDetail(slug);
+  const classResult = await fetchClassDetail(slug);
 
-    if (!classResult.success || !classResult.data) {
-      notFound();
-    }
-
-    const classData = classResult.data;
-
-    // Fetch business and reviews in parallel via lib server fetchers (cached)
-    const [businessFetchResult, reviewsFetchResult] = await Promise.all([
-      classData.business_slug
-        ? fetchBusinessDetail(classData.business_slug)
-        : Promise.resolve({ success: false, data: null }),
-      classData.review_count > 0
-        ? fetchClassReviews(slug, 1, 6)
-        : Promise.resolve({ success: true, data: [] }),
-    ]);
-
-    const businessResult =
-      businessFetchResult.success && businessFetchResult.data
-        ? businessFetchResult.data
-        : null;
-    const reviewsResult =
-      reviewsFetchResult.success && Array.isArray(reviewsFetchResult.data)
-        ? reviewsFetchResult.data
-        : null;
-
-    return {
-      classData,
-      businessData: businessResult,
-      initialReviews: reviewsResult,
-    };
-  } catch (error) {
-    const msg = error?.message != null ? String(error.message) : "";
-    if (msg.includes("404") || msg.toLowerCase().includes("not found")) {
-      notFound();
-    }
-
-    throw error;
+  if (!classResult.success || !classResult.data) {
+    notFound();
   }
+
+  const classData = classResult.data;
+
+  const [businessFetchResult, reviewsFetchResult] = await Promise.all([
+    classData.business_slug
+      ? fetchBusinessDetail(classData.business_slug)
+      : Promise.resolve({ success: false, data: null }),
+    classData.review_count > 0
+      ? fetchClassReviews(slug, 1, 6)
+      : Promise.resolve({ success: true, data: [] }),
+  ]);
+
+  const businessResult =
+    businessFetchResult.success && businessFetchResult.data
+      ? businessFetchResult.data
+      : null;
+  const reviewsResult =
+    reviewsFetchResult.success && Array.isArray(reviewsFetchResult.data)
+      ? reviewsFetchResult.data
+      : null;
+
+  return {
+    classData,
+    businessData: businessResult,
+    initialReviews: reviewsResult,
+  };
 }
 
 export async function generateMetadata({ params }) {

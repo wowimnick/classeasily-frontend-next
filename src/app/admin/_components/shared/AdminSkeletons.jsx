@@ -267,16 +267,6 @@ export function AdminRankedListSkeleton({ rows = 12 }) {
   );
 }
 
-const OverviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-`;
-
 const QuickActionSkeletonGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -284,15 +274,6 @@ const QuickActionSkeletonGrid = styled.div`
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
-`;
-
-const ChartSkeletonWrapper = styled.div`
-  border-radius: 12px;
-  border: 1px solid #f1f5f9;
-  padding: 16px 20px;
-  height: 280px;
-  display: flex;
-  flex-direction: column;
 `;
 
 const FeedSkeletonWrapper = styled.div`
@@ -323,11 +304,9 @@ export function AdminOverviewSkeleton() {
       <div style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.07em", color: "#94a3b8", marginBottom: 10 }}>
         Key metrics
       </div>
-      <OverviewGrid style={{ marginBottom: 20 }}>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <AdminCardSkeleton key={i} />
-        ))}
-      </OverviewGrid>
+      <div style={{ marginBottom: 20 }}>
+        <AdminMetricCardsSkeleton count={8} />
+      </div>
 
       <hr style={{ border: "none", borderTop: "1px solid #f1f5f9", margin: "20px 0" }} />
 
@@ -362,11 +341,9 @@ export function AdminOverviewSkeleton() {
             </div>
             <SkeletonBlock style={{ height: 28, width: 160, borderRadius: 6 }} />
           </div>
-          <ChartSkeletonWrapper>
-            <div style={{ flex: 1, minHeight: 0, marginTop: 4 }}>
-              <AdminAreaChartSkeleton fillParent />
-            </div>
-          </ChartSkeletonWrapper>
+          <div style={{ height: 280, minHeight: 280 }}>
+            <AdminAreaChartSkeleton fillParent />
+          </div>
         </div>
         <div>
           <div style={{ marginBottom: 10 }}>

@@ -81,6 +81,8 @@ import {
   formatCurrency,
   formatDate,
   formatDatetime as formatDateTime,
+  formatAdminPaymentMethodDisplay,
+  getAdminStripePaymentLinks,
 } from "../shared/adminUtils";
 import {
   TableSection,
@@ -492,15 +494,9 @@ const DetailDrawerContent = ({
       const gross = Number(payment.amount || 0);
       const platformFee = Number(payment.platform_fee_amount || 0);
       const platTax = Number(payment.platform_fee_tax || 0);
-      const taxAmt = Number(payment.tax_amount || 0);
       const stripeAmt = stripeProcessingResolved.amount;
       const net = Number(payment.net_payout_amount || 0);
-      const subtotalApprox = Math.max(0, gross - taxAmt);
-      const feePctLabel =
-        subtotalApprox > 0 && platformFee > 0
-          ? ((platformFee / subtotalApprox) * 100).toFixed(1)
-          : null;
-      return { gross, platformFee, platTax, stripeAmt, net, feePctLabel };
+      return { gross, platformFee, platTax, stripeAmt, net };
     })();
 
   const bookerCard = (
@@ -677,6 +673,12 @@ const DetailDrawerContent = ({
                     Payment Details
                   </InfoGroupTitle>
                   <InfoGrid>
+                    {(() => {
+                      const stripeLinks = getAdminStripePaymentLinks(payment);
+                      const methodLabel =
+                        formatAdminPaymentMethodDisplay(payment) || "N/A";
+                      return (
+                        <>
                     <InfoItem>
                       <InfoIcon>
                         <Hash />
@@ -712,9 +714,7 @@ const DetailDrawerContent = ({
                       </InfoIcon>
                       <InfoContent>
                         <InfoLabel>Method</InfoLabel>
-                        <InfoValue>
-                          {payment.card_details?.display_name || "N/A"}
-                        </InfoValue>
+                        <InfoValue>{methodLabel}</InfoValue>
                       </InfoContent>
                     </InfoItem>
                     <InfoItem style={{ gridColumn: "1 / -1" }}>
@@ -722,19 +722,37 @@ const DetailDrawerContent = ({
                         <ExternalLink />
                       </InfoIcon>
                       <InfoContent>
-                        <InfoLabel>Stripe Receipt</InfoLabel>
+                        <InfoLabel>Stripe</InfoLabel>
                         <InfoValue>
-                          <Button
-                            type="link"
-                            style={{ padding: 0, height: "auto" }}
-                            href={payment.receipt_url}
-                            target="_blank"
-                          >
-                            View on Stripe
-                          </Button>
+                          {stripeLinks.receiptUrl ? (
+                            <Button
+                              type="link"
+                              style={{ padding: 0, height: "auto" }}
+                              href={stripeLinks.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View customer receipt
+                            </Button>
+                          ) : stripeLinks.dashboardUrl ? (
+                            <Button
+                              type="link"
+                              style={{ padding: 0, height: "auto" }}
+                              href={stripeLinks.dashboardUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Open in Stripe Dashboard
+                            </Button>
+                          ) : (
+                            <Text type="secondary">No receipt link available</Text>
+                          )}
                         </InfoValue>
                       </InfoContent>
                     </InfoItem>
+                        </>
+                      );
+                    })()}
                   </InfoGrid>
                 </InfoGroup>
 
@@ -785,12 +803,7 @@ const DetailDrawerContent = ({
                       <span style={{ fontWeight: 600 }}>{formatCurrency(paymentFeeBreakdown.gross)}</span>
                     </FeeRow>
                     <FeeRow>
-                      <span style={{ color: colors.textSecondary }}>
-                        Platform commission
-                        {paymentFeeBreakdown.feePctLabel != null
-                          ? ` (~${paymentFeeBreakdown.feePctLabel}% of pre-tax)`
-                          : ""}
-                      </span>
+                      <span style={{ color: colors.textSecondary }}>Platform commission</span>
                       <span style={{ color: colors.error }}>
                         - {formatCurrency(paymentFeeBreakdown.platformFee)}
                       </span>

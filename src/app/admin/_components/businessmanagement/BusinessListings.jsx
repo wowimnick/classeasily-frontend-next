@@ -48,8 +48,11 @@ import {
   X,
   LogIn,
 } from "lucide-react";
-import { businessManagementService, userAdminService } from "@/services/adminDash";
-import { businessClassService } from "@/services/apiService";
+import {
+  businessManagementService,
+  userAdminService,
+  classManagementService,
+} from "@/services/adminDash";
 import { applyImpersonationSession } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { RefreshCw } from "lucide-react";
@@ -806,8 +809,8 @@ const BusinessListings = () => {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const [categoriesList, setCategoriesList] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [collectionsList, setCollectionsList] = useState([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
 
   const handleViewOwnerProfile = useCallback((ownerEmail) => {
     if (!ownerEmail) return;
@@ -872,13 +875,10 @@ const BusinessListings = () => {
 
   const [filterParams, setFilterParams] = useState({
     search: "",
-    category: "all",
+    collection_ids: [],
     status: "all",
     featured: false,
-    province: undefined,
-    verification_status: undefined,
     engaged: "all",
-    revenue_tier: undefined,
   });
 
   const [pagination, setPagination] = useState({
@@ -913,20 +913,14 @@ const BusinessListings = () => {
           page: currentPagination.current,
           page_size: currentPagination.pageSize,
           search: currentFilters.search,
-          category:
-            currentFilters.category === "all"
-              ? undefined
-              : currentFilters.category,
           status:
             currentFilters.status === "all" ? undefined : currentFilters.status,
           featured: currentFilters.featured ? true : undefined,
-          ...(currentFilters.province && { province: currentFilters.province }),
-          ...(currentFilters.verification_status && {
-            verification_status: currentFilters.verification_status,
-          }),
-          ...(currentFilters.revenue_tier && {
-            revenue_tier: currentFilters.revenue_tier,
-          }),
+          ...(currentFilters.collection_ids?.length
+            ? {
+                collection_ids: currentFilters.collection_ids.join(","),
+              }
+            : {}),
           ...(currentFilters.engaged === "yes" && { engaged: true }),
           ...(currentFilters.engaged === "no" && { engaged: false }),
           ordering:
@@ -963,16 +957,16 @@ const BusinessListings = () => {
 
   useEffect(() => {
     let cancelled = false;
-    setCategoriesLoading(true);
-    businessClassService
-      .getCategories()
+    setCollectionsLoading(true);
+    classManagementService
+      .getCollections()
       .then((r) => {
         if (cancelled) return;
-        if (r.success) setCategoriesList(r.data || []);
-        else message.error(r.error || "Failed to fetch categories");
+        if (r.success) setCollectionsList(r.data || []);
+        else message.error(r.error || "Failed to fetch collections");
       })
       .finally(() => {
-        if (!cancelled) setCategoriesLoading(false);
+        if (!cancelled) setCollectionsLoading(false);
       });
     return () => {
       cancelled = true;
@@ -989,13 +983,10 @@ const BusinessListings = () => {
   useEffect(() => {
     fetchBusinesses(filterParams, pagination, sortedInfo);
   }, [
-    filterParams.category,
+    filterParams.collection_ids.join(","),
     filterParams.status,
     filterParams.featured,
-    filterParams.province,
-    filterParams.verification_status,
     filterParams.engaged,
-    filterParams.revenue_tier,
     pagination.current,
     pagination.pageSize,
     sortedInfo,
@@ -1560,34 +1551,44 @@ const BusinessListings = () => {
             <TableDescription>
               Each row shows <Text strong>Bookable</Text> or{" "}
               <Text strong>Not bookable</Text> — whether customers can book right
-              now (active business + upcoming schedules). Verification and
-              featured tags are separate.
+              now (active business + upcoming schedules). Featured tags are
+              separate from bookability.
             </TableDescription>
           </TableHeader>
           <FilterBar>
             <SearchFilterContainer>
               <Input
                 ref={searchInputRef}
+                size="middle"
                 prefix={<Search size={14} style={{ color: colors.textTertiary }} />}
                 placeholder="Search name, email, city..."
                 allowClear
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                style={{ width: isMobile ? "100%" : 260, borderRadius: 8 }}
+                style={{ width: isMobile ? "100%" : 260 }}
               />
               <Select
-                value={filterParams.category}
-                style={{ width: isMobile ? "100%" : 170 }}
-                onChange={(val) => handleFilterChange({ category: val })}
-                loading={categoriesLoading}
-                disabled={categoriesLoading}
+                mode="multiple"
+                allowClear
+                size="middle"
+                placeholder="Collections"
+                maxTagCount="responsive"
+                value={filterParams.collection_ids}
+                style={{ width: isMobile ? "100%" : 240 }}
+                onChange={(val) => handleFilterChange({ collection_ids: val || [] })}
+                loading={collectionsLoading}
+                disabled={collectionsLoading}
+                optionFilterProp="children"
+                showSearch
               >
-                <Option value="all">All Categories</Option>
-                {categoriesList.map((cat) => (
-                  <Option key={cat.key} value={cat.key}>{cat.name}</Option>
+                {collectionsList.map((col) => (
+                  <Option key={col.id} value={col.id}>
+                    {col.parent_name ? `${col.parent_name} › ${col.name}` : col.name}
+                  </Option>
                 ))}
               </Select>
               <Select
                 value={filterParams.status}
+                size="middle"
                 style={{ width: isMobile ? "100%" : 220 }}
                 onChange={(val) => handleFilterChange({ status: val })}
               >
@@ -1597,41 +1598,6 @@ const BusinessListings = () => {
                 <Option value="inactive">Not bookable · inactive account</Option>
                 <Option value="pending">Pending verification</Option>
               </Select>
-              <Select
-                placeholder="Province"
-                allowClear
-                style={{ width: isMobile ? "100%" : 130 }}
-                value={filterParams.province}
-                onChange={(val) => handleFilterChange({ province: val })}
-              >
-                {["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"].map((p) => (
-                  <Option key={p} value={p}>{p}</Option>
-                ))}
-              </Select>
-              <Select
-                placeholder="Revenue tier"
-                allowClear
-                style={{ width: isMobile ? "100%" : 160 }}
-                value={filterParams.revenue_tier}
-                onChange={(val) => handleFilterChange({ revenue_tier: val })}
-              >
-                <Option value="under_1k">&lt; $1,000</Option>
-                <Option value="1k_10k">$1k – $10k</Option>
-                <Option value="10k_plus">$10k+</Option>
-              </Select>
-              <Select
-                placeholder="Verification"
-                allowClear
-                style={{ width: isMobile ? "100%" : 150 }}
-                value={filterParams.verification_status}
-                onChange={(val) =>
-                  handleFilterChange({ verification_status: val })
-                }
-              >
-                <Option value="verified">Verified</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="rejected">Rejected</Option>
-              </Select>
               <Checkbox
                 onChange={(e) => handleFilterChange({ featured: e.target.checked })}
                 checked={filterParams.featured}
@@ -1640,6 +1606,7 @@ const BusinessListings = () => {
               </Checkbox>
               <Select
                 value={filterParams.engaged}
+                size="middle"
                 style={{ width: isMobile ? "100%" : 170 }}
                 onChange={(val) => handleFilterChange({ engaged: val })}
               >

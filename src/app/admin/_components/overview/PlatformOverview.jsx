@@ -570,9 +570,7 @@ export default function PlatformOverview() {
   if (loading) {
     return (
       <DashboardWrapper>
-        <ContentLayer>
-          <AdminOverviewSkeleton />
-        </ContentLayer>
+        <AdminOverviewSkeleton />
       </DashboardWrapper>
     );
   }

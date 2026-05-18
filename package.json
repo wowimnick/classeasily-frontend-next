@@ -17,6 +17,9 @@
   "npmConfig": {
     "legacy-peer-deps": true
   },
+  "overrides": {
+    "baseline-browser-mapping": "^2.10.30"
+  },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@babel/parser": "^7.28.4",
@@ -96,7 +99,7 @@
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.10.1",
     "aws-cdk-lib": "^2.219.0",
-    "baseline-browser-mapping": "^2.10.0",
+    "baseline-browser-mapping": "^2.10.30",
     "constructs": "^10.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.0.7"

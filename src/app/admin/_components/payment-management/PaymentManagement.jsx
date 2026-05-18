@@ -45,7 +45,7 @@ import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 import { AdminCompactTable } from "../shared/AdminCompactTable";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import { adminColors as colors } from "../shared/adminColors";
-import { hexToRgba, formatCurrency } from "../shared/adminUtils";
+import { hexToRgba, formatCurrency, formatAdminPaymentMethodDisplay, getAdminStripePaymentLinks } from "../shared/adminUtils";
 import {
   TableSection,
   TableHeader,
@@ -351,7 +351,7 @@ export default function PaymentManagement() {
     { title: "Pending", value: stats.pendingCount, icon: Clock, color: colors.warning, isCurrency: false, footer: "Awaiting" },
     { title: "Refunded", value: stats.totalRefunded, icon: RotateCcw, color: colors.error, isCurrency: true, footer: "Total refunds" },
     { title: "Platform Commission", value: stats.platformRevenue, icon: TrendingUp, color: "#8b5cf6", isCurrency: true, footer: "ClassEasily commission (your revenue)" },
-    { title: "Stripe Fees", value: stats.stripeFees, icon: CreditCard, color: colors.textSecondary, isCurrency: true, footer: "Passthrough — deducted from host payout, not platform revenue" },
+    { title: "Stripe Fees", value: stats.stripeFees, icon: CreditCard, color: colors.textSecondary, isCurrency: true, footer: "Deducted from host payout" },
   ];
 
   const columns = [
@@ -430,7 +430,6 @@ export default function PaymentManagement() {
     const gross = payment.amount ?? 0;
     const platformFee = payment.platform_fee_amount ?? 0;
     const platTax = Number(payment.platform_fee_tax ?? 0);
-    const taxAmt = payment.tax_amount ?? 0;
     const storedStripe =
       payment.stripe_processing_fee != null && payment.stripe_processing_fee !== ""
         ? Number(payment.stripe_processing_fee)
@@ -446,16 +445,15 @@ export default function PaymentManagement() {
     const net = !Number.isNaN(netRaw)
       ? netRaw
       : Math.max(0, gross - platformFee - stripeFee);
-    const subtotalApprox = Math.max(0, gross - taxAmt);
-    const feePctLabel =
-      subtotalApprox > 0 && platformFee > 0
-        ? ((platformFee / subtotalApprox) * 100).toFixed(1)
-        : null;
-
     return (
       <DrawerScrollInner>
         <InfoCard>
           <InfoCardTitle>Payment Info</InfoCardTitle>
+          {(() => {
+            const stripeLinks = getAdminStripePaymentLinks(payment);
+            const methodLabel = formatAdminPaymentMethodDisplay(payment) ?? "—";
+            return (
+          <>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>Stripe Payment Intent</div>
             <CopyableId
@@ -476,9 +474,25 @@ export default function PaymentManagement() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: colors.textSecondary }}>Method</div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{payment.card_details?.display_name ?? "Card"}</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{methodLabel}</div>
             </div>
           </div>
+          {(stripeLinks.receiptUrl || stripeLinks.dashboardUrl) && (
+            <div style={{ marginTop: 12 }}>
+              {stripeLinks.receiptUrl ? (
+                <Button type="link" icon={<ExternalLink size={14} />} href={stripeLinks.receiptUrl} target="_blank" rel="noopener noreferrer" style={{ padding: 0 }}>
+                  View customer receipt
+                </Button>
+              ) : (
+                <Button type="link" icon={<ExternalLink size={14} />} href={stripeLinks.dashboardUrl} target="_blank" rel="noopener noreferrer" style={{ padding: 0 }}>
+                  Open in Stripe Dashboard
+                </Button>
+              )}
+            </div>
+          )}
+          </>
+            );
+          })()}
         </InfoCard>
 
         <InfoCard>
@@ -510,9 +524,7 @@ export default function PaymentManagement() {
             <span style={{ fontWeight: 600 }}>{formatCurrency(gross)}</span>
           </FeeRow>
           <FeeRow>
-            <span style={{ color: colors.textSecondary }}>
-              Platform commission{feePctLabel != null ? ` (~${feePctLabel}% of pre-tax)` : ""}
-            </span>
+            <span style={{ color: colors.textSecondary }}>Platform commission</span>
             <span style={{ color: colors.error }}>- {formatCurrency(platformFee)}</span>
           </FeeRow>
           {platTax > 0.009 && (
@@ -578,11 +590,6 @@ export default function PaymentManagement() {
           </InfoCard>
         )}
 
-        {payment.receipt_url && (
-          <Button type="link" icon={<ExternalLink size={14} />} href={payment.receipt_url} target="_blank" style={{ padding: 0 }}>
-            View Stripe receipt
-          </Button>
-        )}
       </DrawerScrollInner>
     );
   };

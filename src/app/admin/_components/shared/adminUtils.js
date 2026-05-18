@@ -46,3 +46,47 @@ export function formatCurrencyKPI(value, fallback = "—") {
     maximumFractionDigits: 0,
   }).format(Number(value));
 }
+
+const PAYMENT_METHOD_LABELS = {
+  card: "Card",
+  link: "Stripe Link",
+  us_bank_account: "US bank account (ACH)",
+  acss_debit: "Pre-authorized debit",
+  ideal: "iDEAL",
+  sepa_debit: "SEPA Direct Debit",
+  bancontact: "Bancontact",
+  sofort: "Sofort",
+  afterpay_clearpay: "Afterpay / Clearpay",
+  klarna: "Klarna",
+  affirm: "Affirm",
+  cashapp: "Cash App Pay",
+  paypal: "PayPal",
+  amazon_pay: "Amazon Pay",
+  interac_present: "Interac (present)",
+};
+
+/** Readable payment method for admin drawers when card brand/last4 are missing. */
+export function formatAdminPaymentMethodDisplay(payment) {
+  const fromCard = payment?.card_details?.display_name;
+  if (fromCard) return fromCard;
+  const raw = payment?.payment_method_type;
+  if (raw == null || raw === "") return null;
+  const key = String(raw).trim().toLowerCase();
+  if (PAYMENT_METHOD_LABELS[key]) return PAYMENT_METHOD_LABELS[key];
+  return String(raw)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Customer receipt URL if present; else Stripe Dashboard PaymentIntent deep link when possible. */
+export function getAdminStripePaymentLinks(payment) {
+  const receiptUrl = (payment?.receipt_url || "").trim() || null;
+  const pi = (payment?.stripe_payment_intent_id || "").trim();
+  const dashboardFromApi = (payment?.stripe_dashboard_url || "").trim() || null;
+  const dashboardUrl =
+    dashboardFromApi ||
+    (pi && !pi.startsWith("internal_") && !pi.startsWith("temp_")
+      ? `https://dashboard.stripe.com/payments/${pi}`
+      : null);
+  return { receiptUrl, dashboardUrl };
+}

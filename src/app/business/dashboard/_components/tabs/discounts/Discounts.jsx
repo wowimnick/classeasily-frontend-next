@@ -415,7 +415,7 @@ const Discounts = ({ businessId }) => {
       setDiscountId(null);
       return;
     }
-    const d = discounts.find((x) => x.id === id);
+    const d = discounts.find((x) => Number(x.id) === id);
     if (d) {
       setEditingDiscount(d);
       setDrawerVisible(true);
@@ -438,7 +438,10 @@ const Discounts = ({ businessId }) => {
 
   const showDrawer = (discount = null) => {
     if (discount) {
-      setDiscountId(discount.id);
+      const idNum = Number(discount.id);
+      setEditingDiscount(discount);
+      setDrawerVisible(true);
+      if (Number.isInteger(idNum) && idNum > 0) setDiscountId(idNum);
       return;
     }
     setDiscountId(null);

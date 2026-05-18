@@ -149,13 +149,13 @@ const DrawerHandle = styled(Drawer.Handle)`
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 2px;
-  margin: 12px auto 8px;
+  margin: 8px auto 6px;
   flex-shrink: 0;
 `;
 
 const DrawerHeader = styled.div`
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: 12px 18px 10px;
   border-bottom: 1px solid #f0f0f0;
   background: white;
 `;
@@ -170,7 +170,7 @@ const DrawerTitle = styled.h2`
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 14px 18px 16px;
 
   &::-webkit-scrollbar {
     display: none;
@@ -180,12 +180,19 @@ const DrawerBody = styled.div`
 
 const DrawerFooter = styled.div`
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: 12px 18px;
   border-top: 1px solid #f0f0f0;
   background: white;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+`;
+
+/** Tighter vertical rhythm; keep control sizes (e.g. size="large") unchanged */
+const CompactStaffForm = styled(Form)`
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
 `;
 
 const HeaderParagraph = styled(Paragraph)`
@@ -1092,7 +1099,7 @@ const TeamMembers = () => {
                 </DrawerTitle>
               </DrawerHeader>
               <DrawerBody>
-                <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
+                <CompactStaffForm form={form} layout="vertical" onFinish={handleFormSubmit}>
                   {!editingStaff && (
                     <Form.Item
                       name="email"
@@ -1131,11 +1138,11 @@ const TeamMembers = () => {
                       ))}
                     </Select>
                   </Form.Item>
-                </Form>
+                </CompactStaffForm>
                 {editingStaff && (
                   <Paragraph
                     type="secondary"
-                    style={{ marginTop: 20, fontSize: "13px" }}
+                    style={{ marginTop: 10, fontSize: "13px" }}
                   >
                     You can only change the role of an existing staff member. To
                     change their email, please remove and re-invite them.
@@ -1166,6 +1173,11 @@ const TeamMembers = () => {
           onCancel={onModalClose}
           destroyOnClose
           width={520}
+          styles={{
+            header: { padding: "12px 20px", marginBottom: 0 },
+            body: { padding: "14px 20px 8px" },
+            footer: { padding: "10px 20px", marginTop: 0 },
+          }}
           footer={[
             <Button key="back" onClick={onModalClose}>
               Cancel
@@ -1180,7 +1192,7 @@ const TeamMembers = () => {
             </Button>,
           ]}
         >
-          <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
+          <CompactStaffForm form={form} layout="vertical" onFinish={handleFormSubmit}>
             {!editingStaff && (
               <Form.Item
                 name="email"
@@ -1193,6 +1205,7 @@ const TeamMembers = () => {
                 <Input
                   prefix={<Mail size={16} color={colors.textSecondary} />}
                   placeholder="teammate@example.com"
+                  size="large"
                 />
               </Form.Item>
             )}
@@ -1201,7 +1214,7 @@ const TeamMembers = () => {
               label="Assign Role"
               rules={[{ required: true, message: "Please assign a role" }]}
             >
-              <Select placeholder="Select a role" loading={!roles.length}>
+              <Select placeholder="Select a role" loading={!roles.length} size="large">
                 {roles.map((role) => (
                   <Option key={role.id} value={role.id}>
                     {role.name}
@@ -1209,11 +1222,11 @@ const TeamMembers = () => {
                 ))}
               </Select>
             </Form.Item>
-          </Form>
+          </CompactStaffForm>
           {editingStaff && (
             <Paragraph
               type="secondary"
-              style={{ marginTop: 20, fontSize: "14px" }}
+              style={{ marginTop: 10, fontSize: "14px" }}
             >
               You can only change the role of an existing staff member. To
               change their email, please remove and re-invite them.

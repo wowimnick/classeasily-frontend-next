@@ -215,11 +215,43 @@ const formatStatus = (status) => {
   return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
+function normalizeAdminGoogleReview(raw) {
+  if (!raw?.google_review_id) return null;
+  return {
+    reviewId: `google:${raw.google_review_id}`,
+    review_source: "google",
+    user: {
+      name: raw.reviewer_name || "Google reviewer",
+      avatar_thumb_url: raw.reviewer_avatar_url || null,
+      email: null,
+    },
+    className: "Imported Google review",
+    businessName: raw.business_name || null,
+    rating: raw.rating,
+    comment: raw.comment || "",
+    status: "approved",
+    reported: false,
+    business_response: raw.owner_response || null,
+    createdAt: raw.review_date,
+  };
+}
+
 // --- DETAIL DRAWER COMPONENT ---
 const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
   if (!review) return null;
+  const isGoogle = review.review_source === "google";
   return (
     <>
+        {isGoogle && (
+          <div style={{ padding: "0 20px 16px" }}>
+            <Alert
+              type="info"
+              showIcon
+              message="Google review"
+              description="This review was imported from Google Business. Visibility is managed in Google Business Profile, not ClassEasily."
+            />
+          </div>
+        )}
         <InfoGroup>
           <InfoGroupTitle>
             <Star /> Rating & Status
@@ -288,6 +320,7 @@ const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
             />
           </InfoGroup>
         )}
+        {!isGoogle && (
         <div style={{ padding: "0 20px" }}>
           <Button
             type="primary"
@@ -298,6 +331,7 @@ const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
             Moderate Review
           </Button>
         </div>
+        )}
       </>
     
   );
@@ -312,7 +346,12 @@ const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick })
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{review.user?.name || "Anonymous"}</div>
             <div style={{ fontSize: 12, color: colors.textSecondary }}>{review.user?.email}</div>
-            <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Review for: <strong>{review.className}</strong></div>
+            <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+              <Space wrap size={6}>
+                <span>Review for: <strong>{review.className}</strong></span>
+                {review.review_source === "google" ? <Tag color="blue">Google</Tag> : null}
+              </Space>
+            </div>
           </div>
           <Button type="text" icon={<X size={18} />} onClick={onClose} aria-label="Close" />
         </DrawerTopBar>
@@ -341,7 +380,7 @@ const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick })
 };
 
 const ClassReviews = () => {
-  const [reviews, setReviews] = useState([]);
+  const [googleReviews, setGoogleReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [selectedReview, setSelectedReview] = useState(null);
@@ -377,6 +416,7 @@ const ClassReviews = () => {
         const params = {
           page: currentPagination.current,
           page_size: currentPagination.pageSize,
+          include_google: true,
           search: currentFilters.search,
           status:
             currentFilters.status === "all" ? undefined : currentFilters.status,
@@ -388,6 +428,11 @@ const ClassReviews = () => {
         });
         if (response.success && response.data) {
           setReviews(response.data.results || []);
+          setGoogleReviews(
+            (response.data.google_reviews || [])
+              .map(normalizeAdminGoogleReview)
+              .filter(Boolean)
+          );
           setPagination((prev) => ({
             ...prev,
             total: response.data.count,
@@ -395,6 +440,7 @@ const ClassReviews = () => {
           }));
         } else if (!signal.aborted) {
           message.error(response.error || "Failed to fetch reviews");
+          setGoogleReviews([]);
         }
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -455,7 +501,7 @@ const ClassReviews = () => {
   };
 
   const handleModAction = async () => {
-    if (!selectedReview) return;
+    if (!selectedReview || selectedReview.review_source === "google") return;
     try {
       const values = await modActionForm.validateFields();
       message.loading({ content: "Saving changes...", key: "modReview" });
@@ -488,6 +534,7 @@ const ClassReviews = () => {
   };
 
   const showModActionModal = (review) => {
+    if (review.review_source === "google") return;
     setSelectedReview(review);
     modActionForm.setFieldsValue({
       status: review.status,
@@ -513,7 +560,12 @@ const ClassReviews = () => {
             {review.user?.name?.[0]}
           </Avatar>
           <div>
-            <Text strong>{review.user?.name || "Anonymous"}</Text>
+            <Space wrap size={4}>
+              <Text strong>{review.user?.name || "Anonymous"}</Text>
+              {review.review_source === "google" ? (
+                <Tag color="blue">Google</Tag>
+              ) : null}
+            </Space>
             <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
               {review.user?.email}
             </Text>
@@ -526,9 +578,11 @@ const ClassReviews = () => {
       render: (_, r) => (
         <div>
           <Text>{r.className}</Text>
-          <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-            {r.businessName}
-          </Text>
+          {r.businessName ? (
+            <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+              {r.businessName}
+            </Text>
+          ) : null}
         </div>
       ),
     },
@@ -586,10 +640,20 @@ const ClassReviews = () => {
       <Space align="start" style={{ marginBottom: 12, width: "100%" }}>
         <Avatar src={review.user?.avatar_thumb_url} size={40} />
         <div style={{ flex: 1 }}>
-          <Text strong>{review.user?.name || "Anonymous"}</Text>
+          <Space wrap size={6}>
+            <Text strong>{review.user?.name || "Anonymous"}</Text>
+            {review.review_source === "google" ? (
+              <Tag color="blue">Google</Tag>
+            ) : null}
+          </Space>
           <Text type="secondary" style={{ display: "block" }}>
             {review.className}
           </Text>
+          {review.businessName ? (
+            <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+              {review.businessName}
+            </Text>
+          ) : null}
         </div>
         <Rate disabled value={review.rating} style={{ fontSize: 16 }} />
       </Space>
@@ -788,6 +852,32 @@ const ClassReviews = () => {
               onChange={(p) => setPagination(p)}
               scroll={{ x: "max-content" }}
             />
+          )}
+          {!loading && googleReviews.length > 0 && (
+            <>
+              <Divider style={{ margin: "24px 0 16px" }} />
+              <TableHeader style={{ marginBottom: 12 }}>
+                <TableTitle>
+                  <Star /> Google reviews
+                </TableTitle>
+                <TableDescription>
+                  Imported from Google Business (read-only here). Shows up to 300 matches for your search, rating, and business filters.
+                </TableDescription>
+              </TableHeader>
+              {isMobile ? (
+                <div style={{ padding: "8px" }}>
+                  {googleReviews.map(renderReviewCard)}
+                </div>
+              ) : (
+                <AdminCompactTable
+                  columns={columns}
+                  dataSource={googleReviews}
+                  rowKey="reviewId"
+                  pagination={false}
+                  scroll={{ x: "max-content" }}
+                />
+              )}
+            </>
           )}
         </TableSection>
 
