@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import { Table, Card, Button, ConfigProvider, Divider, Radio, Typography, Grid } from "antd";
+import { Card, Button, ConfigProvider, Divider, Radio, Typography } from "antd";
 import message from "@/lib/message";
 import {
   Briefcase,
-  DollarSign,
   Activity,
   Shield,
   Zap,
   RefreshCw,
+  MapPin,
+  Search,
 } from "lucide-react";
 import {
   Bar,
@@ -24,14 +25,12 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
   Label,
 } from "recharts";
 import {
   AdminMetricCardsSkeleton,
   AdminAreaChartSkeleton,
   AdminPieChartSkeleton,
-  AdminHorizontalBarChartSkeleton,
   AdminRankedListSkeleton,
   AdminTableSkeleton,
 } from "../shared/AdminSkeletons";
@@ -45,10 +44,10 @@ import {
   getChartTotal,
 } from "../shared/AdminBusinessCharts";
 import { adminColors as colors } from "../shared/adminColors";
-import { formatCurrency } from "../shared/adminUtils";
+import { formatCurrency, hexToRgba } from "../shared/adminUtils";
 import { ActionButtonsContainer } from "../shared/AdminButtons";
+import { AdminCompactTable } from "../shared/AdminCompactTable";
 
-const { useBreakpoint } = Grid;
 const { Text } = Typography;
 
 // --- MAIN PAGE STYLED COMPONENTS ---
@@ -105,16 +104,6 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-// --- CONTENT SECTION WRAPPER ---
-const ContentSection = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
-
 const ChartGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -128,6 +117,206 @@ const ChartCard = styled(Card)`
   border: 1px solid ${colors.border};
   .ant-card-body {
     padding: 16px 20px !important;
+  }
+`;
+
+const GeographyShell = styled.section`
+  margin-top: 4px;
+  padding: 22px 22px 24px;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  background: linear-gradient(165deg, ${hexToRgba(colors.primary, 0.04)} 0%, #ffffff 42%, #f8fafc 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+`;
+
+const GeographyIntro = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  max-width: 800px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 12px;
+  }
+`;
+
+const GeographyIconWrap = styled.div`
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${hexToRgba(colors.primary, 0.12)};
+  color: ${colors.primary};
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+`;
+
+const GeographyHeading = styled.div`
+  min-width: 0;
+`;
+
+const GeographyKicker = styled.div`
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: ${colors.textTertiary};
+  text-transform: uppercase;
+  margin-bottom: 6px;
+`;
+
+const GeographyTitle = styled.h2`
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  letter-spacing: -0.02em;
+`;
+
+const GeographySubtitle = styled.p`
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: ${colors.textSecondary};
+`;
+
+const GeographyGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+
+  @media (min-width: 960px) {
+    grid-template-columns: minmax(300px, 0.95fr) minmax(380px, 1.15fr);
+  }
+`;
+
+const GeographyCard = styled.div`
+  background: #ffffff;
+  border: 1px solid ${colors.border};
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+`;
+
+const GeographyCardHead = styled.div`
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+`;
+
+const GeographyCardHeadRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+`;
+
+const GeographyCardTitle = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
+const GeographyCardHint = styled.p`
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: ${colors.textSecondary};
+`;
+
+const GeographyCardBody = styled.div`
+  padding: 14px 18px 18px;
+  flex: 1;
+  min-height: 0;
+`;
+
+const PresetChipWrap = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+`;
+
+const PresetChip = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.textPrimary};
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  line-height: 1.2;
+`;
+
+const ChipCount = styled.span`
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${colors.primary};
+  background: ${hexToRgba(colors.primary, 0.1)};
+  padding: 2px 8px;
+  border-radius: 8px;
+`;
+
+const DemandSubheading = styled.div`
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: ${colors.textTertiary};
+  margin: 18px 0 10px;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+`;
+
+const CustomSearchItem = styled.li`
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid ${colors.border};
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+`;
+
+const CustomSearchRank = styled.span`
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${colors.textTertiary};
+  min-width: 22px;
+`;
+
+const CustomSearchMeta = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: ${colors.textSecondary};
+  background: #fff;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+`;
+
+const CitiesTableWrap = styled.div`
+  .ant-table {
+    background: transparent;
   }
 `;
 
@@ -153,7 +342,6 @@ const BusinessManagement = () => {
     growth_trend: [],
   });
   const [timeframe, setTimeframe] = useState("month");
-  const isMobile = !useBreakpoint().md;
 
   const fetchDashboardData = useCallback(async () => {
     setMetricsLoading(true);
@@ -196,7 +384,6 @@ const BusinessManagement = () => {
     fetchGrowthTrends();
   };
 
-  const totalRevenue = metrics.total_revenue ?? metrics.gross_sales ?? 0;
   const totalBiz = metrics.total_businesses ?? 0;
   const activeBiz =
     metrics.active_businesses ??
@@ -233,15 +420,6 @@ const BusinessManagement = () => {
       periodBadge: "All-time",
     },
     {
-      title: "Platform GMV",
-      icon: DollarSign,
-      value: totalRevenue,
-      isCurrency: true,
-      footer: "All-time bookings value",
-      color: colors.purple,
-      periodBadge: "All-time",
-    },
-    {
       title: "Widget Subscribers",
       icon: Zap,
       value: metrics.widget_subscribers ?? 0,
@@ -250,11 +428,6 @@ const BusinessManagement = () => {
       periodBadge: "Current",
     },
   ];
-
-  const provinceBarData = useMemo(() => {
-    const rows = [...(metrics.province_distribution || [])];
-    return rows.sort((a, b) => (b.count || 0) - (a.count || 0));
-  }, [metrics.province_distribution]);
 
   return (
     <ConfigProvider theme={appTheme}>
@@ -283,7 +456,7 @@ const BusinessManagement = () => {
         </div>
         <div style={{ marginBottom: 20 }}>
           {metricsLoading ? (
-            <AdminMetricCardsSkeleton count={5} />
+            <AdminMetricCardsSkeleton count={4} />
           ) : (
             <AdminMetricCards
               cards={statCardsData.map((card) => ({
@@ -426,146 +599,153 @@ const BusinessManagement = () => {
 
         <Divider style={{ margin: "16px 0" }} />
 
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Geography</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Provinces & cities</div>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) minmax(260px, 0.75fr)",
-              gap: 16,
-              marginBottom: 16,
-            }}
-          >
-            <ContentSection>
-              <div style={{ padding: "12px 16px 8px" }}>
-                <Text strong style={{ fontSize: 13 }}>Businesses by province</Text>
-                <Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 4 }}>
-                  Ranked by count. Zero counts use a muted tone to highlight gaps.
-                </Text>
-              </div>
-              <div style={{ height: isMobile ? 300 : 360, padding: "0 8px 12px" }}>
+        <GeographyShell aria-labelledby="geography-heading">
+          <GeographyIntro>
+            <GeographyIconWrap aria-hidden>
+              <MapPin size={22} strokeWidth={2.25} />
+            </GeographyIconWrap>
+            <GeographyHeading>
+              <GeographyKicker>Geography</GeographyKicker>
+              <GeographyTitle id="geography-heading">Provinces &amp; cities</GeographyTitle>
+              <GeographySubtitle>
+                Where discovery demand shows up in search, alongside the metros hosting the most
+                businesses on the platform.
+              </GeographySubtitle>
+            </GeographyHeading>
+          </GeographyIntro>
+
+          <GeographyGrid>
+            <GeographyCard>
+              <GeographyCardHead>
+                <GeographyCardHeadRow>
+                  <Search size={17} color={colors.primary} strokeWidth={2.25} style={{ flexShrink: 0 }} />
+                  <GeographyCardTitle>Explore search demand</GeographyCardTitle>
+                </GeographyCardHeadRow>
+                <GeographyCardHint>
+                  Ontario preset areas (same as explore filters) plus free-text location searches.
+                </GeographyCardHint>
+              </GeographyCardHead>
+              <GeographyCardBody>
                 {metricsLoading ? (
-                  <AdminHorizontalBarChartSkeleton rows={13} height={isMobile ? 300 : 360} />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      layout="vertical"
-                      data={provinceBarData}
-                      margin={{ left: 4, right: 30, top: 4, bottom: 4 }}
-                      barSize={20}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={BUSINESS_CHART_THEME.border} />
-                      <XAxis
-                        type="number"
-                        tick={{ fontSize: 12, fill: colors.textSecondary }}
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="province"
-                        width={40}
-                        tick={{ fontSize: 12, fill: colors.textSecondary, fontWeight: 500 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <RechartsTooltip
-                        content={<AdminBusinessChartTooltip />}
-                        cursor={{ fill: BUSINESS_CHART_THEME.lightBg }}
-                      />
-                      <Bar dataKey="count" name="Businesses" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                        {provinceBarData.map((p) => (
-                          <Cell key={p.province} fill={p.count === 0 ? "#fecaca" : colors.info} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </ContentSection>
-            <ContentSection>
-              <div style={{ padding: "12px 16px" }}>
-                <Text strong style={{ fontSize: 13 }}>Explore search demand</Text>
-                <Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 4 }}>
-                  Suggested Ontario areas (same presets as explore) and custom location searches.
-                </Text>
-              </div>
-              <div style={{ padding: "0 16px 16px", maxHeight: 420, overflowY: "auto" }}>
-                {metricsLoading ? (
-                  <AdminRankedListSkeleton rows={16} />
+                  <AdminRankedListSkeleton rows={14} />
                 ) : (
                   <>
-                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-                      Suggested areas
-                    </Text>
-                    <ul style={{ margin: "0 0 16px", paddingLeft: 18, fontSize: 13, listStyle: "disc" }}>
-                      {(metrics.search_preset_demand || []).map((row) => (
-                        <li key={row.label} style={{ marginBottom: 6 }}>
-                          <Text strong>{row.label}</Text>
-                          <Text type="secondary" style={{ marginLeft: 8 }}>({row.count})</Text>
-                        </li>
-                      ))}
-                    </ul>
-                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-                      Custom searches
-                    </Text>
-                    {(metrics.search_custom_top || []).length === 0 ? (
-                      <Text type="secondary" style={{ fontSize: 13 }}>No custom locations yet.</Text>
+                    <DemandSubheading>Suggested areas</DemandSubheading>
+                    {(metrics.search_preset_demand || []).length === 0 ? (
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        No preset demand logged in this window.
+                      </Text>
                     ) : (
-                      <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                      <PresetChipWrap>
+                        {(metrics.search_preset_demand || []).map((row) => (
+                          <PresetChip key={row.label}>
+                            <span>{row.label}</span>
+                            <ChipCount>{row.count}</ChipCount>
+                          </PresetChip>
+                        ))}
+                      </PresetChipWrap>
+                    )}
+                    <DemandSubheading>Custom searches</DemandSubheading>
+                    {(metrics.search_custom_top || []).length === 0 ? (
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        No custom locations yet.
+                      </Text>
+                    ) : (
+                      <ol style={{ margin: 0, padding: 0 }}>
                         {(metrics.search_custom_top || []).map((row, i) => (
-                          <li key={`${row.label}-${i}`} style={{ marginBottom: 8 }}>
-                            <Text strong>{row.label || "—"}</Text>
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              ({row.count})
-                            </Text>
-                          </li>
+                          <CustomSearchItem key={`${row.label}-${i}`}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                              <CustomSearchRank>{i + 1}.</CustomSearchRank>
+                              <Text strong style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {row.label || "—"}
+                              </Text>
+                            </span>
+                            <CustomSearchMeta>{row.count}</CustomSearchMeta>
+                          </CustomSearchItem>
                         ))}
                       </ol>
                     )}
                   </>
                 )}
-              </div>
-            </ContentSection>
-          </div>
-          <ContentSection>
-            <div style={{ padding: "12px 16px" }}>
-              <Text strong style={{ fontSize: 13 }}>Top cities</Text>
-            </div>
-            <div style={{ padding: "0 16px 16px" }}>
-              {metricsLoading ? (
-                <AdminTableSkeleton rows={6} />
-              ) : (
-                <Table
-                  size="small"
-                  showSizeChanger={false}
-                  pagination={false}
-                  dataSource={metrics.top_cities || []}
-                  rowKey={(r) => `${r.city}-${r.state}`}
-                  columns={[
-                    { title: "City", dataIndex: "city", key: "city" },
-                    { title: "Province", dataIndex: "state", key: "state", width: 100 },
-                    { title: "Businesses", dataIndex: "count", key: "count", width: 110 },
-                    { title: "Classes", dataIndex: "classes_count", key: "classes_count", width: 100 },
-                    {
-                      title: "Revenue",
-                      dataIndex: "revenue",
-                      key: "revenue",
-                      width: 120,
-                      render: (v) => formatCurrency(Number(v || 0)),
-                    },
-                  ]}
-                />
-              )}
-            </div>
-          </ContentSection>
-        </div>
+              </GeographyCardBody>
+            </GeographyCard>
+
+            <GeographyCard>
+              <GeographyCardHead>
+                <GeographyCardHeadRow>
+                  <MapPin size={17} color={colors.primary} strokeWidth={2.25} style={{ flexShrink: 0 }} />
+                  <GeographyCardTitle>Top cities</GeographyCardTitle>
+                </GeographyCardHeadRow>
+                <GeographyCardHint>
+                  Ranked by business concentration: city, province, listings, classes, and revenue.
+                </GeographyCardHint>
+              </GeographyCardHead>
+              <GeographyCardBody>
+                {metricsLoading ? (
+                  <AdminTableSkeleton rows={8} />
+                ) : (
+                  <CitiesTableWrap>
+                    <AdminCompactTable
+                      size="small"
+                      showSizeChanger={false}
+                      pagination={false}
+                      dataSource={metrics.top_cities || []}
+                      rowKey={(r) => `${r.city}-${r.state}`}
+                      scroll={{ x: "max-content" }}
+                      columns={[
+                        {
+                          title: "#",
+                          key: "rank",
+                          width: 44,
+                          fixed: "left",
+                          render: (_, __, index) => (
+                            <Text type="secondary" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                              {index + 1}
+                            </Text>
+                          ),
+                        },
+                        { title: "City", dataIndex: "city", key: "city", ellipsis: true },
+                        { title: "Province", dataIndex: "state", key: "state", width: 100 },
+                        {
+                          title: "Biz",
+                          dataIndex: "count",
+                          key: "count",
+                          width: 72,
+                          align: "right",
+                          render: (v) => (
+                            <Text style={{ fontVariantNumeric: "tabular-nums" }}>{v ?? 0}</Text>
+                          ),
+                        },
+                        {
+                          title: "Classes",
+                          dataIndex: "classes_count",
+                          key: "classes_count",
+                          width: 84,
+                          align: "right",
+                          render: (v) => (
+                            <Text style={{ fontVariantNumeric: "tabular-nums" }}>{v ?? 0}</Text>
+                          ),
+                        },
+                        {
+                          title: "Revenue",
+                          dataIndex: "revenue",
+                          key: "revenue",
+                          width: 112,
+                          align: "right",
+                          render: (v) => (
+                            <Text style={{ fontVariantNumeric: "tabular-nums" }}>
+                              {formatCurrency(Number(v || 0))}
+                            </Text>
+                          ),
+                        },
+                      ]}
+                    />
+                  </CitiesTableWrap>
+                )}
+              </GeographyCardBody>
+            </GeographyCard>
+          </GeographyGrid>
+        </GeographyShell>
       </ContentLayer>
       </DashboardWrapper>
     </ConfigProvider>

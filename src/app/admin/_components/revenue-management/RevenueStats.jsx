@@ -505,6 +505,16 @@ export default function RevenueStats() {
 
   const metricCardsCad = [
     {
+      key: "gmv",
+      label: "Gross GMV (booking streams)",
+      tooltip:
+        "Payment totals for marketplace/widget flows plus corporate gross on deposit/balance legs; SaaS/add-on subscription GMV is counted separately in commission.",
+      value: finiteNum(cadKpis.gross_gmv),
+      icon: Layers,
+      color: "#0ea5e9",
+      isCurrency: true,
+    },
+    {
       key: "commission",
       label: "Platform Commission",
       tooltip:
@@ -535,16 +545,6 @@ export default function RevenueStats() {
       growth: deltasCad.net_after_stripe_pct,
       icon: PiggyBank,
       color: "#10b981",
-      isCurrency: true,
-    },
-    {
-      key: "gmv",
-      label: "Gross GMV (booking streams)",
-      tooltip:
-        "Payment totals for marketplace/widget flows plus corporate gross on deposit/balance legs; SaaS/add-on subscription GMV is counted separately in commission.",
-      value: finiteNum(cadKpis.gross_gmv),
-      icon: Layers,
-      color: "#0ea5e9",
       isCurrency: true,
     },
     {

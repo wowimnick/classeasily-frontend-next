@@ -145,10 +145,25 @@ a {
 img,
 picture,
 video,
-canvas,
-svg {
+canvas {
   max-width: 100%;
   height: auto;
+}
+
+/*
+ * Global `max-width:100%; height:auto` on all SVGs was collapsing Lucide / button icons
+ * in Ant Design tables (flex/min-width) — icons vanished or rendered at 1px. Inline
+ * UI icons set their own width/height; illustrative SVGs use styled wrappers or <img>.
+ */
+svg {
+  flex-shrink: 0;
+}
+
+/* Ant Design tables: row action icons stay aligned in flex table cells */
+.ant-table .ant-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 ul,

@@ -25,6 +25,16 @@ export const AdminCompactTable = styled(Table)`
     border-bottom: 1px solid ${ADMIN_COMPACT_TABLE_BORDER};
     font-size: 13px;
   }
+  /* Lucide / Ant icon buttons: consistent alignment in flex table cells */
+  .ant-table-tbody .ant-btn-icon .anticon,
+  .ant-table-tbody .ant-btn-icon span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ant-table-tbody .ant-btn-icon svg {
+    vertical-align: middle;
+  }
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
   }

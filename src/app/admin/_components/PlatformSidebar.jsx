@@ -617,12 +617,12 @@ const menuGroupsConfig = [
         label: "Support & Comms",
         icon: (
           <LordIcon
-            src="https://cdn.lordicon.com/lrubprlz.json"
+            src="https://cdn.lordicon.com/bimokqfw.json"
             colors="primary:#666,secondary:#666"
             size="20px"
             playOnLoad={false}
             trigger="hover"
-            state="in-code"
+            state="in-inbox"
           />
         ),
         children: [

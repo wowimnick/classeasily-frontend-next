@@ -488,7 +488,7 @@ const StyledTabs = styled(Tabs)`
 
   .ant-tabs-content-holder {
     flex: 1;
-    background: #f8fafc;
+    background: #fff;
     overflow-y: auto; // This ensures only the content area scrolls
     min-height: 0; // CRITICAL
     display: flex;
@@ -531,7 +531,7 @@ const TabContentWrapper = styled.div`
 const InfoBox = styled(motion.div)`
   margin-bottom: 1.5rem;
   padding: 12px 16px;
-  background: #f8fafc;
+  background: #fff;
   border-radius: 8px;
   font-size: 12.5px;
   color: ${(props) => props.theme.token.colorTextSecondary};
