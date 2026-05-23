@@ -4,6 +4,7 @@
 .bannerSection {
   display: flex;
   position: relative;
+  z-index: 2;
   justify-content: flex-start;
   align-items: center;
   flex-direction: column;
@@ -123,7 +124,8 @@
     align-items: stretch;
     padding-top: calc(env(safe-area-inset-top, 0px) + 5.25rem);
     padding-bottom: 0;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .desktopContainer {
