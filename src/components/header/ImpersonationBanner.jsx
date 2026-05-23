@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, getOptimisticAuthState, useAuthStore } from "@/lib/auth-client";
+import {
+  useAuth,
+  getOptimisticAuthState,
+  useAuthStore,
+} from "@/lib/auth-client";
 import { signOutFull } from "@/lib/auth-client";
 import { userAdminService } from "@/services/adminDash";
 import message from "@/lib/message";
@@ -54,16 +58,25 @@ const BannerButton = styled.button`
   }
 `;
 
+function readPersistedImpersonating() {
+  if (typeof window === "undefined") return false;
+  return getOptimisticAuthState().isImpersonating || false;
+}
+
 const ImpersonationBanner = () => {
   const router = useRouter();
-  const { user: currentUser, isImpersonating: storeImpersonating } = useAuth();
-  const [optimisticImpersonating, setOptimisticImpersonating] = useState(false);
+  const { user: currentUser } = useAuth();
+  const storeImpersonating = useAuthStore((state) => state.isImpersonating);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
+  const [persistedImpersonating, setPersistedImpersonating] = useState(
+    readPersistedImpersonating,
+  );
 
   useEffect(() => {
-    setOptimisticImpersonating(getOptimisticAuthState().isImpersonating || false);
-  }, []);
+    setPersistedImpersonating(readPersistedImpersonating());
+  }, [storeImpersonating, hasHydrated]);
 
-  const isImpersonating = storeImpersonating || optimisticImpersonating;
+  const isImpersonating = storeImpersonating || persistedImpersonating;
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -124,13 +137,13 @@ const ImpersonationBanner = () => {
   return (
     <BannerContainer>
       <BannerContent>
-          <span>
-            Impersonating <strong>{impersonatedUserName}</strong>
-          </span>
-          <BannerButton onClick={handleReturnToAdmin}>
-            Return to admin
-          </BannerButton>
-          <BannerButton onClick={handleStopImpersonation}>Stop</BannerButton>
+        <span>
+          Impersonating <strong>{impersonatedUserName}</strong>
+        </span>
+        <BannerButton onClick={handleReturnToAdmin}>
+          Return to admin
+        </BannerButton>
+        <BannerButton onClick={handleStopImpersonation}>Stop</BannerButton>
       </BannerContent>
     </BannerContainer>
   );

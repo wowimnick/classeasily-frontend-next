@@ -1,7 +1,6 @@
 "use client";
 
 import Header from "@/components/header/Header.jsx";
-import ImpersonationBanner from "@/components/header/ImpersonationBanner.jsx";
 
 /**
  * This component acts as a "use client" boundary for the main Header.
@@ -12,10 +11,5 @@ import ImpersonationBanner from "@/components/header/ImpersonationBanner.jsx";
  * making it a flexible and reusable wrapper.
  */
 export default function SharedMainClientHeader(props) {
-  return (
-    <>
-      <ImpersonationBanner />
-      <Header {...props} />
-    </>
-  );
+  return <Header {...props} />;
 }

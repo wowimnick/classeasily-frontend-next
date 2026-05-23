@@ -724,9 +724,12 @@ const Guests = forwardRef((props, ref) => {
             ? record.email[0].toUpperCase()
             : "?";
           const isUser = record.type === "user";
+          const isGuest = record.type === "guest";
           const tooltipText = isUser
-            ? "This is a registered user on the platform who has booked with you."
-            : "This is a contact you imported manually. They may not have a platform account yet.";
+            ? "Registered platform user who has booked a class with your business."
+            : isGuest
+            ? "Guest who booked a class with your business (no platform account)."
+            : "Imported or manually added contact. They may not have booked yet.";
 
           return (
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -741,10 +744,14 @@ const Guests = forwardRef((props, ref) => {
                 </GuestInfo>
                 <Tooltip title={tooltipText}>
                   <Tag
-                    color={isUser ? "blue" : "default"}
+                    color={isUser ? "blue" : isGuest ? "purple" : "default"}
                     style={{ marginTop: "4px" }}
                   >
-                    {isUser ? "Platform User" : "Imported Contact"}
+                    {isUser
+                      ? "Platform User"
+                      : isGuest
+                      ? "Guest Booker"
+                      : "Imported Contact"}
                   </Tag>
                 </Tooltip>
               </div>

@@ -37,8 +37,8 @@ import {
 } from "@/context/SearchContext";
 import { BP, down } from "@/styles/breakpoints";
 import { useIsMobile } from "@/styles/breakpoints-hooks";
-import { collectionService } from "@/services/apiService";
-import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
+import { useIWantCollections } from "@/hooks/useIWantCollections";
+import { formatSearchLocationCityName } from "@/lib/formatSearchLocationDisplay";
 import {
   exploreSearchDropdownPanelCss,
   ExploreDropdownTypeChipFlow,
@@ -1046,9 +1046,13 @@ const contentVariants = {
 };
 
 function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
-  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
-  if (!raw) return "Start your search";
-  const city = raw.split(",")[0].trim();
+  const city = formatSearchLocationCityName({
+    displayName: selectedLocation?.displayName,
+    searchTerm,
+    city: selectedLocation?.city,
+    state: selectedLocation?.state,
+  });
+  if (!city) return "Start your search";
   if (/^anywhere$/i.test(city)) return "Experiences within 100 km of Toronto";
   return `Experiences in ${city}`;
 }
@@ -1107,7 +1111,7 @@ function ExploreHeaderContent({
   const [activeField, setActiveField] = useState(null);
   /** Dropdown mounts only after compact→expanded pill animation (or fallback timeout). */
   const [searchDropdownVisible, setSearchDropdownVisible] = useState(false);
-  const [iWantCollections, setIWantCollections] = useState([]);
+  const iWantCollections = useIWantCollections();
   const [popupConfig, setPopupConfig] = useState({ top: 96, left: 0, width: 360 });
 
   const formRef = useRef(null);
@@ -1183,19 +1187,6 @@ function ExploreHeaderContent({
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
-      } catch {
-        if (!cancelled) setIWantCollections([]);
-      }
-    })();
-    return () => { cancelled = true; };
   }, []);
 
   // Compute popup position using fixed coordinates from the button's screen rect
@@ -1415,6 +1406,8 @@ function ExploreHeaderContent({
                 coordinates: result.coordinates,
                 citySlug: result.citySlug,
                 provinceSlug: result.provinceSlug,
+                city: result.city,
+                state: result.state,
               });
               closeActiveField();
             }}
@@ -1424,7 +1417,11 @@ function ExploreHeaderContent({
             </IconBox>
             <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
               <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
-                {result.displayName.split(",")[0]}
+                {formatSearchLocationCityName({
+                  displayName: result.displayName,
+                  city: result.city,
+                  state: result.state,
+                }) || result.displayName.split(",")[0]}
               </span>
               <span style={{ fontSize: 12, color: "#717171" }}>{result.displayName}</span>
             </div>

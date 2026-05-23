@@ -22,8 +22,8 @@ import {
   formatCollectionDisplayName,
   summarizeCollectionsForPill,
 } from "@/context/SearchContext";
-import { collectionService } from "@/services/apiService";
-import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
+import { useIWantCollections } from "@/hooks/useIWantCollections";
+import { formatSearchLocationCityName } from "@/lib/formatSearchLocationDisplay";
 import {
   exploreSearchDropdownPanelCss,
   ExploreDropdownTypeChipFlow,
@@ -467,9 +467,13 @@ const FrozenContent = ({
 const POPUP_SIZES = { location: 400, date: 660, collection: 400 };
 
 function getMobileExploreLocationTitle(selectedLocation, searchTerm) {
-  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
-  if (!raw) return "Start your search";
-  const city = raw.split(",")[0].trim();
+  const city = formatSearchLocationCityName({
+    displayName: selectedLocation?.displayName,
+    searchTerm,
+    city: selectedLocation?.city,
+    state: selectedLocation?.state,
+  });
+  if (!city) return "Start your search";
   return `Experiences in ${city}`;
 }
 
@@ -508,7 +512,7 @@ export default function BannerSearchClient({ mode }) {
     setIsDrawerOpen,
   } = useSearch();
 
-  const [iWantCollections, setIWantCollections] = useState([]);
+  const iWantCollections = useIWantCollections();
   const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
   const [isSwitching, setIsSwitching] = useState(false);
@@ -604,21 +608,6 @@ export default function BannerSearchClient({ mode }) {
     if (section) section.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
-      } catch {
-        if (!cancelled) setIWantCollections([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   useLayoutEffect(() => {
     const activeModeElement = guidedModeRef.current;
 
@@ -673,6 +662,8 @@ export default function BannerSearchClient({ mode }) {
               coordinates: result.coordinates,
               citySlug: result.citySlug,
               provinceSlug: result.provinceSlug,
+              city: result.city,
+              state: result.state,
             });
             setActiveField(null);
             setIsSwitching(false);
@@ -689,7 +680,11 @@ export default function BannerSearchClient({ mode }) {
             }}
           >
             <span style={{ fontWeight: 600, color: "#111" }}>
-              {result.displayName.split(",")[0]}
+              {formatSearchLocationCityName({
+                displayName: result.displayName,
+                city: result.city,
+                state: result.state,
+              }) || result.displayName.split(",")[0]}
             </span>
             <span style={{ fontSize: 13, color: "#717171" }}>
               {result.displayName}
@@ -702,7 +697,7 @@ export default function BannerSearchClient({ mode }) {
       <LocationOption
         key={idx}
         onClick={() => {
-          handleLocationSelect(area.name, {
+          handleLocationSelect(area.displayName || area.name, {
             coordinates: area.coords,
             citySlug: area.citySlug,
             provinceSlug: area.provinceSlug,
@@ -728,7 +723,7 @@ export default function BannerSearchClient({ mode }) {
             textAlign: "left",
           }}
         >
-          <span style={{ fontWeight: 600, color: "#111" }}>{area.name}</span>
+          <span style={{ fontWeight: 600, color: "#111" }}>{area.displayName || area.name}</span>
           <span style={{ fontSize: 13, color: "#717171" }}>
             {area.description}
           </span>

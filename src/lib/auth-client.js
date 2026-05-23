@@ -157,6 +157,14 @@ export const getOptimisticAuthState = () => {
   return { user: null, isAuthenticated: false, isImpersonating: false };
 };
 
+/** Bumped when impersonation starts so in-flight initialize/refresh cannot stomp session. */
+let authInitGeneration = 0;
+
+const bumpAuthInitGeneration = () => {
+  authInitGeneration += 1;
+  return authInitGeneration;
+};
+
 // ============================================================================
 // ZUSTAND STORE - Client-side auth state management
 // ============================================================================
@@ -269,6 +277,7 @@ export const useAuthStore = create(
             return;
           }
 
+          const initGeneration = authInitGeneration;
           console.log("[AuthStore] Starting initialization process...");
           set({ isLoading: true, isInitializing: true });
 
@@ -276,17 +285,40 @@ export const useAuthStore = create(
             console.log("[AuthStore] Calling /token/refresh/ endpoint...");
             const response = await axiosInstance.post("/token/refresh/");
 
+            if (initGeneration !== authInitGeneration) {
+              console.log("[AuthStore] Stale initialize refresh ignored");
+              set({ isLoading: false, isInitializing: false });
+              return;
+            }
+
             console.log("[AuthStore] Refresh successful");
 
             set({
               user: response.data.user,
               isAuthenticated: true,
+              isImpersonating: get().isImpersonating,
               isLoading: false,
               isInitialized: true,
               isInitializing: false,
             });
           } catch (error) {
+            if (initGeneration !== authInitGeneration) {
+              console.log("[AuthStore] Stale initialize failure ignored");
+              set({ isLoading: false, isInitializing: false });
+              return;
+            }
+
             console.log("[AuthStore] Refresh failed:", error.message);
+
+            const current = get();
+            if (current.isImpersonating) {
+              set({
+                isLoading: false,
+                isInitialized: true,
+                isInitializing: false,
+              });
+              return;
+            }
 
             set({
               user: null,
@@ -318,10 +350,14 @@ export const useAuthStore = create(
           // Defer setState so we don't reference useAuthStore before it's assigned
           // (callback runs during create(persist(...)), causing TDZ "Cannot access 'g' before initialization").
           queueMicrotask(() => {
+            const latestPersisted = getOptimisticAuthState();
+            const current = useAuthStore.getState();
             useAuthStore.setState({
               _hasHydrated: true,
               isInitialized: false,
               isInitializing: false,
+              isImpersonating:
+                current.isImpersonating || latestPersisted.isImpersonating,
             });
           });
         };
@@ -624,14 +660,29 @@ export const getCurrentUser = () => {
 };
 
 export const refreshUser = async () => {
+  const refreshGeneration = authInitGeneration;
+
   try {
     console.log("[Auth] refreshUser - calling token refresh");
     const response = await axiosInstance.post("/token/refresh/");
+
+    if (refreshGeneration !== authInitGeneration) {
+      return useAuthStore.getState().user;
+    }
+
     useAuthStore.getState().setUser(response.data.user);
     return response.data.user;
   } catch (error) {
     console.error("[Auth] refreshUser failed:", error);
-    useAuthStore.getState().clearUser();
+
+    if (refreshGeneration !== authInitGeneration) {
+      throw error;
+    }
+
+    const { isImpersonating } = useAuthStore.getState();
+    if (!isImpersonating) {
+      useAuthStore.getState().clearUser();
+    }
     throw error;
   }
 };
@@ -645,22 +696,35 @@ export const refreshUser = async () => {
 export async function applyImpersonationSession(userPayload, router) {
   if (typeof window === "undefined") return;
 
+  bumpAuthInitGeneration();
+
   useAuthStore.setState({
     user: userPayload,
     isAuthenticated: true,
     isImpersonating: true,
     isLoading: false,
+    isInitialized: true,
+    isInitializing: false,
   });
 
   if (!router) return;
 
+  const impersonationGeneration = authInitGeneration;
+
   try {
     console.log("[Auth] applyImpersonationSession — token refresh sync");
     const response = await axiosInstance.post("/token/refresh/");
-    if (response.data?.user) {
+    if (
+      impersonationGeneration === authInitGeneration &&
+      response.data?.user
+    ) {
       useAuthStore.setState({
         user: response.data.user,
+        isAuthenticated: true,
         isImpersonating: true,
+        isLoading: false,
+        isInitialized: true,
+        isInitializing: false,
       });
     }
   } catch (error) {
@@ -668,7 +732,14 @@ export async function applyImpersonationSession(userPayload, router) {
       "[Auth] applyImpersonationSession refresh skipped:",
       error?.message || error,
     );
-    useAuthStore.setState({ isImpersonating: true });
+    if (impersonationGeneration === authInitGeneration) {
+      useAuthStore.setState({
+        isImpersonating: true,
+        isInitialized: true,
+        isInitializing: false,
+        isLoading: false,
+      });
+    }
   }
 
   router.push("/business/dashboard/overview");

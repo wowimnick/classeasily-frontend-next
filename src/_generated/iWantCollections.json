@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-05-23T05:53:00.489516+00:00",
+  "count": 8,
+  "collections": [
+    {
+      "id": 2,
+      "name": "\ud83d\udd25Trending",
+      "slug": "trending",
+      "icon_name": "bomb",
+      "color": "#f0f",
+      "sort_order": 1,
+      "active_class_count": 21
+    },
+    {
+      "id": 1,
+      "name": "Date Night",
+      "slug": "date-night",
+      "icon_name": "",
+      "color": "",
+      "sort_order": 3,
+      "active_class_count": 20
+    },
+    {
+      "id": 6,
+      "name": "Candles",
+      "slug": "candles",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 5,
+      "active_class_count": 2
+    },
+    {
+      "id": 7,
+      "name": "Chocolate",
+      "slug": "chocolate",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 6,
+      "active_class_count": 1
+    },
+    {
+      "id": 9,
+      "name": "Cooking",
+      "slug": "cooking",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 8,
+      "active_class_count": 2
+    },
+    {
+      "id": 10,
+      "name": "Craft",
+      "slug": "craft",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 9,
+      "active_class_count": 4
+    },
+    {
+      "id": 11,
+      "name": "Fabric",
+      "slug": "fabric",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 10,
+      "active_class_count": 1
+    },
+    {
+      "id": 12,
+      "name": "Floristry",
+      "slug": "floristry",
+      "icon_name": "",
+      "color": "#000000",
+      "sort_order": 11,
+      "active_class_count": 1
+    }
+  ],
+  "source": "django-shell"
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSearch, formatCollectionDisplayName } from "@/context/SearchContext";
+import { normalizeSearchLocationState } from "@/lib/formatSearchLocationDisplay";
 import dayjs from "dayjs";
 
 const SearchUrlHandler = () => {
@@ -57,19 +58,23 @@ const SearchUrlHandler = () => {
 
     // --- LOCATION ---
     if (locParam) {
-      setSearchTerm(locParam);
+      const normalized = normalizeSearchLocationState({
+        displayName: locParam,
+        searchTerm: locParam,
+      });
+      setSearchTerm(normalized.searchTerm);
       const lat = latParam != null && latParam !== "" ? parseFloat(latParam) : NaN;
       const lng = lngParam != null && lngParam !== "" ? parseFloat(lngParam) : NaN;
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
         setSelectedLocation((prev) => ({
           ...prev,
-          displayName: locParam,
+          displayName: normalized.displayName,
           coordinates: { lat, lng },
         }));
       } else {
         setSelectedLocation((prev) => ({
           ...prev,
-          displayName: locParam,
+          displayName: normalized.displayName,
           coordinates: null,
         }));
       }

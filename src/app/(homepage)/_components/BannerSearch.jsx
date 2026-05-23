@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import styles from "./BannerSearch.module.css";
 import BannerSearchClient from "./BannerSearchClient";
 import ContinueSearchingCard from "./ContinueSearchingCard";
+import ScrollingBookerReviews from "./ScrollingBookerReviews";
 
 const SearchBarFallback = () => (
   <div
@@ -70,6 +71,8 @@ export default function BannerSearch() {
       <div className={styles.continueSearchSlot}>
         <ContinueSearchingCard />
       </div>
+
+      <ScrollingBookerReviews />
     </section>
   );
 }

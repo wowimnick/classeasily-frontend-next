@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/generate-corporate-provider-logos.mjs",
+    "prebuild": "node scripts/generate-corporate-provider-logos.mjs && node scripts/generate-location-presets.mjs && node scripts/generate-i-want-collections.mjs",
     "build": "next build --debug",
     "start": "next start",
     "lint": "eslint",

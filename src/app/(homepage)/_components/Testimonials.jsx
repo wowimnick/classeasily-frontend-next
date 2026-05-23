@@ -174,8 +174,8 @@ const Testimonials = () => {
           {/* CENTER: Image card */}
           <div className={styles.centerCol} aria-hidden="true">
             <Image
-              src="https://images.unsplash.com/photo-1529543544282-ea669407fca3?w=600&h=800&fit=crop&crop=center"
-              alt="Happy learner at a class"
+              src="https://rollthisway.com/cdn/shop/files/RTW_class_2.jpg?v=1775701579&width=700"
+              alt="Group sushi-making class at Roll This Way"
               fill
               sizes="(max-width: 1023px) 60vw, 35vw"
               className={styles.centerImage}

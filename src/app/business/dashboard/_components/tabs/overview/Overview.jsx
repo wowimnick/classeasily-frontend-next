@@ -1362,10 +1362,10 @@ const Overview = forwardRef((props, ref) => {
 
   const mainStats = useMemo(
     () => [
+      "gross_total_revenue",
       "total_students",
       "active_classes",
       "monthly_revenue",
-      "gross_total_revenue",
       "average_rating",
     ],
     [],

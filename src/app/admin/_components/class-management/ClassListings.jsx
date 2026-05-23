@@ -1043,12 +1043,12 @@ export default function ClassListings() {
   const [lockForm] = Form.useForm();
   const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
-  /** Exclude from schedule warning list: 'inactive' | 'suspended' | 'inactiveBiz' */
-  const [scheduleWarningExclude, setScheduleWarningExclude] = useState([]);
+  /** Include in schedule warning list (hidden by default): 'inactive' | 'suspended' | 'inactiveBiz' */
+  const [scheduleWarningInclude, setScheduleWarningInclude] = useState([]);
   const filteredScheduleWarnings = useMemo(() => {
     const raw = classStats.classesWithLowSchedules ?? [];
-    const ex = new Set(
-      Array.isArray(scheduleWarningExclude) ? scheduleWarningExclude : [],
+    const include = new Set(
+      Array.isArray(scheduleWarningInclude) ? scheduleWarningInclude : [],
     );
     return raw.filter((item) => {
       const status = normalizeClassStatus(
@@ -1056,18 +1056,18 @@ export default function ClassListings() {
       );
       const businessOk = coerceBusinessIsActive(item);
 
-      if (ex.has("inactive") && status === "inactive") {
+      if (status === "inactive" && !include.has("inactive")) {
         return false;
       }
-      if (ex.has("suspended") && status === "suspended") {
+      if (status === "suspended" && !include.has("suspended")) {
         return false;
       }
-      if (ex.has("inactiveBiz") && !businessOk) {
+      if (!businessOk && !include.has("inactiveBiz")) {
         return false;
       }
       return true;
     });
-  }, [classStats.classesWithLowSchedules, scheduleWarningExclude]);
+  }, [classStats.classesWithLowSchedules, scheduleWarningInclude]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1900,15 +1900,15 @@ export default function ClassListings() {
               </Text>
             </div>
           </Space>
-          <Tooltip title="Hide matching rows from this list (does not change data).">
+          <Tooltip title="Show rows that are hidden by default (does not change data).">
             <Select
               mode="multiple"
               allowClear
               size="small"
-              placeholder="Exclude…"
+              placeholder="Include…"
               style={{ minWidth: 160, maxWidth: 320 }}
-              value={scheduleWarningExclude}
-              onChange={(v) => setScheduleWarningExclude(v)}
+              value={scheduleWarningInclude}
+              onChange={(v) => setScheduleWarningInclude(v)}
               options={[
                 { value: "inactive", label: "Inactive class" },
                 { value: "suspended", label: "Suspended" },
@@ -1922,7 +1922,7 @@ export default function ClassListings() {
           <Empty
             style={{ margin: "8px 0" }}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Nothing left with these exclusions. Clear “Exclude” to see all."
+            description="Nothing left with current filters. Use “Include” to show inactive, suspended, or inactive business classes."
           />
         ) : (
           <List

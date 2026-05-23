@@ -485,7 +485,7 @@ export default function PlatformOverview() {
   const kpiCards = useMemo(
     () => [
       {
-        label: "Platform GMV",
+        label: "Gross Total Revenue",
         value: formatCompact(stats.platformRevenue),
         isText: true,
         icon: DollarSign,

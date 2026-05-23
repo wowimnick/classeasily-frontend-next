@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-05-23T05:50:23.627750+00:00",
+  "presets": [
+    {
+      "name": "Toronto",
+      "displayName": "Toronto, ON",
+      "description": "Downtown & neighbourhoods",
+      "coords": {
+        "lat": 43.6532,
+        "lng": -79.3832
+      },
+      "provinceSlug": "ontario",
+      "citySlug": "toronto",
+      "classCount": 13
+    },
+    {
+      "name": "Aurora",
+      "displayName": "Aurora, ON",
+      "description": "York Region",
+      "coords": {
+        "lat": 44.0056,
+        "lng": -79.4663
+      },
+      "provinceSlug": "ontario",
+      "citySlug": "aurora",
+      "classCount": 4
+    },
+    {
+      "name": "Richmond Hill",
+      "displayName": "Richmond Hill, ON",
+      "description": "York Region",
+      "coords": {
+        "lat": 43.8828,
+        "lng": -79.4403
+      },
+      "provinceSlug": "ontario",
+      "citySlug": "richmond-hill",
+      "classCount": 4
+    },
+    {
+      "name": "Markham",
+      "displayName": "Markham, ON",
+      "description": "York Region",
+      "coords": {
+        "lat": 43.8561,
+        "lng": -79.337
+      },
+      "provinceSlug": "ontario",
+      "citySlug": "markham",
+      "classCount": 1
+    }
+  ]
+}

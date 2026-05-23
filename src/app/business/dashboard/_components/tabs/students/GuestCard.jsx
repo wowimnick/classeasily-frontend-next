@@ -183,10 +183,10 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
   );
 
   const tooltipText = isPlatformUser
-    ? "This is a registered user on the platform who has booked with you."
+    ? "Registered platform user who has booked a class with your business."
     : isGuest
-    ? "This contact was created from a guest booking on the platform."
-    : "This is a contact you imported manually. They may not have a platform account yet.";
+    ? "Guest who booked a class with your business (no platform account)."
+    : "Imported or manually added contact. They may not have booked yet.";
 
   const menu = (
     <Menu>

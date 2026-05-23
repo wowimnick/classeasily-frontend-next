@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useSearch } from "@/context/SearchContext";
+import { formatSearchLocationCityName } from "@/lib/formatSearchLocationDisplay";
 import styles from "./ContinueSearchingCard.module.css";
 
 const CONTINUE_THUMB_BACK =
@@ -17,8 +18,12 @@ export default function ContinueSearchingCard() {
   const { searchTerm, selectedLocation, performSearch } = useSearch();
   const prefersReducedMotion = useReducedMotion();
 
-  const raw = (selectedLocation?.displayName || searchTerm || "").trim();
-  const city = raw.split(",")[0].trim();
+  const city = formatSearchLocationCityName({
+    displayName: selectedLocation?.displayName,
+    searchTerm,
+    city: selectedLocation?.city,
+    state: selectedLocation?.state,
+  });
 
   if (!city) return null;
 

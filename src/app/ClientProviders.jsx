@@ -21,6 +21,7 @@ const SearchFullScreen = dynamic(
 );
 import ScrollRestorationHome from "@/components/ScrollRestorationHome";
 import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
+import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -86,6 +87,7 @@ export default function ClientProviders({ children }) {
         getPopupContainer={() => document.body}
       >
         <ThemeProvider theme={memoizedTheme}>
+          <ImpersonationBanner />
           <ToastProvider>
             <AuthProvider>
               <SessionMonitor />

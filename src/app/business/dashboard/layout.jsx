@@ -13,7 +13,6 @@ import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import BusinessHeader from "./_components/BusinessHeader";
-import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 import SideMenu from "./_components/SideMenu";
 import SetupGuideWrapper from "./_components/SetupGuideWrapper";
 import DashboardContext from "./_components/DashboardContext";
@@ -95,29 +94,28 @@ function DashboardLayoutInner({ children }) {
   return (
     <ThemeProvider theme={appTheme}>
       <ConfigProvider theme={appTheme}>
-        <ImpersonationBanner />
-      <PageLayout>
-        <HeaderWrapper>
-          <BusinessHeader />
-        </HeaderWrapper>
-        <SubscriptionProvider>
-          <DashboardContainer>
-            <SideMenuWrapper>
-              <SideMenu
-                ref={sideMenuRef}
-                onMenuSelect={handleMenuSelect}
-                activeKey={menuActiveKey}
-              />
-            </SideMenuWrapper>
-            <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
-              <DashboardContext.Provider value={dashboardCtxValue}>
-                {children}
-              </DashboardContext.Provider>
-            </MainContent>
-          </DashboardContainer>
-          <SetupGuideWrapper sideMenuRef={sideMenuRef} />
-        </SubscriptionProvider>
-      </PageLayout>
+        <PageLayout>
+          <HeaderWrapper>
+            <BusinessHeader />
+          </HeaderWrapper>
+          <SubscriptionProvider>
+            <DashboardContainer>
+              <SideMenuWrapper>
+                <SideMenu
+                  ref={sideMenuRef}
+                  onMenuSelect={handleMenuSelect}
+                  activeKey={menuActiveKey}
+                />
+              </SideMenuWrapper>
+              <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
+                <DashboardContext.Provider value={dashboardCtxValue}>
+                  {children}
+                </DashboardContext.Provider>
+              </MainContent>
+            </DashboardContainer>
+            <SetupGuideWrapper sideMenuRef={sideMenuRef} />
+          </SubscriptionProvider>
+        </PageLayout>
       </ConfigProvider>
     </ThemeProvider>
   );

@@ -11,7 +11,8 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { collectionService } from "@/services/apiService";
+import { useIWantCollections } from "@/hooks/useIWantCollections";
+import { formatSearchLocationCityName } from "@/lib/formatSearchLocationDisplay";
 import dayjs from "dayjs";
 import posthog from "posthog-js";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
@@ -28,7 +29,6 @@ import {
 } from "@/components/explore/ExploreDropdownTypeChips";
 import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
 import CustomCalendar from "@/app/(homepage)/_components/CustomCalendarMobile";
-import { filterCollectionsWithActiveClasses } from "@/lib/filterCollectionsWithActiveClasses";
 
 // --- Styled Components ---
 
@@ -364,7 +364,7 @@ export default function SearchFullScreen() {
   } = useSearch();
 
   const [expandedSection, setExpandedSection] = useState(null);
-  const [iWantCollections, setIWantCollections] = useState([]);
+  const iWantCollections = useIWantCollections();
   const locationInputRef = useRef(null);
   const mainScrollRef = useRef(null);
 
@@ -388,21 +388,6 @@ export default function SearchFullScreen() {
     }
   }, [expandedSection]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await collectionService.listByPlacement("i_want");
-        if (!cancelled) setIWantCollections(filterCollectionsWithActiveClasses(rows));
-      } catch {
-        if (!cancelled) setIWantCollections([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const getDateDisplay = () => {
     if (!datePickerValue) return "Whenever";
     if (datePickerValue.start && datePickerValue.end) {
@@ -421,6 +406,8 @@ export default function SearchFullScreen() {
       coordinates: coords,
       citySlug: item.citySlug,
       provinceSlug: item.provinceSlug,
+      city: item.city,
+      state: item.state,
     });
     setExpandedSection(null);
     if (mainScrollRef.current) {
@@ -483,7 +470,13 @@ export default function SearchFullScreen() {
     }
 
     return (list || []).map((item, idx) => {
-      const name = usePresets ? (item.displayName || item.name) : (item.displayName || "").split(",")[0];
+      const name = usePresets
+        ? (item.displayName || item.name)
+        : formatSearchLocationCityName({
+            displayName: item.displayName,
+            city: item.city,
+            state: item.state,
+          }) || (item.displayName || "").split(",")[0];
       const desc = usePresets ? item.description : item.displayName;
       
       // Cycle through palette based on index

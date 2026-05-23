@@ -12,7 +12,6 @@ import SupportTicketTab from "../_components/support/SupportTicketTab";
 import AdminConversationsTab from "../_components/conversations/AdminConversationsTab";
 import PayoutsList from "../_components/payouts-management/PayoutsList";
 import BusinessHeader from "@/app/business/dashboard/_components/BusinessHeader";
-import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 import TabGlassWrapper from "@/app/business/dashboard/_components/TabGlassWrapper";
 import { ADMIN_TAB_KEYS, ADMIN_TAB_PERMISSIONS } from "../adminTabsConfig";
 
@@ -251,7 +250,6 @@ export default function AdminPage() {
 
   return (
     <ConfigProvider theme={appTheme}>
-      <ImpersonationBanner />
       <PageLayout>
         <HeaderWrapper>
           <BusinessHeader />
