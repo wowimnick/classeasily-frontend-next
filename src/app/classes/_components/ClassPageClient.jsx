@@ -24,7 +24,7 @@ import { classService } from "@/services/apiService.js";
 import { Alert, Button as AntButton, Divider, Modal } from "antd";
 import message from "@/lib/message";
 import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
-import { formatMoneyCompact } from "@/lib/seo";
+import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 import MiniCalendar from "./MiniCalendar";
 import { getDurationText, getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
@@ -1029,7 +1029,7 @@ function MobileBestPricePopUp({ visible, onComplete }) {
   );
 }
 
-const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
+const MobileBookingFooter = ({ option, onBookNow, hidden, currencyCode = "CAD" }) => {
   if (!option) return null;
 
   const { schedules, booking_type } = option;
@@ -1044,10 +1044,11 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
     if (prices.length === 0) return { display: "Free", per: "" };
     const min = Math.min(...prices);
     const max = Math.max(...prices);
+    const minText = formatMoneyCompact(min, currencyCode).text;
     const priceDisplay =
       min === max
-        ? `$${min.toFixed(0)}`
-        : `$${min.toFixed(0)} - ${max.toFixed(0)}`;
+        ? minText
+        : `${minText} - ${formatMoneyCompact(max, currencyCode).text}`;
     const perWhat = isCourse ? "course" : "person";
     return { display: priceDisplay, per: perWhat };
   };
@@ -1495,6 +1496,8 @@ export default function ClassPageClient({
     };
   }, [mounted]);
 
+  const displayCurrency = toSchemaPriceCurrency(classData?.currency_code || "CAD");
+
   /* Price data for peek bar — mirrors ClassOptionCard's getPriceRange logic */
   const peekPriceDisplay = useMemo(() => {
     const schedules = optionToDisplayOnCard?.schedules || [];
@@ -1503,9 +1506,9 @@ export default function ClassPageClient({
       .filter((p) => !isNaN(p) && p > 0);
     if (!prices.length) return { amount: "Free", showFrom: false };
     const min = Math.min(...prices);
-    const { text } = formatMoneyCompact(min, classData?.currency_code);
+    const { text } = formatMoneyCompact(min, displayCurrency);
     return { amount: text, showFrom: true };
-  }, [optionToDisplayOnCard, classData]);
+  }, [optionToDisplayOnCard, displayCurrency]);
 
   const peekPriceUnit =
     optionToDisplayOnCard?.booking_type === "Full Course" ? "/ course" : "/ guest";
@@ -1763,7 +1766,7 @@ export default function ClassPageClient({
                   options={[optionToDisplayOnCard]}
                   classTitle={classData.title}
                   classImages={classData.images}
-                  currency={classData.currency_code || "$"}
+                  currency={displayCurrency}
                   onBookNow={handleOpenBookingModal}
                   onSelectSlot={handleDirectCheckoutFromSlot}
                   businessTimeZone={classData?.business_timezone}
@@ -1866,7 +1869,7 @@ export default function ClassPageClient({
                       {mobileReserve.mobileSelectedSlot.price != null && parseFloat(mobileReserve.mobileSelectedSlot.price) > 0
                         ? formatMoneyCompact(
                             parseFloat(mobileReserve.mobileSelectedSlot.price),
-                            classData?.currency_code,
+                            displayCurrency,
                           ).text
                         : "Free"}
                       <span style={{ fontWeight: 400, color: "#6b7280", fontSize: "0.8rem" }}>
@@ -1898,6 +1901,7 @@ export default function ClassPageClient({
                 option={optionToDisplayOnCard}
                 onBookNow={handleOpenBookingModal}
                 hidden={isReviewsModalOpen}
+                currencyCode={displayCurrency}
               />
             )
           )}
@@ -1979,7 +1983,9 @@ export default function ClassPageClient({
                             </TimeSlotMeta>
                           </div>
                           <TimeSlotPrice $selected={isSelected}>
-                            {price === 0 ? "Free" : `$${price.toFixed(2)}`}
+                            {price === 0
+                              ? "Free"
+                              : formatMoneyCompact(price, displayCurrency).text}
                           </TimeSlotPrice>
                         </TimeSlotRow>
                       );

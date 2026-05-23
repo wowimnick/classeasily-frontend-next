@@ -6,6 +6,7 @@ import { Tooltip } from "antd";
 import dayjs from "dayjs";
 import { fromZonedTime } from "date-fns-tz";
 import { formatBusinessLocalToUserDisplay } from "@/services/utils";
+import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 
 const CORAL = "#FF385C";
 const NEAR_BLACK = "#111111";
@@ -204,7 +205,7 @@ const CourseNotice = styled.div`
 
 const ClassOptionCard = ({
   option,
-  currency = "$",
+  currency = "CAD",
   onBookNow,
   onSelectSlot,
   businessTimeZone,
@@ -302,7 +303,9 @@ const ClassOptionCard = ({
     return prices.length ? Math.min(...prices) : 0;
   }, [schedules]);
 
-  const priceDisplay = minPrice === 0 ? "Free" : `${currency}${Math.round(minPrice)}`;
+  const displayCurrency = toSchemaPriceCurrency(currency);
+  const priceDisplay =
+    minPrice === 0 ? "Free" : formatMoneyCompact(minPrice, displayCurrency).text;
   const priceUnit = isCourse ? "/ course" : "/ guest";
 
   const cancellationPolicyDisplay = useMemo(() => {

@@ -19,7 +19,7 @@ export function getDefaultOgImageUrl() {
  * API may return symbols; map common ones to codes.
  */
 export function toSchemaPriceCurrency(value) {
-  if (value == null || value === "") return "USD";
+  if (value == null || value === "") return "CAD";
   const s = String(value).trim().toUpperCase();
   if (/^[A-Z]{3}$/.test(s)) return s;
   const sym = String(value).trim();
@@ -27,7 +27,16 @@ export function toSchemaPriceCurrency(value) {
   if (sym === "CA$" || sym === "CAD" || sym === "C$") return "CAD";
   if (sym === "£" || sym === "GBP") return "GBP";
   if (sym === "€" || sym === "EUR") return "EUR";
-  return "USD";
+  return "CAD";
+}
+
+/** BCP 47 locale for compact money display (CAD → en-CA so $ reads as Canadian). */
+export function moneyFormatLocale(iso) {
+  if (iso === "CAD") return "en-CA";
+  if (iso === "USD") return "en-US";
+  if (iso === "GBP") return "en-GB";
+  if (iso === "EUR") return "de-DE";
+  return undefined;
 }
 
 /**
@@ -39,7 +48,7 @@ export function formatMoneyCompact(amount, currencyCodeOrSymbol) {
   const iso = toSchemaPriceCurrency(currencyCodeOrSymbol);
   try {
     return {
-      text: new Intl.NumberFormat(undefined, {
+      text: new Intl.NumberFormat(moneyFormatLocale(iso), {
         style: "currency",
         currency: iso,
         maximumFractionDigits: 0,

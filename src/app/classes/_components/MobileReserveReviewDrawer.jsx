@@ -17,6 +17,7 @@ import {
   estimateTaxFromSubtotal,
   estimateTotalWithTax,
 } from "@/lib/bookingPricing";
+import { moneyFormatLocale, toSchemaPriceCurrency } from "@/lib/seo";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -418,7 +419,9 @@ export default function MobileReserveReviewDrawer({
   const taxAmount = estimateTaxFromSubtotal(subtotal);
   const total = estimateTotalWithTax(subtotal);
   const estimatedTaxLabel = `Estimated tax (${Math.round(ESTIMATED_SALES_TAX_RATE * 100)}%)`;
-  const currency = classData?.currency_code || "CAD";
+  const currency = toSchemaPriceCurrency(classData?.currency_code || "CAD");
+  const currencyLocale = moneyFormatLocale(currency);
+  const moneyFormat = { style: "currency", currency };
 
   const imageUrl = useMemo(() => {
     const img = classData?.images?.[0];
@@ -604,7 +607,8 @@ export default function MobileReserveReviewDrawer({
                   ) : (
                     <NumberFlow
                       value={total}
-                      format={{ style: "currency", currency: currency || "CAD" }}
+                      locales={currencyLocale}
+                      format={moneyFormat}
                     />
                   )}
                 </span>
@@ -646,16 +650,16 @@ export default function MobileReserveReviewDrawer({
                             <SheetTitle>Price details</SheetTitle>
                             
                             <PriceRow>
-                                <span>{participants} {participants > 1 ? "Guests" : "Guest"} x <NumberFlow value={pricePer} format={{ style: "currency", currency }} /></span>
-                                <span><NumberFlow value={subtotal} format={{ style: "currency", currency }} /></span>
+                                <span>{participants} {participants > 1 ? "Guests" : "Guest"} x <NumberFlow value={pricePer} locales={currencyLocale} format={moneyFormat} /></span>
+                                <span><NumberFlow value={subtotal} locales={currencyLocale} format={moneyFormat} /></span>
                             </PriceRow>
                             <PriceRow>
                                 <span>{estimatedTaxLabel}</span>
-                                <span><NumberFlow value={taxAmount} format={{ style: "currency", currency }} /></span>
+                                <span><NumberFlow value={taxAmount} locales={currencyLocale} format={moneyFormat} /></span>
                             </PriceRow>
                             <PriceRow className="total">
                                 <span>Total</span>
-                                <span><NumberFlow value={total} format={{ style: "currency", currency }} /></span>
+                                <span><NumberFlow value={total} locales={currencyLocale} format={moneyFormat} /></span>
                             </PriceRow>
                         </DrawerBody>
                     </NestedDrawerContent>

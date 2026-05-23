@@ -59,7 +59,7 @@ const ClassOptionsContainer = ({
   options,
   classTitle,
   classImages,
-  currency = "$",
+  currency = "CAD",
   onBookNow,
   onSelectSlot,
   businessTimeZone,
