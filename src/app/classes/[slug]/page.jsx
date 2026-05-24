@@ -1,5 +1,5 @@
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -169,6 +169,14 @@ async function getClassData(slug) {
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const { classData, businessData } = await getClassData(resolvedParams.slug);
+
+  if (
+    classData?.slug &&
+    resolvedParams.slug &&
+    resolvedParams.slug !== classData.slug
+  ) {
+    permanentRedirect(`/classes/${classData.slug}`);
+  }
 
   const site = getSiteUrl();
   const pageTitle = classData?.title
@@ -362,6 +370,14 @@ export default async function ClassPage({ params }) {
   const { classData, businessData, initialReviews } = await getClassData(
     resolvedParams.slug,
   );
+
+  if (
+    classData?.slug &&
+    resolvedParams.slug &&
+    resolvedParams.slug !== classData.slug
+  ) {
+    permanentRedirect(`/classes/${classData.slug}`);
+  }
 
   const breadcrumbItems = [
     { key: "home", title: <Link href="/">Home</Link> },

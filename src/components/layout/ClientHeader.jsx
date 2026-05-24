@@ -185,6 +185,8 @@ const HeaderWrapper = styled(motion.header)`
       ? `
     ${down(BP.MOBILE)} {
       padding: 10px 1rem;
+      /* Room for pill drop shadow inside PageLayout overflow clip — layout gap cancelled on ExploreHeaderSlot */
+      padding-bottom: 40px;
     }
   `
       : ""}

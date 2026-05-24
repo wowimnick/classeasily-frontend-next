@@ -66,6 +66,14 @@ const ExploreResultsPane = styled.div`
 
 const ExploreHeaderSlot = styled.div`
   flex-shrink: 0;
+
+  ${down(BP.MOBILE)} {
+    position: relative;
+    z-index: 95;
+    overflow: visible;
+    /* Pull results up so pill shadow overlaps instead of being clipped (see ScrollingBookerReviews) */
+    margin-bottom: -30px;
+  }
 `;
 
 const FetchErrorBanner = styled.div`

@@ -1,5 +1,5 @@
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import ClassCheckoutClient from "./_components/ClassCheckoutClient";
 import { fetchClassDetail } from "@/lib/server-data-fetchers";
 
@@ -20,7 +20,19 @@ export default async function ClassCheckoutPage({ params }) {
   if (!slug) notFound();
 
   const initialClassData = await getClassData(slug);
+  if (
+    initialClassData?.slug &&
+    slug &&
+    slug !== initialClassData.slug
+  ) {
+    permanentRedirect(`/classes/${initialClassData.slug}/checkout`);
+  }
+  if (!initialClassData) notFound();
+
   return (
-    <ClassCheckoutClient slug={slug} initialClassData={initialClassData} />
+    <ClassCheckoutClient
+      slug={initialClassData.slug}
+      initialClassData={initialClassData}
+    />
   );
 }
