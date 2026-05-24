@@ -157,6 +157,9 @@ const HeaderWrapper = styled(motion.header)`
           width: auto;
           max-width: min(100%, calc(100vw - 108px));
           min-width: 0;
+          overflow: visible;
+          position: relative;
+          z-index: 1;
         }
         & > .header-right-section {
           justify-self: end;
@@ -185,6 +188,11 @@ const HeaderWrapper = styled(motion.header)`
       ? `
     ${down(BP.MOBILE)} {
       padding: 10px 1rem;
+      /* Natural height — fixed Framer height (80px) clips the pill drop shadow */
+      height: auto !important;
+      min-height: 0;
+      overflow: visible;
+      z-index: 100;
     }
   `
       : ""}
@@ -934,6 +942,8 @@ const MobileExploreSearchPill = styled.button`
   ${down(BP.MOBILE)} {
     display: flex;
   }
+  position: relative;
+  z-index: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1514,9 +1524,14 @@ function ExploreHeaderContent({
         $unifiedExploreChrome={unifiedExploreChrome}
         $exploreMobileLight={exploreMobileLight}
         $exploreMobileUnified={exploreMobileUnified}
-        animate={{ height: isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT }}
-        initial={{ height: HEADER_H_COMPACT }}
+        animate={
+          exploreMobileChrome
+            ? false
+            : { height: isExpanded ? HEADER_H_EXPANDED : HEADER_H_COMPACT }
+        }
+        initial={exploreMobileChrome ? false : { height: HEADER_H_COMPACT }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        style={exploreMobileChrome ? { overflow: "visible" } : undefined}
       >
         {exploreMobileChrome ? (
           <MobileExploreBackBtn

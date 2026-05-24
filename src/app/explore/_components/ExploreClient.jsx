@@ -54,6 +54,10 @@ const ContentArea = styled.main`
   position: relative;
   display: flex;
   flex-direction: column;
+
+  ${down(BP.MOBILE)} {
+    z-index: 0;
+  }
 `;
 
 const ExploreResultsPane = styled.div`
@@ -68,9 +72,10 @@ const ExploreHeaderSlot = styled.div`
   flex-shrink: 0;
 
   ${down(BP.MOBILE)} {
-    /* Stacking context above CategoriesWrapper (z-index 90) so pill shadow paints over it */
+    /* Stacking context above explore filter bar (CategoriesWrapper z-index 90) */
     position: relative;
-    z-index: 95;
+    z-index: 100;
+    isolation: isolate;
     overflow: visible;
   }
 `;

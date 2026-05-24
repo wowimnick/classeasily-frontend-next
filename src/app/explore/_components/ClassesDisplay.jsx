@@ -82,6 +82,11 @@ const CategoriesWrapper = styled.div`
   z-index: 90;
   background-color: #ffffff;
   transition: background-color 0.35s ease;
+
+  ${down(BP.MOBILE)} {
+    /* Stay below ExploreHeaderSlot (z-index 100) so pill shadow is not covered */
+    z-index: 1;
+  }
 `;
 
 const ClassGridWrapper = styled.div`

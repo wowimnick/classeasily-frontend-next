@@ -74,6 +74,7 @@ const BarOuter = styled.div`
 
   ${down(BP.MOBILE)} {
     border-bottom: none;
+    z-index: 1;
   }
 `;
 
