@@ -68,11 +68,10 @@ const ExploreHeaderSlot = styled.div`
   flex-shrink: 0;
 
   ${down(BP.MOBILE)} {
+    /* Stacking context above CategoriesWrapper (z-index 90) so pill shadow paints over it */
     position: relative;
     z-index: 95;
     overflow: visible;
-    /* Pull results up so pill shadow overlaps instead of being clipped (see ScrollingBookerReviews) */
-    margin-bottom: -30px;
   }
 `;
 
