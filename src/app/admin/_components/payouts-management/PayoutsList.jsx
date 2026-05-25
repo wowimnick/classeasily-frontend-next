@@ -479,6 +479,7 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
             icon={<ExternalLink size={14} />}
             href={stripeTransferUrl}
             target="_blank"
+            rel="noopener noreferrer"
           >
             View on Stripe
           </Button>
@@ -517,7 +518,7 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
   );
 };
 
-const MobilePayoutItem = ({ payout, onViewDetails }) => (
+const MobilePayoutItem = ({ payout, onViewDetails, onRetry, retryingId }) => (
   <MobileCard>
     <MobileCardContent>
       <div
@@ -549,8 +550,29 @@ const MobilePayoutItem = ({ payout, onViewDetails }) => (
           marginTop: "12px",
           paddingTop: "12px",
           borderTop: `1px solid ${colors.border}`,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
+        {payout.status === "failed" && (
+          <Popconfirm
+            title="Retry this failed payout?"
+            description="Re-queues the payout for the next automatic run."
+            onConfirm={() => onRetry(payout.id)}
+            okText="Yes, retry"
+            cancelText="Cancel"
+          >
+            <Button
+              danger
+              icon={<Repeat size={14} />}
+              loading={retryingId === payout.id}
+              block
+            >
+              Retry payout
+            </Button>
+          </Popconfirm>
+        )}
         <Button
           type="primary"
           size="middle"
@@ -583,6 +605,7 @@ const PayoutsList = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [manualPayoutTriggering, setManualPayoutTriggering] = useState(false);
+  const [retryingId, setRetryingId] = useState(null);
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
@@ -792,6 +815,7 @@ const PayoutsList = () => {
   };
 
   const handleRetryPayout = async (payoutId) => {
+    setRetryingId(payoutId);
     message.loading({ content: "Retrying payout...", key: "retry_payout" });
     const response = await adminPayoutService.retryFailedPayout(payoutId);
     if (response.success) {
@@ -810,6 +834,7 @@ const PayoutsList = () => {
         duration: 3,
       });
     }
+    setRetryingId(null);
   };
 
   const statsPeriodBadge =
@@ -913,9 +938,29 @@ const PayoutsList = () => {
       width: 120,
       align: "center",
       render: (_, r) => (
-        <Button icon={<Eye size={14} />} onClick={() => showPayoutDetails(r)}>
-          Details
-        </Button>
+        <Space size={4}>
+          {r.status === "failed" && (
+            <Popconfirm
+              title="Retry this failed payout?"
+              description="Re-queues the payout for the next automatic run."
+              onConfirm={() => handleRetryPayout(r.id)}
+              okText="Yes, retry"
+              cancelText="Cancel"
+            >
+              <Button
+                size="small"
+                danger
+                icon={<Repeat size={14} />}
+                loading={retryingId === r.id}
+              >
+                Retry
+              </Button>
+            </Popconfirm>
+          )}
+          <Button icon={<Eye size={14} />} onClick={() => showPayoutDetails(r)}>
+            Details
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -934,9 +979,16 @@ const PayoutsList = () => {
             {canTriggerManualPayout && (
               <Popconfirm
                 title="Run payout job now?"
-                description="Queues the same automated payout task as the nightly schedule. Workers process it in the background—refresh shortly to see updates."
-                okText="Run now"
+                description={
+                  <span>
+                    <strong>Warning:</strong> This immediately queues a live payout run for all eligible
+                    businesses. Funds will be transferred via Stripe. Only proceed if you intend to
+                    process payouts outside the nightly schedule.
+                  </span>
+                }
+                okText="Yes, run now"
                 cancelText="Cancel"
+                okButtonProps={{ danger: true }}
                 onConfirm={handleTriggerManualPayout}
               >
                 <ExportButton
@@ -1090,6 +1142,8 @@ const PayoutsList = () => {
                     key={payout.id}
                     payout={payout}
                     onViewDetails={showPayoutDetails}
+                    onRetry={handleRetryPayout}
+                    retryingId={retryingId}
                   />
                 ))
               ) : (

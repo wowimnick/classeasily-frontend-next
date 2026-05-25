@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Drawer, InputNumber, Space, Timeline, Typography, message } from "antd";
+import { Button, Drawer, InputNumber, Modal, Space, Timeline, Typography, message } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { corporateAdminService } from "@/services/adminDash";
@@ -15,6 +15,11 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
   const [loading, setLoading] = useState(false);
   const [dueDays, setDueDays] = useState(15);
   const [issuing, setIssuing] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const COMPLETABLE_STATUSES = ["deposit_paid", "invoiced", "fully_paid", "in_progress"];
+  const CANCELLABLE_STATUSES = ["pending_deposit", "deposit_paid", "invoiced", "fully_paid", "in_progress"];
 
   useEffect(() => {
     if (!open || !bookingId) {
@@ -54,19 +59,57 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
     }
   };
 
-  const copyText = async (label, val) => {
+  const copyText = async (val) => {
     if (!val) return;
     try {
       await navigator.clipboard.writeText(val);
-      message.success(`${label} copied`);
+      message.success("Copied!", 1.5);
     } catch {
       message.error("Could not copy");
     }
   };
 
+  const markCompleted = async () => {
+    if (!bookingId) return;
+    setCompleting(true);
+    try {
+      const res = await corporateAdminService.markCompleted(bookingId);
+      setBooking(res.data);
+      message.success("Booking marked completed");
+      onInvoiceIssued?.();
+    } catch (e) {
+      message.error(e?.response?.data?.detail || "Could not mark completed");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const confirmCancelBooking = () => {
+    Modal.confirm({
+      title: "Cancel this booking?",
+      content: "This will cancel the booking and may refund the deposit. This action cannot be undone.",
+      okText: "Cancel booking",
+      okButtonProps: { danger: true },
+      cancelText: "Keep booking",
+      onOk: async () => {
+        setCancelling(true);
+        try {
+          const res = await corporateAdminService.cancelBooking(bookingId, { refund_deposit: true });
+          setBooking(res.data);
+          message.success("Booking cancelled");
+          onInvoiceIssued?.();
+        } catch (e) {
+          message.error(e?.response?.data?.detail || "Could not cancel booking");
+        } finally {
+          setCancelling(false);
+        }
+      },
+    });
+  };
+
   return (
     <Drawer
-      width={640}
+      width="min(640px, 100vw)"
       open={open && !!bookingId}
       onClose={onClose}
       title={booking ? booking.reference : "Booking"}
@@ -103,7 +146,7 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
               </Text>
               <Text type="secondary">Invoice status: {booking.invoice_status || "—"}</Text>
               {booking.invoice_url ? (
-                <a href={booking.invoice_url} target="_blank" rel="noreferrer">
+                <a href={booking.invoice_url} target="_blank" rel="noopener noreferrer">
                   Open Stripe invoice
                 </a>
               ) : null}
@@ -132,7 +175,7 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
                     type="link"
                     size="small"
                     icon={<CopyOutlined />}
-                    onClick={() => copyText("Payment intent", booking.deposit_payment_intent_id)}
+                    onClick={() => copyText(booking.deposit_payment_intent_id)}
                   />
                 </Space>
               ) : null}
@@ -145,7 +188,7 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
                     type="link"
                     size="small"
                     icon={<CopyOutlined />}
-                    onClick={() => copyText("Invoice id", booking.stripe_invoice_id)}
+                    onClick={() => copyText(booking.stripe_invoice_id)}
                   />
                 </Space>
               ) : null}
@@ -194,6 +237,24 @@ export default function BookingDetailDrawer({ open, bookingId, onClose, onInvoic
                 Available once deposit is paid and no invoice exists yet.
               </Text>
             ) : null}
+            <Space wrap style={{ marginTop: 16 }}>
+              <Button
+                type="primary"
+                loading={completing}
+                disabled={!COMPLETABLE_STATUSES.includes(booking.status)}
+                onClick={markCompleted}
+              >
+                Mark completed
+              </Button>
+              <Button
+                danger
+                loading={cancelling}
+                disabled={!CANCELLABLE_STATUSES.includes(booking.status)}
+                onClick={confirmCancelBooking}
+              >
+                Cancel booking
+              </Button>
+            </Space>
           </div>
         </Space>
       ) : (

@@ -226,6 +226,26 @@ export default function GlobalDiscountsManagement() {
   const [form] = Form.useForm();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const discountType = Form.useWatch("discount_type", form);
+
+  const validateDiscountValue = (_, value) => {
+    if (value === undefined || value === null || value === "") {
+      return Promise.reject(new Error("Required"));
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return Promise.reject(new Error("Enter a valid number"));
+    }
+    const type = form.getFieldValue("discount_type");
+    if (type === "percentage") {
+      if (num < 0 || num > 100) {
+        return Promise.reject(new Error("Percentage must be between 0 and 100"));
+      }
+    } else if (num <= 0) {
+      return Promise.reject(new Error("Fixed amount must be greater than 0"));
+    }
+    return Promise.resolve();
+  };
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -680,7 +700,11 @@ export default function GlobalDiscountsManagement() {
               rules={[{ required: true }]}
               initialValue="percentage"
             >
-              <Select>
+              <Select
+                onChange={() => {
+                  form.validateFields(["value"]).catch(() => {});
+                }}
+              >
                 <Option value="percentage">Percentage</Option>
                 <Option value="fixed_amount">Fixed amount</Option>
               </Select>
@@ -688,9 +712,15 @@ export default function GlobalDiscountsManagement() {
             <Form.Item
               name="value"
               label="Value (e.g. 20 for 20%, or 10 for $10)"
-              rules={[{ required: true, message: "Required" }]}
+              rules={[{ required: true, message: "Required" }, { validator: validateDiscountValue }]}
+              validateTrigger={["onChange", "onBlur"]}
             >
-              <Input type="number" min={0} step={0.01} />
+              <Input
+                type="number"
+                min={0}
+                max={discountType === "percentage" ? 100 : undefined}
+                step={0.01}
+              />
             </Form.Item>
             <Form.Item name="is_active" label="Active" valuePropName="checked" initialValue={true}>
               <Switch />

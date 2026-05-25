@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-
-// AWS Geocoding Lambda URL (same as used in FindClass)
-const AWS_LOCATION_API_URL =
-  "https://geocoding.classeasily.com/address-autocomplete-proxy";
+import {
+  AWS_LOCATION_API_URL,
+  parseAlsLocationResult,
+} from '@/lib/awsLocation';
 
 export const useGeocoding = (coordinates) => {
   const [locationName, setLocationName] = useState('');
@@ -23,7 +23,6 @@ export const useGeocoding = (coordinates) => {
         const response = await fetch(
           `${AWS_LOCATION_API_URL}?lat=${lat}&lng=${lng}&reverse=true`
         );
-        console.log(response);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -32,14 +31,8 @@ export const useGeocoding = (coordinates) => {
         const data = await response.json();
         
         if (Array.isArray(data) && data.length > 0) {
-          const location = data[0];
-          
-          // Extract city and state directly from the response fields
-          const city = location.city || location.locality || location.place || 'Unknown';
-          const state = location.state || location.region || location.administrativeArea || '';
-          
-          // Format as "City, State" or just "City" if no state
-          setLocationName(`${city}${state ? `, ${state}` : ''}`);
+          const parsed = parseAlsLocationResult(data[0]);
+          setLocationName(parsed?.displayText || 'Unknown Location');
         } else {
           setLocationName('Unknown Location');
         }

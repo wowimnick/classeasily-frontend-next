@@ -357,6 +357,7 @@ export default function SearchFullScreen() {
     setSelectedCollections,
     geocodedAddressResults,
     geocoding,
+    geocodingError,
     handleLocationChange,
     handleLocationSelect,
     clearAll,
@@ -459,6 +460,16 @@ export default function SearchFullScreen() {
           </LoadingSpinnerWrap>
           <span style={{ fontSize: 14, fontWeight: 400 }}>Finding locations nearby…</span>
         </div>
+      );
+    }
+    if (hasTerm && !isPresetTerm && geocodingError) {
+      return (
+        <p
+          role="alert"
+          style={{ color: "#991b1b", margin: "14px 18px", fontSize: 14, fontWeight: 400, lineHeight: 1.45 }}
+        >
+          {geocodingError}
+        </p>
       );
     }
     if (hasTerm && !isPresetTerm && (!list || list.length === 0)) {

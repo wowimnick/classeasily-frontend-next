@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUrlState } from "@/hooks/useUrlState";
 import { formatDistanceToNow } from "date-fns";
 import styled from "styled-components";
-import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List, Radio } from 'antd';
+import { Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List, Radio, Form } from 'antd';
 import message from '@/lib/message';
 import {
   Search,
@@ -46,7 +46,8 @@ import {
   Building2,
   ExternalLink,
   X,
-  LogIn,
+  Download,
+  Megaphone,
 } from "lucide-react";
 import {
   businessManagementService,
@@ -74,6 +75,7 @@ import {
 import {
   ActionButtonsContainer,
   RefreshButton,
+  ExportButton,
 } from "../shared/AdminButtons";
 import {
   MobileCard,
@@ -386,6 +388,7 @@ const BusinessDetailDrawerContent = ({
   onViewOwnerProfile,
   onImpersonate,
   onRefreshBusinessDetail,
+  impersonatingOwnerId,
 }) => {
   const [gmapsDraft, setGmapsDraft] = useState("");
   const [savingGmaps, setSavingGmaps] = useState(false);
@@ -672,6 +675,8 @@ const BusinessDetailDrawerContent = ({
                   size="small"
                   icon={<LogIn size={14} />}
                   onClick={() => onImpersonate(owner_id)}
+                  loading={impersonatingOwnerId === owner_id}
+                  disabled={impersonatingOwnerId != null && impersonatingOwnerId !== owner_id}
                   style={{ marginLeft: 0 }}
                 >
                   Impersonate owner
@@ -713,6 +718,7 @@ const DetailDrawerModal = ({
   onViewOwnerProfile,
   onImpersonate,
   onRefreshBusinessDetail,
+  impersonatingOwnerId,
 }) => {
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) onClose();
@@ -755,6 +761,7 @@ const DetailDrawerModal = ({
             onViewOwnerProfile={onViewOwnerProfile}
             onImpersonate={onImpersonate}
             onRefreshBusinessDetail={onRefreshBusinessDetail}
+            impersonatingOwnerId={impersonatingOwnerId}
           />
         )}
       </BusinessDrawerBodyScroll>
@@ -808,6 +815,11 @@ const BusinessListings = () => {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [impersonatingOwnerId, setImpersonatingOwnerId] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
+  const [announcementSending, setAnnouncementSending] = useState(false);
+  const [announcementForm] = Form.useForm();
 
   const [collectionsList, setCollectionsList] = useState([]);
   const [collectionsLoading, setCollectionsLoading] = useState(true);
@@ -828,7 +840,7 @@ const BusinessListings = () => {
     async (userId) => {
       if (userId == null) return;
       try {
-        setIsActionLoading(true);
+        setImpersonatingOwnerId(userId);
         const result = await userAdminService.impersonateUser(userId);
         if (result.success && result.data?.user) {
           message.success("Now impersonating owner.");
@@ -841,7 +853,7 @@ const BusinessListings = () => {
         console.error(e);
         message.error("An unexpected error occurred.");
       } finally {
-        setIsActionLoading(false);
+        setImpersonatingOwnerId(null);
       }
     },
     [router, closeDetailDrawer]
@@ -872,6 +884,8 @@ const BusinessListings = () => {
   const [instagramQueueBusinessId, setInstagramQueueBusinessId] = useState(undefined);
   const [googleQueueSubmitting, setGoogleQueueSubmitting] = useState(false);
   const [instagramQueueSubmitting, setInstagramQueueSubmitting] = useState(false);
+  const [googleQueueQueued, setGoogleQueueQueued] = useState(false);
+  const [instagramQueueQueued, setInstagramQueueQueued] = useState(false);
 
   const [filterParams, setFilterParams] = useState({
     search: "",
@@ -1167,9 +1181,13 @@ const BusinessListings = () => {
     setGoogleQueueSubmitting(false);
     if (res.success) {
       message.success(res.data?.message || "Google reviews sync queued.");
-      setGoogleQueueModalOpen(false);
-      setGoogleQueueScope("all");
-      setGoogleQueueBusinessId(undefined);
+      setGoogleQueueQueued(true);
+      setTimeout(() => {
+        setGoogleQueueModalOpen(false);
+        setGoogleQueueQueued(false);
+        setGoogleQueueScope("all");
+        setGoogleQueueBusinessId(undefined);
+      }, 2000);
     } else {
       message.error(res.error || "Could not queue sync.");
     }
@@ -1190,11 +1208,83 @@ const BusinessListings = () => {
     setInstagramQueueSubmitting(false);
     if (res.success) {
       message.success(res.data?.message || "Instagram sync queued.");
-      setInstagramQueueModalOpen(false);
-      setInstagramQueueScope("all");
-      setInstagramQueueBusinessId(undefined);
+      setInstagramQueueQueued(true);
+      setTimeout(() => {
+        setInstagramQueueModalOpen(false);
+        setInstagramQueueQueued(false);
+        setInstagramQueueScope("all");
+        setInstagramQueueBusinessId(undefined);
+      }, 2000);
     } else {
       message.error(res.error || "Could not queue sync.");
+    }
+  };
+
+  const handleExportBusinesses = async () => {
+    setExporting(true);
+    message.loading({ content: "Preparing export...", key: "businessExport" });
+    try {
+      const params = {
+        search: filterParams.search || undefined,
+        status:
+          filterParams.status === "all" ? undefined : filterParams.status,
+        featured: filterParams.featured ? true : undefined,
+        ...(filterParams.collection_ids?.length
+          ? { collection_ids: filterParams.collection_ids.join(",") }
+          : {}),
+        ...(filterParams.engaged === "yes" && { engaged: true }),
+        ...(filterParams.engaged === "no" && { engaged: false }),
+      };
+      const response = await businessManagementService.exportBusinessesData(params);
+      if (response.success) {
+        message.success({ content: "Export downloaded.", key: "businessExport" });
+      } else if (response.status === 413) {
+        message.warning({
+          content:
+            response.error ||
+            "Export exceeds the row limit. Narrow your filters and try again.",
+          key: "businessExport",
+          duration: 5,
+        });
+      } else {
+        message.error({
+          content: response.error || "Export failed",
+          key: "businessExport",
+        });
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleSendAnnouncement = async () => {
+    try {
+      const values = await announcementForm.validateFields();
+      setAnnouncementSending(true);
+      const res = await businessManagementService.sendAnnouncement({
+        title: values.title,
+        message: values.message,
+        recipientType: values.recipientType || "all",
+        sendEmail: values.sendEmail !== false,
+        sendInApp: values.sendInApp !== false,
+        urgency: values.urgency || "normal",
+      });
+      if (res.success) {
+        message.success(
+          res.data?.message ||
+            "Announcement queued. Emails send in the background via Celery."
+        );
+        setAnnouncementModalOpen(false);
+        announcementForm.resetFields();
+      } else {
+        message.error(res.error || "Failed to queue announcement.");
+      }
+    } catch (e) {
+      if (!e?.errorFields) {
+        message.error("Failed to send announcement.");
+      }
+    } finally {
+      setAnnouncementSending(false);
     }
   };
 
@@ -1379,6 +1469,7 @@ const BusinessListings = () => {
                       key: "imp",
                       icon: <LogIn size={14} />,
                       label: "Impersonate owner",
+                      disabled: impersonatingOwnerId != null,
                       onClick: () => handleImpersonateOwner(b.owner_id),
                     },
                   ]
@@ -1501,6 +1592,24 @@ const BusinessListings = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
+            <Tooltip title="Send email/in-app announcement to business owners (queued via Celery)">
+              <RefreshButton
+                icon={<Megaphone size={16} />}
+                onClick={() => {
+                  announcementForm.resetFields();
+                  setAnnouncementModalOpen(true);
+                }}
+              >
+                {!isMobile && "Announce"}
+              </RefreshButton>
+            </Tooltip>
+            <ExportButton
+              icon={<Download size={16} />}
+              onClick={handleExportBusinesses}
+              loading={exporting}
+            >
+              {!isMobile && "Export"}
+            </ExportButton>
             <Tooltip title="Queue Google reviews sync (Apify, uses each business’s Maps URL)">
               <RefreshButton
                 icon={<Star size={16} />}
@@ -1682,6 +1791,7 @@ const BusinessListings = () => {
           onViewOwnerProfile={handleViewOwnerProfile}
           onImpersonate={handleImpersonateOwner}
           onRefreshBusinessDetail={refreshBusinessDetailQuiet}
+          impersonatingOwnerId={impersonatingOwnerId}
         />
 
         <Modal
@@ -1693,9 +1803,11 @@ const BusinessListings = () => {
           }
           open={googleQueueModalOpen}
           onCancel={() => {
+            if (googleQueueSubmitting || googleQueueQueued) return;
             setGoogleQueueModalOpen(false);
             setGoogleQueueScope("all");
             setGoogleQueueBusinessId(undefined);
+            setGoogleQueueQueued(false);
           }}
           footer={null}
           width={520}
@@ -1740,15 +1852,30 @@ const BusinessListings = () => {
               />
             </div>
           ) : null}
+          {googleQueueQueued ? (
+            <Alert
+              type="success"
+              showIcon
+              message="Queued"
+              description="Google reviews sync is running in the background."
+              style={{ marginBottom: 16 }}
+            />
+          ) : null}
           <Space wrap>
-            <Button onClick={() => setGoogleQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => setGoogleQueueModalOpen(false)}
+              disabled={googleQueueSubmitting || googleQueueQueued}
+            >
+              Cancel
+            </Button>
             <Button
               type="primary"
               icon={<Star size={16} />}
               loading={googleQueueSubmitting}
+              disabled={googleQueueQueued}
               onClick={handleSubmitGoogleQueue}
             >
-              Queue sync
+              {googleQueueQueued ? "Queued" : "Queue sync"}
             </Button>
           </Space>
         </Modal>
@@ -1762,9 +1889,11 @@ const BusinessListings = () => {
           }
           open={instagramQueueModalOpen}
           onCancel={() => {
+            if (instagramQueueSubmitting || instagramQueueQueued) return;
             setInstagramQueueModalOpen(false);
             setInstagramQueueScope("all");
             setInstagramQueueBusinessId(undefined);
+            setInstagramQueueQueued(false);
           }}
           footer={null}
           width={520}
@@ -1809,17 +1938,114 @@ const BusinessListings = () => {
               />
             </div>
           ) : null}
+          {instagramQueueQueued ? (
+            <Alert
+              type="success"
+              showIcon
+              message="Queued"
+              description="Instagram follower sync is running in the background."
+              style={{ marginBottom: 16 }}
+            />
+          ) : null}
           <Space wrap>
-            <Button onClick={() => setInstagramQueueModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => setInstagramQueueModalOpen(false)}
+              disabled={instagramQueueSubmitting || instagramQueueQueued}
+            >
+              Cancel
+            </Button>
             <Button
               type="primary"
               icon={<Instagram size={16} />}
               loading={instagramQueueSubmitting}
+              disabled={instagramQueueQueued}
               onClick={handleSubmitInstagramQueue}
             >
-              Queue sync
+              {instagramQueueQueued ? "Queued" : "Queue sync"}
             </Button>
           </Space>
+        </Modal>
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Megaphone size={20} />
+              Send business announcement
+            </span>
+          }
+          open={announcementModalOpen}
+          onCancel={() => {
+            if (announcementSending) return;
+            setAnnouncementModalOpen(false);
+          }}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={() => setAnnouncementModalOpen(false)}
+              disabled={announcementSending}
+            >
+              Cancel
+            </Button>,
+            <Button
+              key="send"
+              type="primary"
+              loading={announcementSending}
+              onClick={handleSendAnnouncement}
+            >
+              Send announcement
+            </Button>,
+          ]}
+          width={560}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Delivered via Celery in the background. Owners receive email and/or in-app
+            notifications based on your selections below.
+          </Text>
+          <Form
+            form={announcementForm}
+            layout="vertical"
+            initialValues={{
+              recipientType: "all",
+              sendEmail: true,
+              sendInApp: true,
+              urgency: "normal",
+            }}
+          >
+            <Form.Item
+              name="recipientType"
+              label="Recipients"
+              rules={[{ required: true, message: "Select recipients" }]}
+            >
+              <Select>
+                <Option value="all">All businesses</Option>
+                <Option value="active">Active businesses</Option>
+                <Option value="featured">Featured businesses</Option>
+                <Option value="verified">Verified businesses</Option>
+                <Option value="new">New (last 30 days)</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="title"
+              label="Subject"
+              rules={[{ required: true, message: "Enter a subject" }]}
+            >
+              <Input placeholder="Announcement subject" maxLength={200} />
+            </Form.Item>
+            <Form.Item
+              name="message"
+              label="Message"
+              rules={[{ required: true, message: "Enter a message" }]}
+            >
+              <Input.TextArea rows={4} placeholder="Write your announcement..." />
+            </Form.Item>
+            <Form.Item name="sendEmail" valuePropName="checked">
+              <Checkbox>Send email</Checkbox>
+            </Form.Item>
+            <Form.Item name="sendInApp" valuePropName="checked">
+              <Checkbox>Send in-app notification</Checkbox>
+            </Form.Item>
+          </Form>
         </Modal>
 
         <Modal

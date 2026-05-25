@@ -294,8 +294,10 @@ const SupportTicketTab = () => {
   };
 
   const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState(false);
+  const [bulkPriorityModalOpen, setBulkPriorityModalOpen] = useState(false);
+  const [bulkPriority, setBulkPriority] = useState("medium");
   const [assignableAgents, setAssignableAgents] = useState([]);
-  const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkAssignForm] = Form.useForm();
 
   useEffect(() => {
@@ -306,50 +308,59 @@ const SupportTicketTab = () => {
     }
   }, [bulkAssignModalOpen]);
 
-  const handleBulkAssignSubmit = async () => {
-    const { agent_id } = await bulkAssignForm.validateFields();
-    setBulkAssignLoading(true);
+  const runBulkAction = async (actionLabel, actionFn) => {
+    if (selectedRowKeys.length === 0) return { ok: 0, failed: 0 };
+    setBulkActionLoading(true);
     try {
       const results = await Promise.allSettled(
-        selectedRowKeys.map((id) => supportTicketService.assignTicket(id, { agent_id }))
+        selectedRowKeys.map((id) => actionFn(id)),
       );
       const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
-      message.success(`${ok} ticket(s) assigned.`);
-      setBulkAssignModalOpen(false);
-      bulkAssignForm.resetFields();
+      const failed = selectedRowKeys.length - ok;
+      if (ok > 0 && failed === 0) {
+        message.success(`${ok} ticket(s) ${actionLabel}.`);
+      } else if (ok > 0) {
+        message.warning(`${ok} succeeded, ${failed} failed (${actionLabel}).`);
+      } else {
+        message.error(`All ${failed} ticket(s) failed (${actionLabel}).`);
+      }
       setSelectedRowKeys([]);
       setSelectedRows([]);
       fetchTickets(pagination.current, pagination.pageSize);
       fetchStatistics();
+      return { ok, failed };
     } catch {
-      message.error("Assignment failed.");
+      message.error(`${actionLabel} failed.`);
+      return { ok: 0, failed: selectedRowKeys.length };
     } finally {
-      setBulkAssignLoading(false);
+      setBulkActionLoading(false);
     }
   };
 
-  const handleBulkChangePriority = () => {
-    message.info("Change priority per ticket in the ticket detail drawer.");
+  const handleBulkAssignSubmit = async () => {
+    const { agent_id } = await bulkAssignForm.validateFields();
+    await runBulkAction("assigned", (id) =>
+      supportTicketService.assignTicket(id, { agent_id }),
+    );
+    setBulkAssignModalOpen(false);
+    bulkAssignForm.resetFields();
+  };
+
+  const handleBulkChangePrioritySubmit = async () => {
+    if (!bulkPriority) {
+      message.error("Select a priority.");
+      return;
+    }
+    await runBulkAction("priority updated", (id) =>
+      supportTicketService.setTicketPriority(id, { priority: bulkPriority }),
+    );
+    setBulkPriorityModalOpen(false);
   };
 
   const handleBulkCloseTickets = async () => {
-    if (selectedRowKeys.length === 0) return;
-    setBulkAssignLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedRowKeys.map((id) => supportTicketService.resolveTicket(id, { resolution: "Closed in bulk" }))
-      );
-      const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
-      message.success(`${ok} ticket(s) closed.`);
-      setSelectedRowKeys([]);
-      setSelectedRows([]);
-      fetchTickets(pagination.current, pagination.pageSize);
-      fetchStatistics();
-    } catch {
-      message.error("Some tickets could not be closed.");
-    } finally {
-      setBulkAssignLoading(false);
-    }
+    await runBulkAction("closed", (id) =>
+      supportTicketService.resolveTicket(id, { resolution: "Closed in bulk" }),
+    );
   };
 
   const handleBulkExport = () => {
@@ -720,9 +731,9 @@ const SupportTicketTab = () => {
           {selectedRowKeys.length > 0 && (
             <BulkActionsBar>
               <strong>{selectedRowKeys.length} selected</strong>
-              <Button size="small" icon={<UserCheck size={13} />} onClick={() => setBulkAssignModalOpen(true)}>Assign Agent</Button>
-              <Button size="small" icon={<Edit size={13} />} onClick={handleBulkChangePriority}>Change Priority</Button>
-              <Button size="small" icon={<CheckCircle2 size={13} />} onClick={handleBulkCloseTickets}>Close Tickets</Button>
+              <Button size="small" icon={<UserCheck size={13} />} loading={bulkActionLoading} onClick={() => setBulkAssignModalOpen(true)}>Assign Agent</Button>
+              <Button size="small" icon={<Edit size={13} />} loading={bulkActionLoading} onClick={() => setBulkPriorityModalOpen(true)}>Change Priority</Button>
+              <Button size="small" icon={<CheckCircle2 size={13} />} loading={bulkActionLoading} onClick={handleBulkCloseTickets}>Close Tickets</Button>
               <Button size="small" icon={<FileText size={13} />} onClick={handleBulkExport}>Export</Button>
               <Button size="small" type="text" onClick={() => { setSelectedRowKeys([]); setSelectedRows([]); }}>Clear</Button>
             </BulkActionsBar>
@@ -779,7 +790,7 @@ const SupportTicketTab = () => {
           onCancel={() => { setBulkAssignModalOpen(false); bulkAssignForm.resetFields(); }}
           footer={[
             <Button key="cancel" onClick={() => { setBulkAssignModalOpen(false); bulkAssignForm.resetFields(); }}>Cancel</Button>,
-            <Button key="submit" type="primary" loading={bulkAssignLoading} onClick={() => handleBulkAssignSubmit()}>Assign</Button>,
+            <Button key="submit" type="primary" loading={bulkActionLoading} onClick={() => handleBulkAssignSubmit()}>Assign</Button>,
           ]}
           destroyOnClose
         >
@@ -794,6 +805,31 @@ const SupportTicketTab = () => {
               </Select>
             </Form.Item>
           </Form>
+        </Modal>
+
+        <Modal
+          title={`Change priority for ${selectedRowKeys.length} ticket(s)`}
+          open={bulkPriorityModalOpen}
+          onCancel={() => setBulkPriorityModalOpen(false)}
+          footer={[
+            <Button key="cancel" onClick={() => setBulkPriorityModalOpen(false)}>Cancel</Button>,
+            <Button key="submit" type="primary" loading={bulkActionLoading} onClick={handleBulkChangePrioritySubmit}>
+              Update priority
+            </Button>,
+          ]}
+          destroyOnClose
+        >
+          <Select
+            value={bulkPriority}
+            onChange={setBulkPriority}
+            style={{ width: "100%", marginTop: 8 }}
+            options={[
+              { value: "low", label: "Low" },
+              { value: "medium", label: "Medium" },
+              { value: "high", label: "High" },
+              { value: "urgent", label: "Urgent" },
+            ]}
+          />
         </Modal>
 
         <TicketDetailDrawer

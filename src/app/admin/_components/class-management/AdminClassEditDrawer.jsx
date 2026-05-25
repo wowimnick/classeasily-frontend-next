@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import message from "@/lib/message";
 
 const ClassEditDrawer = dynamic(
   () =>
@@ -22,14 +23,22 @@ export default function AdminClassEditDrawer({
   onSuccess,
 }) {
   const data = classEntity ?? classData ?? null;
+
+  const handleSuccess = (updated) => {
+    const title = updated?.title || data?.title || "Class";
+    message.success(`"${title}" saved successfully.`);
+    onSuccess?.(updated);
+  };
+
   return (
     <ClassEditDrawer
       visible={open}
       onClose={onClose}
       classData={data}
-      onSuccess={onSuccess}
+      onSuccess={handleSuccess}
       useAdminApi
       isClassDataLoading={loading || (!!open && !data)}
+      desktopWidth="min(800px, 100vw)"
     />
   );
 }

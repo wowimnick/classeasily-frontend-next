@@ -94,6 +94,17 @@ export const handlePostLoginRedirect = (user, router) => {
       router.push(redirectPath);
       return true;
     }
+    if (redirectPath && redirectPath !== "/") {
+      if (
+        !requiredPermission ||
+        user?.permissions?.includes(requiredPermission)
+      ) {
+        clearRedirectPath();
+        router.push(redirectPath);
+        return true;
+      }
+      console.log("[Auth] Admin user lacks permission for saved redirect");
+    }
     console.log("[Auth] Platform admin user — redirect to admin dashboard");
     clearRedirectPath();
     router.push(ADMIN_DASHBOARD_PATH);
@@ -354,6 +365,9 @@ export const useAuthStore = create(
             const current = useAuthStore.getState();
             useAuthStore.setState({
               _hasHydrated: true,
+              user: latestPersisted.user ?? current.user,
+              isAuthenticated:
+                latestPersisted.isAuthenticated ?? current.isAuthenticated,
               isInitialized: false,
               isInitializing: false,
               isImpersonating:

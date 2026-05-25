@@ -1,12 +1,14 @@
 "use client";
 
+import React from "react";
 import styled from "styled-components";
 import { Table } from "antd";
+import { TableScrollContainer } from "./adminTableStyles";
 
 /** Matches Bookings & Payments → Payments: dense headers + readable body rows */
 export const ADMIN_COMPACT_TABLE_BORDER = "#f1f5f9";
 
-export const AdminCompactTable = styled(Table)`
+const StyledAdminCompactTable = styled(Table)`
   .ant-table-thead > tr > th {
     background: #fafbfc;
     border-bottom: 1px solid ${ADMIN_COMPACT_TABLE_BORDER};
@@ -45,3 +47,14 @@ export const AdminCompactTable = styled(Table)`
     padding: 40px 20px;
   }
 `;
+
+export const AdminCompactTable = React.forwardRef(function AdminCompactTable(
+  props,
+  ref
+) {
+  return (
+    <TableScrollContainer>
+      <StyledAdminCompactTable ref={ref} {...props} />
+    </TableScrollContainer>
+  );
+});

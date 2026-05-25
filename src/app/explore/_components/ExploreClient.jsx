@@ -282,6 +282,7 @@ function ExploreClientContent({
   initialCollections = [],
   initialCollectionsIWant = [],
   initialGeoSearchNotice = null,
+  initialFetchError = false,
   routeParams,
 }) {
   /** Mobile Safari: `ClassesDisplay` must not clear body overflow on list view — document scroll steals the chrome. */
@@ -329,7 +330,11 @@ function ExploreClientContent({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
+  const [fetchError, setFetchError] = useState(() =>
+    initialFetchError && !(initialClasses?.length)
+      ? "We couldn't load results. Check your connection and try again."
+      : null,
+  );
   const [geoSearchNotice, setGeoSearchNotice] = useState(
     initialGeoSearchNotice ?? null,
   );
@@ -343,6 +348,19 @@ function ExploreClientContent({
   const previousSearchParamsRef = useRef(searchParams.toString());
   const loadingMoreRef = useRef(false);
   const nextPageUrlRef = useRef(initialNextPageUrl);
+  const mountedRef = useRef(true);
+  const navTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (navTimeoutRef.current) {
+        clearTimeout(navTimeoutRef.current);
+        navTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   /** Stable key for "real" query params (excludes explore_page). */
   const filterKey = useMemo(
@@ -473,7 +491,7 @@ function ExploreClientContent({
       } catch (error) {
         if (error.name !== "AbortError" && error.name !== "CanceledError") {
           console.error("Error fetching classes:", error);
-          if (!isMore) {
+          if (!isMore && mountedRef.current) {
             setFetchError(
               "We couldn't refresh results. Check your connection and try again.",
             );
@@ -481,9 +499,9 @@ function ExploreClientContent({
           }
         }
       } finally {
-        if (signal?.aborted) return;
-        setLoading(false);
         loadingMoreRef.current = false;
+        if (signal?.aborted || !mountedRef.current) return;
+        setLoading(false);
         setLoadingMore(false);
         setIsNavigating(false);
         setIsSearching(false);
@@ -497,6 +515,33 @@ function ExploreClientContent({
   useEffect(() => {
     doFetchRef.current = doFetch;
   }, [doFetch]);
+
+  // If SSR navigation stalls, fall back to client-side fetch so the skeleton cannot hang forever.
+  useEffect(() => {
+    if (!isNavigating) {
+      if (navTimeoutRef.current) {
+        clearTimeout(navTimeoutRef.current);
+        navTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    navTimeoutRef.current = setTimeout(() => {
+      navTimeoutRef.current = null;
+      if (!mountedRef.current) return;
+      setIsNavigating(false);
+      setIsSearching(false);
+      const controller = new AbortController();
+      doFetchRef.current(apiParamsRef.current, 1, false, controller.signal);
+    }, 8000);
+
+    return () => {
+      if (navTimeoutRef.current) {
+        clearTimeout(navTimeoutRef.current);
+        navTimeoutRef.current = null;
+      }
+    };
+  }, [isNavigating, setIsSearching]);
 
   // =====================================================================
   // CLIENT-SIDE FILTER REFETCH — runs when real filter params change.

@@ -11,7 +11,8 @@ import Link from "next/link";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "antd";
-import { X, LayoutGrid, SidebarOpen, Eye, AlertCircle, Users, Building2, BookOpen, MessageSquare } from "lucide-react";
+import { X, LayoutGrid, SidebarOpen, Eye, AlertCircle, Users, BookOpen, MessageSquare, MoreHorizontal, Activity } from "lucide-react";
+import { Drawer } from "vaul";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme as appTheme } from "@/components/theme";
 import { useAuth } from "@/lib/auth-client";
@@ -463,6 +464,11 @@ const menuGroupsConfig = [
           />
         ),
       },
+      {
+        key: "monitoring",
+        label: "System Monitoring",
+        icon: <Activity size={20} strokeWidth={2} color="#666" />,
+      },
     ],
   },
   {
@@ -646,10 +652,63 @@ menuGroupsConfig.forEach((g) => {
   });
 });
 
-const BOTTOM_NAV_ITEMS = [
-  { key: "overview", label: "Dashboard", icon: LayoutGrid },
+const BottomNavMoreButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: ${(p) => (p.$active ? (p.theme?.token?.colorPrimary || "#ff385c") : "#6b7280")};
+  font-size: 10px;
+  font-weight: ${(p) => (p.$active ? "600" : "500")};
+  min-width: 56px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+`;
+
+const MobileDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1100;
+`;
+
+const MobileDrawerContent = styled(Drawer.Content)`
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1101;
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+`;
+
+const MobileDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 999px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+`;
+
+const QUICK_BOTTOM_NAV_ITEMS = [
+  { key: "overview", label: "Home", icon: LayoutGrid },
   { key: "users", label: "Users", icon: Users },
-  { key: "business-overview", label: "Business", icon: Building2 },
   { key: "all-bookings", label: "Bookings", icon: BookOpen },
   { key: "support", label: "Support", icon: MessageSquare },
 ];
@@ -663,6 +722,7 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
   const isSmallMobile = width < 768;
   const isMobile = !isDesktop;
   const [openKeys, setOpenKeys] = useState([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasPermission = useCallback(
     (key) => {
@@ -732,6 +792,7 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
   const handleMenuClick = useCallback(
     (e) => {
       onMenuSelect(e.key);
+      setMobileMenuOpen(false);
     },
     [onMenuSelect]
   );
@@ -776,21 +837,57 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
         )}
 
         {isSmallMobile && (
-          <BottomNavBar>
-            {BOTTOM_NAV_ITEMS.filter((item) => hasPermission(item.key)).map((item) => {
-              const Icon = item.icon;
-              return (
-                <BottomNavItem
-                  key={item.key}
-                  href={`/admin/${item.key}`}
-                  $active={activeKey === item.key}
-                >
-                  <Icon size={20} strokeWidth={2} />
-                  {item.label}
-                </BottomNavItem>
-              );
-            })}
-          </BottomNavBar>
+          <>
+            <BottomNavBar>
+              {QUICK_BOTTOM_NAV_ITEMS.filter((item) => hasPermission(item.key)).map(
+                (item) => {
+                  const Icon = item.icon;
+                  return (
+                    <BottomNavItem
+                      key={item.key}
+                      href={`/admin/${item.key}`}
+                      $active={activeKey === item.key}
+                    >
+                      <Icon size={20} strokeWidth={2} />
+                      {item.label}
+                    </BottomNavItem>
+                  );
+                }
+              )}
+              <BottomNavMoreButton
+                type="button"
+                $active={mobileMenuOpen}
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open all admin tabs"
+              >
+                <MoreHorizontal size={20} strokeWidth={2} />
+                More
+              </BottomNavMoreButton>
+            </BottomNavBar>
+
+            <Drawer.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <Drawer.Portal>
+                <MobileDrawerOverlay />
+                <MobileDrawerContent>
+                  <MobileDrawerHandle />
+                  <MobileHeaderContainer>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 16 }}>Admin Navigation</div>
+                      <div style={{ fontSize: 12, color: "#6b7280" }}>All dashboard sections</div>
+                    </div>
+                    <MobileCloseButton
+                      type="button"
+                      onClick={() => setMobileMenuOpen(false)}
+                      aria-label="Close menu"
+                    >
+                      <X size={18} />
+                    </MobileCloseButton>
+                  </MobileHeaderContainer>
+                  {renderMenu("mobile-menu-drawer")}
+                </MobileDrawerContent>
+              </Drawer.Portal>
+            </Drawer.Root>
+          </>
         )}
 
       </SidebarWrapper>

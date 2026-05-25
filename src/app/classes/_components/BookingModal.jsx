@@ -16,6 +16,7 @@ import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useMediaQuery } from "@/styles/breakpoints-hooks";
 import message from "@/lib/message";
 import posthog from "posthog-js";
 import dayjs from "dayjs";
@@ -247,7 +248,7 @@ const BookingModal = ({
   const router = useRouter();
   const { user: currentUserFromRedux } = useAuthUser();
   const [isLoading, setIsLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 1023px)");
   const [isVisible, setIsVisible] = useState(isOpen);
 
   // --- MULTI-TIER LOGIC ---
@@ -304,14 +305,6 @@ const BookingModal = ({
     }
     return initialParticipantCount;
   }, [isOpen, initialParticipantCount]);
-
-  useEffect(() => {
-    const mq = () => window.innerWidth < 1024;
-    setIsMobile(mq());
-    const handleResize = () => setIsMobile(mq());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const selectedOption = useMemo(() => {
     const idToFind = selectedOptionId ?? initialOptionId;

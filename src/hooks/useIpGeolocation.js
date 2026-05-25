@@ -1,9 +1,39 @@
 // hooks/useIpGeolocation.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import {
+  AWS_LOCATION_API_URL,
+  TORONTO_FALLBACK_LOCATION,
+  getBrowserCoordinates,
+  reverseGeocodeWithAls,
+} from "@/lib/awsLocation";
 
-// Using ipapi.co - free, no-key-required IP geolocation API
-// Rate limit: 1,000 requests per day for free tier
-const IP_GEOLOCATION_API_URL = 'https://ipapi.co/json/';
+const CACHE_KEY = "userGeolocation";
+const CACHE_TS_KEY = "userGeolocationTimestamp";
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function readCachedLocation() {
+  if (typeof window === "undefined") return null;
+  try {
+    const cachedLocation = sessionStorage.getItem(CACHE_KEY);
+    const cacheTimestamp = sessionStorage.getItem(CACHE_TS_KEY);
+    if (!cachedLocation || !cacheTimestamp) return null;
+    const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+    if (cacheAge >= CACHE_TTL_MS) return null;
+    return JSON.parse(cachedLocation);
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedLocation(locationData) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(locationData));
+    sessionStorage.setItem(CACHE_TS_KEY, Date.now().toString());
+  } catch {
+    // caching is optional
+  }
+}
 
 export const useIpGeolocation = () => {
   const [location, setLocation] = useState(null);
@@ -11,112 +41,73 @@ export const useIpGeolocation = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // SSR check - don't run on server
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") return;
+
+    const cached = readCachedLocation();
+    if (cached) {
+      setLocation(cached);
+      setLoading(false);
       return;
     }
 
-    // Check for cached location in sessionStorage
-    const cachedLocation = sessionStorage.getItem('userGeolocation');
-    const cacheTimestamp = sessionStorage.getItem('userGeolocationTimestamp');
-    
-    // Use cache if it's less than 1 hour old (to respect API rate limits)
-    if (cachedLocation && cacheTimestamp) {
-      const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
-      const oneHour = 60 * 60 * 1000;
-      
-      if (cacheAge < oneHour) {
-        try {
-          const parsedLocation = JSON.parse(cachedLocation);
-          setLocation(parsedLocation);
-          setLoading(false);
-          return;
-        } catch (e) {
-          console.error('Failed to parse cached location:', e);
-          // Continue to fetch fresh data
-        }
-      }
-    }
+    let cancelled = false;
 
     const fetchLocation = async () => {
       setLoading(true);
       try {
-        // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch(IP_GEOLOCATION_API_URL, {
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`IP Geolocation API failed with status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-        // Check if we got valid data
-        if (data && data.latitude && data.longitude) {
-          const locationData = {
-            lat: data.latitude,
-            lng: data.longitude,
-            city: data.city || '',
-            region: data.region_code || '', // e.g., "ON"
-            country: data.country_name || '',
-            displayText: `${data.city || 'Unknown'}, ${data.region_code || 'Unknown'}`,
-            timezone: data.timezone || '',
-          };
-          
-          setLocation(locationData);
-          setError(null);
-          
-          // Cache the result in sessionStorage
-          try {
-            sessionStorage.setItem('userGeolocation', JSON.stringify(locationData));
-            sessionStorage.setItem('userGeolocationTimestamp', Date.now().toString());
-          } catch (e) {
-            console.warn('Failed to cache location:', e);
-            // Continue anyway - caching is optional
-          }
-        } else {
-          throw new Error('Invalid data received from IP Geolocation API');
+        let locationData = null;
+
+        try {
+          const coords = await getBrowserCoordinates({ timeoutMs: 5000 });
+          locationData = await reverseGeocodeWithAls(coords.lat, coords.lng, {
+            signal: controller.signal,
+          });
+        } catch {
+          // Browser geolocation denied/unavailable — fall back below
         }
+
+        clearTimeout(timeoutId);
+
+        if (!locationData) {
+          throw new Error("Could not resolve location via ALS");
+        }
+
+        if (cancelled) return;
+        setLocation(locationData);
+        setError(null);
+        writeCachedLocation(locationData);
       } catch (err) {
-        // Don't log errors in production to reduce console noise
-        if (process.env.NODE_ENV === 'development') {
-          console.error("IP Geolocation Error:", err);
+        if (cancelled) return;
+        if (process.env.NODE_ENV === "development") {
+          console.error("Geolocation Error:", err);
         }
         setError(err);
-        
-        // Set Toronto as fallback location
-        const fallbackLocation = {
-          lat: 43.6532,
-          lng: -79.3832,
-          city: 'Toronto',
-          region: 'ON',
-          country: 'Canada',
-          displayText: 'Toronto, ON',
-          timezone: 'America/Toronto',
-        };
-        
-        setLocation(fallbackLocation);
+        setLocation(TORONTO_FALLBACK_LOCATION);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    // Defer fetch to not block initial render - use requestIdleCallback if available
-    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+    if (typeof window !== "undefined" && window.requestIdleCallback) {
       const idleId = window.requestIdleCallback(fetchLocation, { timeout: 2000 });
-      return () => window.cancelIdleCallback(idleId);
-    } else {
-      // Fallback: delay by 500ms to let initial render complete
-      const timeoutId = setTimeout(fetchLocation, 500);
-      return () => clearTimeout(timeoutId);
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
     }
-  }, []); // Empty dependency array ensures this runs only once
+
+    const timeoutId = setTimeout(fetchLocation, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   return { location, loading, error };
 };
+
+// Re-export for callers that need the shared ALS base URL
+export { AWS_LOCATION_API_URL };

@@ -253,7 +253,7 @@ const COLLAPSE_TRANSITION = { duration: 0.25, ease: [0.4, 0, 0.2, 1] };
 
 function MeasuredCollapseSection({ children, ...motionProps }) {
   const ref = useRef(null);
-  const [height, setHeight] = useState(0);
+  const [height, setHeight] = useState(null);
   useLayoutEffect(() => {
     if (!ref.current) return;
     const el = ref.current;
@@ -264,8 +264,8 @@ function MeasuredCollapseSection({ children, ...motionProps }) {
   }, [children]);
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height, opacity: 1 }}
+      initial={{ height: height ?? "auto", opacity: 0 }}
+      animate={{ height: height ?? "auto", opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={COLLAPSE_TRANSITION}
       style={{ overflow: "hidden" }}
@@ -278,7 +278,7 @@ function MeasuredCollapseSection({ children, ...motionProps }) {
 
 function MeasuredMobileSummaryCollapse({ children }) {
   const ref = useRef(null);
-  const [height, setHeight] = useState(0);
+  const [height, setHeight] = useState(null);
   useLayoutEffect(() => {
     if (!ref.current) return;
     const el = ref.current;
@@ -289,8 +289,8 @@ function MeasuredMobileSummaryCollapse({ children }) {
   }, [children]);
   return (
     <MobileSummaryContent
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height, opacity: 1 }}
+      initial={{ height: height ?? "auto", opacity: 0 }}
+      animate={{ height: height ?? "auto", opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={COLLAPSE_TRANSITION}
       style={{ overflow: "hidden" }}

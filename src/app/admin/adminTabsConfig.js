@@ -22,6 +22,7 @@ export const ADMIN_TAB_PERMISSIONS = {
   blog: "quickstart.access_blog_admin",
   support: "quickstart.access_support_admin",
   conversations: "quickstart.access_support_admin",
+  monitoring: "quickstart.view_system_metrics",
 };
 
 export const ADMIN_TAB_KEYS = Object.keys(ADMIN_TAB_PERMISSIONS);

@@ -37,6 +37,8 @@ import {
   Empty,
   Spin,
   Collapse,
+  Popconfirm,
+  Alert,
 } from "antd";
 import message from "@/lib/message";
 import { AdminCompactTable } from "../shared/AdminCompactTable";
@@ -1256,8 +1258,7 @@ const CollectionsManagement = () => {
       const res = await classManagementService.reclassifyAutomatedCollection(col.id);
       if (res.success) {
         message.success({
-          content:
-            "AI curator queued — membership updates apply when Celery workers finish.",
+          content: "Queued — AI curator will update class memberships in the background.",
           key: "reclassify",
           duration: 5,
         });
@@ -1537,6 +1538,34 @@ const CollectionsManagement = () => {
     setIsEditDrawerVisible(true);
   };
 
+  const bulkAssignCount = assignSelected.length;
+  const bulkAssignNeedsConfirm = bulkAssignCount > 20;
+
+  const runBulkAssign = async () => {
+    if (!bulkTarget) return;
+    const ids = assignSelected.map((c) => c.classId);
+    if (!ids.length) {
+      message.warning("Select at least one class.");
+      return;
+    }
+    setActionLoading(true);
+    const res = await classManagementService.bulkAssignCollectionClasses(
+      bulkTarget.id,
+      ids,
+    );
+    setActionLoading(false);
+    if (res.success) {
+      message.success(
+        `Added ${res.data?.added ?? 0} class(es) to collection.`,
+      );
+      setBulkModalOpen(false);
+      setBulkTarget(null);
+      fetchCollections();
+    } else {
+      message.error(res.error || "Bulk assign failed");
+    }
+  };
+
   const collectionColumns = [
     {
       key: "sort",
@@ -1737,6 +1766,7 @@ const CollectionsManagement = () => {
                 type="text"
                 size="small"
                 icon={<RefreshCw size={16} />}
+                loading={actionLoading}
                 onClick={() => handleReclassifyCollection(col)}
                 aria-label={`Run AI curator for ${col.name}`}
               />
@@ -1897,39 +1927,60 @@ const CollectionsManagement = () => {
               setBulkModalOpen(false);
               setBulkTarget(null);
             }}
-            okText={`Add${assignSelected.length ? ` (${assignSelected.length})` : ""}`}
-            confirmLoading={actionLoading}
-            okButtonProps={{ disabled: assignSelected.length === 0 }}
-            onOk={async () => {
-              if (!bulkTarget) return;
-              const ids = assignSelected.map((c) => c.classId);
-              if (!ids.length) {
-                message.warning("Select at least one class.");
-                return;
-              }
-              setActionLoading(true);
-              const res = await classManagementService.bulkAssignCollectionClasses(
-                bulkTarget.id,
-                ids,
-              );
-              setActionLoading(false);
-              if (res.success) {
-                message.success(
-                  `Added ${res.data?.added ?? 0} class(es) to collection.`,
-                );
-                setBulkModalOpen(false);
-                setBulkTarget(null);
-                fetchCollections();
-              } else {
-                message.error(res.error || "Bulk assign failed");
-              }
-            }}
+            footer={
+              <Space>
+                <Button
+                  onClick={() => {
+                    setBulkModalOpen(false);
+                    setBulkTarget(null);
+                  }}
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </Button>
+                {bulkAssignNeedsConfirm ? (
+                  <Popconfirm
+                    title={`Assign ${bulkAssignCount} classes?`}
+                    description="You selected more than 20 classes. Confirm to proceed with bulk assignment."
+                    onConfirm={runBulkAssign}
+                    okText="Assign"
+                    cancelText="Go back"
+                    disabled={bulkAssignCount === 0}
+                  >
+                    <Button
+                      type="primary"
+                      loading={actionLoading}
+                      disabled={bulkAssignCount === 0}
+                    >
+                      {`Add (${bulkAssignCount})`}
+                    </Button>
+                  </Popconfirm>
+                ) : (
+                  <Button
+                    type="primary"
+                    loading={actionLoading}
+                    disabled={bulkAssignCount === 0}
+                    onClick={runBulkAssign}
+                  >
+                    {bulkAssignCount ? `Add (${bulkAssignCount})` : "Add"}
+                  </Button>
+                )}
+              </Space>
+            }
           >
             <AssignModalBody>
               <Text type="secondary" style={{ fontSize: 13, display: "block" }}>
                 Search by class title, host, or location. Results load as you type
                 (at least 2 characters).
               </Text>
+              {bulkAssignCount > 0 ? (
+                <Alert
+                  type="info"
+                  showIcon
+                  message={`${bulkAssignCount} class${bulkAssignCount === 1 ? "" : "es"} selected`}
+                  style={{ marginBottom: 0 }}
+                />
+              ) : null}
               {assignSelected.length > 0 ? (
                 <AssignSelectedChips>
                   {assignSelected.map((c) => (

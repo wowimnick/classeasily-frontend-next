@@ -40,23 +40,17 @@ import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import { AdminCompactTable } from "../shared/AdminCompactTable";
+import { adminColors as colors } from "../shared/adminColors";
+import {
+  MobileCard,
+  MobileCardContent,
+  MobileCardRow,
+  MobileCardLabel,
+} from "../shared/adminMobileStyles";
 
 const { Text, Title: AntTitle } = Typography;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
-
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  purple: "#8b5cf6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
 
 const statusColors = {
   active: "green",
@@ -287,6 +281,11 @@ export default function WidgetSubscriptionsTab() {
     setCompModalOpen(true);
   };
 
+  const compFormValid =
+    Boolean(compTarget?.business_id) &&
+    Boolean(compPlanId) &&
+    Boolean((compReason || "").trim());
+
   const submitCompOverride = async () => {
     const reason = (compReason || "").trim();
     if (!compTarget?.business_id) {
@@ -307,6 +306,9 @@ export default function WidgetSubscriptionsTab() {
       if (res.success) {
         const updatedBusinessId = compTarget.business_id;
         message.success("Complimentary plan applied");
+        if (res.data?.audit_warning) {
+          message.warning(res.data.audit_warning, 6);
+        }
         setCompModalOpen(false);
         setCompTarget(null);
         fetchSubscriptions();
@@ -525,6 +527,42 @@ export default function WidgetSubscriptionsTab() {
     },
   ];
 
+  const MobileSubscriptionItem = ({ record }) => (
+    <MobileCard>
+      <MobileCardContent>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <div>
+            <Text strong style={{ fontSize: 14, display: "block" }}>
+              {record.business_name || `Business #${record.business_id}`}
+            </Text>
+            {record.business_slug && (
+              <Text type="secondary" style={{ fontSize: 12 }}>/{record.business_slug}</Text>
+            )}
+          </div>
+          <Tag color={statusColors[record.status] || "default"} style={{ fontSize: 11 }}>
+            {record.status ? String(record.status).replace(/_/g, " ") : "—"}
+          </Tag>
+        </div>
+        <MobileCardRow>
+          <MobileCardLabel>Plan</MobileCardLabel>
+          <Text style={{ textTransform: "capitalize" }}>{record.plan_id || "—"}</Text>
+        </MobileCardRow>
+        <MobileCardRow>
+          <MobileCardLabel>Period end</MobileCardLabel>
+          <Text>
+            {record.current_period_end ? dayjs(record.current_period_end).format("MMM D, YYYY") : "—"}
+          </Text>
+        </MobileCardRow>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.border}`, display: "flex", gap: 8 }}>
+          <Button type="primary" size="small" block onClick={() => openDrawer(record)}>
+            View details
+          </Button>
+          <Button size="small" icon={<Sparkles size={14} />} onClick={() => openCompModal(record)} />
+        </div>
+      </MobileCardContent>
+    </MobileCard>
+  );
+
   const drawerContent = selected && (
     <>
       <DrawerHeaderBar>
@@ -717,6 +755,23 @@ export default function WidgetSubscriptionsTab() {
               <Option value="incomplete">Incomplete</Option>
             </Select>
           </FilterRow>
+          {isMobile ? (
+            <div style={{ padding: "8px 12px 16px" }}>
+              {loading ? (
+                <Skeleton active paragraph={{ rows: 5 }} />
+              ) : filtered.length > 0 ? (
+                filtered.map((record) => (
+                  <MobileSubscriptionItem key={record.id ?? record.business_id} record={record} />
+                ))
+              ) : (
+                <Empty
+                  description="No widget subscriptions found"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ padding: "40px 0" }}
+                />
+              )}
+            </div>
+          ) : (
           <ClickableAdminTable
             rowKey="id"
             columns={columns}
@@ -740,6 +795,7 @@ export default function WidgetSubscriptionsTab() {
               ),
             }}
           />
+          )}
         </TableSection>
 
         {/* SUBSCRIPTION DETAIL DRAWER */}
@@ -771,6 +827,7 @@ export default function WidgetSubscriptionsTab() {
           onOk={submitCompOverride}
           confirmLoading={compSubmitting}
           okText="Apply"
+          okButtonProps={{ disabled: !compFormValid }}
           destroyOnClose
         >
           <div style={{ marginBottom: 12 }}>

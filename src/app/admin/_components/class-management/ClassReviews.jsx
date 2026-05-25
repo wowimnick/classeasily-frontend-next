@@ -25,6 +25,7 @@ import {
   Skeleton,
   Divider,
   Pagination,
+  Badge,
 } from "antd";
 import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from "@/lib/message";
@@ -380,6 +381,7 @@ const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick })
 };
 
 const ClassReviews = () => {
+  const [reviews, setReviews] = useState([]);
   const [googleReviews, setGoogleReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -805,14 +807,21 @@ const ClassReviews = () => {
                   </Option>
                 ))}
               </Select>
-              <Button
-                type={filterParams.reported ? "primary" : "default"}
-                icon={<AlertTriangle size={14} />}
-                onClick={() => handleFilterChange({ reported: !filterParams.reported })}
-                style={{ borderRadius: 8 }}
+              <Badge
+                count={reviewStats.reported || 0}
+                size="small"
+                offset={[6, 0]}
+                overflowCount={999}
               >
-                Reported
-              </Button>
+                <Button
+                  type={filterParams.reported ? "primary" : "default"}
+                  icon={<AlertTriangle size={14} />}
+                  onClick={() => handleFilterChange({ reported: !filterParams.reported })}
+                  style={{ borderRadius: 8 }}
+                >
+                  Reported only
+                </Button>
+              </Badge>
             </SearchFilterContainer>
           </FilterBar>
 

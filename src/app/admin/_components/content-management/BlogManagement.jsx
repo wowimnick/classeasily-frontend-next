@@ -482,8 +482,15 @@ const BlogManagement = () => {
             onClick={() => showCategoryModal(record)}
           />
           <Popconfirm
-            title="Sure to delete?"
+            title="Delete this category?"
+            description={
+              record.post_count > 0
+                ? `This category has ${record.post_count} post(s). Deleting may affect those posts.`
+                : "This cannot be undone."
+            }
             onConfirm={() => handleDeleteCategory(record.id)}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
           >
             <Button icon={<Trash2 size={14} />} danger />
           </Popconfirm>
@@ -578,8 +585,15 @@ const BlogManagement = () => {
             Edit
           </Button>
           <Popconfirm
-            title="Sure to delete?"
+            title="Delete this category?"
+            description={
+              cat.post_count > 0
+                ? `This category has ${cat.post_count} post(s). Deleting may affect those posts.`
+                : "This cannot be undone."
+            }
             onConfirm={() => handleDeleteCategory(cat.id)}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
           >
             <Button icon={<Trash2 size={14} />} danger size="middle">
               Delete
@@ -911,8 +925,9 @@ const BlogManagement = () => {
           {livePostData && (
             <PreviewPane
               style={{
-                border: "none",
-                padding: "0",
+                border: `1px solid ${colors.border}`,
+                borderRadius: 8,
+                padding: 24,
                 height: "auto",
                 maxHeight: "80vh",
               }}

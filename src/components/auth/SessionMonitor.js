@@ -15,13 +15,8 @@ import { useAuthStore, refreshUser } from "@/lib/auth-client";
 export const SessionMonitor = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
-  const lastCheckRef = useRef(0);
+  const lastCheckRef = useRef(Date.now());
   const isCheckingRef = useRef(false);
-
-  // Initialize lastCheckRef on client side only
-  useEffect(() => {
-    lastCheckRef.current = Date.now();
-  }, []);
 
   // Check session validity and UPDATE auth state
   const checkSession = async () => {

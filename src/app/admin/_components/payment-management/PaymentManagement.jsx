@@ -17,6 +17,8 @@ import {
   Descriptions,
   ConfigProvider,
   Grid,
+  Popconfirm,
+  message,
   Empty,
 } from "antd";
 import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
@@ -214,6 +216,7 @@ export default function PaymentManagement() {
   const [refundReason, setRefundReason] = useState("");
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [markPaidLoading, setMarkPaidLoading] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -321,11 +324,29 @@ export default function PaymentManagement() {
     }).finally(() => setRefundSubmitting(false));
   };
 
-  const handleMarkPaid = () => {
+  const handleMarkPaid = async () => {
     if (!selectedPayment) return;
-    paymentService.markAsPaid(selectedPayment.id).then((res) => {
-      if (res.success) handleRefresh();
-    });
+    setMarkPaidLoading(true);
+    try {
+      const res = await paymentService.markAsPaid(selectedPayment.id);
+      if (res.success) {
+        message.success("Payment marked as paid");
+        handleRefresh();
+        openDrawer(selectedPayment);
+      }
+    } finally {
+      setMarkPaidLoading(false);
+    }
+  };
+
+  const copyPaymentIntentId = async (id) => {
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(id);
+      message.success("Copied!", 1.5);
+    } catch {
+      message.error("Could not copy");
+    }
   };
 
   const payment = selectedPayment;
@@ -344,6 +365,13 @@ export default function PaymentManagement() {
     ["succeeded", "partially_refunded"].includes(payment.status) &&
     refundableAmount > 0.009;
   const canMarkPaid = payment?.status === "pending";
+  const refundDisplayAmount = refundAmount ?? refundableAmount;
+  const refundMethodLabel = payment ? (formatAdminPaymentMethodDisplay(payment) ?? "—") : "—";
+  const refundCardLast4 =
+    payment?.card_details?.last4 ??
+    payment?.card_last4 ??
+    payment?.payment_method_details?.card?.last4 ??
+    null;
 
   const statCardsData = [
     { title: "Total Volume", value: stats.totalRevenue, icon: DollarSign, color: colors.info, isCurrency: true, footer: "All payments" },
@@ -458,7 +486,7 @@ export default function PaymentManagement() {
             <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>Stripe Payment Intent</div>
             <CopyableId
               title="Click to copy"
-              onClick={() => { navigator.clipboard.writeText(payment.stripe_payment_intent_id ?? ""); }}
+              onClick={() => copyPaymentIntentId(payment.stripe_payment_intent_id ?? "")}
             >
               {payment.stripe_payment_intent_id ?? "—"}
             </CopyableId>
@@ -597,9 +625,18 @@ export default function PaymentManagement() {
   const paymentDrawerFooter =
     !detailLoading && payment ? (
       <>
-        <Button onClick={handleMarkPaid} disabled={!canMarkPaid}>
-          Mark as paid
-        </Button>
+        <Popconfirm
+          title="Mark this payment as paid?"
+          description="Use only when payment was received outside the normal flow."
+          onConfirm={handleMarkPaid}
+          okText="Mark as paid"
+          cancelText="Cancel"
+          disabled={!canMarkPaid}
+        >
+          <Button disabled={!canMarkPaid} loading={markPaidLoading}>
+            Mark as paid
+          </Button>
+        </Popconfirm>
         <Button
           type="primary"
           danger
@@ -785,7 +822,33 @@ export default function PaymentManagement() {
           okButtonProps={{ danger: true }}
           width={420}
         >
-          <Space direction="vertical" style={{ width: "100%" }}>
+          <Space direction="vertical" style={{ width: "100%" }} size="middle">
+            <div
+              style={{
+                background: colors.lightBg,
+                borderRadius: 8,
+                padding: "12px 14px",
+                border: `1px solid ${colors.border}`,
+              }}
+            >
+              <div style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                Refund summary
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: colors.textSecondary }}>Amount</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(refundDisplayAmount)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: colors.textSecondary }}>Payment method</span>
+                <span style={{ fontWeight: 500 }}>{refundMethodLabel}</span>
+              </div>
+              {refundCardLast4 ? (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: colors.textSecondary }}>Card</span>
+                  <span style={{ fontWeight: 500 }}>•••• {refundCardLast4}</span>
+                </div>
+              ) : null}
+            </div>
             <div>
               <label style={{ fontSize: 13, fontWeight: 500 }}>Amount (leave empty for full refund)</label>
               <InputNumber

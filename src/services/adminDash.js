@@ -391,6 +391,25 @@ export const businessManagementService = {
       };
     } catch (error) {
       console.error("Error exporting businesses data:", error);
+      const status = error.response?.status;
+      if (status === 413) {
+        let detail = "Export exceeds the row limit. Narrow your filters and try again.";
+        try {
+          const blob = error.response?.data;
+          if (blob instanceof Blob) {
+            const text = await blob.text();
+            const parsed = JSON.parse(text);
+            detail =
+              parsed.detail ||
+              parsed.error ||
+              parsed.message ||
+              detail;
+          }
+        } catch {
+          /* use default detail */
+        }
+        return { success: false, status: 413, error: detail };
+      }
       return {
         success: false,
         error: "Failed to export businesses data",
@@ -470,7 +489,6 @@ export const userAdminService = {
   getUsers: async (params = {}) => {
     try {
       const response = await axiosInstance.get("/admin/users/", { params });
-      console.log(response.data);
       return {
         success: true,
         data: response.data,
@@ -563,7 +581,7 @@ export const userAdminService = {
 
   getRoles: async () => {
     try {
-      const response = await axiosInstance.get("admin/roles/");
+      const response = await axiosInstance.get("/admin/roles/");
       return { success: true, data: response.data };
     } catch (error) {
       console.error("Error fetching roles:", error);
@@ -2268,11 +2286,12 @@ export const revenueAnalyticsService = {
     }
   },
 
-  exportCsv: async (body = {}) => {
+  exportCsv: async (body = {}, axiosConfig = {}) => {
     try {
       const response = await axiosInstance.post("/admin/revenue/export/", body, {
         responseType: "blob",
         timeout: 120000,
+        signal: axiosConfig.signal,
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -2431,6 +2450,25 @@ export const adminBookingService = {
       };
     } catch (error) {
       console.error("Error exporting bookings data:", error);
+      const status = error.response?.status;
+      if (status === 413) {
+        let detail = "Export exceeds the row limit. Narrow your filters and try again.";
+        try {
+          const blob = error.response?.data;
+          if (blob instanceof Blob) {
+            const text = await blob.text();
+            const parsed = JSON.parse(text);
+            detail =
+              parsed.detail ||
+              parsed.error ||
+              parsed.message ||
+              detail;
+          }
+        } catch {
+          /* use default detail */
+        }
+        return { success: false, status: 413, error: detail };
+      }
       return {
         success: false,
         error: "Failed to export bookings data",

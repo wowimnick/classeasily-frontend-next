@@ -296,6 +296,7 @@ export const SearchProvider = ({ children }) => {
   // Geocoding State
   const [geocoding, setGeocoding] = useState(false);
   const [geocodedAddressResults, setGeocodedAddressResults] = useState([]);
+  const [geocodingError, setGeocodingError] = useState(null);
 
   const geocodeSeqRef = useRef(0);
   const geocodeAbortRef = useRef(null);
@@ -306,6 +307,7 @@ export const SearchProvider = ({ children }) => {
         geocodeAbortRef.current?.abort();
         setGeocodedAddressResults([]);
         setGeocoding(false);
+        setGeocodingError(null);
         return;
       }
       geocodeAbortRef.current?.abort();
@@ -313,6 +315,7 @@ export const SearchProvider = ({ children }) => {
       geocodeAbortRef.current = controller;
       const seq = ++geocodeSeqRef.current;
       setGeocoding(true);
+      setGeocodingError(null);
       try {
         const encodedAddress = encodeURIComponent(addr);
         const response = await fetch(
@@ -325,6 +328,7 @@ export const SearchProvider = ({ children }) => {
         if (seq !== geocodeSeqRef.current) return;
         if (Array.isArray(data)) {
           setGeocodedAddressResults(data);
+          setGeocodingError(null);
         } else {
           setGeocodedAddressResults([]);
         }
@@ -333,6 +337,9 @@ export const SearchProvider = ({ children }) => {
         console.error("AWS Geocoding error:", error);
         if (seq !== geocodeSeqRef.current) return;
         setGeocodedAddressResults([]);
+        setGeocodingError(
+          "Location lookup is temporarily unavailable. Try a suggested area or search again.",
+        );
       } finally {
         if (seq === geocodeSeqRef.current) {
           setGeocoding(false);
@@ -362,6 +369,7 @@ export const SearchProvider = ({ children }) => {
       });
       if (!value) {
         setGeocodedAddressResults([]);
+        setGeocodingError(null);
       } else {
         debouncedGeocodeTrigger(value);
       }
@@ -378,6 +386,7 @@ export const SearchProvider = ({ children }) => {
     });
     setSearchTerm(displayLabel);
     setGeocodedAddressResults([]);
+    setGeocodingError(null);
     setSelectedLocation({
       displayName: displayLabel,
       coordinates: option.coordinates,
@@ -395,6 +404,7 @@ export const SearchProvider = ({ children }) => {
     setParticipantCount(1);
     setSelectedCollections([]);
     setGeocodedAddressResults([]);
+    setGeocodingError(null);
     try {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(SEARCH_STATE_STORAGE_KEY);
@@ -582,6 +592,7 @@ export const SearchProvider = ({ children }) => {
       setSelectedCollections,
       geocoding,
       geocodedAddressResults,
+      geocodingError,
       handleLocationChange,
       handleLocationSelect,
       clearAll,
@@ -597,6 +608,7 @@ export const SearchProvider = ({ children }) => {
       selectedCollections,
       geocoding,
       geocodedAddressResults,
+      geocodingError,
       handleLocationChange,
       handleLocationSelect,
       clearAll,

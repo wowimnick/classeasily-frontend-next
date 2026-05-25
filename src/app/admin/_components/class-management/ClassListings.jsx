@@ -1040,6 +1040,7 @@ export default function ClassListings() {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isLockModalVisible, setIsLockModalVisible] = useState(false);
   const [classToModify, setClassToModify] = useState(null);
+  const [lockSubmitting, setLockSubmitting] = useState(false);
   const [lockForm] = Form.useForm();
   const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
@@ -1209,6 +1210,7 @@ export default function ClassListings() {
       if (response.success) {
         message.success({ content: "Status updated!", key });
         setIsLockModalVisible(false);
+        setClassToModify(null);
         fetchClasses(filterParams, pagination, sortedInfo);
         fetchStats();
         if (
@@ -1374,15 +1376,33 @@ export default function ClassListings() {
 
   const handleLockSubmit = async () => {
     if (!classToModify) return;
+    const isSuspending = classToModify.status === "active";
     try {
-      const values = await lockForm.validateFields();
-      const newStatus =
-        classToModify.status === "active" ? "suspended" : "active";
-      handleUpdateClassStatus(classToModify.classId, newStatus, values.reason);
+      const values = isSuspending
+        ? await lockForm.validateFields()
+        : lockForm.getFieldsValue();
+      const reason = (values.reason || "").trim();
+      if (isSuspending && !reason) {
+        message.error("Please provide a reason for suspension.");
+        return;
+      }
+      const newStatus = isSuspending ? "suspended" : "active";
+      setLockSubmitting(true);
+      await handleUpdateClassStatus(
+        classToModify.classId,
+        newStatus,
+        reason || (isSuspending ? "" : "Manual activation via admin")
+      );
     } catch (error) {
-      console.error("Validation failed:", error);
+      if (error?.errorFields) {
+        message.error("Please provide a reason for suspension.");
+      }
+    } finally {
+      setLockSubmitting(false);
     }
   };
+
+  const lockModalIsSuspending = classToModify?.status === "active";
 
   const refreshData = () => {
     fetchClasses(filterParams, { ...pagination, current: 1 }, sortedInfo);
@@ -2280,28 +2300,43 @@ export default function ClassListings() {
         <EnhancedModal
           title={
             <Space>
-              <Lock size={20} color={colors.error} />
-              <span>Confirm Suspension</span>
+              {lockModalIsSuspending ? (
+                <Lock size={20} color={colors.error} />
+              ) : (
+                <Unlock size={20} color={colors.success} />
+              )}
+              <span>
+                {lockModalIsSuspending ? "Confirm Suspension" : "Confirm Activation"}
+              </span>
             </Space>
           }
           open={isLockModalVisible}
-          onCancel={() => setIsLockModalVisible(false)}
+          onCancel={() => {
+            if (lockSubmitting) return;
+            setIsLockModalVisible(false);
+            setClassToModify(null);
+          }}
           footer={[
             <Button
               key="back"
-              onClick={() => setIsLockModalVisible(false)}
+              onClick={() => {
+                setIsLockModalVisible(false);
+                setClassToModify(null);
+              }}
               size="large"
+              disabled={lockSubmitting}
             >
               Cancel
             </Button>,
             <Button
               key="submit"
               type="primary"
-              danger
+              danger={lockModalIsSuspending}
               onClick={handleLockSubmit}
               size="large"
+              loading={lockSubmitting}
             >
-              Suspend Class
+              {lockModalIsSuspending ? "Suspend Class" : "Activate Class"}
             </Button>,
           ]}
           destroyOnClose
@@ -2311,25 +2346,40 @@ export default function ClassListings() {
             <Form form={lockForm} layout="vertical">
               <Alert
                 message={
-                  <span>
-                    You are about to <strong>suspend</strong> the class:{" "}
-                    <strong>{classToModify.title}</strong>
-                  </span>
+                  lockModalIsSuspending ? (
+                    <span>
+                      You are about to <strong>suspend</strong> the class:{" "}
+                      <strong>{classToModify.title}</strong>
+                    </span>
+                  ) : (
+                    <span>
+                      You are about to <strong>activate</strong> the class:{" "}
+                      <strong>{classToModify.title}</strong>
+                    </span>
+                  )
                 }
-                type="warning"
+                type={lockModalIsSuspending ? "warning" : "info"}
                 showIcon
                 style={{ marginBottom: 20 }}
               />
-              <Form.Item
-                name="reason"
-                label="Reason for Suspension"
-                rules={[{ required: true, message: "Please provide a reason" }]}
-              >
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter the reason for this status change..."
-                />
-              </Form.Item>
+              {lockModalIsSuspending ? (
+                <Form.Item
+                  name="reason"
+                  label="Reason for Suspension"
+                  rules={[
+                    { required: true, message: "Please provide a reason" },
+                    {
+                      whitespace: true,
+                      message: "Please provide a reason",
+                    },
+                  ]}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter the reason for this status change..."
+                  />
+                </Form.Item>
+              ) : null}
             </Form>
           )}
         </EnhancedModal>

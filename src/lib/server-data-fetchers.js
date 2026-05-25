@@ -62,64 +62,96 @@ function generateSearchCacheTags(params) {
  * Endpoint: /classes/search/
  */
 export async function searchClasses(params = {}) {
-  try {
-    const queryParams = new URLSearchParams();
+  const queryParams = new URLSearchParams();
 
-    // Standardize page_size if not provided
-    if (!params.page_size) {
-      queryParams.append("page_size", "24");
-    }
-
-    // Explicitly log the params coming in for debugging
-    console.log(
-      "[server-data-fetchers] searchClasses params:",
-      JSON.stringify(params),
-    );
-
-    Object.entries(params).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => queryParams.append(key, v));
-      } else if (value !== null && value !== undefined && value !== "") {
-        queryParams.append(key, value);
-      }
-    });
-
-    const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
-    const cacheTags = generateSearchCacheTags(params);
-
-    // Typesense + CDN-friendly: Data Cache all shapes; rely on tags + edge stale-while-revalidate.
-    const cacheStrategy = "force-cache";
-    const nextConfig = { tags: cacheTags };
-
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[Server] Fetching classes: ${url}`);
-      console.log(
-        `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(cacheTags)}`,
-      );
-    }
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      cache: cacheStrategy,
-      next: nextConfig,
-    });
-
-    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-
-    const data = await response.json();
-
-    return {
-      success: true,
-      results: data?.results || [],
-      count: data?.count || 0,
-      next: data?.next || null,
-      previous: data?.previous || null,
-    };
-  } catch (error) {
-    console.error("Error searching classes:", error);
-    return { success: false, results: [], count: 0, next: null };
+  // Standardize page_size if not provided
+  if (!params.page_size) {
+    queryParams.append("page_size", "24");
   }
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => queryParams.append(key, v));
+    } else if (value !== null && value !== undefined && value !== "") {
+      queryParams.append(key, value);
+    }
+  });
+
+  const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
+  const cacheTags = generateSearchCacheTags(params);
+
+  // Typesense + CDN-friendly: Data Cache all shapes; rely on tags + edge stale-while-revalidate.
+  const cacheStrategy = "force-cache";
+  const nextConfig = { tags: cacheTags };
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[server-data-fetchers] searchClasses params:", JSON.stringify(params));
+    console.log(`[Server] Fetching classes: ${url}`);
+    console.log(
+      `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(cacheTags)}`,
+    );
+  }
+
+  const maxAttempts = 3;
+  let lastFailure = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: cacheStrategy,
+        next: nextConfig,
+      });
+
+      if (!response.ok) {
+        if (isTransientHttp(response.status) && attempt < maxAttempts) {
+          await sleep(280 * attempt + Math.floor(Math.random() * 120));
+          continue;
+        }
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        results: data?.results || [],
+        count: data?.count || 0,
+        next: data?.next || null,
+        previous: data?.previous || null,
+        geo_search_notice: data?.geo_search_notice || null,
+      };
+    } catch (error) {
+      lastFailure = error;
+      const retry =
+        attempt < maxAttempts &&
+        (error instanceof TypeError || isLikelyNetworkError(error));
+      if (retry) {
+        await sleep(280 * attempt + Math.floor(Math.random() * 120));
+        continue;
+      }
+      console.error("Error searching classes:", error);
+      return {
+        success: false,
+        results: [],
+        count: 0,
+        next: null,
+        previous: null,
+        __fetchError: true,
+      };
+    }
+  }
+
+  console.error("Error searching classes:", lastFailure);
+  return {
+    success: false,
+    results: [],
+    count: 0,
+    next: null,
+    previous: null,
+    __fetchError: true,
+  };
 }
 
 /**

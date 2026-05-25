@@ -42,21 +42,10 @@ import { supportTicketService } from "@/services/adminDash";
 import { theme } from "@/components/theme";
 import dayjs from "dayjs";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { adminColors as colors } from "../shared/adminColors";
 
 const { Text, Title, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
-
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
 
 const SLA_HOURS = 24;
 
@@ -121,6 +110,11 @@ const TwoColumnLayout = styled.div`
   flex: 1;
   min-height: 0;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    overflow-y: auto;
+  }
 `;
 
 const ConversationColumn = styled.div`
@@ -130,6 +124,13 @@ const ConversationColumn = styled.div`
   flex-direction: column;
   border-right: 1px solid ${colors.border};
   background: ${colors.lightBg};
+
+  @media (max-width: 768px) {
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid ${colors.border};
+    min-height: 320px;
+  }
 `;
 
 const SidebarColumn = styled.div`
@@ -139,6 +140,13 @@ const SidebarColumn = styled.div`
   overflow-y: auto;
   background: #fff;
   padding: 12px 14px 20px;
+
+  @media (max-width: 768px) {
+    flex: none;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
 `;
 
 const ChatMessages = styled.div`
@@ -304,6 +312,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
   const [replyForm] = Form.useForm();
   const [assignableAgents, setAssignableAgents] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [replyLoading, setReplyLoading] = useState(false);
   const [mobileTab, setMobileTab] = useState("conversation");
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -379,12 +388,27 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
   };
 
   const handleReply = async ({ message: content }) => {
-    const success = await handleAction(
-      supportTicketService.replyToTicket,
-      { message: content },
-      "Reply sent"
-    );
-    if (success) replyForm.resetFields();
+    if (!ticket) return;
+    setReplyLoading(true);
+    try {
+      const response = await supportTicketService.replyToTicket(ticket.ticket_id, {
+        message: content,
+      });
+      if (response.success) {
+        message.success("Reply sent");
+        const updatedTicket = response.data;
+        setTicket(updatedTicket);
+        if (onUpdate) onUpdate(updatedTicket);
+        fetchHistory();
+        replyForm.resetFields();
+      } else {
+        message.error(response.error || "Reply failed");
+      }
+    } catch {
+      message.error("An error occurred");
+    } finally {
+      setReplyLoading(false);
+    }
   };
 
   const handleAssign = async () => {
@@ -802,12 +826,12 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
             <Input.TextArea
               autoSize={{ minRows: 1, maxRows: 4 }}
               placeholder="Reply to customer…"
-              disabled={actionLoading}
+              disabled={replyLoading}
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
           <Form.Item style={{ margin: 0 }}>
-            <Button type="primary" htmlType="submit" icon={<Send size={14} />} loading={actionLoading} style={{ borderRadius: 8 }}>
+            <Button type="primary" htmlType="submit" icon={<Send size={14} />} loading={replyLoading} style={{ borderRadius: 8 }}>
               Send
             </Button>
           </Form.Item>
@@ -910,7 +934,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
         title="Support ticket"
         titleIcon={<MessageSquare size={16} color={colors.primary} />}
         isMobile={isMobile}
-        width="min(960px, 96vw)"
+        width="min(960px, 100vw)"
         hideHeader
         footer={drawerFooter}
       >

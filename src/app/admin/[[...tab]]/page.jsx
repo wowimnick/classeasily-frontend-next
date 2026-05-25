@@ -83,6 +83,10 @@ const CorporateInquiriesTab = dynamic(
   () => import("../_components/corporate/CorporateInquiriesTab"),
   { ssr: false }
 );
+const SystemMonitoring = dynamic(
+  () => import("../_components/metrics/SystemMonitoring"),
+  { ssr: false }
+);
 
 const PageLayout = styled.div`
   display: flex;
@@ -230,6 +234,9 @@ export default function AdminPage() {
         break;
       case "global-discounts":
         content = <GlobalDiscountsManagement />;
+        break;
+      case "monitoring":
+        content = <SystemMonitoring />;
         break;
       default:
         content = (

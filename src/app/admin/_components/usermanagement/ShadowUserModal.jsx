@@ -12,6 +12,7 @@ const ShadowUserModal = ({
   onCreate,
   onImpersonate,
   loading,
+  impersonateLoading = false,
 }) => {
   const [form] = Form.useForm();
   const [createdUser, setCreatedUser] = useState(null);
@@ -53,6 +54,8 @@ const ShadowUserModal = ({
               type="primary"
               key="impersonate"
               icon={<LogIn size={16} />}
+              loading={impersonateLoading}
+              disabled={impersonateLoading}
               onClick={() => {
                 onImpersonate(createdUser.userId);
                 handleClose();

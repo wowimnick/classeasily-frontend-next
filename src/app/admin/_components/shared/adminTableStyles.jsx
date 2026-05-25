@@ -98,3 +98,9 @@ export const FilterBarFlexStart = styled.div`
     align-items: stretch;
   }
 `;
+
+export const TableScrollContainer = styled.div`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+`;

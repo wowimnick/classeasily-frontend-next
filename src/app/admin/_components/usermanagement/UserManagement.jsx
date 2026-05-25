@@ -26,6 +26,7 @@ import {
   Divider,
   Typography,
   Radio,
+  Popconfirm,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -584,6 +585,14 @@ const UserDetailSkeleton = () => (
   </>
 );
 
+const TabSectionSkeleton = ({ rows = 4 }) => (
+  <InfoGroup>
+    {Array.from({ length: rows }).map((_, i) => (
+      <SkeletonLine key={i} width="100%" height="16px" marginBottom="12px" />
+    ))}
+  </InfoGroup>
+);
+
 // --- TABLE GENERATORS ---
 
 // Generate skeleton data for the main table (replaces the old TableSkeleton component)
@@ -715,6 +724,7 @@ const UserManagementDashboard = () => {
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [isShadowModalVisible, setIsShadowModalVisible] = useState(false);
   const [shadowLoading, setShadowLoading] = useState(false);
+  const [impersonateLoading, setImpersonateLoading] = useState(false);
 
   // Filters & Search
   const [searchText, setSearchText] = useState("");
@@ -1022,7 +1032,7 @@ const UserManagementDashboard = () => {
   // --- ACTIONS ---
   const handleImpersonateUser = async (userId) => {
     try {
-      setLoading(true);
+      setImpersonateLoading(true);
       const result = await userAdminService.impersonateUser(userId);
 
       if (result.success && result.data?.user) {
@@ -1035,7 +1045,7 @@ const UserManagementDashboard = () => {
       console.error("Impersonation error:", e);
       message.error("An unexpected error occurred.");
     } finally {
-      setLoading(false);
+      setImpersonateLoading(false);
     }
   };
 
@@ -1331,9 +1341,18 @@ const UserManagementDashboard = () => {
                       ? {
                           key: "3",
                           icon: <Lock size={14} />,
-                          label: "Disable Account",
+                          label: (
+                            <Popconfirm
+                              title="Disable this account?"
+                              description="The user will be unable to sign in until re-enabled."
+                              onConfirm={() => handleLockAccount(user.userId)}
+                              okText="Disable"
+                              okButtonProps={{ danger: true }}
+                            >
+                              <span>Disable Account</span>
+                            </Popconfirm>
+                          ),
                           danger: true,
-                          onClick: () => handleLockAccount(user.userId),
                         }
                       : {
                           key: "3",
@@ -1654,9 +1673,11 @@ const UserManagementDashboard = () => {
                   <Shield /> Recent Login Activity
                 </InfoGroupTitle>
                 <div style={{ overflowX: "auto" }}>
+                  {historyLoading ? (
+                    <TabSectionSkeleton rows={5} />
+                  ) : (
                   <Table
                     dataSource={userHistory}
-                    loading={historyLoading}
                     rowKey="id"
                     size="small"
                     pagination={false}
@@ -1702,6 +1723,7 @@ const UserManagementDashboard = () => {
                       },
                     ]}
                   />
+                  )}
                 </div>
               </InfoGroup>
             </TabPane>
@@ -1711,9 +1733,11 @@ const UserManagementDashboard = () => {
                 <InfoGroupTitle>
                   <Mail /> Email History
                 </InfoGroupTitle>
+                {emailsLoading ? (
+                  <TabSectionSkeleton rows={5} />
+                ) : (
                 <Table
                   dataSource={userEmails}
-                  loading={emailsLoading}
                   rowKey="id"
                   size="small"
                   pagination={{ pageSize: 5 }}
@@ -1749,6 +1773,7 @@ const UserManagementDashboard = () => {
                     },
                   ]}
                 />
+                )}
               </InfoGroup>
             </TabPane>
 
@@ -1757,11 +1782,13 @@ const UserManagementDashboard = () => {
                 <InfoGroupTitle>
                   <FileText /> Booking History
                 </InfoGroupTitle>
+                {bookingsLoading ? (
+                  <TabSectionSkeleton rows={5} />
+                ) : (
                 <Table
                   columns={bookingColumns}
                   dataSource={selectedUserBookings}
                   rowKey="booking_id"
-                  loading={{ spinning: bookingsLoading }}
                   pagination={{
                     ...bookingPagination,
                     onChange: (page, pageSize) =>
@@ -1775,6 +1802,7 @@ const UserManagementDashboard = () => {
                     ),
                   }}
                 />
+                )}
               </InfoGroup>
             </TabPane>
 
@@ -2246,13 +2274,27 @@ const UserManagementDashboard = () => {
                 </UserInfo>
                 <Space size="small" wrap>
                   <CopyPageLinkButton icon={Link2} label="Copy link to this user" size={18} />
-                  <Button size="small" icon={<LogIn size={14} />} onClick={() => handleImpersonateUser(selectedUser.userId)}>
+                  <Button
+                    size="small"
+                    icon={<LogIn size={14} />}
+                    loading={impersonateLoading}
+                    disabled={impersonateLoading}
+                    onClick={() => handleImpersonateUser(selectedUser.userId)}
+                  >
                     Impersonate
                   </Button>
                   {selectedUser.status === "active" ? (
-                    <Button size="small" danger icon={<Lock size={14} />} onClick={() => handleLockAccount(selectedUser.userId)}>
-                      Lock
-                    </Button>
+                    <Popconfirm
+                      title="Disable this account?"
+                      description="The user will be unable to sign in until re-enabled."
+                      onConfirm={() => handleLockAccount(selectedUser.userId)}
+                      okText="Disable"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button size="small" danger icon={<Lock size={14} />}>
+                        Lock
+                      </Button>
+                    </Popconfirm>
                   ) : (
                     <Button size="small" icon={<Unlock size={14} />} onClick={() => handleUnlockAccount(selectedUser.userId)}>
                       Unlock
@@ -2272,6 +2314,7 @@ const UserManagementDashboard = () => {
         onCreate={handleCreateShadowUser}
         onImpersonate={handleImpersonateUser}
         loading={shadowLoading}
+        impersonateLoading={impersonateLoading}
       />
     </ConfigProvider>
   );

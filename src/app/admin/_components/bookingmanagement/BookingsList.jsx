@@ -968,6 +968,21 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
 
   const { payment } = booking;
 
+  const refundDisabled =
+    !payment ||
+    !(payment.available_refund_amount > 0) ||
+    isActionLoading;
+
+  const refundDisabledReason = !payment
+    ? "No payment record for this booking."
+    : !(payment.available_refund_amount > 0)
+      ? payment.refunded_amount > 0
+        ? "This payment has already been fully refunded."
+        : "No refundable amount remains for this payment status."
+      : isActionLoading
+        ? "Please wait for the current action to finish."
+        : null;
+
   const drawerFooter = (
     <>
       <Button
@@ -982,18 +997,18 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
       >
         Cancel Booking
       </Button>
-      <Button
-        type="primary"
-        icon={<DollarSign size={16} />}
-        onClick={onOpenRefundModal}
-        disabled={
-          !payment ||
-          !(payment.available_refund_amount > 0) ||
-          isActionLoading
-        }
-      >
-        Process Refund
-      </Button>
+      <Tooltip title={refundDisabled ? refundDisabledReason : null}>
+        <span style={{ display: "inline-block" }}>
+          <Button
+            type="primary"
+            icon={<DollarSign size={16} />}
+            onClick={onOpenRefundModal}
+            disabled={refundDisabled}
+          >
+            Process Refund
+          </Button>
+        </span>
+      </Tooltip>
     </>
   );
 
@@ -1246,7 +1261,6 @@ const BookingsList = () => {
         const response = await adminBookingService.getBookings(apiParams, {
           signal,
         });
-        console.log("Bookings response:", response);
         if (response.success && response.data) {
           setBookings(response.data.results);
           setPagination((prev) => ({
@@ -1438,18 +1452,27 @@ const BookingsList = () => {
   const handleExportData = async () => {
     message.loading({ content: "Preparing export...", key: "export" });
     const response = await adminBookingService.exportBookingsData(filterParams);
-    if (!response.success)
-      message.error({
-        content: response.error || "Export failed",
-        key: "export",
-        duration: 2,
-      });
-    else
+    if (response.success) {
       message.success({
         content: "Export started!",
         key: "export",
         duration: 2,
       });
+    } else if (response.status === 413) {
+      message.warning({
+        content:
+          response.error ||
+          "Export exceeds the row limit. Narrow your filters and try again.",
+        key: "export",
+        duration: 5,
+      });
+    } else {
+      message.error({
+        content: response.error || "Export failed",
+        key: "export",
+        duration: 2,
+      });
+    }
   };
 
   const handleButtonHover = useCallback((isEntering) => {
@@ -1913,8 +1936,19 @@ const BookingsList = () => {
           zIndex={1060}
         >
           <Paragraph>
-            You are about to cancel this booking. This action will notify the
-            user and flag the booking for a refund if applicable.
+            Cancel booking{" "}
+            <strong>
+              {selectedBooking?.user_facing_reference ||
+                `#${selectedBooking?.id}`}
+            </strong>
+            {selectedBooking?.class_name ? (
+              <>
+                {" "}
+                for <strong>{selectedBooking.class_name}</strong>
+              </>
+            ) : null}
+            ? This will notify the user and flag the booking for a refund if
+            applicable.
           </Paragraph>
           <Input.TextArea
             rows={3}

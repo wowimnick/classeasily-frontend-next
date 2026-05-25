@@ -53,6 +53,7 @@ import {
 import {
   ActionButtonsContainer,
   RefreshButton,
+  ExportButton,
 } from "../shared/AdminButtons";
 import {
   MobileCard,
@@ -471,6 +472,7 @@ const UserAuditLog = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [userActivity, setUserActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
   const [activityLoading, setActivityLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -553,6 +555,45 @@ const UserAuditLog = () => {
 
   const refreshData = () => {
     fetchAuditLogs(1, pagination.pageSize);
+  };
+
+  const handleExportLogs = async () => {
+    setExportLoading(true);
+    message.loading({ content: "Preparing export...", key: "audit-export" });
+    const params = {
+      ...(filters.action !== "all" && { action: filters.action }),
+      ...(filters.search && { search: filters.search }),
+      ...(filters.dateRange?.[0] && {
+        start_date: filters.dateRange[0].format("YYYY-MM-DD"),
+      }),
+      ...(filters.dateRange?.[1] && {
+        end_date: filters.dateRange[1].format("YYYY-MM-DD"),
+      }),
+    };
+    try {
+      const response = await auditService.exportAuditLogs(params);
+      if (!response.success) {
+        message.error({
+          content: response.error || "Export failed",
+          key: "audit-export",
+          duration: 2,
+        });
+      } else {
+        message.success({
+          content: "Export started!",
+          key: "audit-export",
+          duration: 2,
+        });
+      }
+    } catch (error) {
+      message.error({
+        content: "Export failed",
+        key: "audit-export",
+        duration: 2,
+      });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const handleFilterChange = (updates) => {
@@ -809,7 +850,10 @@ const UserAuditLog = () => {
                      </SkeletonWrapper>
                   </div>
                 ) : !userActivity.length ? (
-                  <Empty description="No recent activity found for this user." />
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="No recent activity found for this user."
+                  />
                 ) : (
                   <Timeline>
                     {userActivity.map((log) => {
@@ -870,6 +914,13 @@ const UserAuditLog = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
+            <ExportButton
+              icon={<Download size={16} />}
+              onClick={handleExportLogs}
+              loading={exportLoading}
+            >
+              {!isMobile && "Export"}
+            </ExportButton>
             <RefreshButton
               key={loading ? "loading" : "idle"}
               icon={

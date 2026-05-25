@@ -12,6 +12,8 @@ import { classService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer } from "vaul";
 import ClientHeader from "@/components/layout/ClientHeader";
+import CheckoutErrorBoundary from "@/components/common/CheckoutErrorBoundary";
+import { saveBookingSuccessPayload } from "@/lib/bookingSuccessStorage";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
 import { getDurationText } from "@/app/classes/_components/steps/utils";
@@ -700,6 +702,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         "classeasily_booking_success",
         JSON.stringify(successPayload)
       );
+      saveBookingSuccessPayload(successPayload);
       sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
       router.push(`/classes/${slug}/checkout/success`);
     },
@@ -974,6 +977,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       </MobileHeaderBar>
 
       <MainContainer>
+          <CheckoutErrorBoundary slug={slug}>
           <ReviewAndPaymentStep
             bookingData={bookingData}
             classData={classData}
@@ -989,6 +993,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             onRequestChangeTime={isMobileView ? () => setChangeTimeDrawerOpen(true) : undefined}
             onRequestChangeParticipants={() => setChangeParticipantsDrawerOpen(true)}
           />
+          </CheckoutErrorBoundary>
 
           {/* Mobile Floating Footer */}
           <MobileFooterWrap>

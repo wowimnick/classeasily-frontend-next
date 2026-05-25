@@ -76,9 +76,7 @@ export const AuthProvider = ({ children }) => {
     }
     setAuthModalMode("login");
     setOnSuccessCallback(() => onSuccess);
-    setTimeout(() => {
-      setIsAuthModalVisible(true);
-    }, 100);
+    setIsAuthModalVisible(true);
   }, []);
 
   const openRegisterModal = useCallback(() => {
@@ -87,9 +85,7 @@ export const AuthProvider = ({ children }) => {
     }
     setAuthModalMode("register");
     setOnSuccessCallback(null);
-    setTimeout(() => {
-      setIsAuthModalVisible(true);
-    }, 100);
+    setIsAuthModalVisible(true);
   }, []);
 
   const openForgotPasswordModal = useCallback(() => {

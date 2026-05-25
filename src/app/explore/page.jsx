@@ -239,6 +239,7 @@ async function fetchServerData(searchParams) {
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
     initialGeoSearchNotice: classesResponse.geo_search_notice || null,
+    initialFetchError: classesResponse.__fetchError === true,
     locationName: locationDisplayNameFromUrl || "",
     collections: collectionLists.collections || [],
     collectionsIWant: collectionLists.collectionsIWant || [],
@@ -336,6 +337,7 @@ async function ExplorePageContent({ searchParams }) {
         initialCollections={serverData.collections}
         initialCollectionsIWant={serverData.collectionsIWant}
         initialGeoSearchNotice={serverData.initialGeoSearchNotice}
+        initialFetchError={serverData.initialFetchError}
         routeParams={serverData.routeParams}
       />
     </>

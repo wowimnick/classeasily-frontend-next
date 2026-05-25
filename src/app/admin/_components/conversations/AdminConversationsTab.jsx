@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Empty, ConfigProvider, Input, Select, Button, Typography, Skeleton, Grid } from "antd";
 import {
@@ -17,22 +17,13 @@ import { adminConversationsService, businessManagementService } from "@/services
 import { theme as globalTheme } from "@/components/theme";
 import message from "@/lib/message";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { adminColors as colors } from "../shared/adminColors";
 
 const { Text } = Typography;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 
-const colors = {
-  primary: "#ff385c",
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
-  lightBg: "#f8fafc",
-  border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
-};
+const MESSAGE_SLICE = 50;
 
 // --- Layout ---
 const PageWrap = styled.div`
@@ -232,8 +223,21 @@ export default function AdminConversationsTab() {
   const [businessFilter, setBusinessFilter] = useState(undefined);
   const [businesses, setBusinesses] = useState([]);
   const [search, setSearch] = useState("");
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+
+  const visibleMessages = useMemo(() => {
+    const all = selected?.messages || [];
+    if (showAllMessages || all.length <= MESSAGE_SLICE) return all;
+    return all.slice(-MESSAGE_SLICE);
+  }, [selected?.messages, showAllMessages]);
+
+  const hiddenMessageCount = useMemo(() => {
+    const total = selected?.messages?.length || 0;
+    if (showAllMessages || total <= MESSAGE_SLICE) return 0;
+    return total - MESSAGE_SLICE;
+  }, [selected?.messages, showAllMessages]);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -266,6 +270,7 @@ export default function AdminConversationsTab() {
 
   const openConversation = (conv) => {
     setSelected(conv);
+    setShowAllMessages(false);
     setOpen(true);
     fetchDetail(conv.id);
   };
@@ -319,8 +324,14 @@ export default function AdminConversationsTab() {
           )}
           <AdminActionsRow>
             {selected.booker_email && (
-              <Button size="small" icon={<Mail size={13} />} onClick={() => copyToClipboard(selected.booker_email, "Email")} style={{ borderRadius: 6, fontSize: 12 }}>
-                Copy email
+              <Button
+                size="small"
+                icon={<Mail size={13} />}
+                onClick={() => copyToClipboard(selected.booker_email, "Email")}
+                style={{ borderRadius: 6, fontSize: 12 }}
+                aria-label="Copy email"
+              >
+                {!isMobile && "Copy email"}
               </Button>
             )}
             {getBusinessMessagesUrl() && (
@@ -347,17 +358,30 @@ export default function AdminConversationsTab() {
                 View booking
               </Button>
             )}
-            <Button size="small" icon={<Copy size={13} />} onClick={copyConversationAsText} style={{ borderRadius: 6, fontSize: 12 }}>
-              Copy text
+            <Button
+              size="small"
+              icon={<Copy size={13} />}
+              onClick={copyConversationAsText}
+              style={{ borderRadius: 6, fontSize: 12 }}
+              aria-label="Copy conversation text"
+            >
+              {!isMobile && "Copy text"}
             </Button>
           </AdminActionsRow>
         </div>
       </PanelHeader>
       <MessagesArea>
-        {(selected.messages || []).length === 0 ? (
+        {hiddenMessageCount > 0 ? (
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <Button size="small" type="link" onClick={() => setShowAllMessages(true)}>
+              Show {hiddenMessageCount} earlier message{hiddenMessageCount !== 1 ? "s" : ""}
+            </Button>
+          </div>
+        ) : null}
+        {visibleMessages.length === 0 ? (
           <Empty description="No messages" style={{ margin: "auto" }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
-          (selected.messages || []).map((msg) => (
+          visibleMessages.map((msg) => (
             <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
               <Bubble $isBusiness={msg.sender_type === "business"}>
                 <div>{msg.text}</div>

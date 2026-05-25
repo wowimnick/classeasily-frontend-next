@@ -181,7 +181,7 @@ const DesktopDrawerContent = styled(Drawer.Content)`
   position: fixed;
   z-index: 1050;
   outline: none;
-  width: 800px;
+  width: ${(p) => p.$desktopWidth || "min(800px, 100vw)"};
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -2020,6 +2020,7 @@ const ClassEditDrawer = ({
   onSuccess,
   useAdminApi = false,
   isClassDataLoading = false,
+  desktopWidth = "min(800px, 100vw)",
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -3744,7 +3745,7 @@ const ClassEditDrawer = ({
                   {renderDrawerContent()}
                 </StyledDrawerContent>
               ) : (
-                <DesktopDrawerContent>
+                <DesktopDrawerContent $desktopWidth={desktopWidth}>
                   {renderDrawerContent()}
                 </DesktopDrawerContent>
               )}

@@ -461,6 +461,7 @@ const RolesManagement = () => {
 
   const updateRoleOrder = async (reorderedRoles) => {
     setActionLoading(true);
+    const hideLoading = message.loading("Saving role order...", 0);
     try {
       const updatePayload = reorderedRoles.map((role, index) => ({
         id: role.id,
@@ -472,6 +473,7 @@ const RolesManagement = () => {
     } catch (error) {
       message.error("Error updating role hierarchy");
     } finally {
+      hideLoading();
       setActionLoading(false);
     }
   };

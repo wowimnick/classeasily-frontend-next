@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Card, Typography, Radio } from "antd";
+import { Card, Typography, Radio, Spin, message } from "antd";
 import {
   Bar,
   ComposedChart,
@@ -308,6 +308,7 @@ export default function PlatformOverview() {
     roleDistribution: [],
   });
   const [chartData, setChartData] = useState([]);
+  const [chartRefreshing, setChartRefreshing] = useState(false);
   const [auditItems, setAuditItems] = useState([]);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
 
@@ -397,7 +398,10 @@ export default function PlatformOverview() {
             : [],
         });
       } catch (e) {
-        if (!cancelled) console.error("Platform overview fetch error:", e);
+        if (!cancelled) {
+          console.error("Platform overview fetch error:", e);
+          message.error("Failed to load dashboard data");
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -415,15 +419,27 @@ export default function PlatformOverview() {
     const timeframeMap = { "30d": "month", "90d": "quarter", "1y": "year" };
     const timeframe = timeframeMap[chartPeriod] || "month";
 
-    businessManagementService.getGrowthTrends(timeframe).then((res) => {
-      if (cancelled || !res.success || !Array.isArray(res.data)) return;
-      const combined = (res.data || []).map((d) => ({
-        name: d.month ?? (d.period_start ? dayjs(d.period_start).format("MMM YY") : ""),
-        businesses: d.businesses ?? 0,
-        revenue: d.revenue ?? 0,
-      }));
-      setChartData(combined);
-    });
+    setChartRefreshing(true);
+    businessManagementService
+      .getGrowthTrends(timeframe)
+      .then((res) => {
+        if (cancelled || !res.success || !Array.isArray(res.data)) return;
+        const combined = (res.data || []).map((d) => ({
+          name: d.month ?? (d.period_start ? dayjs(d.period_start).format("MMM YY") : ""),
+          businesses: d.businesses ?? 0,
+          revenue: d.revenue ?? 0,
+        }));
+        setChartData(combined);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          console.error("Platform overview chart fetch error:", e);
+          message.error("Failed to load chart data");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setChartRefreshing(false);
+      });
     return () => { cancelled = true; };
   }, [chartPeriod]);
 
@@ -621,7 +637,22 @@ export default function PlatformOverview() {
               />
             </SectionRow>
             <BusinessChartCard $height={304} $compactBody>
-              <BusinessChartPlot $height={240}>
+              <BusinessChartPlot $height={240} style={{ position: "relative" }}>
+                {chartRefreshing && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(255,255,255,0.65)",
+                      zIndex: 1,
+                    }}
+                  >
+                    <Spin size="small" />
+                  </div>
+                )}
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart

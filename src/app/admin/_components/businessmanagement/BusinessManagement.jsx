@@ -343,45 +343,39 @@ const BusinessManagement = () => {
   });
   const [timeframe, setTimeframe] = useState("month");
 
-  const fetchDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async () => {
     setMetricsLoading(true);
+    setGrowthTrendLoading(true);
     setIsReadyForAnimation(false);
     try {
-      const r = await businessManagementService.getPlatformMetrics();
-      if (r.success) {
-        setMetrics((p) => ({ ...p, ...r.data }));
+      const [metricsRes, growthRes] = await Promise.all([
+        businessManagementService.getPlatformMetrics(),
+        businessManagementService.getGrowthTrends(timeframe),
+      ]);
+      if (metricsRes.success) {
+        setMetrics((p) => ({ ...p, ...metricsRes.data }));
         setTimeout(() => setIsReadyForAnimation(true), 50);
-      } else message.error(r.error || "Failed to fetch metrics");
+      } else {
+        message.error(metricsRes.error || "Failed to fetch metrics");
+      }
+      setMetrics((p) => ({
+        ...p,
+        growth_trend: growthRes.success ? growthRes.data : [],
+      }));
     } catch (e) {
-      message.error("Failed to load dashboard metrics");
+      message.error("Failed to load dashboard data");
     } finally {
       setMetricsLoading(false);
-    }
-  }, []);
-
-  const fetchGrowthTrends = useCallback(async () => {
-    setGrowthTrendLoading(true);
-    try {
-      const r = await businessManagementService.getGrowthTrends(timeframe);
-      setMetrics((p) => ({ ...p, growth_trend: r.success ? r.data : [] }));
-    } catch (e) {
-      message.error("Failed to fetch trends");
-    } finally {
       setGrowthTrendLoading(false);
     }
   }, [timeframe]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
-
-  useEffect(() => {
-    fetchGrowthTrends();
-  }, [fetchGrowthTrends]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const refreshAllData = () => {
-    fetchDashboardData();
-    fetchGrowthTrends();
+    loadDashboardData();
   };
 
   const totalBiz = metrics.total_businesses ?? 0;

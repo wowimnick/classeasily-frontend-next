@@ -506,6 +506,7 @@ export default function BannerSearchClient({ mode }) {
     selectedCollections,
     setSelectedCollections,
     geocodedAddressResults,
+    geocodingError,
     handleLocationChange,
     handleLocationSelect,
     performSearch,
@@ -653,6 +654,21 @@ export default function BannerSearchClient({ mode }) {
     const safeResults = Array.isArray(geocodedAddressResults)
       ? geocodedAddressResults
       : [];
+    if (searchTerm && geocodingError) {
+      return (
+        <p
+          role="alert"
+          style={{
+            color: "#991b1b",
+            margin: "12px 16px",
+            fontSize: 14,
+            lineHeight: 1.45,
+          }}
+        >
+          {geocodingError}
+        </p>
+      );
+    }
     if (searchTerm && safeResults.length > 0) {
       return safeResults.map((result, idx) => (
         <LocationOption

@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
 import { bookingService } from "@/services/apiService";
+import { saveBookingSuccessPayload } from "@/lib/bookingSuccessStorage";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
-const SUCCESS_STORAGE_KEY = "classeasily_booking_success";
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 30000;
 
 const PageWrapper = styled.div`
   width: 100%;
@@ -68,7 +70,7 @@ const ErrorMessage = styled.p`
 export default function BookingStatusClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState("loading"); // loading | success | failed | no_slug
+  const [status, setStatus] = useState("loading"); // loading | success | failed | no_slug | timeout
   const [errorMessage, setErrorMessage] = useState(null);
   const hasStartedPollingRef = useRef(false);
 
@@ -123,22 +125,48 @@ export default function BookingStatusClient() {
     if (hasStartedPollingRef.current) return;
     hasStartedPollingRef.current = true;
 
-    (async () => {
+    let cancelled = false;
+    const startedAt = Date.now();
+    let attempts = 0;
+
+    const poll = async () => {
+      if (cancelled) return;
+
+      if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+        setStatus("timeout");
+        setErrorMessage(
+          "Confirmation is taking longer than expected. Check your email for a receipt, or visit My Bookings if you have an account.",
+        );
+        return;
+      }
+
+      attempts += 1;
       try {
         const result = await bookingService.bookingStatusPolling(
           paymentIntent,
-          clientSecret
+          clientSecret,
         );
 
+        if (cancelled) return;
+
         if (!result.success) {
-          setStatus("failed");
-          setErrorMessage(result.error || "Could not confirm booking.");
+          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+            setStatus("timeout");
+            setErrorMessage(
+              "Confirmation is taking longer than expected. Check your email for a receipt, or visit My Bookings if you have an account.",
+            );
+            return;
+          }
+          setTimeout(poll, POLL_INTERVAL_MS);
           return;
         }
 
         const data = result.data;
         if (data?.status === "confirmed" && data?.booking_id) {
-          const rawDetails = data.participant_details ?? state.bookingData?.participant_details ?? [];
+          const rawDetails =
+            data.participant_details ??
+            state.bookingData?.participant_details ??
+            [];
           const count = state.bookingData?.participants ?? 1;
           const participant_details = Array.isArray(rawDetails)
             ? Array.from(
@@ -148,7 +176,7 @@ export default function BookingStatusClient() {
                     rawDetails[i]?.name != null
                       ? String(rawDetails[i].name).trim() || "Guest"
                       : "Guest",
-                })
+                }),
               )
             : Array.from({ length: count }, () => ({ name: "Guest" }));
           const bookingDataWithParticipants = {
@@ -174,10 +202,7 @@ export default function BookingStatusClient() {
             bookingData: bookingDataWithParticipants,
             classData: classDataWithContact,
           };
-          sessionStorage.setItem(
-            SUCCESS_STORAGE_KEY,
-            JSON.stringify(successPayload)
-          );
+          saveBookingSuccessPayload(successPayload);
           sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
           router.replace(`/classes/${slug}/checkout/success`);
           return;
@@ -186,23 +211,49 @@ export default function BookingStatusClient() {
         if (data?.status === "payment_failed") {
           setStatus("failed");
           setErrorMessage(
-            data?.failure_message || "Payment failed. Please try again."
+            data?.failure_message || "Payment failed. Please try again.",
           );
           return;
         }
 
-        setStatus("failed");
-        setErrorMessage(
-          data?.message || "Booking confirmation is still processing. Please check your email or return to the class page."
-        );
+        if (
+          ["pending_webhook", "processing", "pending"].includes(data?.status) &&
+          Date.now() - startedAt < POLL_TIMEOUT_MS
+        ) {
+          setTimeout(poll, POLL_INTERVAL_MS);
+          return;
+        }
+
+        if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+          setStatus("timeout");
+          setErrorMessage(
+            "Confirmation is taking longer than expected. Check your email for a receipt, or visit My Bookings if you have an account.",
+          );
+          return;
+        }
+
+        setTimeout(poll, POLL_INTERVAL_MS);
       } catch (err) {
+        if (cancelled) return;
         if (process.env.NODE_ENV === "development") {
           console.error("[BookingStatus] Error:", err);
         }
-        setStatus("failed");
-        setErrorMessage("Something went wrong. Please try again from the class page.");
+        if (Date.now() - startedAt >= POLL_TIMEOUT_MS || attempts >= 10) {
+          setStatus("timeout");
+          setErrorMessage(
+            "Confirmation is taking longer than expected. Check your email for a receipt, or visit My Bookings if you have an account.",
+          );
+          return;
+        }
+        setTimeout(poll, POLL_INTERVAL_MS + attempts * 500);
       }
-    })();
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, router]);
 
   if (status === "loading") {
@@ -219,13 +270,27 @@ export default function BookingStatusClient() {
   return (
     <PageWrapper>
       <Card>
-        <Title>{status === "no_slug" ? "Session expired" : "Booking issue"}</Title>
+        <Title>
+          {status === "timeout"
+            ? "Still confirming"
+            : status === "no_slug"
+              ? "Session expired"
+              : "Booking issue"}
+        </Title>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         <Message>
-          {status === "no_slug" ? (
+          {status === "timeout" ? (
+            <>
+              Your payment may have gone through. Check your email for confirmation
+              before trying to book again.
+            </>
+          ) : status === "no_slug" ? (
             <>Start again from the class page or explore more experiences.</>
           ) : (
-            <>You can try booking again from the class page or contact support if the charge appeared on your card.</>
+            <>
+              You can try booking again from the class page or contact support if
+              the charge appeared on your card.
+            </>
           )}
         </Message>
         <LinkButton href="/explore">Explore experiences</LinkButton>

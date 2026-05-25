@@ -16,7 +16,33 @@ class ErrorBoundary extends React.Component {
     console.error("FindClass Error:", error, errorInfo);
   }
   render() {
-    if (this.state.hasError) return null; // Fail silently or show a small placeholder
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            padding: "32px 24px",
+            textAlign: "center",
+            background: "#fafafa",
+            borderRadius: 16,
+            margin: "24px 0",
+          }}
+        >
+          <p style={{ margin: "0 0 12px", color: "#374151", fontSize: 15 }}>
+            We couldn&apos;t load featured classes right now.
+          </p>
+          <a
+            href="/explore"
+            style={{
+              color: "#ff385c",
+              fontWeight: 600,
+              textDecoration: "underline",
+            }}
+          >
+            Browse all experiences
+          </a>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }

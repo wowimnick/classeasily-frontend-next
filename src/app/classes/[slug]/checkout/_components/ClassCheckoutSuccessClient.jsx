@@ -1,18 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import FooterSmart from "@/components/homepage/FooterSmart";
 import styled from "styled-components";
+import { bookingService } from "@/services/apiService";
+import {
+  loadBookingSuccessPayload,
+  clearBookingSuccessPayload,
+  saveBookingSuccessPayload,
+} from "@/lib/bookingSuccessStorage";
 
 const ConfirmationStep = dynamic(
   () => import("@/app/classes/_components/steps/ConfirmationStep"),
   { loading: () => <div style={{ minHeight: "300px" }} />, ssr: false }
 );
-
-const SUCCESS_STORAGE_KEY = "classeasily_booking_success";
 
 const PageWrapper = styled.div`
   width: 100%;
@@ -41,6 +45,7 @@ const MainContainer = styled.div`
 export default function ClassCheckoutSuccessClient() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = params?.slug;
   const [successData, setSuccessData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,20 +58,56 @@ export default function ClassCheckoutSuccessClient() {
       return;
     }
 
-    const raw = sessionStorage.getItem(SUCCESS_STORAGE_KEY);
-    if (!raw) {
-      setLoading(false);
-      router.replace(`/classes/${slug}`);
-      return;
-    }
+    let cancelled = false;
 
-    try {
-      const data = JSON.parse(raw);
-      if (!data.bookingData || !data.classData) {
+    const hydrate = async () => {
+      const paymentIntentId = searchParams.get("payment_intent");
+      let data = loadBookingSuccessPayload({
+        slug,
+        paymentIntentId: paymentIntentId || undefined,
+      });
+
+      if (
+        !data &&
+        paymentIntentId &&
+        searchParams.get("redirect_status") === "succeeded"
+      ) {
+        const clientSecret = searchParams.get("payment_intent_client_secret");
+        try {
+          const result = await bookingService.bookingStatusPolling(
+            paymentIntentId,
+            clientSecret,
+          );
+          if (result.success && result.data?.status === "confirmed") {
+            data = {
+              bookingId: result.data.booking_id,
+              user_facing_reference: result.data.user_facing_reference,
+              booking_group_id: result.data.booking_group_id,
+              participant_details: result.data.participant_details,
+              payment_intent_id: paymentIntentId,
+              client_secret: clientSecret,
+              bookingData: {},
+              classData: { slug },
+            };
+            saveBookingSuccessPayload(data);
+          }
+        } catch {
+          // fall through to redirect
+        }
+      }
+
+      if (cancelled) return;
+
+      if (!data?.bookingData && !data?.bookingId) {
         setLoading(false);
         router.replace(`/classes/${slug}`);
         return;
       }
+
+      if (!data.classData) {
+        data = { ...data, classData: { slug } };
+      }
+
       const storedSlug =
         data.classData?.slug ||
         data.classData?.class_slug ||
@@ -76,15 +117,16 @@ export default function ClassCheckoutSuccessClient() {
         router.replace(`/classes/${slug}`);
         return;
       }
+
       setSuccessData(data);
-    } catch {
       setLoading(false);
-      router.replace(`/classes/${slug}`);
-      return;
-    } finally {
-      setLoading(false);
-    }
-  }, [slug, router]);
+    };
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, router, searchParams]);
 
   useEffect(() => {
     if (successData && typeof window !== "undefined") {
@@ -93,7 +135,7 @@ export default function ClassCheckoutSuccessClient() {
   }, [successData]);
 
   const handleRetryBooking = () => {
-    sessionStorage.removeItem(SUCCESS_STORAGE_KEY);
+    clearBookingSuccessPayload(slug);
     router.push(`/classes/${slug}`);
   };
 
@@ -139,7 +181,7 @@ export default function ClassCheckoutSuccessClient() {
   } = successData;
 
   const mergedBookingData = {
-    ...bookingData,
+    ...(bookingData || {}),
     bookingId,
     user_facing_reference,
     booking_group_id,

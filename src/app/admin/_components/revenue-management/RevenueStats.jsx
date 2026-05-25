@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import {
@@ -434,10 +434,24 @@ export default function RevenueStats() {
   const [topPack, setTopPack] = useState(null);
   const [error, setError] = useState(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const exportAbortRef = useRef(null);
+  const presetDebounceRef = useRef(null);
+  const [debouncedPreset, setDebouncedPreset] = useState("30d");
+
+  useEffect(() => {
+    if (presetDebounceRef.current) clearTimeout(presetDebounceRef.current);
+    presetDebounceRef.current = setTimeout(() => {
+      setDebouncedPreset(preset);
+    }, 300);
+    return () => {
+      if (presetDebounceRef.current) clearTimeout(presetDebounceRef.current);
+    };
+  }, [preset]);
 
   const [rangeStart, rangeEnd] = useMemo(
-    () => resolveDateRange(preset, customRange),
-    [preset, customRange],
+    () => resolveDateRange(debouncedPreset, customRange),
+    [debouncedPreset, customRange],
   );
 
   const queryParams = useMemo(() => {
@@ -588,15 +602,40 @@ export default function RevenueStats() {
   }));
 
   const onExport = async () => {
-    const res = await revenueAnalyticsService.exportCsv({
-      start_date: queryParams.start_date,
-      end_date: queryParams.end_date,
-      granularity,
-      sources: queryParams.sources,
-    });
-    if (!res.success) message.error(res.error || "Export failed");
-    else message.success("CSV downloaded");
+    if (exportAbortRef.current) exportAbortRef.current.abort();
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
+    setExporting(true);
+    try {
+      const res = await revenueAnalyticsService.exportCsv(
+        {
+          start_date: queryParams.start_date,
+          end_date: queryParams.end_date,
+          granularity,
+          sources: queryParams.sources,
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (!res.success) message.error(res.error || "Export failed");
+      else message.success("CSV downloaded");
+    } catch (e) {
+      if (e?.name !== "CanceledError" && e?.code !== "ERR_CANCELED") {
+        message.error("Export failed");
+      }
+    } finally {
+      if (exportAbortRef.current === controller) {
+        exportAbortRef.current = null;
+      }
+      setExporting(false);
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      exportAbortRef.current?.abort();
+    };
+  }, []);
 
   const chartSources = ALL_SOURCES.filter((s) => sources.has(s));
 
@@ -621,7 +660,7 @@ export default function RevenueStats() {
             <Button icon={<RefreshCw size={16} />} onClick={handleRefresh} loading={loading}>
               Refresh
             </Button>
-            <Button icon={<Download size={16} />} onClick={onExport}>
+            <Button icon={<Download size={16} />} onClick={onExport} loading={exporting}>
               Export CSV
             </Button>
           </Space>

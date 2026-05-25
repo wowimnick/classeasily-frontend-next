@@ -129,11 +129,10 @@ export default function RootLayout({ children }) {
         {/* DNS Prefetch and Preconnect for third-party domains */}
         <link rel="dns-prefetch" href="https://accounts.google.com" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
-        <link rel="dns-prefetch" href="https://ipapi.co" />
         
         {/* Preconnect for critical origins (max 4) */}
         <link rel="preconnect" href="https://cdn.lordicon.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://ipapi.co" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://geocoding.classeasily.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://d2mzhwd15ea85i.cloudfront.net" crossOrigin="anonymous" />
 
         {/* Structured Data */}

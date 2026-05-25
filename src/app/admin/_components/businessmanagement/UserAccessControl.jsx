@@ -22,6 +22,7 @@ import {
   Avatar,
   Typography,
   Skeleton,
+  Alert,
 } from "antd";
 import { AdminCompactTable } from "../shared/AdminCompactTable";
 import message from "@/lib/message";
@@ -555,16 +556,28 @@ const DetailDrawerModal = ({
   isLoading,
   onProcessRequest,
   onOpenProcessModal,
+  processing,
 }) => {
   const isMobile = !useBreakpoint().md;
   const isPending = request?.status === "pending";
 
   const footer = isPending && onOpenProcessModal ? (
     <Space>
-      <Button type="primary" icon={<CheckCircle size={16} />} onClick={() => onOpenProcessModal("approve")} style={{ background: colors.success, borderColor: colors.success }}>
+      <Button
+        type="primary"
+        icon={<CheckCircle size={16} />}
+        onClick={() => onOpenProcessModal("approve")}
+        loading={processing}
+        style={{ background: colors.success, borderColor: colors.success }}
+      >
         Approve
       </Button>
-      <Button danger icon={<XCircle size={16} />} onClick={() => onOpenProcessModal("reject")}>
+      <Button
+        danger
+        icon={<XCircle size={16} />}
+        onClick={() => onOpenProcessModal("reject")}
+        loading={processing}
+      >
         Reject
       </Button>
     </Space>
@@ -607,6 +620,7 @@ const UserAccessControl = () => {
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [decisionForm] = Form.useForm();
@@ -634,15 +648,19 @@ const UserAccessControl = () => {
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
+    setStatsError(null);
     setIsReadyForAnimation(false);
     try {
       const response = await verificationService.getVerificationStats();
       if (response.success) {
         setStats(response.data);
         setTimeout(() => setIsReadyForAnimation(true), 50);
+      } else {
+        setStatsError(response.error || "Failed to load verification stats.");
       }
     } catch (e) {
       console.error("Failed to fetch stats");
+      setStatsError("Failed to load verification stats.");
     } finally {
       setStatsLoading(false);
     }
@@ -939,6 +957,20 @@ const UserAccessControl = () => {
             loading={statsLoading}
             isReadyForAnimation={isReadyForAnimation}
           />
+          {!statsLoading && statsError ? (
+            <Alert
+              type="error"
+              showIcon
+              message="Could not load verification stats"
+              description={statsError}
+              action={
+                <Button size="small" onClick={fetchStats}>
+                  Retry
+                </Button>
+              }
+              style={{ marginTop: 12 }}
+            />
+          ) : null}
         </div>
 
         <TableSection
@@ -1024,6 +1056,7 @@ const UserAccessControl = () => {
             setIsDetailsDrawerVisible(false);
             setTimeout(() => setIsVerifyModalVisible(true), 300);
           }}
+          processing={actionLoading}
         />
 
         <Modal

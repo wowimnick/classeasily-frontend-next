@@ -1,6 +1,6 @@
 export const termsContent = {
   title: "Terms of Service",
-  lastUpdated: "February 19, 2026",
+  lastUpdated: "May 25, 2026",
   sections: [
     // Section 1: Introduction
     {
@@ -37,6 +37,10 @@ export const termsContent = {
             "<strong>Platform Content:</strong> All content on the Platform excluding User Content, including text, graphics, logos, icons, images, software, and underlying technology.",
             "<strong>Fees:</strong> Any charges applicable to Users, including Service Fees, Booking Fees, or Payment Processing Fees, as detailed on the Platform.",
             "<strong>Gift Card:</strong> A prepaid balance issued by ClassEasily that may be purchased on the Platform and redeemed toward Bookings or eligible purchases, subject to these Terms and any terms displayed at purchase or redemption.",
+            "<strong>Widget Subscription:</strong> A recurring subscription plan offered by ClassEasily that enables Hosts to access the booking widget, premium features, and related tools on the Platform.",
+            "<strong>Add-on Subscription:</strong> An optional recurring subscription (e.g. marketplace email branding or email marketing) that supplements a Host's Widget Subscription or marketplace account.",
+            "<strong>Customer Membership:</strong> A recurring subscription or credit plan offered by a Host to Guests through the Platform, billed on a recurring basis and subject to the Host's membership terms.",
+            "<strong>Corporate Client:</strong> A business or organization that books group Experiences through ClassEasily's corporate booking program.",
           ],
         },
       ],
@@ -135,7 +139,40 @@ export const termsContent = {
         { type: "h3", text: "5.4. Host Subscriptions" },
         {
           type: "p",
-          text: "ClassEasily may offer subscription plans (e.g. for the booking widget or premium features). Subscription fees are billed on a recurring basis. If payment fails (e.g. card declined), subscription features may be suspended or restricted until payment is updated. You are responsible for keeping your payment method valid. ClassEasily may send payment-failure reminders but is not liable for missed payments or resulting service limits.",
+          text: "ClassEasily offers Widget Subscription plans (currently Basic, Growth, and Advanced) that provide access to the booking widget, marketplace listing, and plan-specific features. Current pricing and per-booking commission rates are set out on our <a href='/fees'>Fees and Pricing page</a> and in your Host dashboard. Subscription fees are billed monthly in Canadian Dollars (CAD) on a recurring basis and automatically renew at the end of each billing period unless cancelled.",
+        },
+        {
+          type: "p",
+          text: "By subscribing, you authorize ClassEasily to charge your payment method on file for the applicable subscription fee and any applicable taxes at the start of each billing period. You are responsible for keeping your payment method valid and current. If payment fails (e.g. card declined), subscription features may be suspended or restricted until payment is updated. ClassEasily may send payment-failure reminders but is not liable for missed payments or resulting service limits.",
+        },
+        {
+          type: "p",
+          text: "Upgrades take effect immediately; you may be charged a prorated amount for the remainder of the current billing period. Downgrades take effect at the start of the next billing period; you will retain access to your current plan's features until then. ClassEasily does not provide refunds or credits for partial billing periods except where required by law.",
+        },
+        {
+          type: "p",
+          text: "You may cancel a Widget Subscription at any time through your Host dashboard or by contacting support@classeasily.com. Cancellation takes effect at the end of the current billing period; you will retain access until that date. Upon cancellation or suspension for non-payment, your widget may be disabled, premium features may be restricted, and your marketplace listing may be affected, but existing confirmed Guest Bookings remain subject to these Terms and applicable cancellation policies.",
+        },
+        {
+          type: "p",
+          text: "ClassEasily may also offer Add-on Subscriptions (e.g. marketplace email branding or tiered email marketing plans). Add-on fees are billed monthly on a recurring basis under the same billing, renewal, cancellation, and payment-failure terms as Widget Subscriptions unless otherwise stated at purchase. Add-ons may require an active Widget Subscription or marketplace account.",
+        },
+        {
+          type: "p",
+          text: "For subscription charges, you agree to contact ClassEasily first to resolve any billing dispute before initiating a chargeback or payment reversal with your bank or card issuer. Unauthorized chargebacks for valid subscription charges may result in account suspension and recovery of associated fees.",
+        },
+        { type: "h3", text: "5.5. Host Membership Programs" },
+        {
+          type: "p",
+          text: "Hosts on eligible plans may offer Customer Memberships to Guests through the Platform. When you offer memberships, you are the merchant of record for the membership offering: you set membership terms (including pricing, benefits, credits, duration, and cancellation rules), and you are solely responsible for honouring those terms and delivering the promised benefits.",
+        },
+        {
+          type: "p",
+          text: "ClassEasily facilitates recurring billing and payment collection for Customer Memberships as a technology and payment facilitator only. ClassEasily is not a party to the membership agreement between you and your members and does not guarantee member satisfaction, credit balances, or ongoing availability of your membership program.",
+        },
+        {
+          type: "p",
+          text: "If your Host account is suspended, terminated, or you cease operating on the Platform, you remain responsible for honouring active memberships, unused credits, and prepaid benefits to the extent required by applicable law and your stated membership terms. ClassEasily may, but is not obligated to, assist with member notifications or facilitate refunds from your payouts or account balance. ClassEasily is not liable for losses arising from your failure to honour membership obligations.",
         },
       ],
     },
@@ -165,6 +202,23 @@ export const termsContent = {
           type: "p",
           text: "You should carefully review the description, schedule, location, and cancellation policy before booking an Experience.",
         },
+        { type: "h3", text: "6.3. Customer Memberships" },
+        {
+          type: "p",
+          text: "Guests may purchase Customer Memberships offered by Hosts through the Platform. When you subscribe to a membership, you enter into a direct agreement with the Host for membership benefits; ClassEasily processes recurring payments on the Host's behalf as a facilitator.",
+        },
+        {
+          type: "p",
+          text: "Membership terms—including price, billing frequency, included credits or sessions, rollover rules, and cancellation rights—are set by the Host and displayed at purchase. You are responsible for reviewing those terms before subscribing. Unless otherwise stated by the Host or required by law, membership fees are non-refundable once a billing period has begun.",
+        },
+        {
+          type: "p",
+          text: "You may cancel a Customer Membership through your account settings or as directed by the Host. Cancellation typically takes effect at the end of the current billing period unless the Host's terms state otherwise. Unused credits or benefits may expire upon cancellation as specified in the Host's membership terms.",
+        },
+        {
+          type: "p",
+          text: "If a Host ceases operations, removes their membership program, or is removed from the Platform, ClassEasily will use reasonable efforts to notify affected members but is not responsible for the Host's failure to deliver remaining membership benefits. Any remedy for unused credits or prepaid benefits is between you and the Host, except where ClassEasily is required by law to facilitate a refund.",
+        },
       ],
     },
     // Section 7: Fees, Payments, and Cancellations
@@ -191,17 +245,38 @@ export const termsContent = {
         },
         {
           type: "p",
+          text: "ClassEasily may withhold, delay, or offset payouts (including creating a reserve) when reasonably necessary for fraud review, compliance verification, open chargebacks or payment disputes, suspected policy violations, reconciliation of billing errors, or amounts owed to ClassEasily (including dispute fees, chargebacks, or subscription arrears). A minimum payout threshold may apply; balances below the threshold are carried forward until the next eligible payout run, as described on our <a href='/fees'>Fees and Pricing page</a>.",
+        },
+        {
+          type: "p",
           text: "ClassEasily utilizes Stripe, Inc. ('Stripe') for payment processing services. By using the payment features of the Platform, you agree to be bound by the Stripe Connected Account Agreement (available at https://stripe.com/en-ca/legal/connect-account) and the Stripe Services Agreement (available at https://stripe.com/en-ca/legal/ssa), which may be modified by Stripe from time to time. As a condition of ClassEasily enabling payment processing services through Stripe, you agree to provide ClassEasily accurate and complete information about you and your business, and you authorize ClassEasily to share it and transaction information related to your use of the payment processing services provided by Stripe. ClassEasily does not store your full credit card information.",
         },
         { type: "h3", text: "7.2.1. Gift Cards" },
         {
           type: "p",
-          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. If a gift card cannot be fully applied for technical or balance reasons, the remaining balance may remain on the card and the rest of the payment will have been charged to your payment method; ClassEasily may contact you in such cases. Use of a Gift Card is subject to these Terms.",
+          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated or required by law, Gift Cards are non-refundable for cash. Paid Gift Cards sold in Ontario are not subject to expiry dates, in accordance with the Ontario Consumer Protection Act, 2002, and similar applicable laws. Promotional or complimentary gift cards may have separate terms as stated at issuance. If a gift card cannot be fully applied for technical or balance reasons, the remaining balance may remain on the card and the rest of the payment will have been charged to your payment method; ClassEasily may contact you in such cases. Use of a Gift Card is subject to these Terms.",
+        },
+        {
+          type: "p",
+          text: "If ClassEasily ceases operations or the Platform is discontinued, ClassEasily will use reasonable efforts to honour outstanding Gift Card balances for eligible redemptions during any wind-down period announced on the Platform, or to provide an alternative remedy where required by law. ClassEasily is not liable beyond such efforts or applicable legal obligations.",
         },
         { type: "h3", text: "7.2.2. Promotional Gift Cards" },
         {
           type: "p",
           text: "ClassEasily may offer promotional gift cards (e.g. first-purchase rewards) from time to time. Eligibility, amounts, and conditions (such as minimum spend or one per customer per email) will be as stated in the offer. Promotional gift cards are typically for use on a future booking only. Delivery is by email on a best-effort basis. ClassEasily may change, suspend, or end any promotion at any time without notice.",
+        },
+        { type: "h3", text: "7.2.3. Corporate Bookings" },
+        {
+          type: "p",
+          text: "Corporate Clients may book group Experiences through ClassEasily's corporate program. Corporate bookings may require a deposit at confirmation, with the remaining balance due by a specified date before the Experience. Deposit percentages, payment schedules, group minimums, and any custom terms will be disclosed during the corporate booking process or in a separate corporate agreement.",
+        },
+        {
+          type: "p",
+          text: "Corporate Clients are responsible for providing accurate billing and event information and for ensuring attendees comply with Host rules and these Terms. Cancellation and refund treatment for corporate bookings—including whether a deposit is refundable or forfeited—will be as stated in the corporate booking confirmation or applicable corporate agreement. Unless otherwise stated, deposits may be non-refundable once paid if the Corporate Client cancels within the period specified at booking.",
+        },
+        {
+          type: "p",
+          text: "If a Host cancels a corporate booking or the Experience cannot be fulfilled, ClassEasily will work with the Corporate Client and Host to arrange a full refund of amounts paid for the affected booking or an alternative date, subject to these Terms. ClassEasily acts as a facilitator and is not liable for indirect costs (e.g. venue, travel, or catering) incurred by the Corporate Client.",
         },
         { type: "h3", text: "7.3. Cancellations and Refunds" },
         {
@@ -219,6 +294,46 @@ export const termsContent = {
         {
           type: "p",
           text: "Hosts can cancel a confirmed Booking under certain extenuating circumstances. If a Host cancels, the Guest will receive a full refund of the Total Fees for such Booking. ClassEasily may impose penalties on Hosts for cancellations without valid extenuating circumstances.",
+        },
+        { type: "h3", text: "7.4. Chargebacks and Payment Disputes" },
+        {
+          type: "p",
+          text: "If you have a concern about a charge, you agree to contact ClassEasily at support@classeasily.com before initiating a chargeback, payment reversal, or similar dispute with your bank or card issuer. We will work in good faith to investigate and resolve legitimate disputes in accordance with these Terms and applicable policies.",
+        },
+        {
+          type: "p",
+          text: "If you initiate a chargeback or payment dispute for a transaction that was validly processed in accordance with these Terms (including where an Experience was delivered, a cancellation policy was correctly applied, or a subscription fee was properly charged), you may be liable for the disputed amount, associated Stripe dispute fees, and reasonable administrative costs. ClassEasily may recover such amounts by reversing prior payouts, offsetting future payouts, charging your payment method on file, or suspending your account.",
+        },
+        {
+          type: "p",
+          text: "For Hosts, chargebacks and payment disputes related to your Bookings or memberships may result in deductions from your payouts, including the full disputed amount and any processor dispute fees. You authorize ClassEasily to debit or offset such amounts from your Connect account or future payouts. ClassEasily is not responsible for chargebacks arising from your conduct, Listing inaccuracies, or failure to deliver an Experience as described.",
+        },
+        { type: "h3", text: "7.5. No-Show Policy" },
+        {
+          type: "p",
+          text: "If a Guest fails to attend a confirmed Booking without cancelling in advance ('no-show'), the booking will be treated as a cancellation under the Host's applicable cancellation policy. Unless the Host's policy or applicable law provides otherwise, no-shows are not entitled to a refund.",
+        },
+        {
+          type: "p",
+          text: "If a Host fails to provide the booked Experience as scheduled without valid notice or extenuating circumstances ('host no-show'), the Guest is entitled to a full refund of the Total Fees for that Booking. ClassEasily may impose penalties on the Host, including listing restrictions or account suspension, for repeated or unjustified host no-shows.",
+        },
+        { type: "h3", text: "7.6. Promotional Codes and Discounts" },
+        {
+          type: "p",
+          text: "Hosts and ClassEasily may offer promotional codes, discounts, or special offers from time to time. Each offer is subject to the terms displayed at the time of use, including eligibility, expiry, minimum spend, applicable Listings, and whether it can be combined with other offers.",
+        },
+        {
+          type: "p",
+          text: "Promotional codes and discounts may not be sold, transferred, or reproduced unless expressly permitted. Misuse—including using expired, invalid, or unauthorized codes, or attempting to apply multiple non-stackable offers—may result in cancellation of the Booking, forfeiture of the discount, or account suspension. ClassEasily and Hosts reserve the right to modify, revoke, or cancel any promotional offer at any time.",
+        },
+        { type: "h3", text: "7.7. Pricing Errors" },
+        {
+          type: "p",
+          text: "ClassEasily and Hosts strive to display accurate pricing, but errors may occur due to system malfunction, manual entry, or other reasons. If a Booking is confirmed at a price that is materially erroneous (e.g. due to a technical glitch or obvious mistake), ClassEasily may cancel the Booking and issue a full refund of amounts paid, or offer the Guest the option to complete the Booking at the correct price.",
+        },
+        {
+          type: "p",
+          text: "ClassEasily is not liable for any losses arising from pricing errors beyond refunding amounts paid for a cancelled Booking. Hosts are responsible for ensuring their Listing prices are accurate; ClassEasily may correct obvious Listing errors or remove Listings that contain manifest pricing mistakes.",
         },
       ],
     },
@@ -352,6 +467,24 @@ export const termsContent = {
           type: "p",
           text: "ClassEasily is not liable for failures or delays of third-party payment processors (including Stripe), for failed or delayed refunds or payouts due to such failures, or for technical errors that result in a booking not being completed or a refund not being automatically processed, except where required by law. Our obligation in such cases is to use reasonable efforts to resolve the matter (e.g. manual refund or payout).",
         },
+        { type: "h3", text: "12.6. Force Majeure" },
+        {
+          type: "p",
+          text: "Neither ClassEasily nor any User shall be liable for any failure or delay in performing obligations under these Terms (other than payment obligations already due) where such failure or delay results from events beyond the party's reasonable control, including natural disasters, epidemics or pandemics, government orders or restrictions, utility failures, labour disputes, acts of terrorism, or failures of third-party infrastructure not caused by the affected party.",
+        },
+        {
+          type: "p",
+          text: "If a Host cancels a confirmed Booking due to force majeure, the Guest will receive a full refund of the Total Fees for such Booking and the Host will not be subject to cancellation penalties for that Booking, provided the Host promptly notifies affected Guests and ClassEasily. ClassEasily may assist with communications but is not responsible for indirect losses arising from force majeure events.",
+        },
+        { type: "h3", text: "12.7. Platform Errors and Downtime" },
+        {
+          type: "p",
+          text: "The Platform may experience downtime, interruptions, bugs, or errors that affect availability, booking flows, pricing display, payout processing, or communications. ClassEasily is not liable for any losses, missed bookings, or consequential damages arising from Platform outages, maintenance, or technical malfunctions.",
+        },
+        {
+          type: "p",
+          text: "If a Platform error causes you to be incorrectly charged, charged twice, or unable to complete or receive a confirmed Booking, your sole remedy is a refund of the erroneous or duplicate charge, rebooking where available, or another reasonable corrective action at ClassEasily's discretion. ClassEasily's liability for Platform errors is subject to Section 13 (Limitation of Liability).",
+        },
       ],
     },
     // Section 13: Limitation of Liability
@@ -387,14 +520,19 @@ export const termsContent = {
           type: "p",
           text: "These Terms shall be governed by and construed in accordance with the laws of the Province of Ontario and the federal laws of Canada applicable therein, without regard to its conflict of law principles.",
         },
-        { type: "h3", text: "15.2. Dispute Resolution (Arbitration Clause)" },
+        { type: "h3", text: "15.2. Informal Resolution" },
+        {
+          type: "p",
+          text: "Before initiating arbitration or court proceedings (other than small claims as described below), you agree to first contact ClassEasily at support@classeasily.com and attempt to resolve the Dispute informally for at least thirty (30) days. During this period, both parties will negotiate in good faith. If the Dispute is not resolved within thirty (30) days, either party may proceed to arbitration as set out below.",
+        },
+        { type: "h3", text: "15.3. Dispute Resolution (Arbitration Clause)" },
         {
           type: "p",
           text: "PLEASE READ THIS SECTION CAREFULLY – IT MAY SIGNIFICANTLY AFFECT YOUR LEGAL RIGHTS, INCLUDING YOUR RIGHT TO FILE A LAWSUIT IN COURT.",
         },
         {
           type: "p",
-          text: "You and ClassEasily agree that any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, or the use of the Platform (collectively, 'Disputes') will be settled by binding arbitration, except that each party retains the right to seek injunctive or other equitable relief in a court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of a party's copyrights, trademarks, trade secrets, patents, or other intellectual property rights.",
+          text: "You and ClassEasily agree that any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, or the use of the Platform (collectively, 'Disputes') will be settled by binding arbitration, except that each party retains the right to (i) seek injunctive or other equitable relief in a court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of a party's copyrights, trademarks, trade secrets, patents, or other intellectual property rights, and (ii) bring an individual action in small claims court in Ontario if the claim qualifies and remains within that court's jurisdictional limits.",
         },
         {
           type: "p",
@@ -451,7 +589,7 @@ export const termsContent = {
 
 export const privacyContent = {
   title: "Privacy Policy",
-  lastUpdated: "February 19, 2026",
+  lastUpdated: "May 25, 2026",
   sections: [
     // Section 1: Introduction
     {
@@ -489,6 +627,7 @@ export const privacyContent = {
             "<strong>Gift Card Information:</strong> When you purchase or redeem a Gift Card, we collect purchaser and recipient details (e.g., name, email), amount, and redemption/usage information as needed to process and fulfill the transaction.",
             "<strong>Payment Information:</strong> While we use Stripe for payment processing, we may collect information necessary to facilitate transactions, such as billing address and transaction details. We do not store your full credit card number.",
             "<strong>Communications and Messaging:</strong> Records of communications with us (e.g., support requests via support@classeasily.com) and messages sent between Guests and Hosts through the Platform's in-app messaging. We store these messages and may use them for safety, support, and policy enforcement.",
+            "<strong>SMS Information:</strong> If you provide a phone number, we may collect and use it to send transactional SMS messages (e.g. booking confirmations and reminders) and, where you have consented, marketing SMS. Message and data rates may apply. You can opt out of non-essential SMS as described in our communications or by contacting support@classeasily.com.",
             "<strong>Reviews and Feedback:</strong> Content you submit as reviews, ratings, or feedback.",
             "<strong>Verification Information:</strong> Information required to verify identity or business details (e.g., government ID, business registration documents), collected only when necessary.",
           ],
@@ -517,7 +656,7 @@ export const privacyContent = {
           type: "ul",
           items: [
             "<strong>To Provide and Improve the Platform:</strong> Operate, maintain, personalize, and enhance our services, including facilitating bookings and payments.",
-            "<strong>To Communicate with You:</strong> Respond to inquiries, send service-related notifications (e.g., booking confirmations, reminders, policy updates), and provide customer support.",
+            "<strong>To Communicate with You:</strong> Respond to inquiries, send service-related notifications (e.g., booking confirmations, reminders via email or SMS, policy updates), and provide customer support.",
             "<strong>For Safety and Security:</strong> Verify accounts, detect and prevent fraud, abuse, security incidents, and enforce our Terms and policies.",
             "<strong>For Payment Processing:</strong> Facilitate transactions, process payments, and manage payouts.",
             "<strong>For Personalization:</strong> Customize content and recommendations based on your preferences and usage.",
@@ -628,6 +767,7 @@ export const privacyContent = {
             "<strong>Right to Access:</strong> You have the right to request access to the personal information we hold about you.",
             "<strong>Right to Correction (Rectification):</strong> You have the right to request correction of inaccurate or incomplete personal information.",
             "<strong>Right to Withdraw Consent:</strong> Where we rely on your consent to process information, you have the right to withdraw that consent at any time (though this will not affect the lawfulness of processing before withdrawal).",
+            "<strong>Right to Erasure (Deletion):</strong> You may request deletion of your personal information where it is no longer necessary for the purposes for which it was collected, where you withdraw consent (and no other legal basis applies), or where deletion is otherwise required or permitted by law. We may retain certain information where required for legal, tax, accounting, fraud prevention, or dispute resolution purposes.",
             "<strong>Right to Challenge Compliance:</strong> You have the right to challenge our compliance with privacy laws.",
           ],
         },
@@ -691,6 +831,20 @@ export const privacyContent = {
         {
           type: "p",
           text: "Mailing Address:\nClassEasily Inc.\n 8 Gatcombe Circle, Richmond Hill ON L4C 9P4, Canada",
+        },
+      ],
+    },
+    // Section 14: Data Breach Notification
+    {
+      title: "14. Data Breach Notification",
+      content: [
+        {
+          type: "p",
+          text: "We implement safeguards designed to protect personal information, but no system is completely secure. In the event of a breach of security safeguards involving personal information under our control that creates a real risk of significant harm to an individual, we will notify affected individuals and the Office of the Privacy Commissioner of Canada (and any applicable provincial authority) as required by Canada's Breach of Security Safeguards Regulations and other applicable law.",
+        },
+        {
+          type: "p",
+          text: "Notifications will be made as soon as feasible after we determine that a reportable breach has occurred, and will include information about the nature of the breach, the personal information involved, steps we are taking, and recommendations for affected individuals to reduce risk of harm. We will also maintain records of all breaches as required by law.",
         },
       ],
     },
@@ -794,7 +948,7 @@ export const cookiePolicyContent = {
 
 export const feeContent = {
   title: "Fees and Pricing",
-  lastUpdated: "February 19, 2026",
+  lastUpdated: "May 25, 2026",
   sections: [
     {
       title: "Our Fee Structure Explained",
@@ -872,6 +1026,52 @@ export const feeContent = {
       ],
     },
     {
+      title: "Widget Subscription Plans (Hosts)",
+      content: [
+        {
+          type: "p",
+          text: "Hosts may subscribe to a Widget Subscription plan to access the embeddable booking widget, marketplace listing, and plan-specific features. All Widget Subscription fees are billed monthly in CAD and automatically renew unless cancelled, as described in our <a href='/terms-of-service'>Terms of Service</a>.",
+        },
+        {
+          type: "ul",
+          items: [
+            "<strong>Basic:</strong> CAD $29/month — includes widget on your website, marketplace listing, and a 4% per-booking commission on widget bookings.",
+            "<strong>Growth:</strong> CAD $49/month — includes everything in Basic, plus branded booking emails, widget analytics, automated reminders, memberships, promo codes, and a 3% per-booking commission on widget bookings.",
+            "<strong>Advanced:</strong> CAD $89/month — includes everything in Growth and a 2% per-booking commission on widget bookings.",
+          ],
+        },
+        {
+          type: "p",
+          text: "Per-booking commission rates apply to bookings completed through your widget (not marketplace bookings, which are subject to the ClassEasily Service Fee above). Current plan features and pricing are also displayed in your Host dashboard.",
+        },
+      ],
+    },
+    {
+      title: "Add-on Subscriptions (Hosts)",
+      content: [
+        {
+          type: "p",
+          text: "Hosts may purchase optional Add-on Subscriptions in addition to a Widget Subscription or marketplace account. Add-on fees are billed monthly in CAD unless otherwise stated.",
+        },
+        {
+          type: "ul",
+          items: [
+            "<strong>Marketplace Email Branding:</strong> CAD $7/month — send marketplace booking confirmations and reminders under your brand.",
+            "<strong>Email Marketing:</strong> Tiered plans from CAD $6/month to CAD $59/month, based on monthly send limits and features. Current tiers and limits are displayed in your Host dashboard at purchase.",
+          ],
+        },
+      ],
+    },
+    {
+      title: "Corporate Bookings",
+      content: [
+        {
+          type: "p",
+          text: "Corporate group bookings may be subject to a platform fee (currently approximately 13% of the booking value, subject to change with notice) and custom payment terms, including deposit and balance schedules. Specific fees, deposit percentages, and cancellation terms are disclosed during the corporate booking process or in a separate corporate agreement.",
+        },
+      ],
+    },
+    {
       title: "Payment Processing",
       content: [
         {
@@ -881,6 +1081,10 @@ export const feeContent = {
         {
           type: "p",
           text: "You do not need a separate Stripe account as a Guest. Hosts will set up a Stripe Connect account through ClassEasily during their onboarding process to receive payouts.",
+        },
+        {
+          type: "p",
+          text: "<strong>Chargeback and Dispute Fees:</strong> If a payment is disputed through a chargeback or similar process, Stripe may assess a dispute fee (currently approximately CAD $15 per dispute). This fee may be passed to the User responsible for the disputed transaction (Guest or Host, as applicable) and deducted from payouts or charged to the payment method on file, as described in our <a href='/terms-of-service'>Terms of Service</a>.",
         },
       ],
     },

@@ -83,7 +83,7 @@ export default function InquiryDetailDrawer({
     if (!publicShortlistUrl) return;
     try {
       await navigator.clipboard.writeText(publicShortlistUrl);
-      message.success("Link copied");
+      message.success("Copied!", 1.5);
     } catch {
       message.error("Could not copy");
     }
@@ -127,7 +127,7 @@ export default function InquiryDetailDrawer({
 
   return (
     <Drawer
-      width={880}
+      width="min(880px, 100vw)"
       open={open && !!inquiryRow}
       onClose={onClose}
       title={inquiryRow?.company_name || "Inquiry"}
@@ -191,6 +191,11 @@ export default function InquiryDetailDrawer({
           {shortlist ? (
             <>
               <Divider style={{ margin: "8px 0" }} />
+              {shortlist.sent_at ? (
+                <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                  Shortlist sent {dayjs(shortlist.sent_at).format("MMM D, YYYY h:mm A")}
+                </Text>
+              ) : null}
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
                   Customer link
