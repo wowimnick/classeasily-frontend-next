@@ -6,6 +6,18 @@ import { adminColors as colors } from "./adminColors";
 
 const { Title, Paragraph } = Typography;
 
+export const DashboardWrapper = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px;
+  min-height: 100%;
+  @media (max-width: 768px) {
+    padding: 8px;
+  }
+`;
+
 export const TableSection = styled.div`
   background: white;
   border-radius: 16px;
