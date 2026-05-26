@@ -423,23 +423,29 @@ function ExploreClientContent({
 
   // Sync server-provided initial data.
   useEffect(() => {
-    if (initialClasses) {
-      previousSearchParamsRef.current = searchParams.toString();
-      setDisplayClasses(initialClasses);
-      setTotalClassesCount(initialTotalCount);
-      setNextPageUrl(initialNextPageUrl);
-      nextPageUrlRef.current = initialNextPageUrl;
-      setIsNavigating(false);
-      setLoading(false);
+    if (initialClasses == null) return;
+    previousSearchParamsRef.current = searchParams.toString();
+    setDisplayClasses(initialClasses);
+    setTotalClassesCount(initialTotalCount);
+    setNextPageUrl(initialNextPageUrl);
+    nextPageUrlRef.current = initialNextPageUrl;
+    setIsNavigating(false);
+    setLoading(false);
+    if (!initialFetchError) {
       setFetchError(null);
-      setIsSearching(false);
-      setGeoSearchNotice(initialGeoSearchNotice ?? null);
+    } else if (!initialClasses.length) {
+      setFetchError(
+        "We couldn't load results. Check your connection and try again.",
+      );
     }
+    setIsSearching(false);
+    setGeoSearchNotice(initialGeoSearchNotice ?? null);
   }, [
     initialClasses,
     initialTotalCount,
     initialNextPageUrl,
     initialGeoSearchNotice,
+    initialFetchError,
     setIsSearching,
   ]);
 
@@ -515,6 +521,18 @@ function ExploreClientContent({
   useEffect(() => {
     doFetchRef.current = doFetch;
   }, [doFetch]);
+
+  // Recover from SSR search failure with a client-side retry.
+  useEffect(() => {
+    if (!initialFetchError) return;
+    const controller = new AbortController();
+    const apiParams = buildApiParamsFromSearchParams(
+      new URLSearchParams(stripPageKey(searchParams.toString())),
+    );
+    apiParamsRef.current = apiParams;
+    doFetch(apiParams, 1, false, controller.signal);
+    return () => controller.abort();
+  }, [initialFetchError, initialClasses, initialTotalCount, doFetch]);
 
   // If SSR navigation stalls, fall back to client-side fetch so the skeleton cannot hang forever.
   useEffect(() => {
