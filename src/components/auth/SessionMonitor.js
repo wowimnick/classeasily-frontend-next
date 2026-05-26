@@ -15,7 +15,7 @@ import { useAuthStore, refreshUser } from "@/lib/auth-client";
 export const SessionMonitor = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
-  const lastCheckRef = useRef(Date.now());
+  const lastCheckRef = useRef(0);
   const isCheckingRef = useRef(false);
 
   // Check session validity and UPDATE auth state
@@ -25,11 +25,14 @@ export const SessionMonitor = () => {
       return;
     }
 
-    // Rate limit: only check once every 30 seconds
     const now = Date.now();
-    const timeSinceLastCheck = now - lastCheckRef.current;
-    if (timeSinceLastCheck < 30000) {
-      return;
+
+    // Rate limit: only check once every 30 seconds (skip on first check)
+    if (lastCheckRef.current !== 0) {
+      const timeSinceLastCheck = now - lastCheckRef.current;
+      if (timeSinceLastCheck < 30000) {
+        return;
+      }
     }
 
     try {
@@ -87,7 +90,7 @@ export const SessionMonitor = () => {
       window.addEventListener(event, handleUserActivity, { passive: true });
     });
 
-    // Initial check on mount
+    // Initial check on mount (client-only; ref stays 0 until first check runs)
     checkSession();
 
     return () => {
