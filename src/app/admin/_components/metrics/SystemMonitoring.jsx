@@ -56,7 +56,7 @@ export default function SystemMonitoring() {
         <div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>System Monitoring</h2>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>
-            Real-time platform health, Celery queues, and endpoint performance
+            Platform health, Celery queues, scheduled task timings, and endpoint performance
           </p>
         </div>
         <RefreshButton loading={refreshing} onClick={() => loadMetrics(true)}>

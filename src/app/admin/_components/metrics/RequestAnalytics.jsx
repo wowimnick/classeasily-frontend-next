@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   Card,
@@ -26,6 +26,7 @@ import {
   FileText,
   Hash,
   Key,
+  CalendarClock,
 } from "lucide-react";
 import styled from "styled-components";
 import PropTypes from "prop-types";
@@ -34,6 +35,141 @@ import { format } from "date-fns";
 const { TabPane } = Tabs;
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
+
+function formatCountdown(totalSeconds) {
+  const seconds = Math.max(0, totalSeconds);
+  if (seconds === 0) return "Due now";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+  if (secs || parts.length === 0) parts.push(`${secs}s`);
+  return parts.join(" ");
+}
+
+function formatLocalDateTime(isoString) {
+  if (!isoString) return "—";
+  try {
+    return format(new Date(isoString), "EEE, MMM d yyyy · h:mm:ss a");
+  } catch {
+    return isoString;
+  }
+}
+
+const ScheduledTasksPanel = ({ tasks = [] }) => {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const rows = useMemo(
+    () =>
+      (tasks || []).map((task) => {
+        const secondsLeft = task.next_run_at
+          ? Math.max(
+              0,
+              Math.floor((new Date(task.next_run_at).getTime() - nowMs) / 1000)
+            )
+          : task.seconds_until_next ?? 0;
+        return { ...task, secondsLeft };
+      }),
+    [tasks, nowMs]
+  );
+
+  const columns = [
+    {
+      title: "Task",
+      dataIndex: "label",
+      key: "label",
+      render: (label, record) => (
+        <div>
+          <Text strong style={{ display: "block" }}>
+            {label}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 12, wordBreak: "break-all" }}>
+            {record.task}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      title: "Schedule",
+      dataIndex: "schedule_description",
+      key: "schedule_description",
+      responsive: ["md"],
+      render: (value, record) => (
+        <Space direction="vertical" size={2}>
+          <Text>{value}</Text>
+          {record.source ? (
+            <Tag color={record.source === "database" ? "blue" : "default"}>
+              {record.source}
+            </Tag>
+          ) : null}
+        </Space>
+      ),
+    },
+    {
+      title: "Next run (your time)",
+      dataIndex: "next_run_at",
+      key: "next_run_at",
+      render: (value) => (
+        <Space>
+          <Clock size={14} color={colors.textSecondary} />
+          <Text>{formatLocalDateTime(value)}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: "Time remaining",
+      dataIndex: "secondsLeft",
+      key: "secondsLeft",
+      width: 140,
+      render: (secondsLeft) => (
+        <Tag color={secondsLeft <= 60 ? "orange" : "green"}>
+          {formatCountdown(secondsLeft)}
+        </Tag>
+      ),
+    },
+  ];
+
+  return (
+    <StyledCard style={{ gridColumn: "1 / -1" }}>
+      <CardTitle>
+        <CalendarClock size={20} color={colors.primary} />
+        Scheduled Background Tasks
+      </CardTitle>
+      <HelpText>
+        Celery Beat tasks configured in the system. Next run times are shown in your
+        local timezone; countdowns update every second.
+      </HelpText>
+      {rows.length > 0 ? (
+        <Table
+          rowKey="key"
+          columns={columns}
+          dataSource={rows}
+          pagination={false}
+          size="small"
+          scroll={{ x: 720 }}
+        />
+      ) : (
+        <Empty
+          description="No scheduled tasks found."
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      )}
+    </StyledCard>
+  );
+};
+
+ScheduledTasksPanel.propTypes = {
+  tasks: PropTypes.arrayOf(PropTypes.object),
+};
 
 // --- STYLING & THEME (ALIGNED WITH PARENT) ---
 const colors = {
@@ -307,7 +443,11 @@ EndpointPerformanceList.propTypes = {
 };
 
 const RequestAnalysisTab = ({ metrics }) => {
-  if (!metrics || !metrics.profiling || !metrics.endpoint_analysis) {
+  const celery = metrics?.celery || {};
+  const scheduledTasks = celery.scheduled_tasks || [];
+  const hasProfiling = metrics?.profiling && metrics?.endpoint_analysis;
+
+  if (!metrics) {
     return (
       <TabContent>
         <StyledCard>
@@ -317,12 +457,26 @@ const RequestAnalysisTab = ({ metrics }) => {
     );
   }
 
-  const { profiling, endpoint_analysis, celery } = metrics;
+  if (!hasProfiling) {
+    return (
+      <TabContent>
+        <GridContainer>
+          <ScheduledTasksPanel tasks={scheduledTasks} />
+          <StyledCard style={{ gridColumn: "1 / -1" }}>
+            <Empty description="Endpoint profiling data is not available." />
+          </StyledCard>
+        </GridContainer>
+      </TabContent>
+    );
+  }
+
+  const { profiling, endpoint_analysis } = metrics;
   const { top_by_count, top_by_time, top_by_queries } = endpoint_analysis;
 
   return (
     <TabContent>
       <GridContainer>
+        <ScheduledTasksPanel tasks={scheduledTasks} />
         <StyledCard>
           <CardTitle>
             <TrendingUp size={20} color={colors.primary} />
@@ -485,6 +639,7 @@ RequestAnalysisTab.propTypes = {
   metrics: PropTypes.shape({
     celery: PropTypes.shape({
       failed_tasks: PropTypes.arrayOf(PropTypes.object),
+      scheduled_tasks: PropTypes.arrayOf(PropTypes.object),
     }),
     profiling: PropTypes.shape({
       recent_errors: PropTypes.arrayOf(PropTypes.object),
@@ -499,7 +654,7 @@ RequestAnalysisTab.propTypes = {
 
 RequestAnalysisTab.defaultProps = {
   metrics: {
-    celery: { failed_tasks: [] },
+    celery: { failed_tasks: [], scheduled_tasks: [] },
     profiling: { recent_errors: [] },
     endpoint_analysis: {
       top_by_count: [],
