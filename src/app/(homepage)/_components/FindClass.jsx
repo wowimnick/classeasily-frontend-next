@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
-// Import geolocation hook to calculate distances on client side
-import { useIpGeolocation } from "@/hooks/useIpGeolocation";
+import { TORONTO_FALLBACK_LOCATION } from "@/lib/awsLocation";
+import { useSearch } from "@/context/SearchContext";
 
 // --- STYLED COMPONENTS (FROM ORIGINAL) ---
 const MainWrapper = styled.section`
   display: flex;
   flex-direction: column;
   padding: 0 4rem;
-  margin: 1rem auto;
+  margin: 0.65rem auto;
   width: 100%;
   box-sizing: border-box;
 
@@ -24,7 +24,15 @@ const MainWrapper = styled.section`
   @media (max-width: 768px) {
     /* Flush carousel to screen right; gutter on left only */
     padding: 0 0 0 1rem;
-    margin: 1rem auto;
+    margin: 0.75rem auto;
+  }
+  @media (max-width: 1366px) and (max-height: 820px) {
+    padding: 0 2rem;
+    margin: 0.35rem auto;
+  }
+  @media (max-width: 1280px) and (max-height: 760px) {
+    padding: 0 1.75rem;
+    margin: 0.25rem auto;
   }
   @media (max-width: 616px) {
     padding: 0 0 0 1rem;
@@ -36,14 +44,17 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: flex-end;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
 
   @media (max-width: 768px) {
-    padding-top: 0.75rem;
+    padding-top: 0.5rem;
     padding-left: 0;
     padding-right: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     box-sizing: border-box;
+  }
+  @media (max-width: 1366px) and (max-height: 820px) {
+    margin-bottom: 0.45rem;
   }
 `;
 
@@ -211,9 +222,15 @@ const FindClass = ({
   userLocation = null,
   style = {},
 }) => {
-  // Client side geolocation check for distances
-  const { location: ipLocation } = useIpGeolocation();
-  const finalLocation = userLocation || ipLocation;
+  const { continueSearchSnapshot } = useSearch();
+  const approxLocation = useMemo(() => {
+    if (userLocation?.lat != null && userLocation?.lng != null) return userLocation;
+    const coords = continueSearchSnapshot?.selectedLocation?.coordinates;
+    if (coords?.lat != null && coords?.lng != null) {
+      return { lat: coords.lat, lng: coords.lng };
+    }
+    return { lat: TORONTO_FALLBACK_LOCATION.lat, lng: TORONTO_FALLBACK_LOCATION.lng };
+  }, [userLocation, continueSearchSnapshot]);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
@@ -275,11 +292,11 @@ const FindClass = ({
           <EmblaContainer>
             {classes.map((cls, index) => {
               let dist = null;
-              if (finalLocation && cls.coordinates) {
+              if (approxLocation && cls.coordinates) {
                 const [lat, lng] = cls.coordinates.split(",").map(Number);
                 dist = getDistanceFromLatLonInKm(
-                  finalLocation.lat,
-                  finalLocation.lng,
+                  approxLocation.lat,
+                  approxLocation.lng,
                   lat,
                   lng,
                 );

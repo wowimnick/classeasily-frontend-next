@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-23T05:53:00.489516+00:00",
+  "generatedAt": "2026-05-30T06:36:01.737Z",
   "count": 8,
   "collections": [
     {
       "id": 2,
-      "name": "\ud83d\udd25Trending",
+      "name": "🔥Trending",
       "slug": "trending",
       "icon_name": "bomb",
       "color": "#f0f",
@@ -75,5 +75,6 @@
       "active_class_count": 1
     }
   ],
-  "source": "django-shell"
+  "source": "api",
+  "apiBaseUrl": "http://localhost:8000/api"
 }

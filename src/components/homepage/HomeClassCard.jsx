@@ -310,7 +310,7 @@ const HomeClassCard = ({
               sizes="(max-width: 1048px) min(100vw, 520px), (max-width: 1600px) 32vw, min(400px, 28vw)"
               priority={priority}
               className={`${styles.cardImage} ${styles.exploreThumbImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
-              onLoadingComplete={() => setImageLoaded(true)}
+              onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
             />
           </>
@@ -398,7 +398,7 @@ const HomeClassCard = ({
               sizes="(max-width: 640px) 45vw, 230px"
               priority={priority}
               className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
-              onLoadingComplete={() => setImageLoaded(true)}
+              onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
             />
           </>

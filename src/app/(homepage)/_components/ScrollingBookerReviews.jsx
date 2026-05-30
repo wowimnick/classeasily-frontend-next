@@ -51,7 +51,7 @@ function ReviewChip({ review }) {
     <article className={styles.chip} aria-label={`Review from ${review.name}`}>
       <div className={styles.stars} aria-hidden="true">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={11} fill="#f59e0b" stroke="#f59e0b" />
+          <Star key={i} size={9} fill="#f59e0b" stroke="#f59e0b" />
         ))}
       </div>
       <p className={styles.quote}>&ldquo;{review.quote}&rdquo;</p>

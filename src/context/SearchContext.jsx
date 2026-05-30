@@ -19,6 +19,10 @@ import {
   formatSearchLocationDisplayLabel,
   normalizeSearchLocationState,
 } from "@/lib/formatSearchLocationDisplay";
+import {
+  readContinueSearchSnapshot,
+  writeContinueSearchSnapshot,
+} from "@/lib/continueSearchStorage";
 
 function getSearchLogSessionId() {
   if (typeof window === "undefined") return "";
@@ -71,15 +75,13 @@ function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
 
 const SearchContext = createContext();
 
-/** Persisted search: written to sessionStorage + localStorage (local enables new-tab continue UX). */
+/** In-tab search restore (explore refresh). Homepage pill stays empty — see continueSearchStorage. */
 export const SEARCH_STATE_STORAGE_KEY = "classeasily_search_state";
 
 function getStoredSearchState() {
   if (typeof window === "undefined") return null;
   try {
-    const raw =
-      sessionStorage.getItem(SEARCH_STATE_STORAGE_KEY) ??
-      localStorage.getItem(SEARCH_STATE_STORAGE_KEY);
+    const raw = sessionStorage.getItem(SEARCH_STATE_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -90,10 +92,55 @@ function getStoredSearchState() {
 function saveSearchState(state) {
   if (typeof window === "undefined") return;
   try {
-    const payload = JSON.stringify(state);
-    sessionStorage.setItem(SEARCH_STATE_STORAGE_KEY, payload);
-    localStorage.setItem(SEARCH_STATE_STORAGE_KEY, payload);
+    sessionStorage.setItem(SEARCH_STATE_STORAGE_KEY, JSON.stringify(state));
   } catch (_) {}
+}
+
+/** Apply persisted search fields from storage (client-only, after mount). */
+function readSearchTermFromStored(stored) {
+  if (stored && typeof stored.searchTerm === "string" && stored.searchTerm.trim()) {
+    return normalizeSearchLocationState({
+      displayName: stored.searchTerm,
+      searchTerm: stored.searchTerm,
+      city: stored.selectedLocation?.city,
+      state: stored.selectedLocation?.state,
+    }).searchTerm;
+  }
+  if (
+    stored?.selectedLocation &&
+    typeof stored.selectedLocation.displayName === "string" &&
+    stored.selectedLocation.displayName.trim()
+  ) {
+    return normalizeSearchLocationState({
+      displayName: stored.selectedLocation.displayName,
+      city: stored.selectedLocation?.city,
+      state: stored.selectedLocation?.state,
+    }).displayName;
+  }
+  return "";
+}
+
+function readSelectedLocationFromStored(stored) {
+  if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
+    const dn = String(stored.selectedLocation.displayName || "").trim();
+    const coords = stored.selectedLocation.coordinates;
+    if (dn && coords && typeof coords.lat === "number" && typeof coords.lng === "number") {
+      const normalized = normalizeSearchLocationState({
+        displayName: dn,
+        city: stored.selectedLocation.city,
+        state: stored.selectedLocation.state,
+      }).displayName;
+      return {
+        displayName: normalized,
+        coordinates: coords,
+        citySlug: stored.selectedLocation.citySlug || null,
+        provinceSlug: stored.selectedLocation.provinceSlug || null,
+        city: stored.selectedLocation.city || null,
+        state: stored.selectedLocation.state || null,
+      };
+    }
+  }
+  return { ...EMPTY_SEARCH_LOCATION };
 }
 
 const AWS_LOCATION_API_URL =
@@ -229,69 +276,37 @@ export const SearchProvider = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Search Data State — initialize from sessionStorage so search persists when closing drawer / navigating
-  const [searchTerm, setSearchTerm] = useState(() => {
-    const stored = getStoredSearchState();
-    if (stored && typeof stored.searchTerm === "string" && stored.searchTerm.trim()) {
-      return normalizeSearchLocationState({
-        displayName: stored.searchTerm,
-        searchTerm: stored.searchTerm,
-        city: stored.selectedLocation?.city,
-        state: stored.selectedLocation?.state,
-      }).searchTerm;
-    }
-    if (
-      stored?.selectedLocation &&
-      typeof stored.selectedLocation.displayName === "string" &&
-      stored.selectedLocation.displayName.trim()
-    ) {
-      return normalizeSearchLocationState({
-        displayName: stored.selectedLocation.displayName,
-        city: stored.selectedLocation?.city,
-        state: stored.selectedLocation?.state,
-      }).displayName;
-    }
-    return "";
-  });
-  const [selectedLocation, setSelectedLocation] = useState(() => {
-    const stored = getStoredSearchState();
-    if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
-      const dn = String(stored.selectedLocation.displayName || "").trim();
-      const coords = stored.selectedLocation.coordinates;
-      if (dn && coords && typeof coords.lat === "number" && typeof coords.lng === "number") {
-        const normalized = normalizeSearchLocationState({
-          displayName: dn,
-          city: stored.selectedLocation.city,
-          state: stored.selectedLocation.state,
-        }).displayName;
-        return {
-          displayName: normalized,
-          coordinates: coords,
-          citySlug: stored.selectedLocation.citySlug || null,
-          provinceSlug: stored.selectedLocation.provinceSlug || null,
-          city: stored.selectedLocation.city || null,
-          state: stored.selectedLocation.state || null,
-        };
+  // Search Data State — empty on SSR/first paint; restore from storage after mount (avoids hydration mismatch).
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(() => ({
+    ...EMPTY_SEARCH_LOCATION,
+  }));
+  const [datePickerValue, setDatePickerValue] = useState(null);
+  const [participantCount, setParticipantCount] = useState(1);
+  const [selectedCollections, setSelectedCollections] = useState([]);
+  const [hasRestoredSearchState, setHasRestoredSearchState] = useState(false);
+  const [continueSearchSnapshot, setContinueSearchSnapshot] = useState(null);
+
+  useEffect(() => {
+    const isHomepage =
+      typeof window !== "undefined" && window.location.pathname === "/";
+
+    if (isHomepage) {
+      setContinueSearchSnapshot(readContinueSearchSnapshot());
+    } else {
+      const stored = getStoredSearchState();
+      if (stored) {
+        setSearchTerm(readSearchTermFromStored(stored));
+        setSelectedLocation(readSelectedLocationFromStored(stored));
+        if (stored.datePickerValue != null) setDatePickerValue(stored.datePickerValue);
+        if (typeof stored.participantCount === "number" && stored.participantCount >= 1) {
+          setParticipantCount(Math.min(20, stored.participantCount));
+        }
+        setSelectedCollections(normalizeStoredCollections(stored));
       }
     }
-    return { ...EMPTY_SEARCH_LOCATION };
-  });
-  const [datePickerValue, setDatePickerValue] = useState(() => {
-    const stored = getStoredSearchState();
-    if (stored && stored.datePickerValue != null) return stored.datePickerValue;
-    return null;
-  });
-  const [participantCount, setParticipantCount] = useState(() => {
-    const stored = getStoredSearchState();
-    if (stored && typeof stored.participantCount === "number" && stored.participantCount >= 1) {
-      return Math.min(20, stored.participantCount);
-    }
-    return 1;
-  });
-  const [selectedCollections, setSelectedCollections] = useState(() => {
-    const stored = getStoredSearchState();
-    return normalizeStoredCollections(stored);
-  });
+    setHasRestoredSearchState(true);
+  }, []);
 
   // Geocoding State
   const [geocoding, setGeocoding] = useState(false);
@@ -408,13 +423,14 @@ export const SearchProvider = ({ children }) => {
     try {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(SEARCH_STATE_STORAGE_KEY);
-        localStorage.removeItem(SEARCH_STATE_STORAGE_KEY);
       }
     } catch (_) {}
   }, []);
 
   // Persist search state so it survives closing the drawer and shows in ExploreHeader
   useEffect(() => {
+    if (!hasRestoredSearchState) return;
+    if (typeof window !== "undefined" && window.location.pathname === "/") return;
     saveSearchState({
       searchTerm,
       selectedLocation,
@@ -422,12 +438,32 @@ export const SearchProvider = ({ children }) => {
       participantCount,
       selectedCollections,
     });
-  }, [searchTerm, selectedLocation, datePickerValue, participantCount, selectedCollections]);
+  }, [
+    searchTerm,
+    selectedLocation,
+    datePickerValue,
+    participantCount,
+    selectedCollections,
+    hasRestoredSearchState,
+  ]);
 
-  const performSearch = useCallback(() => {
+  const performSearch = useCallback((overrides) => {
     const toronto = getDefaultTorontoSearchLocation();
-    let term = searchTerm.trim();
-    let loc = { ...selectedLocation };
+    const activeSearchTerm =
+      overrides?.searchTerm != null ? overrides.searchTerm : searchTerm;
+    const activeLocation =
+      overrides?.selectedLocation != null ? overrides.selectedLocation : selectedLocation;
+    const activeDate =
+      overrides?.datePickerValue !== undefined
+        ? overrides.datePickerValue
+        : datePickerValue;
+    const activeCollections =
+      overrides?.selectedCollections != null
+        ? overrides.selectedCollections
+        : selectedCollections;
+
+    let term = String(activeSearchTerm || "").trim();
+    let loc = { ...activeLocation };
     let displayName = String(loc.displayName || "").trim();
     let coordinates = loc.coordinates;
 
@@ -436,8 +472,10 @@ export const SearchProvider = ({ children }) => {
       loc = { ...toronto };
       displayName = toronto.displayName;
       coordinates = toronto.coordinates;
-      setSearchTerm(term);
-      setSelectedLocation(loc);
+      if (!overrides) {
+        setSearchTerm(term);
+        setSelectedLocation(loc);
+      }
     }
 
     const params = new URLSearchParams();
@@ -474,20 +512,20 @@ export const SearchProvider = ({ children }) => {
     }
 
     params.delete("collection");
-    (selectedCollections || []).forEach((c) => {
+    (activeCollections || []).forEach((c) => {
       if (c?.slug) params.append("collection", c.slug);
     });
 
     // HANDLE DATE (Range or Single)
-    if (datePickerValue) {
-      if (datePickerValue.start && datePickerValue.end) {
-        params.set("start_date", datePickerValue.start);
-        params.set("end_date", datePickerValue.end);
-      } else if (typeof datePickerValue?.format === "function") {
+    if (activeDate) {
+      if (activeDate.start && activeDate.end) {
+        params.set("start_date", activeDate.start);
+        params.set("end_date", activeDate.end);
+      } else if (typeof activeDate?.format === "function") {
         // Single date object (dayjs)
-        params.set("date", datePickerValue.format("YYYY-MM-DD"));
-      } else if (typeof datePickerValue === "string") {
-        params.set("date", datePickerValue);
+        params.set("date", activeDate.format("YYYY-MM-DD"));
+      } else if (typeof activeDate === "string") {
+        params.set("date", activeDate);
       }
     }
 
@@ -513,6 +551,13 @@ export const SearchProvider = ({ children }) => {
 
     const newUrl = `${path}?${params.toString()}`;
 
+    writeContinueSearchSnapshot({
+      searchTerm: term,
+      selectedLocation: loc,
+      datePickerValue: activeDate,
+      selectedCollections: activeCollections,
+    });
+
     logExploreSearchFromParams(params, { searchTerm: term, selectedLocation: loc });
     // Trigger global loading state immediately
     setIsSearching(true);
@@ -520,6 +565,32 @@ export const SearchProvider = ({ children }) => {
 
     setIsDrawerOpen(false);
   }, [selectedLocation, searchTerm, datePickerValue, selectedCollections, router]);
+
+  const continuePreviousSearch = useCallback(() => {
+    const snapshot = continueSearchSnapshot || readContinueSearchSnapshot();
+    if (!snapshot) return;
+
+    const restoredTerm = readSearchTermFromStored(snapshot);
+    const restoredLocation = readSelectedLocationFromStored(snapshot);
+    const restoredCollections = normalizeStoredCollections(snapshot);
+    const restoredDate = snapshot.datePickerValue ?? null;
+
+    setSearchTerm(restoredTerm);
+    setSelectedLocation(restoredLocation);
+    setDatePickerValue(restoredDate);
+    setSelectedCollections(restoredCollections);
+
+    performSearch({
+      searchTerm: restoredTerm,
+      selectedLocation: restoredLocation,
+      datePickerValue: restoredDate,
+      selectedCollections: restoredCollections,
+    });
+  }, [continueSearchSnapshot, performSearch]);
+
+  const refreshContinueSearchSnapshot = useCallback(() => {
+    setContinueSearchSnapshot(readContinueSearchSnapshot());
+  }, []);
 
   const debouncedPrefetchExplore = useMemo(
     () =>
@@ -580,6 +651,8 @@ export const SearchProvider = ({ children }) => {
       setIsDrawerOpen,
       isSearching,
       setIsSearching,
+      hasRestoredSearchState,
+      continueSearchSnapshot,
       searchTerm,
       setSearchTerm,
       selectedLocation,
@@ -597,10 +670,14 @@ export const SearchProvider = ({ children }) => {
       handleLocationSelect,
       clearAll,
       performSearch,
+      continuePreviousSearch,
+      refreshContinueSearchSnapshot,
     }),
     [
       isDrawerOpen,
       isSearching,
+      hasRestoredSearchState,
+      continueSearchSnapshot,
       searchTerm,
       selectedLocation,
       datePickerValue,
@@ -613,6 +690,8 @@ export const SearchProvider = ({ children }) => {
       handleLocationSelect,
       clearAll,
       performSearch,
+      continuePreviousSearch,
+      refreshContinueSearchSnapshot,
     ],
   );
 

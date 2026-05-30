@@ -5,6 +5,7 @@ import styles from "./BannerSearch.module.css";
 import BannerSearchClient from "./BannerSearchClient";
 import ContinueSearchingCard from "./ContinueSearchingCard";
 import ScrollingBookerReviews from "./ScrollingBookerReviews";
+import HomepageSearchLifecycle from "./HomepageSearchLifecycle";
 
 const SearchBarFallback = () => (
   <div
@@ -22,6 +23,7 @@ const SearchBarFallback = () => (
 export default function BannerSearch() {
   return (
     <section className={styles.bannerSection} aria-labelledby="banner-heading">
+      <HomepageSearchLifecycle />
       <div className={styles.desktopContainer}>
         <div className={styles.mainWrapper}>
           <div className={styles.mainContent}>

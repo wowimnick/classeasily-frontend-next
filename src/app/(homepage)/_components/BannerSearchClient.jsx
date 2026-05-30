@@ -284,8 +284,9 @@ const MobileHeroSearchPill = styled(motion.button)`
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 100%;
+  max-width: min(360px, calc(100vw - 48px));
   min-width: 0;
+  margin: 0 auto;
   padding: 10px 36px;
   border-radius: 9999px;
   background: #ffffff;

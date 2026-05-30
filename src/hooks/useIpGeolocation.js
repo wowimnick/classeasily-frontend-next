@@ -72,7 +72,11 @@ export const useIpGeolocation = () => {
         clearTimeout(timeoutId);
 
         if (!locationData) {
-          throw new Error("Could not resolve location via ALS");
+          if (cancelled) return;
+          setLocation(TORONTO_FALLBACK_LOCATION);
+          setError(null);
+          writeCachedLocation(TORONTO_FALLBACK_LOCATION);
+          return;
         }
 
         if (cancelled) return;
@@ -82,10 +86,11 @@ export const useIpGeolocation = () => {
       } catch (err) {
         if (cancelled) return;
         if (process.env.NODE_ENV === "development") {
-          console.error("Geolocation Error:", err);
+          console.warn("Geolocation unavailable, using Toronto fallback:", err?.message || err);
         }
         setError(err);
         setLocation(TORONTO_FALLBACK_LOCATION);
+        writeCachedLocation(TORONTO_FALLBACK_LOCATION);
       } finally {
         if (!cancelled) setLoading(false);
       }

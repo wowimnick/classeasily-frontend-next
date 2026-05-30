@@ -1,5 +1,6 @@
 {
-  "generatedAt": "2026-05-23T05:50:23.627750+00:00",
+  "generatedAt": "2026-05-30T06:35:56.303Z",
+  "count": 3,
   "presets": [
     {
       "name": "Toronto",
@@ -11,7 +12,7 @@
       },
       "provinceSlug": "ontario",
       "citySlug": "toronto",
-      "classCount": 13
+      "classCount": 10
     },
     {
       "name": "Aurora",
@@ -36,18 +37,8 @@
       "provinceSlug": "ontario",
       "citySlug": "richmond-hill",
       "classCount": 4
-    },
-    {
-      "name": "Markham",
-      "displayName": "Markham, ON",
-      "description": "York Region",
-      "coords": {
-        "lat": 43.8561,
-        "lng": -79.337
-      },
-      "provinceSlug": "ontario",
-      "citySlug": "markham",
-      "classCount": 1
     }
-  ]
+  ],
+  "source": "api",
+  "apiBaseUrl": "http://localhost:8000/api"
 }

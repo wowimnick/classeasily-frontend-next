@@ -15,17 +15,18 @@ const CONTINUE_THUMB_SRC =
 
 
 export default function ContinueSearchingCard() {
-  const { searchTerm, selectedLocation, performSearch } = useSearch();
+  const { continueSearchSnapshot, continuePreviousSearch, hasRestoredSearchState } =
+    useSearch();
   const prefersReducedMotion = useReducedMotion();
 
   const city = formatSearchLocationCityName({
-    displayName: selectedLocation?.displayName,
-    searchTerm,
-    city: selectedLocation?.city,
-    state: selectedLocation?.state,
+    displayName: continueSearchSnapshot?.selectedLocation?.displayName,
+    searchTerm: continueSearchSnapshot?.searchTerm,
+    city: continueSearchSnapshot?.selectedLocation?.city,
+    state: continueSearchSnapshot?.selectedLocation?.state,
   });
 
-  if (!city) return null;
+  if (!hasRestoredSearchState || !continueSearchSnapshot || !city) return null;
 
   return (
     // Wrapper owns the height tween — button inside sits at natural height
@@ -42,7 +43,7 @@ export default function ContinueSearchingCard() {
       <button
         type="button"
         className={styles.card}
-        onClick={() => performSearch()}
+        onClick={() => continuePreviousSearch()}
         aria-label={`Continue searching for experiences in ${city}`}
       >
         <div className={styles.inner}>

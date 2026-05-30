@@ -299,6 +299,8 @@ const SettingsModal = ({ open, onClose }) => {
   }, [open]);
 
   useEffect(() => {
+    if (!shouldRender) return;
+
     if (open && currentUser && !initialLoading) {
       form.setFieldsValue({
         first_name: currentUser.first_name || "",
@@ -323,7 +325,7 @@ const SettingsModal = ({ open, onClose }) => {
       setIsSubmitting(false);
       setActiveTab("profile");
     }
-  }, [currentUser, form, open, initialLoading]);
+  }, [currentUser, form, open, initialLoading, shouldRender, activeTab]);
 
   const handleAvatarChange = useCallback(async (info) => {
     const file = info.file?.originFileObj || info.file;
