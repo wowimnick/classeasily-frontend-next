@@ -1877,7 +1877,7 @@ const BusinessWelcomePage = () => {
           {
             eyebrow: "WEBSITE WIDGET",
             title: "Book directly on your site",
-            commission: "3% commission per booking",
+            commission: "From $29/mo + 2–4% commission",
             commissionColor: "#1a1a1a",
             commissionBg: "rgba(0, 0, 0, 0.06)",
             description:
@@ -1890,7 +1890,7 @@ const BusinessWelcomePage = () => {
             features: [
               "Embeddable booking engine",
               "Real-time calendar sync",
-              "Automated email/SMS reminders",
+              "Plans from Basic to Advanced",
               "Centralized dashboard",
               "Brand-matched design",
             ],

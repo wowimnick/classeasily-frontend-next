@@ -14,7 +14,7 @@ export const PLAN_FEATURES_BASIC = [
   },
   { label: "One dashboard & payout" },
   { label: "Brand colors & fonts" },
-  { label: "Modal, inline, or floating embed" },
+  { label: "Popup or inline embed" },
   {
     label: "Domain whitelist",
     tooltip:
@@ -50,7 +50,6 @@ export const PLAN_FEATURES_GROWTH = [
       "Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.",
   },
   { label: "Promo codes & discounts" },
-  { label: "Priority support" },
 ];
 
 export const PLAN_FEATURES_ADVANCED = [
@@ -106,7 +105,7 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
   },
   {
     id: "embed_modes",
-    label: "Modal, inline, or floating embed",
+    label: "Popup or inline embed",
     valueType: "check",
     plans: { basic: true, growth: true, advanced: true },
   },
@@ -161,12 +160,6 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
   {
     id: "promos",
     label: "Promo codes & discounts",
-    valueType: "check",
-    plans: { basic: false, growth: true, advanced: true },
-  },
-  {
-    id: "priority_support",
-    label: "Priority support",
     valueType: "check",
     plans: { basic: false, growth: true, advanced: true },
   },

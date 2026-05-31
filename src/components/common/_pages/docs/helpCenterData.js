@@ -617,7 +617,7 @@ export const helpCenterData = [
           { type: "h3", text: "Pricing" },
           {
             type: "p",
-            text: "Widget access is 4% per booking (added to the class price—customers pay class price + 4%) plus a $50/month subscription. Stripe processing fees are deducted from your payout. Example: for a $100 class, the customer pays $104; you receive $100 minus 4% minus Stripe's fee.",
+            text: "Widget plans start at <strong>$29/month (Basic, 4% commission)</strong>, with <strong>Growth ($49/mo, 3%)</strong> and <strong>Advanced ($89/mo, 2%)</strong> available. Commission is added at checkout; Stripe card processing fees are deducted separately from your payout. Example on Basic: for a $100 class, the customer pays $104; you receive about $96 minus Stripe's fee. Manage plans in <strong>Settings → Plan & Billing</strong>.",
           },
         ],
       },
@@ -676,7 +676,7 @@ export const helpCenterData = [
           { type: "h3", text: "Subscription and pricing" },
           {
             type: "p",
-            text: "Widget access is subject to a per-booking fee (4% added to the class price) and a monthly subscription ($50/month). Stripe processing fees are deducted from your payout. See <strong>Website Integration (Widget)</strong> for current pricing details.",
+            text: "Widget access uses tiered monthly plans ($29 / $49 / $89) plus per-booking commission (4% / 3% / 2%). Stripe processing fees are deducted separately from your payout. See <strong>Website Integration (Widget)</strong> or <strong>Settings → Plan & Billing</strong> for current pricing.",
           },
         ],
       },

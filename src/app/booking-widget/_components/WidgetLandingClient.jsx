@@ -1114,7 +1114,7 @@ const FeaturesIntro = () => (
         </VPItem>
         <VPItem variants={fadeUp}>
           <h3><LayoutGrid size={20} color="#fc4056" /> Your site, your brand</h3>
-          <p>Widget matches your colors and fonts. Show it as a popup, inline block, or floating button—you choose. Domain whitelist keeps your embed secure.</p>
+          <p>Widget matches your colors and fonts. Use popup mode with your own button, or embed inline on a booking page. Domain whitelist keeps your embed secure.</p>
         </VPItem>
       </ValuePropsGrid>
     </Container>
@@ -1701,9 +1701,9 @@ const FeatureLists = () => (
           <h4>Control</h4>
           <ul>
             <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Brand colors, fonts &amp; border radius</li>
-            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Modal, inline, or floating embed</li>
+            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Popup or inline embed</li>
             <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Domain whitelist — only on your site</li>
-            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Pin to one class or show all</li>
+            <li><Check size={14} color="#fc4056" style={{ marginTop: 1, flexShrink: 0 }} /> Pin to one class on Growth &amp; Advanced</li>
           </ul>
         </ListColumn>
       </ListGrid>
@@ -1738,7 +1738,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Can I show only one specific class on my site?',
-    a: 'Yes. In the widget settings you can pin it to a single class, so when a visitor clicks the button they jump straight to date and time selection for that class — skipping the class picker entirely.',
+    a: 'Yes. On Growth and Advanced plans you can pin the widget to a single class in your embed code, so visitors skip the class picker and go straight to date and time selection.',
   },
 ];
 

@@ -462,6 +462,13 @@ export default function WidgetCustomizer() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "design" || tab === "settings" || tab === "install") {
+      setWidgetTabKey(tab);
+    }
+  }, [searchParams]);
+
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
 
   useEffect(() => {

@@ -23,6 +23,9 @@ import {
   RocketOutlined,
   QuestionCircleOutlined,
   CloseOutlined,
+  GlobalOutlined,
+  CodeOutlined,
+  BugOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { businessService } from "@/services/apiService";
@@ -353,7 +356,7 @@ const ExpandableButtonContent = styled(motion.div)`
   user-select: none;
 `;
 
-const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
+const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess = false }) => {
   const { token, theme: antdTheme } = theme.useToken();
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
@@ -364,36 +367,32 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
   const [setupLoading, setSetupLoading] = useState(true);
 
   const fetchSetupStatus = useCallback(async () => {
-    console.log("🟡 BusinessSetupGuide - fetchSetupStatus CALLED");
     setSetupLoading(true);
     try {
-      console.log("🟡 BusinessSetupGuide - Fetching from businessService...");
       const response = await businessService.fetchMyBusinessOverview();
-      console.log(
-        "🟡 BusinessSetupGuide - Response received:",
-        response.success
-      );
 
       if (response.success && response.data?.setup_progress) {
-        console.log("🟡 BusinessSetupGuide - Setting setup status");
         setSetupStatus(response.data.setup_progress);
       } else {
-        console.log("🟡 BusinessSetupGuide - No setup progress data");
         setSetupStatus(null);
       }
     } catch (err) {
-      console.error("🟡 BusinessSetupGuide - ERROR:", err);
+      console.error("BusinessSetupGuide: failed to fetch setup status", err);
       setSetupStatus(null);
     } finally {
-      console.log("🟡 BusinessSetupGuide - Fetch complete");
       setSetupLoading(false);
     }
   }, []);
 
   // Fetch data on mount
   useEffect(() => {
-    console.log("🟡 BusinessSetupGuide - Component mounted, fetching data");
     fetchSetupStatus();
+  }, [fetchSetupStatus]);
+
+  useEffect(() => {
+    const onFocus = () => fetchSetupStatus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [fetchSetupStatus]);
 
   useEffect(() => {
@@ -439,8 +438,8 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
     setIsExpanded(false);
   };
 
-  const stepsConfig = useMemo(
-    () => [
+  const stepsConfig = useMemo(() => {
+    const groups = [
       {
         key: "account",
         title: "Account Setup",
@@ -496,10 +495,48 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
           },
         ],
       },
-    ],
+    ];
+
+    if (hasWidgetAccess && setupStatus?.widget_setup) {
+      const ws = setupStatus.widget_setup;
+      groups.push({
+        key: "widget",
+        title: "Booking Widget Launch",
+        items: [
+          {
+            id: "widgetDomains",
+            label: "Add Your Website Domain",
+            isComplete: !!ws.has_widget_domains,
+            icon: <GlobalOutlined />,
+            action: () => handleNavigate("/business/dashboard/widget?tab=settings"),
+            actionLabel: "Add domain",
+            disabled: !setupStatus?.is_stripe_connected,
+          },
+          {
+            id: "widgetEmbed",
+            label: "Copy Embed Code to Your Site",
+            isComplete: !!ws.has_widget_embed_verified,
+            icon: <CodeOutlined />,
+            action: () => handleNavigate("/business/dashboard/widget?tab=install"),
+            actionLabel: "Get code",
+            disabled: !ws.has_widget_domains,
+          },
+          {
+            id: "widgetDiagnostics",
+            label: "Verify With Diagnostics",
+            isComplete: !!ws.has_widget_embed_verified,
+            icon: <BugOutlined />,
+            action: () => handleNavigate("/business/dashboard/widget?tab=install"),
+            actionLabel: "Run check",
+            disabled: !ws.has_widget_domains,
+          },
+        ],
+      });
+    }
+
+    return groups;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setupStatus]
-  );
+  }, [setupStatus, hasWidgetAccess]);
 
   const allSubSteps = stepsConfig.flatMap((group) => group.items);
   const completedSubSteps = allSubSteps.filter(
