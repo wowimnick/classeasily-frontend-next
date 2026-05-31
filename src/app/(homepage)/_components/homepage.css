@@ -5,6 +5,14 @@
   /* Slightly off-white so the curved sheet reads above the promo strip */
   background-color: #f2f2f4;
   min-height: 100vh;
+  /*
+   * Hero title must clear the overlaid header on the tucked sheet (page.jsx topOffset={58}).
+   */
+  --homepage-header-block: 4.25rem;
+  --homepage-hero-header-gap: 8px;
+  --homepage-hero-pad-min: calc(
+    var(--homepage-header-block) + var(--homepage-hero-header-gap)
+  );
 }
 
 /* White layer below gift-card banner: tucked under promo + rounded top corners.

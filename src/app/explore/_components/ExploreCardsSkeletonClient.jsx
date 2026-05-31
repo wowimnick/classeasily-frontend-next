@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import s from "./explore-skeleton.module.css";
+import { useExploreSkeletonCardCount } from "./useExploreSkeletonCardCount";
 
 export function SkeletonClassSingleCard() {
   return (
@@ -20,12 +21,26 @@ export function SkeletonClassSingleCard() {
   );
 }
 
-export function ClassesContentSkeleton() {
+function ExploreCardGridSkeletonInner({ gridClassName = s.cardGrid }) {
+  const rootRef = useRef(null);
+  const count = useExploreSkeletonCardCount(rootRef);
+
   return (
-    <div className={s.cardGrid}>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <SkeletonClassSingleCard key={i} />
-      ))}
+    <div ref={rootRef} className={s.skeletonMeasureRoot}>
+      <div className={gridClassName}>
+        {Array.from({ length: count }).map((_, i) => (
+          <SkeletonClassSingleCard key={i} />
+        ))}
+      </div>
     </div>
   );
+}
+
+/** Fills the explore card pane with a viewport-sized skeleton grid. */
+export function ExploreCardGridSkeleton(props) {
+  return <ExploreCardGridSkeletonInner {...props} />;
+}
+
+export function ClassesContentSkeleton() {
+  return <ExploreCardGridSkeletonInner />;
 }

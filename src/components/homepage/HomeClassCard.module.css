@@ -442,7 +442,8 @@
   font-weight: 400;
 }
 
-@media (max-width: 1048px) {
+/* List-row layout — tied to explore-cards container (see ClassesDisplay ClassGrid) */
+@container explore-cards (max-width: 1048px) {
   .cardContainerExplore {
     flex-direction: row;
     align-items: flex-start;
@@ -476,12 +477,89 @@
   }
 }
 
-@media (min-width: 1049px) {
+/* Two-column list band: larger thumb + type so cards feel fuller */
+@container explore-cards (min-width: 544px) and (max-width: 1048px) {
+  .cardContainerExplore {
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .exploreImageWrap {
+    width: clamp(148px, 38%, 196px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    align-self: stretch;
+    max-height: 200px;
+  }
+
+  .exploreTitle {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .exploreMeta {
+    font-size: 13px;
+    max-width: min(100%, 24ch);
+  }
+
+  .explorePriceRow {
+    font-size: 14px;
+  }
+}
+
+@container explore-cards (min-width: 1049px) {
   .exploreRatingInline {
     display: flex;
   }
 
   .exploreRatingBlock {
     display: none;
+  }
+}
+
+/* Fallback when container queries are unsupported */
+@supports not (container-type: inline-size) {
+  @media (max-width: 1048px) {
+    .cardContainerExplore {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .exploreImageWrap {
+      width: 132px;
+      height: 132px;
+      aspect-ratio: unset;
+      margin-bottom: 0;
+    }
+
+    .exploreTitleRow {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .exploreRatingInline {
+      display: none !important;
+    }
+
+    .exploreRatingBlock {
+      display: flex;
+    }
+
+    .exploreMeta {
+      font-size: 13px;
+      max-width: min(100%, 19.5ch);
+    }
+  }
+
+  @media (min-width: 1049px) {
+    .exploreRatingInline {
+      display: flex;
+    }
+
+    .exploreRatingBlock {
+      display: none;
+    }
   }
 }

@@ -21,6 +21,7 @@ import {
   ClassesContentSkeleton,
   SkeletonClassSingleCard,
 } from "./ExplorePageSkeleton.jsx";
+import { exploreGridColumnCount } from "./exploreSkeletonCount";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { BP, down, up } from "@/styles/breakpoints";
@@ -117,13 +118,13 @@ const ClassGridWrapper = styled.div`
 
 /**
  * Equal-width columns from container inline-size (no ragged auto-fill mins).
- * Thresholds: n × ~260px min card + (n−1) × 24px gap — columns jump only when another fits.
+ * 3+ columns only from 1049px so grid stays in sync with vertical explore cards (not list-row).
  */
 const ClassGrid = styled.div`
   display: grid;
   width: 100%;
-  column-gap: 24px;
-  row-gap: 40px;
+  column-gap: 20px;
+  row-gap: 28px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 
   @supports (container-type: inline-size) {
@@ -132,16 +133,16 @@ const ClassGrid = styled.div`
     @container explore-cards (min-width: 544px) {
       grid-template-columns: repeat(2, 1fr);
     }
-    @container explore-cards (min-width: 828px) {
+    @container explore-cards (min-width: 1049px) {
       grid-template-columns: repeat(3, 1fr);
     }
-    @container explore-cards (min-width: 1112px) {
+    @container explore-cards (min-width: 1312px) {
       grid-template-columns: repeat(4, 1fr);
     }
-    @container explore-cards (min-width: 1396px) {
+    @container explore-cards (min-width: 1576px) {
       grid-template-columns: repeat(5, 1fr);
     }
-    @container explore-cards (min-width: 1680px) {
+    @container explore-cards (min-width: 1840px) {
       grid-template-columns: repeat(6, 1fr);
     }
   }
@@ -149,7 +150,7 @@ const ClassGrid = styled.div`
   ${down(BP.TABLET)} {
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 28px;
   }
 `;
 
@@ -369,6 +370,7 @@ const ClassesDisplay = ({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const gridWrapperRef = useRef(null);
+  const [loadMoreSkeletonCount, setLoadMoreSkeletonCount] = useState(6);
 
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
@@ -404,6 +406,22 @@ const ClassesDisplay = ({
     );
     return unregister;
   }, []);
+
+  useEffect(() => {
+    const el = gridWrapperRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+
+    const update = () => {
+      const width = el.getBoundingClientRect().width;
+      const cols = exploreGridColumnCount(width, isMobile);
+      setLoadMoreSkeletonCount(Math.max(cols * 2, 4));
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isMobile]);
 
   useLayoutEffect(() => {
     onClassListScrollRootReady?.(gridWrapperRef.current);
@@ -632,7 +650,7 @@ const ClassesDisplay = ({
           </CardGridItem>
         ))}
         {isLoadingMore &&
-          [...Array(6)].map((_, i) => (
+          [...Array(loadMoreSkeletonCount)].map((_, i) => (
             <SkeletonClassSingleCard key={`skeleton-${i}`} />
           ))}
       </ClassGrid>

@@ -258,6 +258,16 @@
   padding: 1.5rem 2.5rem;
   overflow: hidden;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.skeletonMeasureRoot {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 @media (max-width: 1024px) {
@@ -284,7 +294,7 @@
   .cardGrid {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 28px;
   }
 }
 
