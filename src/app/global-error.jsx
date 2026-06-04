@@ -2,9 +2,14 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { handleChunkLoadError, isChunkLoadError } from "@/lib/chunk-load-error";
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
+    if (isChunkLoadError(error)) {
+      handleChunkLoadError(error);
+      return;
+    }
     Sentry.captureException(error);
   }, [error]);
 
@@ -31,7 +36,13 @@ export default function GlobalError({ error, reset }) {
           </p>
           <button
             type="button"
-            onClick={() => reset()}
+            onClick={() => {
+              if (isChunkLoadError(error)) {
+                window.location.reload();
+                return;
+              }
+              reset();
+            }}
             style={{
               background: "#dc2626",
               color: "white",
