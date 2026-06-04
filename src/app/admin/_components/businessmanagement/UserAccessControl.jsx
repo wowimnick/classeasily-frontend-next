@@ -638,7 +638,13 @@ const UserAccessControl = () => {
       const response = await verificationService.getVerificationRequests(
         params
       );
-      setVerificationRequests(response.success ? response.data || [] : []);
+      if (response.success) {
+        const data = response.data;
+        const list = data?.results ?? (Array.isArray(data) ? data : []);
+        setVerificationRequests(list);
+      } else {
+        setVerificationRequests([]);
+      }
     } catch (e) {
       message.error("Error fetching requests");
     } finally {
