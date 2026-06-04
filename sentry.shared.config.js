@@ -1,3 +1,16 @@
+import {
+  isChunkLoadError,
+  isLikelyBotSentryEvent,
+} from "./src/lib/chunkLoadRecovery.js";
+
+/** Drop noisy, usually non-actionable chunk load failures in Sentry. */
+export const CHUNK_LOAD_IGNORE_ERRORS = [
+  /Failed to load chunk/i,
+  /Loading chunk \d+ failed/i,
+  /ChunkLoadError/i,
+  /dynamically imported module/i,
+];
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +38,18 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ignoreErrors: CHUNK_LOAD_IGNORE_ERRORS,
+    beforeSend(event, hint) {
+      const original = hint?.originalException;
+      if (!isChunkLoadError(original)) {
+        return event;
+      }
+      // Crawlers often hit stale chunk URLs during deploys; not actionable.
+      if (isLikelyBotSentryEvent(event)) {
+        return null;
+      }
+      // Real users get an automatic reload; suppress the first report.
+      return null;
+    },
   };
 }
