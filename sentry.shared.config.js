@@ -1,3 +1,5 @@
+import { isStaleChunkLoadError } from "./src/lib/stale-chunk-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,16 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      const original = hint?.originalException;
+      if (isStaleChunkLoadError(original)) {
+        return null;
+      }
+      const message = event?.exception?.values?.[0]?.value ?? event?.message ?? "";
+      if (isStaleChunkLoadError(message)) {
+        return null;
+      }
+      return event;
+    },
   };
 }
