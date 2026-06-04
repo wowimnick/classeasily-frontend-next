@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isChunkLoadError } from "../lib/chunk-load-error.js";
+import {
+  isChunkLoadError,
+  isCrawlerClient,
+} from "../lib/chunk-load-error.js";
 
 test("isChunkLoadError matches Turbopack chunk failure message", () => {
   const err = new Error(
@@ -17,4 +20,14 @@ test("isChunkLoadError matches webpack-style messages", () => {
 test("isChunkLoadError rejects unrelated errors", () => {
   assert.equal(isChunkLoadError(new Error("Network Error")), false);
   assert.equal(isChunkLoadError(null), false);
+});
+
+test("isCrawlerClient matches GoogleOther (Sentry JAVASCRIPT-NEXTJS-2)", () => {
+  assert.equal(
+    isCrawlerClient(
+      "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X) GoogleOther",
+    ),
+    true,
+  );
+  assert.equal(isCrawlerClient("Mozilla/5.0 Chrome/120.0.0.0"), false);
 });

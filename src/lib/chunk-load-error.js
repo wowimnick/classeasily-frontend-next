@@ -15,12 +15,14 @@ export function isChunkLoadError(error) {
   return name === "ChunkLoadError";
 }
 
+const CRAWLER_USER_AGENT_RE =
+  /Googlebot|GoogleOther|bingbot|Slurp|DuckDuckBot|baiduspider|yandex/i;
+
 /** Known crawlers that often hit stale HTML during deploys (not actionable in Sentry). */
-export function isCrawlerClient() {
-  if (typeof navigator === "undefined") return false;
-  return /Googlebot|GoogleOther|bingbot|Slurp|DuckDuckBot|baiduspider|yandex/i.test(
-    navigator.userAgent
-  );
+export function isCrawlerClient(
+  userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "",
+) {
+  return CRAWLER_USER_AGENT_RE.test(userAgent || "");
 }
 
 export function hasAttemptedChunkReload() {
@@ -39,7 +41,11 @@ export function markChunkReloadAttempted() {
  * @returns {boolean} true when a reload was triggered
  */
 export function reloadOnceForChunkLoadError() {
-  if (typeof window === "undefined" || hasAttemptedChunkReload()) {
+  if (
+    typeof window === "undefined" ||
+    isCrawlerClient() ||
+    hasAttemptedChunkReload()
+  ) {
     return false;
   }
   markChunkReloadAttempted();
@@ -52,7 +58,7 @@ export function registerChunkLoadRecovery() {
   if (typeof window === "undefined") return;
 
   const tryRecover = (error) => {
-    if (!isChunkLoadError(error)) return;
+    if (!isChunkLoadError(error) || isCrawlerClient()) return;
     reloadOnceForChunkLoadError();
   };
 
