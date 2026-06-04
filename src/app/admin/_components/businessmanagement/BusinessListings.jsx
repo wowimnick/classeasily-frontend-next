@@ -949,7 +949,7 @@ const BusinessListings = () => {
           { signal }
         );
         if (response.success && response.data) {
-          setBusinesses(response.data.results);
+          setBusinesses(response.data.results || []);
           setPagination((prev) => ({
             ...prev,
             total: response.data.count,

@@ -1262,7 +1262,7 @@ const BookingsList = () => {
           signal,
         });
         if (response.success && response.data) {
-          setBookings(response.data.results);
+          setBookings(response.data.results || []);
           setPagination((prev) => ({
             ...prev,
             total: response.data.count,

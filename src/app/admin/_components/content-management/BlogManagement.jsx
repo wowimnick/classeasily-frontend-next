@@ -209,7 +209,7 @@ const BlogManagement = () => {
     };
     try {
       const res = await blogAdminService.getPosts(params);
-      setPosts(res.data.results);
+      setPosts(res.data.results || []);
       setPagination((prev) => ({ ...prev, total: res.data.count }));
     } catch (error) {
       message.error("Failed to fetch blog posts");
