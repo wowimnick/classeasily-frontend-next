@@ -3,12 +3,22 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import {
+  installChunkLoadRecovery,
+  shouldDropChunkLoadSentryEvent,
+} from "@/lib/chunk-load-error";
 
 Sentry.init({
   dsn: "https://0d1064e8c23f4dc484abbfcb18f15f2e@o4510502225444864.ingest.us.sentry.io/4511505805541376",
 
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
+  beforeSend(event) {
+    if (shouldDropChunkLoadSentryEvent(event)) {
+      return null;
+    }
+    return event;
+  },
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
@@ -27,5 +37,7 @@ Sentry.init({
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
 });
+
+installChunkLoadRecovery();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
