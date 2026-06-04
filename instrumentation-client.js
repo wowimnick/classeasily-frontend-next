@@ -1,5 +1,9 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
+import {
+  clearChunkReloadSession,
+  installChunkLoadRecovery,
+} from "./src/lib/chunk-load-recovery.js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
 
 const sentryOptions = getBaseSentryOptions();
@@ -13,6 +17,11 @@ if (sentryOptions) {
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
+if (typeof window !== "undefined") {
+  installChunkLoadRecovery();
+  clearChunkReloadSession(window.sessionStorage);
+}
 
 // Only initialize PostHog on production domain
 if (
