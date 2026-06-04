@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  isChunkLoadError,
+  isLikelyCrawlerClient,
+  tryRecoverFromChunkLoadError,
+} from "./src/lib/chunk-load-error.js";
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
@@ -9,6 +14,21 @@ if (sentryOptions) {
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+  });
+}
+
+function handleChunkLoadFailure(errorLike) {
+  if (!isChunkLoadError(errorLike)) return;
+  if (isLikelyCrawlerClient()) return;
+  tryRecoverFromChunkLoadError();
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (event) => {
+    handleChunkLoadFailure({ message: event?.message });
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    handleChunkLoadFailure(event?.reason);
   });
 }
 
