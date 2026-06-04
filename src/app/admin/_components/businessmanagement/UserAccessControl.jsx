@@ -61,7 +61,7 @@ import {
 } from "@/components/common/GlobalLoader";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import { adminColors as colors } from "../shared/adminColors";
-import { hexToRgba } from "../shared/adminUtils";
+import { hexToRgba, unwrapAdminPaginatedResults } from "../shared/adminUtils";
 import {
   TableSection,
   TableHeader,
@@ -638,7 +638,9 @@ const UserAccessControl = () => {
       const response = await verificationService.getVerificationRequests(
         params
       );
-      setVerificationRequests(response.success ? response.data?.results || [] : []);
+      setVerificationRequests(
+        response.success ? unwrapAdminPaginatedResults(response.data) : []
+      );
     } catch (e) {
       message.error("Error fetching requests");
     } finally {

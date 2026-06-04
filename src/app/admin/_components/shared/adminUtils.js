@@ -3,6 +3,16 @@ import utc from "dayjs/plugin/utc";
 
 dayjs.extend(utc);
 
+/**
+ * Normalize DRF paginated list responses for Ant Design Table dataSource.
+ * Accepts either { results: T[] } or a bare array; otherwise returns [].
+ */
+export function unwrapAdminPaginatedResults(data) {
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 /** Safe hex → rgba (matches guarded patterns used in PaymentManagement / ClassReviews) */
 export function hexToRgba(hex, alpha = 1) {
   if (!hex || typeof hex !== "string" || !hex.startsWith("#") || hex.length < 7) {
