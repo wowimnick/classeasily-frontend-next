@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { isChunkLoadError } from "./chunk-load-error.mjs";
 
 /**
  * Log and report App Router segment errors to Sentry.
@@ -9,5 +10,8 @@ export function captureRouteError(error, context) {
   } else {
     console.error(error);
   }
-  Sentry.captureException(error);
+  // Chunk failures are transient (stale deploy assets); recovery reload runs in instrumentation-client.
+  if (!isChunkLoadError(error)) {
+    Sentry.captureException(error);
+  }
 }
