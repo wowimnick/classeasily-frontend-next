@@ -1,4 +1,9 @@
 import * as Sentry from "@sentry/nextjs";
+import {
+  isChunkLoadError,
+  isLikelyBotUserAgent,
+  reloadOnceForChunkError,
+} from "@/lib/chunk-load-error";
 
 /**
  * Log and report App Router segment errors to Sentry.
@@ -9,5 +14,11 @@ export function captureRouteError(error, context) {
   } else {
     console.error(error);
   }
+
+  if (isChunkLoadError(error)) {
+    if (isLikelyBotUserAgent()) return;
+    if (reloadOnceForChunkError()) return;
+  }
+
   Sentry.captureException(error);
 }
