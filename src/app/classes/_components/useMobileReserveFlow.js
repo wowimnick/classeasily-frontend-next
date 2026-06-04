@@ -15,27 +15,16 @@ export const DRAWER_TRANSITION_MS = 150;
 /** Default participant count when slot allows more */
 export const DEFAULT_PARTICIPANTS = 2;
 
-/**
- * Total horizon for mobile availability (matches former “far future” fix).
- * Loaded in small chunks: first chunk returns quickly (same perceived speed as old 60d),
- * remaining chunks run in parallel so total wait ≈ one chunk, not one huge query.
- */
+/** Total horizon for mobile availability (matches former “far future” fix). */
 const MOBILE_AVAILABILITY_RANGE_DAYS = 540;
-const MOBILE_AVAILABILITY_CHUNK_DAYS = 60;
 
-function buildAvailabilityChunkSpecs(minSelectableDate, chunkDays, totalDays) {
-  const specs = [];
-  for (let offset = 0; offset < totalDays; offset += chunkDays) {
-    const rangeStart = new Date(minSelectableDate);
-    rangeStart.setDate(rangeStart.getDate() + offset);
-    const rangeEnd = new Date(rangeStart);
-    rangeEnd.setDate(rangeEnd.getDate() + chunkDays);
-    specs.push({
-      start_date: getLocalYYYYMMDD(rangeStart),
-      end_date: getLocalYYYYMMDD(rangeEnd),
-    });
-  }
-  return specs;
+function buildMobileAvailabilityRange(minSelectableDate) {
+  const rangeEnd = new Date(minSelectableDate);
+  rangeEnd.setDate(rangeEnd.getDate() + MOBILE_AVAILABILITY_RANGE_DAYS);
+  return {
+    start_date: getLocalYYYYMMDD(minSelectableDate),
+    end_date: getLocalYYYYMMDD(rangeEnd),
+  };
 }
 
 /**
@@ -88,11 +77,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     const optionId = optionToDisplayOnCard.optionId;
     let cancelled = false;
 
-    const specs = buildAvailabilityChunkSpecs(
-      mobileMinSelectableDate,
-      MOBILE_AVAILABILITY_CHUNK_DAYS,
-      MOBILE_AVAILABILITY_RANGE_DAYS,
-    );
+    const range = buildMobileAvailabilityRange(mobileMinSelectableDate);
 
     (async () => {
       setMobileSlotsLoading(true);
@@ -100,40 +85,19 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       setMobileAvailableSlots({});
 
       try {
-        const first = await scheduleService.getAvailabilityForOption(
+        const data = await scheduleService.getAvailabilityForOption(
           optionId,
-          specs[0],
+          range,
         );
         if (cancelled) return;
-        if (first && typeof first === "object") {
-          setMobileAvailableSlots(first);
-        }
-        setMobileSlotsLoading(false);
-
-        if (specs.length <= 1) return;
-
-        const rest = await Promise.all(
-          specs.slice(1).map((spec) =>
-            scheduleService
-              .getAvailabilityForOption(optionId, spec)
-              .catch((err) => {
-                console.error("Mobile availability chunk failed", err);
-                return {};
-              }),
-          ),
-        );
-        if (cancelled) return;
-        const merged = {};
-        for (const part of rest) {
-          if (part && typeof part === "object") Object.assign(merged, part);
-        }
-        if (Object.keys(merged).length > 0) {
-          setMobileAvailableSlots((prev) => ({ ...prev, ...merged }));
+        if (data && typeof data === "object") {
+          setMobileAvailableSlots(data);
         }
       } catch (e) {
         console.error("Mobile availability fetch failed", e);
         if (!cancelled) setMobileAvailabilityError(true);
-        setMobileSlotsLoading(false);
+      } finally {
+        if (!cancelled) setMobileSlotsLoading(false);
       }
     })();
 
