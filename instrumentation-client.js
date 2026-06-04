@@ -1,6 +1,12 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  isCrawlerChunkLoadSentryEvent,
+  setupChunkLoadRecovery,
+} from "./src/lib/chunk-load-recovery";
+
+setupChunkLoadRecovery();
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
@@ -9,6 +15,12 @@ if (sentryOptions) {
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+    beforeSend(event) {
+      if (isCrawlerChunkLoadSentryEvent(event)) {
+        return null;
+      }
+      return event;
+    },
   });
 }
 
