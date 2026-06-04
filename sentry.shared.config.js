@@ -1,3 +1,5 @@
+import { sentryBeforeSend } from "./src/lib/sentry-filters.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,23 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+  };
+}
+
+/** Client-only Sentry init (chunk recovery + noise filters). */
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) {
+    return null;
+  }
+  return {
+    ...base,
+    beforeSend: sentryBeforeSend,
+    ignoreErrors: [
+      /^Failed to load chunk\b/i,
+      /^Loading chunk \d+ failed/i,
+      /^ChunkLoadError\b/i,
+      /^Loading CSS chunk \d+ failed/i,
+    ],
   };
 }
