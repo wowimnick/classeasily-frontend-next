@@ -6,22 +6,32 @@ import quarterOfYear from "dayjs/plugin/quarterOfYear";
 dayjs.extend(quarterOfYear);
 
 export const TAX_DISCLAIMER =
-  "Estimates for your records, grouped by transaction date. Not tax advice — confirm with your accountant. Bank deposit dates may differ slightly; see Payouts for deposit reconciliation.";
+  "Estimates for your records, grouped by transaction date. Not tax advice — confirm with your accountant. " +
+  "When customers pay, HST is split between your class sales and ClassEasily's fee (ITC). " +
+  "Bank deposit dates may differ slightly; see Payouts for deposit reconciliation.";
+
+export const TAX_TABLE_INTRO =
+  "Customer payments include HST. Your share is HST on your sales; ClassEasily's share is HST on their fee — usually claimable as an ITC.";
 
 export const TAX_TOOLTIPS = {
+  salesPreTax:
+    "What customers paid for your classes before HST (after discounts and gift cards).",
+  hstOnYourSales:
+    "Your portion of the HST on customer payments — the part that goes with your class sales and is included in your net deposit. You generally remit this on your HST return (your accountant can confirm).",
+  commission:
+    "ClassEasily's platform fee on your sales, before HST. This is deducted before your payout.",
   hstOnCommission:
-    "ClassEasily charges 13% HST on its commission. You can usually claim this back as an Input Tax Credit on your HST return.",
-  hstCollected:
-    "The 13% HST included in what customers paid. You generally remit this to the CRA, less your input tax credits.",
-  salesPreTax: "Customer payments before HST (after discounts and gift cards).",
-  commission: "ClassEasily platform fee before HST, before card processing.",
-  netPayout: "Amount allocated to your business after fees and tax split.",
+    "13% HST ClassEasily charges on their fee. This is not extra tax on your classes — it's on their commission. You can usually claim it back as an Input Tax Credit (ITC).",
+  stripeFees:
+    "Estimated card processing (Stripe) deducted from your payout, not from ClassEasily's commission.",
+  netPayout:
+    "Estimated amount allocated to your business after ClassEasily fee, card processing, and the tax split above.",
   platformCommissionStat:
-    "Total platform commission for the period. HST on commission is shown in the monthly tax table below — claimable as an ITC.",
+    "Total ClassEasily fee for the period (before tax). HST on that fee is in the table below — usually claimable as an ITC.",
   reportTypeTax:
-    "One row per month with HST on commission (ITC) — best for reconciling bank deposits and tax filing.",
+    "One row per month: your sales, your HST, ClassEasily fee + ITC, and net deposit — best for taxes and bank reconciliation.",
   reportTypeDetailed:
-    "Per-booking rows with tax and commission columns for full accounting detail.",
+    "Per-booking rows with the same tax and fee columns as the monthly summary.",
   reportTypeFull: "Monthly tax summary plus daily trends, class breakdown, and every transaction.",
   periodPreset:
     "Choose a preset or use Custom to match the date range on the dashboard.",

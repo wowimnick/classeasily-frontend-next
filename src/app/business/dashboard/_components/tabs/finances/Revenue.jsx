@@ -70,7 +70,7 @@ import {
   formatDayjsRangeBadge,
 } from "../../shared/MetricPeriodBadge";
 import ExportReportModal from "./ExportReportModal";
-import { TAX_DISCLAIMER, TAX_TOOLTIPS } from "./revenueTaxCopy";
+import { TAX_DISCLAIMER, TAX_TABLE_INTRO, TAX_TOOLTIPS } from "./revenueTaxCopy";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -895,7 +895,7 @@ const Revenue = forwardRef((props, ref) => {
       {
         title: (
           <span>
-            Sales (Pre-Tax){" "}
+            Your sales (before tax){" "}
             <Tooltip title={TAX_TOOLTIPS.salesPreTax}>
               <Info
                 size={12}
@@ -912,8 +912,8 @@ const Revenue = forwardRef((props, ref) => {
       {
         title: (
           <span>
-            HST Collected{" "}
-            <Tooltip title={TAX_TOOLTIPS.hstCollected}>
+            HST on your sales{" "}
+            <Tooltip title={TAX_TOOLTIPS.hstOnYourSales}>
               <Info
                 size={12}
                 style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
@@ -921,15 +921,21 @@ const Revenue = forwardRef((props, ref) => {
             </Tooltip>
           </span>
         ),
-        dataIndex: "hst_collected",
-        key: "hst_collected",
+        dataIndex: "hst_on_your_sales",
+        key: "hst_on_your_sales",
         align: "right",
-        render: (v) => `$${Number(v).toFixed(2)}`,
+        render: (v, row) => {
+          const amt =
+            v != null
+              ? v
+              : (row.hst_collected ?? 0) - (row.hst_on_commission ?? 0);
+          return `$${Number(amt).toFixed(2)}`;
+        },
       },
       {
         title: (
           <span>
-            Commission{" "}
+            ClassEasily fee{" "}
             <Tooltip title={TAX_TOOLTIPS.commission}>
               <Info
                 size={12}
@@ -946,7 +952,7 @@ const Revenue = forwardRef((props, ref) => {
       {
         title: (
           <span style={{ fontWeight: 600 }}>
-            HST on Commission (ITC){" "}
+            HST on ClassEasily fee (ITC){" "}
             <Tooltip title={TAX_TOOLTIPS.hstOnCommission}>
               <Info
                 size={12}
@@ -967,7 +973,24 @@ const Revenue = forwardRef((props, ref) => {
       {
         title: (
           <span>
-            Net Payout{" "}
+            Card processing{" "}
+            <Tooltip title={TAX_TOOLTIPS.stripeFees}>
+              <Info
+                size={12}
+                style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "stripe_fees",
+        key: "stripe_fees",
+        align: "right",
+        render: (v) => `$${Number(v).toFixed(2)}`,
+      },
+      {
+        title: (
+          <span>
+            Net deposited to you{" "}
             <Tooltip title={TAX_TOOLTIPS.netPayout}>
               <Info
                 size={12}
@@ -1170,8 +1193,7 @@ const Revenue = forwardRef((props, ref) => {
               </ChartTitle>
             </ChartTitleRow>
             <ChartDescription>
-              Per-month HST on commission (ITC) and amounts collected — use Export
-              for a file to share with your accountant.
+              {TAX_TABLE_INTRO} Use Export for a file to share with your accountant.
             </ChartDescription>
           </ChartHeader>
           <Text
@@ -1195,7 +1217,7 @@ const Revenue = forwardRef((props, ref) => {
               columns={monthlyTaxColumns}
               pagination={false}
               size="small"
-              scroll={{ x: 720 }}
+              scroll={{ x: 960 }}
             />
           )}
         </ChartCard>
