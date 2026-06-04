@@ -1,3 +1,5 @@
+import { beforeSendSentryEvent } from "./src/lib/sentry-error-filters.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,11 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ignoreErrors: [
+      /^Failed to load chunk /,
+      /Loading chunk [\d]+ failed/,
+      /ChunkLoadError/,
+    ],
+    beforeSend: beforeSendSentryEvent,
   };
 }

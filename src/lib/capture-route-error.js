@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { shouldCaptureException } from "./sentry-error-filters";
 
 /**
  * Log and report App Router segment errors to Sentry.
@@ -9,5 +10,7 @@ export function captureRouteError(error, context) {
   } else {
     console.error(error);
   }
-  Sentry.captureException(error);
+  if (shouldCaptureException(error)) {
+    Sentry.captureException(error);
+  }
 }
