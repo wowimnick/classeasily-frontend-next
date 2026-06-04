@@ -22,6 +22,7 @@ const SearchFullScreen = dynamic(
 import ScrollRestorationHome from "@/components/ScrollRestorationHome";
 import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 import ImpersonationBanner from "@/components/header/ImpersonationBanner";
+import ChunkLoadRecovery from "@/components/ChunkLoadRecovery";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -82,6 +83,7 @@ export default function ClientProviders({ children }) {
 
   return (
     <StyledComponentsRegistry>
+      <ChunkLoadRecovery />
       <ConfigProvider
         theme={memoizedTheme}
         getPopupContainer={() => document.body}
