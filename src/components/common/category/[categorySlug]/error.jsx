@@ -1,6 +1,7 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
+import { captureRouteError } from "@/lib/capture-route-error";
 
 const ErrorWrapper = styled.div`
   display: flex;
@@ -42,6 +43,10 @@ const RetryButton = styled.button`
 `;
 
 export default function Error({ error, reset }) {
+  useEffect(() => {
+    captureRouteError(error, "Category page error:");
+  }, [error]);
+
   return (
     <ErrorWrapper>
       <ErrorTitle>Something went wrong!</ErrorTitle>

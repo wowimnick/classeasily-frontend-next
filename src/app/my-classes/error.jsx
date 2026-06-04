@@ -2,10 +2,11 @@
 
 import { useEffect } from "react";
 import { Button } from "antd";
+import { captureRouteError } from "@/lib/capture-route-error";
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    console.error(error);
+    captureRouteError(error);
   }, [error]);
 
   return (

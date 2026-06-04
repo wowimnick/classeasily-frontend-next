@@ -1,4 +1,18 @@
+import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
+import { getBaseSentryOptions } from "./sentry.shared.config";
+
+const sentryOptions = getBaseSentryOptions();
+if (sentryOptions) {
+  Sentry.init({
+    ...sentryOptions,
+    integrations: [Sentry.replayIntegration()],
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+  });
+}
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 
 // Only initialize PostHog on production domain
 if (
@@ -10,9 +24,8 @@ if (
     api_host: "/ingest",
     ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     defaults: "2025-11-30",
-    capture_exceptions: true,
+    capture_exceptions: false,
     debug: process.env.NODE_ENV === "development",
-    // Add session recording config with data masking
     session_recording: {
       maskTextSelector: ".user-email, .phone-number, .student-name",
       blockSelector: ".payment-details, .private-messages",

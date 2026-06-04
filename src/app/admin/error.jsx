@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import styled from "styled-components";
 import { Button, Result } from "antd";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
@@ -25,8 +26,7 @@ export default function AdminError({ error, reset }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error("Admin page error:", error);
+    captureRouteError(error, "Admin page error:");
   }, [error]);
 
   return (

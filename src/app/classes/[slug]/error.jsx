@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import styled from "styled-components";
 import { Alert, Button as AntButton } from "antd";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -17,6 +18,10 @@ const ErrorWrapper = styled.div`
 `;
 
 export default function Error({ error, reset }) {
+  useEffect(() => {
+    captureRouteError(error, "Class detail error:");
+  }, [error]);
+
   return (
     <>
       <ExploreHeader showOptionsWrapper={false} />

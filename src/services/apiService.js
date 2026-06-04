@@ -3107,18 +3107,31 @@ export const revenueService = {
       const queryParams = new URLSearchParams();
       if (params.startDate) queryParams.append("start_date", params.startDate);
       if (params.endDate) queryParams.append("end_date", params.endDate);
+      if (params.class_id) queryParams.append("class_id", params.class_id);
+      if (params.source && params.source !== "all")
+        queryParams.append("source", params.source);
+      if (params.report_type)
+        queryParams.append("report_type", params.report_type);
+      if (params.format) queryParams.append("format", params.format);
       const response = await axiosInstance.post(
         API_ENDPOINTS.REVENUE_ANALYTICS,
         {},
         { params: queryParams, responseType: "blob" },
       );
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const contentType = response.headers["content-type"] || "";
+      const blob = new Blob([response.data], {
+        type: contentType.includes("spreadsheet")
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "text/csv",
+      });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       const contentDisposition = response.headers["content-disposition"];
-      let filename = "revenue_report.csv";
+      let filename =
+        params.format === "xlsx" ? "revenue_report.xlsx" : "revenue_report.csv";
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
         if (filenameMatch && filenameMatch.length > 1)
           filename = filenameMatch[1];
       }

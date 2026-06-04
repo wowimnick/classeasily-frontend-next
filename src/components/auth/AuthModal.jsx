@@ -12,6 +12,7 @@ import { Modal, Form, Input, Button, Steps, ConfigProvider, Alert } from "antd";
 import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
@@ -436,7 +437,7 @@ const AuthModal = ({
 
       onClose();
     } catch (err) {
-      posthog.captureException(err);
+      Sentry.captureException(err);
       setError(err.message || "Incorrect email or password.");
     } finally {
       setLoading(false);
@@ -476,7 +477,7 @@ const AuthModal = ({
       onClose();
     } catch (err) {
       console.error("Google auth error:", err);
-      posthog.captureException(err);
+      Sentry.captureException(err);
       setError("Google Login Failed. Please try again.");
     } finally {
       setLoading(false);

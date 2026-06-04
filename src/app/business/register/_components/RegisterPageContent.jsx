@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth } from "@/lib/auth-client"; // Added useAuth import
+import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import axiosInstance from "@/lib/axiosInstance";
 import dynamic from "next/dynamic";
@@ -959,7 +960,7 @@ const RegisterPageContent = () => {
         message.success("Business registration submitted successfully!");
       }
     } catch (error) {
-      posthog.captureException(error);
+      Sentry.captureException(error);
       // Check for 401 Session Expired that failed auto-refresh
       if (error.response?.status === 401) {
         setIsSubmitting(false);

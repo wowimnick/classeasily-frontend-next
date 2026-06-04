@@ -1448,7 +1448,7 @@ const Overview = forwardRef((props, ref) => {
 
         <SectionHeader>
           <SectionLabel>Performance</SectionLabel>
-          <SectionHeading>Monthly Overview</SectionHeading>
+          <SectionHeading>Overview</SectionHeading>
         </SectionHeader>
 
  

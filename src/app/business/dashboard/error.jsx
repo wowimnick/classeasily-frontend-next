@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import { Result, Button } from "antd";
 import { AlertCircle } from "lucide-react";
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    console.error("Dashboard error:", error);
+    captureRouteError(error, "Dashboard error:");
   }, [error]);
 
   return (

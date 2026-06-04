@@ -38,6 +38,7 @@ import {
   Col,
   Divider,
   Grid,
+  Table,
 } from "antd";
 import message from "@/lib/message";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -68,6 +69,8 @@ import {
   MetricPeriodBadge,
   formatDayjsRangeBadge,
 } from "../../shared/MetricPeriodBadge";
+import ExportReportModal from "./ExportReportModal";
+import { TAX_DISCLAIMER, TAX_TOOLTIPS } from "./revenueTaxCopy";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -619,7 +622,10 @@ const Revenue = forwardRef((props, ref) => {
     revenue_trends: [],
     class_revenue: [],
     revenue_by_booking_type: [],
+    monthly_tax_breakdown: [],
   });
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [businessExperiences, setBusinessExperiences] = useState([]);
   const abortControllerRef = useRef(null);
   const fetchTimeoutRef = useRef(null);
@@ -737,37 +743,53 @@ const Revenue = forwardRef((props, ref) => {
     setFilterParams((prev) => ({ ...prev, source: value }));
   };
 
-  const handleExport = async () => {
+  const handleExportClick = () => {
     if (!filterParams.startDate || !filterParams.endDate) {
       message.warning("Please select date range.");
       return;
     }
+    setExportModalOpen(true);
+  };
+
+  const handleConfirmExport = async ({
+    reportType,
+    format,
+    startDate,
+    endDate,
+  }) => {
+    setExporting(true);
     message.loading({
       content: "Generating report...",
       key: "exportRevenue",
     });
     try {
       const result = await revenueService.exportRevenueReport({
-        startDate: filterParams.startDate.format("YYYY-MM-DD"),
-        endDate: filterParams.endDate.format("YYYY-MM-DD"),
+        startDate: startDate.format("YYYY-MM-DD"),
+        endDate: endDate.format("YYYY-MM-DD"),
         class_id: filterParams.classId || undefined,
+        source: filterParams.source || "all",
+        report_type: reportType,
+        format,
       });
       if (result.success) {
         message.success({
           content: "Report downloaded!",
           key: "exportRevenue",
         });
+        setExportModalOpen(false);
       } else {
         message.error({
           content: result.error || "Export failed.",
           key: "exportRevenue",
         });
       }
-    } catch (error) {
+    } catch {
       message.error({
         content: "An error occurred.",
         key: "exportRevenue",
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -803,6 +825,7 @@ const Revenue = forwardRef((props, ref) => {
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
       footer: "ClassEasily fee",
+      tooltip: TAX_TOOLTIPS.platformCommissionStat,
     },
     {
       key: "stripe_processing_fees",
@@ -859,6 +882,107 @@ const Revenue = forwardRef((props, ref) => {
   const metricsPeriodLabel = useMemo(
     () => formatDayjsRangeBadge(filterParams.startDate, filterParams.endDate),
     [filterParams.startDate, filterParams.endDate],
+  );
+
+  const monthlyTaxColumns = useMemo(
+    () => [
+      {
+        title: "Month",
+        dataIndex: "month",
+        key: "month",
+        render: (m) => dayjs(m + "-01").format("MMM YYYY"),
+      },
+      {
+        title: (
+          <span>
+            Sales (Pre-Tax){" "}
+            <Tooltip title={TAX_TOOLTIPS.salesPreTax}>
+              <Info
+                size={12}
+                style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "subtotal",
+        key: "subtotal",
+        align: "right",
+        render: (v) => `$${Number(v).toFixed(2)}`,
+      },
+      {
+        title: (
+          <span>
+            HST Collected{" "}
+            <Tooltip title={TAX_TOOLTIPS.hstCollected}>
+              <Info
+                size={12}
+                style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "hst_collected",
+        key: "hst_collected",
+        align: "right",
+        render: (v) => `$${Number(v).toFixed(2)}`,
+      },
+      {
+        title: (
+          <span>
+            Commission{" "}
+            <Tooltip title={TAX_TOOLTIPS.commission}>
+              <Info
+                size={12}
+                style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "commission",
+        key: "commission",
+        align: "right",
+        render: (v) => `$${Number(v).toFixed(2)}`,
+      },
+      {
+        title: (
+          <span style={{ fontWeight: 600 }}>
+            HST on Commission (ITC){" "}
+            <Tooltip title={TAX_TOOLTIPS.hstOnCommission}>
+              <Info
+                size={12}
+                style={{ color: "#ff385c", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "hst_on_commission",
+        key: "hst_on_commission",
+        align: "right",
+        render: (v) => (
+          <span style={{ fontWeight: 600, color: colors.primary }}>
+            ${Number(v).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        title: (
+          <span>
+            Net Payout{" "}
+            <Tooltip title={TAX_TOOLTIPS.netPayout}>
+              <Info
+                size={12}
+                style={{ color: "#9ca3af", cursor: "help", verticalAlign: "middle" }}
+              />
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "net_payout",
+        key: "net_payout",
+        align: "right",
+        render: (v) => `$${Number(v).toFixed(2)}`,
+      },
+    ],
+    [],
   );
 
   return (
@@ -950,11 +1074,11 @@ const Revenue = forwardRef((props, ref) => {
                   .includes(input.toLowerCase())
               }
             />
-            <Tooltip title="Export your report for a detailed breakdown.">
+            <Tooltip title="Download a tax summary or detailed revenue report.">
               <Button
                 type="primary"
                 icon={<Download size={16} />}
-                onClick={handleExport}
+                onClick={handleExportClick}
                 disabled={loading}
               >
                 Export
@@ -986,15 +1110,33 @@ const Revenue = forwardRef((props, ref) => {
                   </div>
                   <div>
                     <StatValue>
-                      {stat.prefix}
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value || 0 : 0}
-                        duration={800}
-                        numberFormatOptions={{
-                          maximumFractionDigits:
-                            stat.key === "total_gross_revenue" ? 0 : 2,
-                        }}
-                      />
+                      {stat.tooltip ? (
+                        <Tooltip title={stat.tooltip}>
+                          <span style={{ cursor: "help" }}>
+                            {stat.prefix}
+                            <NumberFlow
+                              value={isReadyForAnimation ? stat.value || 0 : 0}
+                              duration={800}
+                              numberFormatOptions={{
+                                maximumFractionDigits:
+                                  stat.key === "total_gross_revenue" ? 0 : 2,
+                              }}
+                            />
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <>
+                          {stat.prefix}
+                          <NumberFlow
+                            value={isReadyForAnimation ? stat.value || 0 : 0}
+                            duration={800}
+                            numberFormatOptions={{
+                              maximumFractionDigits:
+                                stat.key === "total_gross_revenue" ? 0 : 2,
+                            }}
+                          />
+                        </>
+                      )}
                     </StatValue>
                     {stat.change !== undefined && stat.change !== null ? (
                       <StatFooter style={{ display: "flex", alignItems: "center", flexWrap: "nowrap", gap: 4 }}>
@@ -1016,6 +1158,47 @@ const Revenue = forwardRef((props, ref) => {
             </StatCard>
           ))}
         </StatsGrid>
+
+        <Divider style={{ margin: "24px 0" }} />
+
+        <ChartCard>
+          <ChartHeader>
+            <ChartTitleRow>
+              <ChartTitle>
+                <Receipt size={15} style={{ color: colors.textSecondary }} />
+                Monthly tax breakdown (HST)
+              </ChartTitle>
+            </ChartTitleRow>
+            <ChartDescription>
+              Per-month HST on commission (ITC) and amounts collected — use Export
+              for a file to share with your accountant.
+            </ChartDescription>
+          </ChartHeader>
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, display: "block", marginBottom: 12 }}
+          >
+            {TAX_DISCLAIMER}
+          </Text>
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 4 }} />
+          ) : !analytics.monthly_tax_breakdown?.length ? (
+            <EmptyStateContainer style={{ minHeight: 120 }}>
+              <EmptyStateText>No tax data for this period</EmptyStateText>
+            </EmptyStateContainer>
+          ) : (
+            <Table
+              dataSource={analytics.monthly_tax_breakdown.map((row) => ({
+                ...row,
+                key: row.month,
+              }))}
+              columns={monthlyTaxColumns}
+              pagination={false}
+              size="small"
+              scroll={{ x: 720 }}
+            />
+          )}
+        </ChartCard>
 
         <Divider style={{ margin: "24px 0" }} />
 
@@ -1342,6 +1525,15 @@ const Revenue = forwardRef((props, ref) => {
             </ChartCard>
           </Col>
         </Row>
+
+        <ExportReportModal
+          open={exportModalOpen}
+          onCancel={() => setExportModalOpen(false)}
+          onExport={handleConfirmExport}
+          exporting={exporting}
+          dashboardStartDate={filterParams.startDate}
+          dashboardEndDate={filterParams.endDate}
+        />
       </DashboardWrapper>
   );
 });

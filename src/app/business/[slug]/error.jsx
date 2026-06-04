@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { Alert } from "antd";
+import { captureRouteError } from "@/lib/capture-route-error";
 import styled from "styled-components";
 
 const ErrorWrapper = styled.div`
@@ -10,6 +12,10 @@ const ErrorWrapper = styled.div`
 `;
 
 export default function Error({ error, reset }) {
+  useEffect(() => {
+    captureRouteError(error, "Business page error:");
+  }, [error]);
+
   return (
     <ErrorWrapper>
       <Alert

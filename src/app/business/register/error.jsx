@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, Suspense } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
 import { Alert, Button } from "antd";
@@ -34,7 +35,7 @@ const HeaderFallback = styled.div`
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    console.error("Registration page error:", error);
+    captureRouteError(error, "Registration page error:");
   }, [error]);
 
   return (

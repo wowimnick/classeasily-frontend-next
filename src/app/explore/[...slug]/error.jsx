@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import styled from "styled-components";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -49,7 +50,7 @@ const RetryButton = styled.button`
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    console.error("Explore page error:", error);
+    captureRouteError(error, "Explore page error:");
   }, [error]);
 
   return (

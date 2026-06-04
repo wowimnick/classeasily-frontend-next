@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import FooterSmart from "@/components/homepage/FooterSmart";
 import { ACCENT_DARK, BRAND_RED, HERO_MUTED } from "@/components/corporate/tokens";
 
 export default function ShortlistSegmentError({ error, reset }) {
   useEffect(() => {
-    console.error(error);
+    captureRouteError(error);
   }, [error]);
 
   return (

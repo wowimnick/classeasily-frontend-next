@@ -7,6 +7,7 @@ import styled, { createGlobalStyle } from "styled-components";
 import { useAuthModal } from "@/context/AuthContext";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { signOutFull } from "@/lib/auth-client";
+import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getRoleDisplayName } from "@/services/apiService.js";
 import { LordIcon } from "@/services/ReactUtils.jsx";
@@ -849,7 +850,7 @@ const CustomUserMenu = ({
       message.success("Logged out successfully");
     } catch (error) {
       console.error("Error during logout:", error);
-      posthog.captureException(error);
+      Sentry.captureException(error);
       message.error("Logout failed. Please try again.");
     }
   };

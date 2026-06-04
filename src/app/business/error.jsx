@@ -2,6 +2,7 @@
 
 import styled from "styled-components";
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 
 const ErrorWrapper = styled.div`
   min-height: 100vh;
@@ -45,7 +46,7 @@ const RetryButton = styled.button`
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    console.error(error);
+    captureRouteError(error);
   }, [error]);
 
   return (
