@@ -1,3 +1,5 @@
+import { sentryBeforeSend } from "./sentry.chunk-recovery.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,6 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend: sentryBeforeSend,
   };
 }
