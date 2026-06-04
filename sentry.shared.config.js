@@ -1,3 +1,10 @@
+import {
+  CHUNK_RELOAD_SESSION_KEY,
+  isBotChunkLoadSentryEvent,
+  isChunkLoadError,
+  tryRecoverFromChunkLoadError,
+} from "./src/lib/chunk-load-recovery.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +32,24 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      if (isBotChunkLoadSentryEvent(event)) {
+        return null;
+      }
+      const original = hint?.originalException;
+      if (!isChunkLoadError(original)) {
+        return event;
+      }
+      if (
+        typeof window !== "undefined" &&
+        sessionStorage.getItem(CHUNK_RELOAD_SESSION_KEY)
+      ) {
+        return event;
+      }
+      if (typeof window !== "undefined") {
+        tryRecoverFromChunkLoadError();
+      }
+      return null;
+    },
   };
 }
