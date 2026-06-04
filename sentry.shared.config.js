@@ -1,3 +1,8 @@
+import {
+  isChunkLoadError,
+  shouldSuppressChunkLoadErrorInSentry,
+} from "./src/lib/chunk-load-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +30,23 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      const original = hint?.originalException;
+      if (shouldSuppressChunkLoadErrorInSentry(original)) {
+        return null;
+      }
+      const message =
+        (typeof original === "string" ? original : null) ||
+        event?.exception?.values?.[0]?.value;
+      if (
+        typeof message === "string" &&
+        isChunkLoadError(message) &&
+        typeof window !== "undefined" &&
+        shouldSuppressChunkLoadErrorInSentry({ message })
+      ) {
+        return null;
+      }
+      return event;
+    },
   };
 }
