@@ -1,5 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
+import { registerChunkLoadRecovery } from "./src/lib/chunk-load-recovery";
+import { beforeSendClientEvent } from "./src/lib/sentry-client-filters";
 import { getBaseSentryOptions } from "./sentry.shared.config";
 
 const sentryOptions = getBaseSentryOptions();
@@ -9,8 +11,11 @@ if (sentryOptions) {
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+    beforeSend: beforeSendClientEvent,
   });
 }
+
+registerChunkLoadRecovery();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 
