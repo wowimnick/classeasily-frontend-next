@@ -415,21 +415,27 @@ const RolesManagement = () => {
     ])
       .then(([rolesResponse, permsResponse]) => {
         if (rolesResponse.success) {
+          const rolesList = Array.isArray(rolesResponse.data)
+            ? rolesResponse.data
+            : [];
           setRoles(
-            [...rolesResponse.data].sort(
-              (a, b) => b.hierarchy_level - a.hierarchy_level
+            [...rolesList].sort(
+              (a, b) => (b.hierarchy_level ?? 0) - (a.hierarchy_level ?? 0)
             )
           );
         } else {
           message.error("Failed to fetch roles");
         }
         if (permsResponse.success) {
-          setPermissionGroups(permsResponse.data);
+          setPermissionGroups(
+            Array.isArray(permsResponse.data) ? permsResponse.data : []
+          );
         } else {
           message.error("Failed to fetch permissions");
         }
       })
       .catch((err) => {
+        console.error("Error fetching roles and permissions:", err);
         message.error("An error occurred while fetching data.");
       })
       .finally(() => {
@@ -600,17 +606,26 @@ const RolesManagement = () => {
 
   const allPermissionIds = useMemo(
     () =>
-      permissionGroups.flatMap((group) => group.permissions.map((p) => p.id)),
+      (Array.isArray(permissionGroups) ? permissionGroups : []).flatMap(
+        (group) =>
+          Array.isArray(group?.permissions)
+            ? group.permissions.map((p) => p.id)
+            : []
+      ),
     [permissionGroups]
   );
 
   const filteredPermissionGroups = useMemo(() => {
-    if (!permissionSearchText) return permissionGroups;
+    const groups = Array.isArray(permissionGroups) ? permissionGroups : [];
+    if (!permissionSearchText) return groups;
     const lowercasedFilter = permissionSearchText.toLowerCase();
 
-    return permissionGroups
+    return groups
       .map((group) => {
-        const filteredPermissions = group.permissions.filter(
+        const permissions = Array.isArray(group?.permissions)
+          ? group.permissions
+          : [];
+        const filteredPermissions = permissions.filter(
           (p) =>
             p.name.toLowerCase().includes(lowercasedFilter) ||
             (p.description || "").toLowerCase().includes(lowercasedFilter)

@@ -431,6 +431,25 @@ export const publicAnalyticsService = {
   },
 };
 
+const toAdminList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+};
+
+const toPermissionGroups = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.groups)) return data.groups;
+  if (data && typeof data === "object") {
+    return Object.entries(data).map(([name, permissions]) => ({
+      name,
+      permissions: Array.isArray(permissions) ? permissions : [],
+    }));
+  }
+  return [];
+};
+
 export const userAdminService = {
   impersonateUser: async (userId) => {
     if (!userId) {
@@ -582,7 +601,7 @@ export const userAdminService = {
   getRoles: async () => {
     try {
       const response = await axiosInstance.get("/admin/roles/");
-      return { success: true, data: response.data };
+      return { success: true, data: toAdminList(response.data) };
     } catch (error) {
       console.error("Error fetching roles:", error);
       return { success: false, error: error.message };
@@ -796,7 +815,7 @@ export const roleService = {
       const response = await axiosInstance.get("/admin/roles/", { params });
       return {
         success: true,
-        data: response.data,
+        data: toAdminList(response.data),
       };
     } catch (error) {
       console.error("Error fetching roles:", error);
@@ -922,7 +941,7 @@ export const roleService = {
       const response = await axiosInstance.get("/admin/roles/permissions/");
       return {
         success: true,
-        data: response.data,
+        data: toPermissionGroups(response.data),
       };
     } catch (error) {
       console.error("Error fetching permissions:", error);
@@ -2695,9 +2714,8 @@ export const blogAdminService = {
   // Category Management
   getCategories: async () => {
     try {
-      // This endpoint returns a flat array, not paginated data
       const response = await axiosInstance.get("/admin/blog/categories/");
-      return { success: true, data: response.data };
+      return { success: true, data: toAdminList(response.data) };
     } catch (error) {
       console.error("Error fetching blog categories:", error);
       return {

@@ -221,8 +221,14 @@ const BlogManagement = () => {
   const fetchCategories = useCallback(async () => {
     try {
       const res = await blogAdminService.getCategories();
-      setCategories(res.data);
+      if (res.success) {
+        setCategories(Array.isArray(res.data) ? res.data : []);
+      } else {
+        setCategories([]);
+        message.error(res.error || "Failed to fetch categories");
+      }
     } catch (error) {
+      setCategories([]);
       message.error("Failed to fetch categories");
     }
   }, []);
