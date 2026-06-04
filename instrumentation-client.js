@@ -1,6 +1,16 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  clearStaleChunkReloadGuard,
+  installStaleChunkRecovery,
+  sentryBeforeSendForStaleChunks,
+} from "./src/lib/stale-chunk-recovery.js";
+
+if (typeof window !== "undefined") {
+  clearStaleChunkReloadGuard();
+  installStaleChunkRecovery();
+}
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
@@ -9,6 +19,9 @@ if (sentryOptions) {
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+    beforeSend(event, hint) {
+      return sentryBeforeSendForStaleChunks(event, hint);
+    },
   });
 }
 
