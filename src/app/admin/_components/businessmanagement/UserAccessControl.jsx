@@ -638,7 +638,13 @@ const UserAccessControl = () => {
       const response = await verificationService.getVerificationRequests(
         params
       );
-      setVerificationRequests(response.success ? response.data?.results || [] : []);
+      const data = response.data;
+      const list = Array.isArray(data?.results)
+        ? data.results
+        : Array.isArray(data)
+          ? data
+          : [];
+      setVerificationRequests(response.success ? list : []);
     } catch (e) {
       message.error("Error fetching requests");
     } finally {
@@ -695,9 +701,13 @@ const UserAccessControl = () => {
             page_size: 20,
             ordering: "-timestamp",
           });
-          setUserActivity(
-            activityResponse.success ? activityResponse.data.results || [] : []
-          );
+          const activityData = activityResponse.data;
+          const activityList = Array.isArray(activityData?.results)
+            ? activityData.results
+            : Array.isArray(activityData)
+              ? activityData
+              : [];
+          setUserActivity(activityResponse.success ? activityList : []);
         }
       } else {
         message.error("Failed to fetch full request details.");
