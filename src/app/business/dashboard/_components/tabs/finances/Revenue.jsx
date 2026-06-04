@@ -319,7 +319,6 @@ const ChartCard = styled(Card)`
 const ChartHeader = styled.div`
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
 `;
 
 const ChartTitleRow = styled.div`
