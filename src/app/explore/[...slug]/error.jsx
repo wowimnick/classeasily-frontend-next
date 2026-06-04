@@ -3,6 +3,7 @@
 
 import { useEffect } from "react";
 import { captureRouteError } from "@/lib/capture-route-error";
+import { isChunkLoadError } from "@/lib/chunk-load-error";
 import styled from "styled-components";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -62,7 +63,17 @@ export default function Error({ error, reset }) {
       <ErrorMessage>
         We couldn't load the classes. Please try again.
       </ErrorMessage>
-      <RetryButton onClick={() => reset()}>Try again</RetryButton>
+      <RetryButton
+        onClick={() => {
+          if (isChunkLoadError(error)) {
+            window.location.reload();
+            return;
+          }
+          reset();
+        }}
+      >
+        Try again
+      </RetryButton>
       <Link href="/" style={{ marginTop: "1rem", color: "#717171" }}>
         Go back home
       </Link>
