@@ -1,3 +1,9 @@
+import {
+  isLikelyCrawlerFromSentryEvent,
+  recoverFromChunkLoadError,
+  shouldDropChunkLoadSentryEvent,
+} from "./src/lib/chunk-load-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +31,28 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+  };
+}
+
+/** Client-only Sentry options (chunk recovery + noise filtering). */
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) {
+    return null;
+  }
+  return {
+    ...base,
+    beforeSend(event, hint) {
+      if (shouldDropChunkLoadSentryEvent(event, hint)) {
+        if (
+          typeof window !== "undefined" &&
+          !isLikelyCrawlerFromSentryEvent(event)
+        ) {
+          recoverFromChunkLoadError();
+        }
+        return null;
+      }
+      return event;
+    },
   };
 }
