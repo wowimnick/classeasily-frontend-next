@@ -1,3 +1,5 @@
+import { shouldDropChunkLoadSentryEvent } from "./src/lib/chunk-load-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,16 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ignoreErrors: [
+      /^Failed to load chunk/i,
+      /^Loading chunk [\da-f]+ failed/i,
+      /^ChunkLoadError/i,
+    ],
+    beforeSend(event, hint) {
+      if (shouldDropChunkLoadSentryEvent(event, hint)) {
+        return null;
+      }
+      return event;
+    },
   };
 }
