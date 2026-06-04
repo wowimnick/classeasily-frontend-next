@@ -67,32 +67,38 @@ export function shouldDropChunkLoadSentryEvent(event, hint) {
 }
 
 /**
+ * Reload once when a stale chunk is detected (skipped for crawlers).
+ * @returns {boolean} true when a reload was triggered
+ */
+export function tryRecoverChunkLoadError(error) {
+  if (typeof window === "undefined") return false;
+  if (!isChunkLoadError(error)) return false;
+  if (isLikelyCrawler()) return false;
+
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_SESSION_KEY)) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_SESSION_KEY, "1");
+  } catch {
+    return false;
+  }
+
+  window.location.reload();
+  return true;
+}
+
+/**
  * On stale chunk references (common right after a deploy), reload once so the
  * browser picks up the current build's asset manifest.
  */
 export function attemptChunkLoadRecovery() {
   if (typeof window === "undefined") return () => {};
 
-  const tryRecover = (error) => {
-    if (!isChunkLoadError(error)) return;
-    if (isLikelyCrawler()) return;
-
-    try {
-      if (sessionStorage.getItem(CHUNK_RELOAD_SESSION_KEY)) return;
-      sessionStorage.setItem(CHUNK_RELOAD_SESSION_KEY, "1");
-    } catch {
-      return;
-    }
-
-    window.location.reload();
-  };
-
   const onError = (event) => {
-    tryRecover(event?.error || event?.message);
+    tryRecoverChunkLoadError(event?.error || event?.message);
   };
 
   const onRejection = (event) => {
-    tryRecover(event?.reason);
+    tryRecoverChunkLoadError(event?.reason);
   };
 
   window.addEventListener("error", onError);
