@@ -965,9 +965,10 @@ export const verificationService = {
       const response = await axiosInstance.get("/admin/verification/", {
         params,
       });
+      const rows = response.data?.results ?? response.data;
       return {
         success: true,
-        data: response.data,
+        data: Array.isArray(rows) ? rows : [],
       };
     } catch (error) {
       console.error("Error fetching verification requests:", error);
