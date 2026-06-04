@@ -3112,7 +3112,7 @@ export const revenueService = {
         queryParams.append("source", params.source);
       if (params.report_type)
         queryParams.append("report_type", params.report_type);
-      if (params.format) queryParams.append("format", params.format);
+      if (params.format) queryParams.append("export_format", params.format);
       const response = await axiosInstance.post(
         API_ENDPOINTS.REVENUE_ANALYTICS,
         {},
