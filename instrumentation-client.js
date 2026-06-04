@@ -1,6 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
+import {
+  installChunkLoadRecovery,
+  shouldDropChunkLoadSentryEvent,
+} from "./src/lib/chunkLoadRecovery.js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
+
+if (typeof window !== "undefined") {
+  installChunkLoadRecovery();
+}
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
@@ -9,6 +17,17 @@ if (sentryOptions) {
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+    ignoreErrors: [
+      /^Failed to load chunk\b/i,
+      /^Loading chunk \d+ failed/i,
+      /^ChunkLoadError\b/i,
+    ],
+    beforeSend(event, hint) {
+      if (shouldDropChunkLoadSentryEvent(event, hint?.originalException)) {
+        return null;
+      }
+      return event;
+    },
   });
 }
 
