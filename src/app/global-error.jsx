@@ -2,9 +2,25 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import {
+  isChunkLoadError,
+  shouldDropChunkLoadSentryEvent,
+  tryRecoverChunkLoadError,
+} from "@/lib/chunk-load-error";
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
+    if (isChunkLoadError(error)) {
+      tryRecoverChunkLoadError(error);
+      if (
+        shouldDropChunkLoadSentryEvent(
+          { exception: { values: [{ value: error?.message }] } },
+          { originalException: error },
+        )
+      ) {
+        return;
+      }
+    }
     Sentry.captureException(error);
   }, [error]);
 
