@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
-import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  getBaseSentryOptions,
+  setupChunkLoadRecovery,
+} from "./sentry.shared.config";
+
+setupChunkLoadRecovery();
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
