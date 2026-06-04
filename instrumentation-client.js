@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
+import { registerChunkLoadRecovery } from "./src/lib/chunk-load-error.js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
 
 const sentryOptions = getBaseSentryOptions();
@@ -11,6 +12,8 @@ if (sentryOptions) {
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
   });
 }
+
+registerChunkLoadRecovery();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 

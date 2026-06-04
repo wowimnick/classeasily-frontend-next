@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  isChunkLoadError,
+} from "../lib/chunk-load-error.js";
+
+test("isChunkLoadError detects Turbopack chunk failures", () => {
+  const error = new Error(
+    "Failed to load chunk /_next/static/chunks/25d5818057eb0fb6.js?dpl=dpl_abc from module 964893",
+  );
+  assert.equal(isChunkLoadError(error), true);
+});
+
+test("isChunkLoadError detects webpack-style chunk failures", () => {
+  assert.equal(isChunkLoadError(new Error("Loading chunk 42 failed.")), true);
+});
+
+test("isChunkLoadError follows error.cause", () => {
+  const error = new Error("wrapper");
+  error.cause = new Error("Failed to load chunk /_next/static/chunks/foo.js");
+  assert.equal(isChunkLoadError(error), true);
+});
+
+test("isChunkLoadError ignores unrelated errors", () => {
+  assert.equal(isChunkLoadError(new Error("Network request failed")), false);
+  assert.equal(isChunkLoadError(null), false);
+});
