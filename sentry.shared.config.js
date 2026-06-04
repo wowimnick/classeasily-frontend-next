@@ -1,3 +1,8 @@
+import {
+  isChunkLoadError,
+  shouldDropChunkLoadSentryEvent,
+} from "./src/lib/chunkLoadError.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -27,3 +32,26 @@ export function getBaseSentryOptions() {
     enabled: true,
   };
 }
+
+/** Client-only: suppress deploy-time chunk skew noise and recover in-browser. */
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) return null;
+  return {
+    ...base,
+    ignoreErrors: [
+      "Failed to load chunk",
+      "Loading chunk",
+      "ChunkLoadError",
+      /^Failed to load chunk .+ from module/,
+    ],
+    beforeSend(event, hint) {
+      if (shouldDropChunkLoadSentryEvent(event, hint)) {
+        return null;
+      }
+      return event;
+    },
+  };
+}
+
+export { isChunkLoadError, shouldDropChunkLoadSentryEvent };
