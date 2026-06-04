@@ -675,7 +675,7 @@ const PayoutsList = () => {
           signal,
         });
         if (response.success && response.data) {
-          setPayouts(response.data.results);
+          setPayouts(response.data.results || []);
           setPagination((prev) => ({ ...prev, total: response.data.count }));
         } else if (!signal.aborted) {
           message.error(response.error || "Failed to load payouts");

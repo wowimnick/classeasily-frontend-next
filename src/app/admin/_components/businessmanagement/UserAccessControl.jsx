@@ -638,7 +638,7 @@ const UserAccessControl = () => {
       const response = await verificationService.getVerificationRequests(
         params
       );
-      setVerificationRequests(response.success ? response.data || [] : []);
+      setVerificationRequests(response.success ? response.data?.results || [] : []);
     } catch (e) {
       message.error("Error fetching requests");
     } finally {
