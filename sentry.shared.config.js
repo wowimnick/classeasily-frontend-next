@@ -1,3 +1,5 @@
+import { shouldDropChunkLoadSentryEvent } from "./sentry.chunk-errors.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,21 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+  };
+}
+
+/** Client-only Sentry options (chunk deploy recovery + noise filtering). */
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) return null;
+
+  return {
+    ...base,
+    beforeSend(event) {
+      if (shouldDropChunkLoadSentryEvent(event)) {
+        return null;
+      }
+      return event;
+    },
   };
 }
