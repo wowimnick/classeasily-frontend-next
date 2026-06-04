@@ -1,3 +1,5 @@
+import { shouldDropChunkLoadErrorFromSentry } from "./src/lib/chunk-load-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -12,6 +14,15 @@ export function getSentryEnvironment() {
 
 export function getSentryDsn() {
   return process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || "";
+}
+
+export function getClientSentryBeforeSend() {
+  return (event, hint) => {
+    if (shouldDropChunkLoadErrorFromSentry(event, hint)) {
+      return null;
+    }
+    return event;
+  };
 }
 
 export function getBaseSentryOptions() {
