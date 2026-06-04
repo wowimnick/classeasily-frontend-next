@@ -14,6 +14,13 @@ export function getSentryDsn() {
   return process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || "";
 }
 
+/** Post-deploy stale chunk references — recovered client-side, not app bugs. */
+export const CHUNK_LOAD_IGNORE_ERRORS = [
+  /Failed to load chunk/i,
+  /Loading chunk [\da-f]+ failed/i,
+  /ChunkLoadError/i,
+];
+
 export function getBaseSentryOptions() {
   const dsn = getSentryDsn();
   if (!dsn) {
@@ -25,5 +32,6 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ignoreErrors: CHUNK_LOAD_IGNORE_ERRORS,
   };
 }
