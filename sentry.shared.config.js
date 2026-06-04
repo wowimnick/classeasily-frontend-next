@@ -1,3 +1,9 @@
+import {
+  isBotUserAgent,
+  isChunkLoadError,
+  recoverFromChunkLoadError,
+} from "./src/lib/chunk-load-error.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +31,50 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+  };
+}
+
+/** Transient chunk failures after deployments — recovered client-side when possible. */
+export function getChunkLoadIgnoreErrors() {
+  return [
+    /^Loading chunk \d+ failed/i,
+    /^Failed to load chunk/i,
+    /ChunkLoadError/i,
+  ];
+}
+
+/**
+ * Client-only hook: auto-reload once on stale chunks and drop bot/crawler noise.
+ */
+export function getClientSentryBeforeSend() {
+  return (event, hint) => {
+    const error = hint?.originalException;
+    const message = event?.message || error?.message || "";
+    const isChunkError = isChunkLoadError(error) || isChunkLoadError(message);
+
+    if (isChunkError) {
+      const userAgent =
+        typeof navigator !== "undefined" ? navigator.userAgent : "";
+      if (isBotUserAgent(userAgent)) {
+        return null;
+      }
+      if (recoverFromChunkLoadError()) {
+        return null;
+      }
+    }
+
+    return event;
+  };
+}
+
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) {
+    return null;
+  }
+  return {
+    ...base,
+    ignoreErrors: getChunkLoadIgnoreErrors(),
+    beforeSend: getClientSentryBeforeSend(),
   };
 }

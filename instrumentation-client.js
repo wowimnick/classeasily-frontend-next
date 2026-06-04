@@ -1,14 +1,28 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
-import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  isBotUserAgent,
+  isChunkLoadError,
+  recoverFromChunkLoadError,
+} from "./src/lib/chunk-load-error.js";
+import { getClientSentryOptions } from "./sentry.shared.config";
 
-const sentryOptions = getBaseSentryOptions();
+const sentryOptions = getClientSentryOptions();
 if (sentryOptions) {
   Sentry.init({
     ...sentryOptions,
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (event) => {
+    if (!isChunkLoadError(event.reason)) return;
+    event.preventDefault();
+    if (isBotUserAgent(navigator.userAgent)) return;
+    recoverFromChunkLoadError();
   });
 }
 
