@@ -1,3 +1,5 @@
+import { sentryBeforeSend } from "./src/lib/sentry-filters.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,17 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+  };
+}
+
+/** Client-only options: filter crawler chunk noise and keep shared sampling. */
+export function getClientSentryOptions() {
+  const base = getBaseSentryOptions();
+  if (!base) {
+    return null;
+  }
+  return {
+    ...base,
+    beforeSend: sentryBeforeSend,
   };
 }
