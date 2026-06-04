@@ -1,3 +1,8 @@
+import {
+  registerChunkLoadRecovery,
+  shouldDropChunkLoadSentryEvent,
+} from "./src/lib/sentry-chunk-errors.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +30,17 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      if (shouldDropChunkLoadSentryEvent(event, hint)) {
+        return null;
+      }
+      return event;
+    },
   };
+}
+
+/** Client-only: reload once when a stale JS chunk fails after deploy. */
+export function initClientSentryExtras() {
+  if (typeof window === "undefined") return;
+  registerChunkLoadRecovery();
 }
