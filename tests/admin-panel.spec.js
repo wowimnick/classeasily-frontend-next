@@ -14,4 +14,9 @@ test.describe('Admin panel', () => {
     await navigateToAdminTab(page, 'users');
     await expect(page.locator('body')).toBeVisible({ timeout: 20000 });
   });
+
+  test('admin business-verification tab shell loads', async ({ page }) => {
+    await navigateToAdminTab(page, 'business-verification');
+    await expect(page.locator('body')).toBeVisible({ timeout: 20000 });
+  });
 });
