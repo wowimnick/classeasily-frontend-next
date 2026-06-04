@@ -1,11 +1,11 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { captureRouteError } from "@/lib/capture-route-error";
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    captureRouteError(error, "Global error:");
   }, [error]);
 
   return (
