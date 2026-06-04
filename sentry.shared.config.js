@@ -1,3 +1,5 @@
+import { shouldDropSentryEvent } from "./src/lib/sentry-filters.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,11 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      if (shouldDropSentryEvent(event, hint)) {
+        return null;
+      }
+      return event;
+    },
   };
 }
