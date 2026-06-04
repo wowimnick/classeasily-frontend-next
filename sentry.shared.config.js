@@ -27,3 +27,28 @@ export function getBaseSentryOptions() {
     enabled: true,
   };
 }
+
+/**
+ * Client-only Sentry options (beforeSend needs browser APIs).
+ * @param {typeof import("./src/lib/chunkLoadRecovery.js")} chunkLoadRecovery
+ */
+export function getClientSentryOptions(chunkLoadRecovery) {
+  const base = getBaseSentryOptions();
+  if (!base) return null;
+
+  return {
+    ...base,
+    beforeSend(event, hint) {
+      if (
+        typeof window !== "undefined" &&
+        chunkLoadRecovery.shouldDropChunkLoadSentryEvent(event, hint, {
+          userAgent: navigator.userAgent,
+          storage: window.sessionStorage,
+        })
+      ) {
+        return null;
+      }
+      return event;
+    },
+  };
+}
