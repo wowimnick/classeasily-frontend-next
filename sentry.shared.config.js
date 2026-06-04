@@ -14,7 +14,7 @@ export function getSentryDsn() {
   return process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || "";
 }
 
-export function getBaseSentryOptions() {
+export function getBaseSentryOptions({ beforeSend } = {}) {
   const dsn = getSentryDsn();
   if (!dsn) {
     return null;
@@ -25,5 +25,6 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ...(beforeSend ? { beforeSend } : {}),
   };
 }
