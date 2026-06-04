@@ -1,3 +1,5 @@
+import { isChunkLoadSentryEvent } from "./src/lib/chunk-load-recovery.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,16 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    ignoreErrors: [
+      /^Failed to load chunk\b/i,
+      /^Loading chunk [\d]+ failed/i,
+      /^ChunkLoadError\b/i,
+    ],
+    beforeSend(event) {
+      if (isChunkLoadSentryEvent(event)) {
+        return null;
+      }
+      return event;
+    },
   };
 }
