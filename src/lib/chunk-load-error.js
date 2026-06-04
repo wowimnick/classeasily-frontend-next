@@ -3,6 +3,19 @@ const CHUNK_RELOAD_SESSION_KEY = "ce_chunk_reload_attempted";
 const CHUNK_LOAD_MESSAGE_RE =
   /Failed to load chunk|Loading chunk \d+ failed|ChunkLoadError|Loading CSS chunk/i;
 
+const CRAWLER_BROWSER_NAMES = new Set([
+  "GoogleOther",
+  "Googlebot",
+  "bingbot",
+  "Slurp",
+  "DuckDuckBot",
+  "Baiduspider",
+  "YandexBot",
+]);
+
+const CRAWLER_UA =
+  /bot|crawler|spider|googlebot|bingpreview|slurp|duckduckbot|baiduspider|yandexbot/i;
+
 /** Detect Next.js / Turbopack dynamic import failures after a new deployment. */
 export function isChunkLoadError(error) {
   if (!error) return false;
@@ -15,12 +28,31 @@ export function isChunkLoadError(error) {
   return name === "ChunkLoadError";
 }
 
+export function isChunkLoadSentryEvent(event) {
+  const exceptionMessage = event?.exception?.values?.[0]?.value;
+  if (exceptionMessage && CHUNK_LOAD_MESSAGE_RE.test(exceptionMessage)) {
+    return true;
+  }
+  const message = event?.message;
+  return typeof message === "string" && CHUNK_LOAD_MESSAGE_RE.test(message);
+}
+
+export function isLikelyCrawlerFromSentryEvent(event) {
+  const browserName = event?.tags?.browser || event?.contexts?.browser?.name;
+  if (browserName && CRAWLER_BROWSER_NAMES.has(browserName)) {
+    return true;
+  }
+  const userAgent =
+    event?.request?.headers?.["User-Agent"] ||
+    event?.request?.headers?.["user-agent"] ||
+    "";
+  return CRAWLER_UA.test(userAgent);
+}
+
 /** Known crawlers that often hit stale HTML during deploys (not actionable in Sentry). */
 export function isCrawlerClient() {
   if (typeof navigator === "undefined") return false;
-  return /Googlebot|GoogleOther|bingbot|Slurp|DuckDuckBot|baiduspider|yandex/i.test(
-    navigator.userAgent
-  );
+  return CRAWLER_UA.test(navigator.userAgent);
 }
 
 export function hasAttemptedChunkReload() {
@@ -39,7 +71,11 @@ export function markChunkReloadAttempted() {
  * @returns {boolean} true when a reload was triggered
  */
 export function reloadOnceForChunkLoadError() {
-  if (typeof window === "undefined" || hasAttemptedChunkReload()) {
+  if (
+    typeof window === "undefined" ||
+    hasAttemptedChunkReload() ||
+    isCrawlerClient()
+  ) {
     return false;
   }
   markChunkReloadAttempted();

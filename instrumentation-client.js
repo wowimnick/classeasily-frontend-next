@@ -3,6 +3,8 @@ import posthog from "posthog-js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
 import { registerChunkLoadRecovery } from "./src/lib/chunk-load-error.js";
 
+registerChunkLoadRecovery();
+
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
   Sentry.init({
@@ -14,8 +16,6 @@ if (sentryOptions) {
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
-
-registerChunkLoadRecovery();
 
 // Only initialize PostHog on production domain
 if (
