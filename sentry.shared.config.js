@@ -1,3 +1,5 @@
+import { shouldDropSentryEvent } from "./src/lib/chunkLoadRecovery.js";
+
 /**
  * Shared Sentry options for client, server, and edge runtimes.
  */
@@ -25,5 +27,16 @@ export function getBaseSentryOptions() {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     sendDefaultPii: false,
     enabled: true,
+    beforeSend(event, hint) {
+      if (
+        typeof window !== "undefined" &&
+        shouldDropSentryEvent(event, hint, {
+          storage: window.sessionStorage,
+        })
+      ) {
+        return null;
+      }
+      return event;
+    },
   };
 }
