@@ -1,6 +1,12 @@
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getBaseSentryOptions } from "./sentry.shared.config";
+import {
+  clearChunkRecoveryAttempt,
+  isChunkLoadError,
+  isCrawlerUserAgent,
+  tryRecoverFromChunkLoadError,
+} from "./src/lib/chunk-load-error.js";
 
 const sentryOptions = getBaseSentryOptions();
 if (sentryOptions) {
@@ -13,6 +19,22 @@ if (sentryOptions) {
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
+if (typeof window !== "undefined") {
+  const handleChunkFailure = (error) => {
+    if (!isChunkLoadError(error)) return;
+    if (isCrawlerUserAgent(navigator.userAgent)) return;
+    tryRecoverFromChunkLoadError();
+  };
+
+  window.addEventListener("load", clearChunkRecoveryAttempt);
+  window.addEventListener("error", (event) => {
+    handleChunkFailure(event.error ?? event.message);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    handleChunkFailure(event.reason);
+  });
+}
 
 // Only initialize PostHog on production domain
 if (

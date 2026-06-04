@@ -2,9 +2,22 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import {
+  isChunkLoadError,
+  isCrawlerUserAgent,
+  tryRecoverFromChunkLoadError,
+} from "@/lib/chunk-load-error";
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
+    if (isChunkLoadError(error)) {
+      if (isCrawlerUserAgent(navigator.userAgent)) {
+        return;
+      }
+      if (tryRecoverFromChunkLoadError()) {
+        return;
+      }
+    }
     Sentry.captureException(error);
   }, [error]);
 
