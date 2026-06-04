@@ -42,6 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# eslint
+.eslintcache
+.node-compile-cache/
+
 # SST
 .sst/
 .open-next/
@@ -60,3 +64,4 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 *.Identifier
+/.node-compile-cache-test

@@ -7,7 +7,7 @@
     "prebuild": "node scripts/generate-corporate-provider-logos.mjs && node scripts/generate-location-presets.mjs && node scripts/generate-i-want-collections.mjs",
     "build": "next build --debug",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "NODE_COMPILE_CACHE=./.node-compile-cache eslint --cache --cache-location .eslintcache",
     "analyze": "ANALYZE=true next build --webpack",
     "test:e2e": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
@@ -17,8 +17,12 @@
   "npmConfig": {
     "legacy-peer-deps": true
   },
+  "engines": {
+    "node": ">=20"
+  },
   "overrides": {
-    "baseline-browser-mapping": "^2.10.30"
+    "baseline-browser-mapping": "^2.10.30",
+    "typescript": "$typescript"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -102,6 +106,7 @@
     "baseline-browser-mapping": "^2.10.30",
     "constructs": "^10.4.2",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7"
+    "eslint-config-next": "16.0.7",
+    "typescript": "^5.9.2"
   }
 }

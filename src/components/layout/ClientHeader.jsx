@@ -983,7 +983,6 @@ const MobileExplorePillLine1 = styled.span`
   text-overflow: ellipsis;
 `;
 
-/** Second row: day · I want (location is only on line 1) */
 const MobileExplorePillMetaRow = styled.span`
   display: inline-flex;
   align-items: center;

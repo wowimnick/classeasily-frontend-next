@@ -15,7 +15,7 @@ import { useIWantCollections } from "@/hooks/useIWantCollections";
 import { formatSearchLocationCityName } from "@/lib/formatSearchLocationDisplay";
 import dayjs from "dayjs";
 import posthog from "posthog-js";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import {
   useSearch,
   GTA_PRESETS,
@@ -42,7 +42,7 @@ const Overlay = styled(motion.div)`
   overflow: hidden;
 `;
 
-const TopBar = styled.div`
+const TopBar = styled(motion.div)`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -326,6 +326,10 @@ const contentTransition = {
   ease: [0.4, 0, 0.2, 1]
 };
 
+// Entry/exit transitions for the full-screen overlay (Airbnb-style)
+const overlayEntryTransition = { duration: 0.48, ease: [0.22, 1, 0.36, 1] };
+const overlayExitTransition = { duration: 0.28, ease: [0.4, 0, 1, 1] };
+
 // Loading spinner rotation
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -368,6 +372,7 @@ export default function SearchFullScreen() {
   const iWantCollections = useIWantCollections();
   const locationInputRef = useRef(null);
   const mainScrollRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!isDrawerOpen) setExpandedSection(null);
@@ -508,18 +513,24 @@ export default function SearchFullScreen() {
     });
   };
 
-  if (!isDrawerOpen) return null;
-
-  return typeof document !== "undefined"
-    ? createPortal(
-        <AnimatePresence>
-          <Overlay
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+  return createPortal(
+    <AnimatePresence>
+      {isDrawerOpen && (
+        <Overlay
+          initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 28 }}
+          animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+          transition={prefersReducedMotion ? { duration: 0.15 } : overlayEntryTransition}
+        >
+          <TopBar
+            initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              prefersReducedMotion
+                ? undefined
+                : { delay: 0.1, duration: 0.38, ease: [0.22, 1, 0.36, 1] }
+            }
           >
-            <TopBar>
               {expandedSection !== null ? (
                 <TopIconBtn type="button" onClick={() => setExpandedSection(null)} aria-label="Back">
                   <ArrowLeft size={22} strokeWidth={1.5} aria-hidden />
@@ -555,6 +566,13 @@ export default function SearchFullScreen() {
               <MainScroll
                 ref={mainScrollRef}
                 $expanded={!!expandedSection}
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={
+                  prefersReducedMotion
+                    ? undefined
+                    : { delay: 0.2, duration: 0.38 }
+                }
               >
                 {/* --- LOCATION CARD --- */}
                 <CardShell
@@ -785,9 +803,9 @@ export default function SearchFullScreen() {
                 <Search size={18} strokeWidth={2} aria-hidden /> Search
               </ExploreShowResultsButton>
             </Footer>
-          </Overlay>
-        </AnimatePresence>,
-        document.body
-      )
-    : null;
+        </Overlay>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
 }

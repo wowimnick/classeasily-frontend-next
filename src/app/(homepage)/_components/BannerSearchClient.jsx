@@ -7,14 +7,16 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import { createPortal } from "react-dom";
 import styled, { createGlobalStyle } from "styled-components";
 import {
   Search,
   MapPin,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import dayjs from "dayjs";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import {
   useSearch,
@@ -30,13 +32,14 @@ import {
   ExploreDropdownTypeChip,
 } from "@/components/explore/ExploreDropdownTypeChips";
 import { ExploreBarLazyLucideIcon } from "@/app/explore/_components/exploreBarLazyIcon.jsx";
+import { useIsDesktopOrWider } from "@/styles/breakpoints-hooks";
 import CustomCalendar from "./CustomCalendar";
 
 // --- HELPER HOOKS ---
 function useClickOutside(ref, handler) {
   useEffect(() => {
     const listener = (event) => {
-      if (!ref.current || ref.current.contains(event.target)) return;
+      if (ref.current?.contains(event.target)) return;
       handler(event);
     };
     document.addEventListener("mousedown", listener);
@@ -87,14 +90,170 @@ const SearchFormWrapper = styled(motion.form)`
   height: 76px;
   box-shadow: 0 5px 18px rgba(0, 0, 0, 0.14);
   border: 1px solid rgb(213, 213, 213);
-  /* Wider than sum of segment min-widths + search button so the button stays inside the pill */
   max-width: min(820px, calc(100vw - 48px));
-  /* Popup sits below the pill — must not clip it (overflow hidden lives on SearchPillRow only). */
   overflow: visible;
   z-index: 50;
 
   @media (max-width: 768px) {
     max-width: min(320px, calc(100vw - 48px));
+  }
+`;
+
+/** Dim layer only — clicks are handled by DockedPillOverlay (header is z-index 999) */
+const DockedSearchBackdrop = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+`;
+
+/** Captures outside clicks; pill form stays interactive on top */
+const DockedPillOverlay = styled.div`
+  position: fixed;
+  top: 76px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 1000;
+  pointer-events: auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+`;
+
+/** Compact = explore mini pill; expanded = same chrome as SearchFormWrapper hero */
+const DockedSearchFormWrapper = styled(motion.form)`
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: fit-content;
+  max-width: min(820px, calc(100vw - 48px));
+  background-color: #ffffff;
+  border-radius: 100px;
+  border: 1px solid rgb(213, 213, 213);
+  overflow: visible;
+  pointer-events: auto;
+  will-change: width, height, box-shadow;
+`;
+
+const DockedPillContentArea = styled.div`
+  position: relative;
+  width: fit-content;
+  min-width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  overflow: hidden;
+`;
+
+const DockedPillLayer = styled(motion.div)`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+`;
+
+const CompactMeasureShell = styled.div`
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(calc(100vw - 120px), 960px);
+  height: 100%;
+  flex-shrink: 0;
+`;
+
+const CompactRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: max-content;
+  height: 100%;
+  padding: 6px 5px 6px 16px;
+`;
+
+const CompactMagnifier = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #374151;
+
+  img {
+    display: block;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+`;
+
+const CompactFieldZone = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 4px 8px;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: 100px;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  font-family: inherit;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const CompactFieldText = styled.span`
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+`;
+
+const CompactDivider = styled.span`
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  background: #d1d5db;
+  user-select: none;
+`;
+
+const SmallSearchCircle = styled(motion.button)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  line-height: 0;
+  background: #ff385c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 56, 92, 0.35);
+  font-family: inherit;
+
+  svg {
+    display: block;
   }
 `;
 
@@ -445,6 +604,16 @@ const SecondaryLink = styled(Link)`
   }
 `;
 
+/** Hero expanded pill (SearchFormWrapper) — location + date + collection + search btn */
+const HERO_PILL_H = 76;
+const HERO_EXPANDED_W = 780;
+const HERO_PILL_SHADOW = "0 5px 18px rgba(0, 0, 0, 0.14)";
+/** Explore-style compact docked mini pill (ClientHeader.jsx) */
+const DOCKED_COMPACT_H = 44;
+const DOCKED_COMPACT_W_FALLBACK = 260;
+const DOCKED_COMPACT_SHADOW = "0 2px 8px rgba(0, 0, 0, 0.1)";
+const TORONTO_PRESET_DISPLAY = SUGGESTED_AREAS[0]?.displayName ?? "Toronto, ON";
+
 // --- FIX: FrozenContent Component ---
 // This ensures that when AnimatePresence is removing the "old" field,
 // it doesn't try to render the content of the "new" field causing crashes.
@@ -515,25 +684,111 @@ export default function BannerSearchClient({ mode }) {
   } = useSearch();
 
   const iWantCollections = useIWantCollections();
+  const prefersReducedMotion = useReducedMotion();
+  const isDesktopOrWider = useIsDesktopOrWider();
+  /** Desktop instance stays in the DOM on mobile (CSS-hidden) — must not portal the docked pill */
+  const enableDockedPill = mode === "desktop" && isDesktopOrWider;
   const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
   const [isSwitching, setIsSwitching] = useState(false);
   const [modeHeight, setModeHeight] = useState(76);
+  const [isDocked, setIsDocked] = useState(false);
 
   const containerRef = useRef(null);
+  const compactMeasureRef = useRef(null);
   const locationRef = useRef(null);
   const dateRef = useRef(null);
   const collectionRef = useRef(null);
   const guidedModeRef = useRef(null);
+  /** Stays mounted for scroll docking — do not use guidedModeRef (collapses when hero unmounts) */
+  const dockSentinelRef = useRef(null);
+  const [compactShellWidth, setCompactShellWidth] = useState(null);
 
-  useClickOutside(containerRef, () => {
+  const closeActiveField = useCallback(() => {
     setActiveField(null);
     setIsSwitching(false);
+  }, []);
+
+  useClickOutside(containerRef, (event) => {
+    if (isDocked) return;
+    closeActiveField(event);
   });
 
+  useEffect(() => {
+    if (!enableDockedPill) {
+      setIsDocked(false);
+    }
+  }, [enableDockedPill]);
+
+  // Scroll detection: dock the pill into the header when the hero area scrolls out of view
+  useEffect(() => {
+    if (!enableDockedPill) return;
+    let rafId = null;
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const el = dockSentinelRef.current;
+        if (!el) {
+          setIsDocked(window.scrollY > 180);
+          return;
+        }
+        const { bottom } = el.getBoundingClientRect();
+        // Dock once the hero search anchor passes the header (~80px)
+        setIsDocked(bottom < 80);
+      });
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [enableDockedPill]);
+
+  // Reset active field when docking state changes
+  useEffect(() => {
+    setActiveField(null);
+    setIsSwitching(false);
+  }, [isDocked]);
+
+  // Measure compact pill width from content (same as explore ClientHeader)
+  useLayoutEffect(() => {
+    if (!enableDockedPill || !isDocked || activeField) return;
+    const el = compactMeasureRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const measure = () => {
+      const node = compactMeasureRef.current;
+      if (!node) return;
+      // scrollWidth reflects full content even when the animated shell is still narrower
+      const inner = Math.ceil(node.scrollWidth);
+      const total = Math.max(inner + 2, DOCKED_COMPACT_W_FALLBACK);
+      setCompactShellWidth((prev) => (prev === total ? prev : total));
+    };
+
+    measure();
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(measure);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [
+    enableDockedPill,
+    isDocked,
+    activeField,
+    searchTerm,
+    datePickerValue,
+    (selectedCollections || []).map((c) => c.slug).join("|"),
+  ]);
+
+  const dockedPillWidth = activeField
+    ? HERO_EXPANDED_W
+    : Math.max(compactShellWidth ?? DOCKED_COMPACT_W_FALLBACK, DOCKED_COMPACT_W_FALLBACK);
+
   const calculatePosition = useCallback((field) => {
-    // --- FIX: Added safety check for refs ---
-    if (!field || !containerRef.current) return { left: 0, width: 400 };
+    const panelWidth = POPUP_SIZES[field] || 400;
+    if (!field || !containerRef.current) return { left: 0, width: panelWidth };
 
     const refs = {
       location: locationRef,
@@ -545,7 +800,7 @@ export default function BannerSearchClient({ mode }) {
     if (targetRef?.current && containerRef.current) {
       const buttonRect = targetRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
-      const width = POPUP_SIZES[field] || 400;
+      const width = panelWidth;
 
       let left = 0;
       if (field === "location") {
@@ -574,22 +829,31 @@ export default function BannerSearchClient({ mode }) {
 
       return { left, width };
     }
-    return { left: 0, width: 400 };
+    return { left: 0, width: panelWidth };
   }, []);
 
-  useLayoutEffect(() => {
-    if (activeField) {
-      const newConfig = calculatePosition(activeField);
-      setPopupConfig(newConfig);
-    }
-    const handleResize = () => {
-      if (activeField) {
-        setPopupConfig(calculatePosition(activeField));
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+  const syncPopupPosition = useCallback(() => {
+    if (!activeField) return;
+    setPopupConfig(calculatePosition(activeField));
   }, [activeField, calculatePosition]);
+
+  useLayoutEffect(() => {
+    if (!activeField) return undefined;
+    syncPopupPosition();
+    // Compact docked pill mounts expanded segments after click; re-sync once refs exist
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      syncPopupPosition();
+      raf2 = requestAnimationFrame(syncPopupPosition);
+    });
+    const handleResize = () => syncPopupPosition();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [activeField, syncPopupPosition]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -599,11 +863,22 @@ export default function BannerSearchClient({ mode }) {
   };
 
   const handleFieldClick = (field) => {
-    const newConfig = calculatePosition(field);
-    setPopupConfig(newConfig);
+    setPopupConfig(calculatePosition(field));
     setIsSwitching(!!(activeField && activeField !== field));
     setActiveField(field);
   };
+
+  const handleDockedPillLayoutComplete = useCallback(() => {
+    if (activeField) syncPopupPosition();
+  }, [activeField, syncPopupPosition]);
+
+  const handleDockedOverlayMouseDown = useCallback(
+    (event) => {
+      if (event.target !== event.currentTarget) return;
+      closeActiveField();
+    },
+    [closeActiveField],
+  );
 
   const scrollToHowItWorks = () => {
     const section = document.getElementById("how-it-works");
@@ -650,6 +925,90 @@ export default function BannerSearchClient({ mode }) {
     }
     return dayjs(datePickerValue).format("MMM DD");
   };
+
+  const getCompactLocationDisplay = useCallback(() => {
+    const raw = (searchTerm || "").trim();
+    if (!raw) return "Start your search";
+    const norm = raw.replace(/\s+/g, " ").trim();
+    if (norm === TORONTO_PRESET_DISPLAY || /^toronto, ?ON$/i.test(norm)) {
+      return "Located in Toronto";
+    }
+    return raw;
+  }, [searchTerm]);
+
+  const getCompactCollectionDisplay = () => {
+    const list = selectedCollections || [];
+    if (!list.length) return "Anything";
+    if (list.length === 1) {
+      return formatCollectionDisplayName(list[0].name || list[0].slug);
+    }
+    return summarizeCollectionsForPill(list);
+  };
+
+  const renderDockedCompactPill = () => (
+    <DockedPillLayer
+      key="compact"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+    >
+      <CompactMeasureShell ref={compactMeasureRef}>
+        <CompactRow>
+          <CompactMagnifier aria-hidden>
+            <Image
+              src="/icons/shop.png"
+              alt=""
+              width={20}
+              height={20}
+              decoding="async"
+              style={{ display: "block" }}
+            />
+          </CompactMagnifier>
+
+          <CompactFieldZone
+            type="button"
+            onClick={() => handleFieldClick("location")}
+            aria-label="Search location"
+          >
+            <CompactFieldText>{getCompactLocationDisplay()}</CompactFieldText>
+          </CompactFieldZone>
+
+          <CompactDivider aria-hidden />
+
+          <CompactFieldZone
+            type="button"
+            onClick={() => handleFieldClick("date")}
+            aria-label="Search date"
+          >
+            <CompactFieldText>
+              {formatMobileExploreDateSummary(datePickerValue)}
+            </CompactFieldText>
+          </CompactFieldZone>
+
+          <CompactDivider aria-hidden />
+
+          <CompactFieldZone
+            type="button"
+            onClick={() => handleFieldClick("collection")}
+            aria-label="Search experience type"
+          >
+            <CompactFieldText>{getCompactCollectionDisplay()}</CompactFieldText>
+          </CompactFieldZone>
+
+          <SmallSearchCircle
+            type="submit"
+            aria-label="Search"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Search size={13} strokeWidth={3} aria-hidden />
+          </SmallSearchCircle>
+        </CompactRow>
+      </CompactMeasureShell>
+    </DockedPillLayer>
+  );
 
   const renderLocationSuggestions = () => {
     const safeResults = Array.isArray(geocodedAddressResults)
@@ -809,229 +1168,331 @@ export default function BannerSearchClient({ mode }) {
     );
   }
 
+  // --- Shared pill segment rows (hero + docked expanded) ---
+  const renderPillSegments = () => (
+    <SearchPillRow>
+      <SectionButton
+        ref={locationRef}
+        $isActive={activeField === "location"}
+        onClick={() => handleFieldClick("location")}
+        style={{ width: "300px", flexShrink: 0 }}
+      >
+        {activeField === "location" && (
+          <ActivePill
+            layoutId="search-pill"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          />
+        )}
+        <Label>Location</Label>
+        {activeField === "location" ? (
+          <LocationInput
+            autoFocus
+            value={searchTerm}
+            onChange={(e) => handleLocationChange(e.target.value)}
+            placeholder="Where are you looking?"
+          />
+        ) : (
+          <ValueDisplay $hasValue={!!searchTerm}>
+            {searchTerm || "Where are you looking?"}
+          </ValueDisplay>
+        )}
+      </SectionButton>
+      <Divider $isHidden={activeField === "location" || activeField === "date"} />
+
+      <SectionButton
+        ref={dateRef}
+        $isActive={activeField === "date"}
+        onClick={() => handleFieldClick("date")}
+        style={{ minWidth: "192px" }}
+      >
+        {activeField === "date" && (
+          <ActivePill
+            layoutId="search-pill"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          />
+        )}
+        <Label>Date</Label>
+        <ValueDisplay $hasValue={!!datePickerValue}>
+          {getDateDisplay()}
+        </ValueDisplay>
+      </SectionButton>
+      <Divider $isHidden={activeField === "date" || activeField === "collection"} />
+
+      <SectionButton
+        ref={collectionRef}
+        $isActive={activeField === "collection"}
+        onClick={() => handleFieldClick("collection")}
+        style={{ minWidth: "200px", flex: 1 }}
+      >
+        {activeField === "collection" && (
+          <ActivePill
+            layoutId="search-pill"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          />
+        )}
+        <Label>I want…</Label>
+        <ValueDisplay $hasValue={(selectedCollections || []).length > 0}>
+          {collectionDisplay}
+        </ValueDisplay>
+      </SectionButton>
+
+      <SearchButton type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <Search size={22} strokeWidth={2.5} />
+      </SearchButton>
+    </SearchPillRow>
+  );
+
+  const activePopupWidth = activeField
+    ? POPUP_SIZES[activeField] || 400
+    : popupConfig.width;
+
+  // --- Shared popup dropdown ---
+  const renderPopup = () => (
+    <AnimatePresence>
+      {activeField && (
+        <UnifiedPopupContainer
+          key="popup-container"
+          layout
+          initial={{
+            opacity: 0,
+            y: 10,
+            scale: 0.95,
+            left: popupConfig.left,
+            width: activePopupWidth,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            left: popupConfig.left,
+            width: activePopupWidth,
+          }}
+          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+          transition={{
+            layout: { duration: 0.4, ease: "easeInOut" },
+            left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+            width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+            opacity: { duration: 0.25 },
+            scale: { duration: 0.25 },
+          }}
+        >
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={activeField}
+              layout="position"
+              variants={contentVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              style={{
+                width: POPUP_SIZES[activeField] || 400,
+                padding: activeField === "collection" ? 0 : POPUP_CONTENT_PADDING,
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              <FrozenContent
+                field={activeField}
+                renderLocation={() => (
+                  <>
+                    <PopupSectionLabel>SUGGESTED</PopupSectionLabel>
+                    <LocationList>{renderLocationSuggestions()}</LocationList>
+                  </>
+                )}
+                renderDate={() => (
+                  <CustomCalendar
+                    value={datePickerValue}
+                    onChange={setDatePickerValue}
+                    onClose={() => setActiveField(null)}
+                  />
+                )}
+                renderCollectionPicker={() => (
+                  <ExploreDropdownTypeChipFlow>
+                    {iWantCollections.map((c) => {
+                      const title = formatCollectionDisplayName(c.name || c.slug);
+                      const isSelected = (selectedCollections || []).some(
+                        (x) => x.slug === c.slug,
+                      );
+                      return (
+                        <ExploreDropdownTypeChip
+                          key={c.id ?? c.slug}
+                          type="button"
+                          $selected={isSelected}
+                          onClick={() => {
+                            setSelectedCollections((prev) => {
+                              const exists = prev.some((x) => x.slug === c.slug);
+                              if (exists) return prev.filter((x) => x.slug !== c.slug);
+                              return [
+                                ...prev,
+                                {
+                                  slug: c.slug,
+                                  name: c.name || title,
+                                  icon_name: c.icon_name || "",
+                                  color: c.color || "",
+                                },
+                              ];
+                            });
+                          }}
+                        >
+                          {c.icon_name ? (
+                            <ExploreBarLazyLucideIcon
+                              iconName={c.icon_name}
+                              size={16}
+                              strokeWidth={1.5}
+                            />
+                          ) : null}
+                          <span>{title}</span>
+                        </ExploreDropdownTypeChip>
+                      );
+                    })}
+                  </ExploreDropdownTypeChipFlow>
+                )}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </UnifiedPopupContainer>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <>
       <GlobalOverrides />
-      <SearchModeHeightAnimator
-        animate={{ height: modeHeight }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <SearchModeStage>
-          <motion.div
-            ref={guidedModeRef}
-            style={{ width: "100%", display: "flex", justifyContent: "center" }}
-          >
-                <SearchFormWrapper
-                  ref={containerRef}
-                  onSubmit={handleSearchSubmit}
-                  layout
-                  animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                <SearchPillRow>
-                <SectionButton
-                  ref={locationRef}
-                  $isActive={activeField === "location"}
-                  onClick={() => handleFieldClick("location")}
-                  style={{ width: "300px", flexShrink: 0 }}
-                >
-                  {activeField === "location" && (
-                    <ActivePill
-                      layoutId="search-pill"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <Label>Location</Label>
-                  {activeField === "location" ? (
-                    <LocationInput
-                      autoFocus
-                      value={searchTerm}
-                      onChange={(e) => handleLocationChange(e.target.value)}
-                      placeholder="Where are you looking?"
-                    />
-                  ) : (
-                    <ValueDisplay $hasValue={!!searchTerm}>
-                      {searchTerm || "Where are you looking?"}
-                    </ValueDisplay>
-                  )}
-                </SectionButton>
-                <Divider
-                  $isHidden={activeField === "location" || activeField === "date"}
-                />
-
-                <SectionButton
-                  ref={dateRef}
-                  $isActive={activeField === "date"}
-                  onClick={() => handleFieldClick("date")}
-                  style={{ minWidth: "192px" }}
-                >
-                  {activeField === "date" && (
-                    <ActivePill
-                      layoutId="search-pill"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <Label>Date</Label>
-                  <ValueDisplay $hasValue={!!datePickerValue}>
-                    {getDateDisplay()}
-                  </ValueDisplay>
-                </SectionButton>
-                <Divider
-                  $isHidden={activeField === "date" || activeField === "collection"}
-                />
-
-                <SectionButton
-                  ref={collectionRef}
-                  $isActive={activeField === "collection"}
-                  onClick={() => handleFieldClick("collection")}
-                  style={{ minWidth: "200px", flex: 1 }}
-                >
-                  {activeField === "collection" && (
-                    <ActivePill
-                      layoutId="search-pill"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <Label>I want…</Label>
-                  <ValueDisplay $hasValue={(selectedCollections || []).length > 0}>
-                    {collectionDisplay}
-                  </ValueDisplay>
-                </SectionButton>
-
-                <SearchButton
-                  type="submit"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Search size={22} strokeWidth={2.5} />
-                </SearchButton>
-                </SearchPillRow>
-
+      <LayoutGroup>
+        {/* Hero search area — fades + shrinks upward when docking */}
+        <SearchModeStage style={{ position: "relative" }}>
+            {/* Fixed anchor for dock detection — survives hero unmount / height collapse */}
+            <div
+              ref={dockSentinelRef}
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: modeHeight || HERO_PILL_H,
+                pointerEvents: "none",
+                visibility: "hidden",
+              }}
+            />
+            <SearchModeHeightAnimator
+              animate={{ height: isDocked ? 0 : modeHeight }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }
+              }
+            >
+              <motion.div
+                ref={guidedModeRef}
+                style={{ width: "100%", display: "flex", justifyContent: "center" }}
+              >
                 <AnimatePresence>
-                  {activeField && (
-                    <UnifiedPopupContainer
-                      key="popup-container"
-                      layout
-                      initial={{
-                        opacity: 0,
-                        y: 10,
-                        scale: 0.95,
-                        left: popupConfig.left,
-                        width: popupConfig.width,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                        scale: 1,
-                        left: popupConfig.left,
-                        width: popupConfig.width,
-                      }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{
-                        layout: { duration: 0.4, ease: "easeInOut" },
-                        left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
-                        width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
-                        opacity: { duration: 0.25 },
-                        scale: { duration: 0.25 },
-                      }}
+                  {!isDocked && (
+                    <SearchFormWrapper
+                      key="hero-pill"
+                      ref={containerRef}
+                      onSubmit={handleSearchSubmit}
+                      animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
+                      exit={
+                        prefersReducedMotion
+                          ? { opacity: 0 }
+                          : { opacity: 0, scale: 0.92, y: -12 }
+                      }
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     >
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={activeField}
-                          layout="position"
-                          variants={contentVariants}
-                          initial="enter"
-                          animate="center"
-                          exit="exit"
-                          style={{
-                            width: POPUP_SIZES[activeField] || 400,
-                            padding: activeField === "collection" ? 0 : POPUP_CONTENT_PADDING,
-                            boxSizing: "border-box",
-                            display: "flex",
-                            flexDirection: "column",
-                            flex: 1,
-                            minHeight: 0
-                          }}
-                        >
-                          <FrozenContent
-                            field={activeField}
-                            renderLocation={() => (
-                              <>
-                                <PopupSectionLabel>
-                                  SUGGESTED
-                                </PopupSectionLabel>
-                                <LocationList>
-                                  {renderLocationSuggestions()}
-                                </LocationList>
-                              </>
-                            )}
-                            renderDate={() => (
-                              <CustomCalendar
-                                value={datePickerValue}
-                                onChange={setDatePickerValue}
-                                onClose={() => setActiveField(null)}
-                              />
-                            )}
-                            renderCollectionPicker={() => (
-                              <ExploreDropdownTypeChipFlow>
-                                {iWantCollections.map((c) => {
-                                  const title = formatCollectionDisplayName(
-                                    c.name || c.slug,
-                                  );
-                                  const isSelected = (selectedCollections || []).some(
-                                    (x) => x.slug === c.slug,
-                                  );
-                                  return (
-                                    <ExploreDropdownTypeChip
-                                      key={c.id ?? c.slug}
-                                      type="button"
-                                      $selected={isSelected}
-                                      onClick={() => {
-                                        setSelectedCollections((prev) => {
-                                          const exists = prev.some(
-                                            (x) => x.slug === c.slug,
-                                          );
-                                          if (exists) {
-                                            return prev.filter(
-                                              (x) => x.slug !== c.slug,
-                                            );
-                                          }
-                                          return [
-                                            ...prev,
-                                            {
-                                              slug: c.slug,
-                                              name: c.name || title,
-                                              icon_name: c.icon_name || "",
-                                              color: c.color || "",
-                                            },
-                                          ];
-                                        });
-                                      }}
-                                    >
-                                      {c.icon_name ? (
-                                        <ExploreBarLazyLucideIcon
-                                          iconName={c.icon_name}
-                                          size={16}
-                                          strokeWidth={1.5}
-                                        />
-                                      ) : null}
-                                      <span>{title}</span>
-                                    </ExploreDropdownTypeChip>
-                                  );
-                                })}
-                              </ExploreDropdownTypeChipFlow>
-                            )}
-                          />
-                        </motion.div>
-                      </AnimatePresence>
-                    </UnifiedPopupContainer>
+                      {renderPillSegments()}
+                      {renderPopup()}
+                    </SearchFormWrapper>
                   )}
                 </AnimatePresence>
-                </SearchFormWrapper>
               </motion.div>
+            </SearchModeHeightAnimator>
         </SearchModeStage>
-      </SearchModeHeightAnimator>
 
+        {/* Docked pill: explore-style, portaled to body, slides in from above */}
+        {typeof document !== "undefined" &&
+          enableDockedPill &&
+          createPortal(
+            <AnimatePresence>
+              {isDocked && activeField && (
+                <DockedSearchBackdrop
+                  key="docked-search-backdrop"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  aria-hidden
+                />
+              )}
+            </AnimatePresence>,
+            document.body,
+          )}
+        {typeof document !== "undefined" &&
+          enableDockedPill &&
+          isDocked &&
+          createPortal(
+            <DockedPillOverlay onMouseDown={handleDockedOverlayMouseDown}>
+              <AnimatePresence>
+                <DockedSearchFormWrapper
+                    key="docked-pill"
+                    ref={containerRef}
+                    onSubmit={handleSearchSubmit}
+                    initial={
+                      prefersReducedMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, scale: 0.88, y: -16 }
+                    }
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      y: 0,
+                      width: activeField ? HERO_EXPANDED_W : dockedPillWidth,
+                      height: activeField ? HERO_PILL_H : DOCKED_COMPACT_H,
+                      backgroundColor: activeField ? "#ebebeb" : "#ffffff",
+                      boxShadow: activeField ? HERO_PILL_SHADOW : DOCKED_COMPACT_SHADOW,
+                    }}
+                    exit={
+                      prefersReducedMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, scale: 0.88, y: -16 }
+                    }
+                    transition={{
+                      opacity: { duration: 0.2, ease: "easeOut" },
+                      scale: { type: "spring", stiffness: 380, damping: 28 },
+                      y: { type: "spring", stiffness: 380, damping: 28 },
+                      width: { type: "spring", stiffness: 300, damping: 30 },
+                      height: { type: "spring", stiffness: 300, damping: 30 },
+                      backgroundColor: { duration: 0.2 },
+                      boxShadow: { duration: 0.2 },
+                    }}
+                    onAnimationComplete={handleDockedPillLayoutComplete}
+                    style={{
+                      width: activeField ? HERO_EXPANDED_W : dockedPillWidth,
+                      border: `1px solid ${activeField ? "#d1d5db" : "rgb(213, 213, 213)"}`,
+                    }}
+                  >
+                    <AnimatePresence mode="sync" initial={false}>
+                      {!activeField ? (
+                        <DockedPillContentArea key="compact">
+                          {renderDockedCompactPill()}
+                        </DockedPillContentArea>
+                      ) : (
+                        <React.Fragment key="expanded">
+                          {renderPillSegments()}
+                        </React.Fragment>
+                      )}
+                    </AnimatePresence>
+                    {renderPopup()}
+                  </DockedSearchFormWrapper>
+              </AnimatePresence>
+            </DockedPillOverlay>,
+            document.body,
+          )}
+      </LayoutGroup>
     </>
   );
 }

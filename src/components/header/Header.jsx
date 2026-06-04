@@ -9,11 +9,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import debounce from "lodash/debounce";
 import { useAuthModal } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
+import { useIsDesktopOrWider } from "@/styles/breakpoints-hooks";
+import { BP, down } from "@/styles/breakpoints";
 import dynamic from "next/dynamic";
 import { Menu, Search } from "lucide-react";
 import dayjs from "dayjs";
 import { useSearch, summarizeCollectionsForPill } from "@/context/SearchContext";
-
 // --- DYNAMIC IMPORTS ---
 const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
   ssr: false,
@@ -112,20 +113,20 @@ const HeaderWrapper = styled.header`
 
   @media (max-width: 756px) {
     ${(props) =>
-      props.$homeHeroFlush
+      props.$isHomepage
         ? `
       width: 100%;
       left: 0;
       right: 0;
       top: ${props.$isImpersonating ? "56px" : "0"};
-      border-top-left-radius: ${props.$isHomepage ? "18px" : "0"};
-      border-top-right-radius: ${props.$isHomepage ? "18px" : "0"};
+      border-radius: 0;
       padding: calc(10px + env(safe-area-inset-top, 0px)) 1rem 10px;
       background-color: #ffffff;
       border: none;
       box-shadow: none;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
+      overflow: visible;
     `
         : `
       width: calc(100% - 2rem);
@@ -134,7 +135,7 @@ const HeaderWrapper = styled.header`
 
       top: ${props.$isImpersonating ? "56px" : "8px"};
 
-      border-radius: 9999px;
+      border-radius: 0;
       padding: 0.5rem 1rem;
       background-color: ${
         props.$isScrolled
@@ -469,6 +470,10 @@ const HeaderContent = ({
     false;
 
   const heroLightChrome = pathname === "/" && !isScrolled;
+  const isHomepage = pathname === "/";
+  const isDesktopOrWider = useIsDesktopOrWider();
+  /** Homepage desktop: docked pill; homepage mobile scrolled: glass "Find a class?" notch */
+  const showScrolledNotch = isScrolled && !(isHomepage && isDesktopOrWider);
 
   const {
     searchTerm,
@@ -665,7 +670,7 @@ const HeaderContent = ({
       </HeaderWrapper>
 
       <AnimatePresence>
-        {isScrolled && (
+        {showScrolledNotch && (
           <NotchContainer
             initial={{ y: -40, scale: 0.85, opacity: 0, x: "-50%" }}
             animate={{ y: 0, scale: 1, opacity: 1, x: "-50%" }}
