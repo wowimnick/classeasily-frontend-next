@@ -3,6 +3,10 @@
 
 import { useEffect } from "react";
 import { captureRouteError } from "@/lib/capture-route-error";
+import {
+  attemptDeploymentChunkRecovery,
+  isDeploymentChunkLoadError,
+} from "@/lib/deployment-chunk-error";
 import styled from "styled-components";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -50,6 +54,10 @@ const RetryButton = styled.button`
 
 export default function Error({ error, reset }) {
   useEffect(() => {
+    if (isDeploymentChunkLoadError(error)) {
+      attemptDeploymentChunkRecovery();
+      return;
+    }
     captureRouteError(error, "Explore page error:");
   }, [error]);
 
