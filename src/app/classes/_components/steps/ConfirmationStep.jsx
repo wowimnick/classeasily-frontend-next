@@ -25,10 +25,10 @@ import { createEvent } from "ics";
 import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
-import posthog from "posthog-js";
-import { trackPurchaseIfProduction } from "@/lib/metaPixel";
-
-const PURCHASE_TRACKED_KEY = "classeasily_purchase_tracked";
+import {
+  captureBookingPurchase,
+  isNumericBookingId,
+} from "@/lib/bookingAnalytics";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -618,74 +618,31 @@ const ConfirmationStep = ({
   const actualBookingId = propBookingId || bookingData.bookingId || fetchedBookingId;
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
-  /** Prefer numeric booking id for Pixel order_id so it matches CAPI event_id and Meta deduplicates. */
-  const isNumericId = (v) => v != null && /^\d+$/.test(String(v));
-  const orderIdForPixel = isNumericId(actualBookingId)
-    ? actualBookingId
-    : (displayReference || paymentIntentId);
 
-  /* Fire PostHog + Meta Pixel Purchase once when payment went through and user is on confirmation page. Use numeric order_id when available so Pixel matches CAPI event_id for deduplication. */
+  /* PostHog fires as soon as payment intent / reference / booking id is known (no wait for numeric id).
+     Meta client pixel still prefers numeric order_id for CAPI dedup when paymentIntentId is present. */
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (bookingFailed) return;
-    const confirmedId = orderIdForPixel || actualBookingId || displayReference;
-    if (!confirmedId) return;
-    const alreadyTracked = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
-    if (alreadyTracked === String(confirmedId)) return;
-    /* If we have paymentIntentId but no numeric id yet, wait for poll to set fetchedBookingId so we send one Purchase with matching event_id. */
-    if (paymentIntentId && !isNumericId(actualBookingId)) return;
-
-    const revenue = (bookingData?.price || 0) * (bookingData?.participants || 1);
-    const currency = classData?.currency_code || "CAD";
-
-    posthog.capture("booking_completed", {
-      class_id: classData?.classId || classData?.id,
-      class_title: classData?.title,
-      business_name: classData?.business_name,
-      booking_id: actualBookingId || undefined,
-      revenue,
-      currency,
-      participants: bookingData?.participants ?? 1,
+    // Payment may have succeeded via Stripe even when booking confirmation polling failed.
+    if (bookingFailed && !paymentIntentId) return;
+    captureBookingPurchase({
+      bookingData,
+      classData,
+      bookingId: actualBookingId,
+      reference: displayReference,
+      paymentIntentId,
     });
-
-    const userEmail = bookingData?.email || bookingData?.userEmail;
-    const fullName = bookingData?.fullName || bookingData?.userName || "";
-    const nameParts = fullName.trim().split(" ");
-    trackPurchaseIfProduction(
-      {
-        value: revenue,
-        currency,
-        content_name: classData?.title,
-        content_ids: [classData?.classId || classData?.id].filter(Boolean),
-        content_type: "product",
-        num_items: bookingData?.participants ?? 1,
-        order_id: orderIdForPixel,
-      },
-      {
-        em: userEmail,
-        ph: bookingData?.phone || bookingData?.userPhone,
-        fn: nameParts[0] || "",
-        ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
-        ct: bookingData?.city,
-        st: bookingData?.state,
-        zp: bookingData?.zipCode,
-        country: "ca",
-      }
-    );
-
-    sessionStorage.setItem(PURCHASE_TRACKED_KEY, String(confirmedId));
   }, [
     bookingFailed,
     actualBookingId,
     displayReference,
-    orderIdForPixel,
     paymentIntentId,
     bookingData,
     classData,
   ]);
 
   const pollForBookingReference = useCallback(async () => {
-    if (!paymentIntentId || actualBookingId) {
+    if (!paymentIntentId || isNumericBookingId(actualBookingId)) {
       setIsPolling(false);
       return;
     }
@@ -706,8 +663,13 @@ const ConfirmationStep = ({
         );
         if (result.success) {
           const data = result.data;
-          if (data.status === "confirmed" && data.user_facing_reference) {
-            setFetchedReference(data.user_facing_reference);
+          if (
+            data.status === "confirmed" &&
+            (data.user_facing_reference || data.booking_id != null)
+          ) {
+            if (data.user_facing_reference) {
+              setFetchedReference(data.user_facing_reference);
+            }
             if (data.booking_id != null) setFetchedBookingId(data.booking_id);
             if (onBookingDetailsFetched) onBookingDetailsFetched(data);
             setIsPolling(false);
@@ -722,6 +684,13 @@ const ConfirmationStep = ({
             attempts < maxAttempts
           ) {
             setTimeout(attemptFetch, pollInterval);
+          } else if (["pending_webhook", "processing"].includes(data.status)) {
+            // Payment may have succeeded; webhook is slow — do not block purchase analytics.
+            setPollingError(
+              data.message ||
+                "Your payment was received. Booking confirmation is still processing — check your email shortly.",
+            );
+            setIsPolling(false);
           } else {
             setBookingFailed(true);
             setPollingError(
@@ -730,20 +699,31 @@ const ConfirmationStep = ({
             );
             setIsPolling(false);
           }
-        } else {
+        } else if (!paymentIntentId) {
           setBookingFailed(true);
           setPollingError(
             result.error || "An error occurred while confirming your booking."
+          );
+          setIsPolling(false);
+        } else {
+          setPollingError(
+            result.error ||
+              "Your payment was received. Booking confirmation is still processing — check your email shortly.",
           );
           setIsPolling(false);
         }
       } catch (error) {
         if (attempts < maxAttempts) {
           setTimeout(attemptFetch, pollInterval + attempts * 500);
-        } else {
+        } else if (!paymentIntentId) {
           setBookingFailed(true);
           setPollingError(
             "A network error occurred. Please check your connection or contact support."
+          );
+          setIsPolling(false);
+        } else {
+          setPollingError(
+            "Your payment was received. We could not confirm the booking in the browser — check your email shortly.",
           );
           setIsPolling(false);
         }
@@ -754,7 +734,7 @@ const ConfirmationStep = ({
   }, [paymentIntentId, actualBookingId, clientSecret, onBookingDetailsFetched]);
 
   useEffect(() => {
-    if (paymentIntentId && !actualBookingId) {
+    if (paymentIntentId && !isNumericBookingId(actualBookingId)) {
       pollForBookingReference();
     }
   }, [paymentIntentId, actualBookingId, pollForBookingReference]);

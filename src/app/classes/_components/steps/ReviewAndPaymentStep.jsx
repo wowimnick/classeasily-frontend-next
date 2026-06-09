@@ -1557,6 +1557,92 @@ const Countdown = ({ seconds }) => {
   );
 };
 
+function isPlaceholderGuestEmail(email) {
+  const v = (email || "").trim().toLowerCase();
+  return !v || v.includes("pending@example");
+}
+
+function isPlaceholderGuestPhone(phone) {
+  const v = (phone || "").trim();
+  if (!v) return true;
+  const digits = v.replace(/\D/g, "");
+  return digits === "5555555555" || /555-555-5555/.test(v.replace(/\s/g, ""));
+}
+
+function isValidGuestBookerName(name) {
+  const v = (name || "").trim();
+  return (
+    v.length > 0 &&
+    v.toLowerCase() !== "guest" &&
+    v.toLowerCase() !== "pending guest"
+  );
+}
+
+/** Guest fields from form with bookingData fallback (payment step may unmount guest inputs). */
+function getGuestContactFields(form, bookingData) {
+  const values = form?.getFieldsValue?.(true) || {};
+  return {
+    email: (values.email?.trim() || bookingData?.email || "").trim(),
+    phone: (values.phone?.trim() || bookingData?.phone || "").trim(),
+    booker_name: (
+      values.booker_name?.trim() ||
+      bookingData?.booker_name ||
+      bookingData?.participant_details?.[0]?.name ||
+      ""
+    ).trim(),
+    notes: values.notes ?? bookingData?.notes ?? "",
+    additional_participant_names: values.additional_participant_names,
+  };
+}
+
+function hasCompleteValidGuestContact(form, bookingData) {
+  const { email, phone, booker_name } = getGuestContactFields(form, bookingData);
+  return (
+    isValidGuestBookerName(booker_name) &&
+    !isPlaceholderGuestEmail(email) &&
+    !isPlaceholderGuestPhone(phone)
+  );
+}
+
+async function syncPaymentIntentGuestDetails({
+  paymentService,
+  clientSecret,
+  form,
+  bookingData,
+  participantsCount,
+  requirePerParticipantNames,
+  appliedDiscountId,
+}) {
+  if (!clientSecret || !paymentService?.updatePaymentIntent) {
+    return hasCompleteValidGuestContact(form, bookingData);
+  }
+  if (!hasCompleteValidGuestContact(form, bookingData)) {
+    return false;
+  }
+  const guest = getGuestContactFields(form, bookingData);
+  const paymentIntentId = clientSecret.split("_secret_")[0];
+  const participantDetailsPayload = buildParticipantDetailsPayload(
+    {
+      booker_name: guest.booker_name,
+      email: guest.email,
+      phone: guest.phone,
+      additional_participant_names: guest.additional_participant_names,
+    },
+    participantsCount,
+    requirePerParticipantNames,
+  );
+  await paymentService.updatePaymentIntent({
+    payment_intent_id: paymentIntentId,
+    guest_email: guest.email,
+    guest_full_name: guest.booker_name,
+    guest_phone: guest.phone,
+    participant_details: participantDetailsPayload,
+    notes: guest.notes || "",
+    applied_discount_id: appliedDiscountId ?? null,
+  });
+  return true;
+}
+
 function buildParticipantDetailsPayload(
   values,
   participantsCount,
@@ -1629,37 +1715,50 @@ const ExpressCheckoutButton = ({
           return;
         }
 
-        const values = form.getFieldsValue();
-        const email = (values?.email && String(values.email).trim()) || "";
-        const phone = (values?.phone && String(values.phone).trim()) || "";
-        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "";
         const participantsCount = bookingData?.participants || 1;
+        if (!hasCompleteValidGuestContact(form, bookingData)) {
+          ev.complete("fail");
+          message.error(
+            "Please complete your name, email, and phone on the previous step before paying.",
+          );
+          return;
+        }
+
+        try {
+          const synced = await syncPaymentIntentGuestDetails({
+            paymentService,
+            clientSecret,
+            form,
+            bookingData,
+            participantsCount,
+            requirePerParticipantNames,
+            appliedDiscountId: bookingData?.applied_discount_id ?? null,
+          });
+          if (!synced) {
+            ev.complete("fail");
+            message.error(
+              "Please complete your contact details before paying.",
+            );
+            return;
+          }
+        } catch (backendErr) {
+          ev.complete("fail");
+          message.error("Whoops! We couldn't save your details. Please try again.");
+          return;
+        }
+
+        const guest = getGuestContactFields(form, bookingData);
+        const email = guest.email;
         const participantDetailsPayload = buildParticipantDetailsPayload(
-          values,
+          {
+            booker_name: guest.booker_name,
+            email: guest.email,
+            phone: guest.phone,
+            additional_participant_names: guest.additional_participant_names,
+          },
           participantsCount,
           requirePerParticipantNames,
         );
-
-        // Only call update_intent when we have real guest data; otherwise leave metadata
-        // as set by "Next" (avoids overwriting good metadata with empty from stale form).
-        if (clientSecret && paymentService?.updatePaymentIntent && email) {
-          try {
-            const paymentIntentId = clientSecret.split("_secret_")[0];
-            await paymentService.updatePaymentIntent({
-              payment_intent_id: paymentIntentId,
-              guest_email: email,
-              guest_full_name: bookerName,
-              guest_phone: phone,
-              participant_details: participantDetailsPayload,
-              notes: values?.notes || bookingData?.notes || "",
-              applied_discount_id: bookingData?.applied_discount_id ?? null,
-            });
-          } catch (backendErr) {
-            ev.complete("fail");
-            message.error("Whoops! We couldn't save your details. Please try again.");
-            return;
-          }
-        }
 
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
@@ -1999,6 +2098,13 @@ const ReviewAndPaymentStep = ({
       if (!contactFields.every((val) => val && String(val).trim().length > 0)) {
         return false;
       }
+      if (
+        !isValidGuestBookerName(booker_name) ||
+        isPlaceholderGuestEmail(email) ||
+        isPlaceholderGuestPhone(phone)
+      ) {
+        return false;
+      }
       if (!requirePerParticipantNames || participantsCount <= 1) return true;
       const extra = values?.additional_participant_names;
       if (!Array.isArray(extra)) return false;
@@ -2205,9 +2311,9 @@ const ReviewAndPaymentStep = ({
           notes: values.notes || "",
           participant_details: participantDetailsPayload,
           applied_discount_id: currentDiscountId,
-          guest_email: values.email || "pending@example.com",
+          guest_email: values.email,
           guest_full_name: bookerName,
-          guest_phone: values.phone || "555-555-5555",
+          guest_phone: values.phone,
           gift_card_code: appliedGiftCard?.code || null,
         };
 
@@ -2317,104 +2423,6 @@ const ReviewAndPaymentStep = ({
     return () => clearInterval(interval);
   }, [isFree, selectedSlot?.id, participantsCount]);
 
-  // Create payment intent as soon as we have slot, date, time, participants (and discount/gift card).
-  // Use placeholder guest details; backend accepts them and we update via updatePaymentIntent when the user clicks Next.
-  useEffect(() => {
-    if (
-      isFree ||
-      clientSecret ||
-      creatingIntent ||
-      slotUnavailable ||
-      intentCreationAttemptedRef.current
-    )
-      return;
-    if (checkoutStep !== "payment" && checkoutStep !== "guest") return;
-    if (
-      !bookingData?.selectedSlots?.length ||
-      !bookingData?.selectedOption
-    ) return;
-
-    intentCreationAttemptedRef.current = true;
-    setCreatingIntent(true);
-    setPaymentIntentError(null);
-
-    const run = async () => {
-      try {
-        const participantDetailsPayload = buildParticipantDetailsPayload(
-          { booker_name: "Guest", additional_participant_names: [] },
-          participantsCount,
-          requirePerParticipantNames,
-        );
-        const payload = {
-          selectedSlots: bookingData.selectedSlots,
-          participants: participantsCount,
-          notes: "",
-          participant_details: participantDetailsPayload,
-          applied_discount_id: appliedDiscount?.id ?? null,
-          guest_email: "pending@example.com",
-          guest_full_name: "Guest",
-          guest_phone: "555-555-5555",
-          gift_card_code: appliedGiftCard?.code ?? null,
-        };
-        const response = await paymentService.createPaymentIntent(payload);
-        if (response?.clientSecret) {
-          const paymentIntentId = response.clientSecret.split("_secret_")[0];
-          if (process.env.NODE_ENV === "development") {
-            console.info(
-              "[Booking] createPaymentIntent SUCCESS (useEffect)",
-              new Date().toISOString(),
-              { payment_intent_id: paymentIntentId },
-            );
-          }
-          const intentPriceBreakdown = buildIntentPriceBreakdown(response);
-          setClientSecret(response.clientSecret);
-          onUpdateBookingData?.({
-            paymentIntentId,
-            clientSecret: response.clientSecret,
-            ...(intentPriceBreakdown ? { intentPriceBreakdown } : {}),
-          });
-          intentDepsRef.current = {
-            discountId: appliedDiscount?.id ?? null,
-            gcCode: appliedGiftCard?.code ?? null,
-            globalId: activeGlobalDiscount?.id ?? null,
-            bookingFingerprint: bookingFingerprint ?? null,
-          };
-        }
-      } catch (err) {
-        const data = err?.response?.data || err;
-        const errObj = data?.error;
-        const msg =
-          (Array.isArray(data?.non_field_errors) && data.non_field_errors?.[0]) ||
-          (Array.isArray(errObj?.non_field_errors) && errObj?.non_field_errors?.[0]) ||
-          (typeof data?.error === "string" ? data.error : null) ||
-          (typeof errObj === "string" ? errObj : null) ||
-          err?.message ||
-          "We couldn't prepare payment. Please try again.";
-        message.error(msg);
-        setPaymentIntentError(msg);
-      } finally {
-        setCreatingIntent(false);
-      }
-    };
-    run();
-  }, [
-    checkoutStep,
-    isFree,
-    clientSecret,
-    creatingIntent,
-    slotUnavailable,
-    bookingData?.selectedSlots,
-    bookingData?.selectedOption,
-    participantsCount,
-    appliedDiscount?.id,
-    appliedGiftCard?.code,
-    activeGlobalDiscount?.id,
-    bookingFingerprint,
-    onUpdateBookingData,
-    paymentService,
-    requirePerParticipantNames,
-  ]);
-
   // When paid and no clientSecret: hide footer until we have intent; when we have clientSecret it's set by PaymentFormContent.
   useEffect(() => {
     if (isFree) return;
@@ -2486,9 +2494,9 @@ const ReviewAndPaymentStep = ({
         notes: values.notes || "",
         participant_details: participantDetailsPayload,
         applied_discount_id: appliedDiscount?.id ?? null,
-        guest_email: values.email || "pending@example.com",
+        guest_email: values.email,
         guest_full_name: bookerName,
-        guest_phone: values.phone || "555-555-5555",
+        guest_phone: values.phone,
         gift_card_code: appliedGiftCard?.code || null,
       };
       const response = await paymentService.createPaymentIntent(payload);
@@ -2620,20 +2628,56 @@ const ReviewAndPaymentStep = ({
       return;
     }
 
-    // Update Stripe metadata with guest details first; only then show payment step
-    // so the webhook never sees placeholder data if the user pays quickly (e.g. Apple Pay).
-    if (clientSecret && paymentService?.updatePaymentIntent) {
-      setUpdatingIntentForPayment(true);
-      try {
+    const values = form.getFieldsValue();
+    const bookerName =
+      (values?.booker_name && String(values.booker_name).trim()) || "";
+    const participantDetailsPayload = buildParticipantDetailsPayload(
+      values,
+      participantsCount,
+      requirePerParticipantNames,
+    );
+
+    setUpdatingIntentForPayment(true);
+    try {
+      if (!clientSecret) {
+        // Create the PaymentIntent only after guest details are validated (never with placeholders).
+        setCreatingIntent(true);
+        const payload = {
+          selectedSlots: bookingData.selectedSlots,
+          participants: participantsCount,
+          notes: values.notes || "",
+          participant_details: participantDetailsPayload,
+          applied_discount_id: appliedDiscount?.id ?? null,
+          guest_email: values.email,
+          guest_full_name: bookerName,
+          guest_phone: values.phone,
+          gift_card_code: appliedGiftCard?.code ?? null,
+        };
+        const response = await paymentService.createPaymentIntent(payload);
+        if (!response?.clientSecret) {
+          message.error("We couldn't prepare payment. Please try again.");
+          return;
+        }
+        const paymentIntentId = response.clientSecret.split("_secret_")[0];
+        const intentPriceBreakdown = buildIntentPriceBreakdown(response);
+        setClientSecret(response.clientSecret);
+        onUpdateBookingData?.({
+          paymentIntentId,
+          clientSecret: response.clientSecret,
+          email: values.email,
+          phone: values.phone,
+          booker_name: bookerName,
+          ...(intentPriceBreakdown ? { intentPriceBreakdown } : {}),
+        });
+        intentDepsRef.current = {
+          discountId: appliedDiscount?.id ?? null,
+          gcCode: appliedGiftCard?.code ?? null,
+          globalId: activeGlobalDiscount?.id ?? null,
+          bookingFingerprint: bookingFingerprint ?? null,
+        };
+      } else if (paymentService?.updatePaymentIntent) {
         const paymentIntentId = clientSecret.split("_secret_")[0];
-        const values = form.getFieldsValue();
-        const bookerName = values.booker_name || "Guest";
-        const participantDetailsPayload = buildParticipantDetailsPayload(
-          values,
-          participantsCount,
-          requirePerParticipantNames,
-        );
-        const updatePayload = {
+        await paymentService.updatePaymentIntent({
           payment_intent_id: paymentIntentId,
           guest_email: values.email,
           guest_full_name: bookerName,
@@ -2641,44 +2685,29 @@ const ReviewAndPaymentStep = ({
           participant_details: participantDetailsPayload,
           notes: values.notes || "",
           applied_discount_id: appliedDiscount?.id || null,
-        };
-        if (process.env.NODE_ENV === "development") {
-          console.info(
-            "[Booking] update_intent CALL_START",
-            new Date().toISOString(),
-            { payment_intent_id: paymentIntentId },
-          );
-        }
-        await paymentService.updatePaymentIntent(updatePayload);
-        if (process.env.NODE_ENV === "development") {
-          console.info(
-            "[Booking] update_intent CALL_SUCCESS",
-            new Date().toISOString(),
-            paymentIntentId,
-          );
-        }
-      } catch (err) {
-        console.error(
-          "[Booking] update_intent CALL_FAILED",
-          new Date().toISOString(),
-          err?.message || err
-        );
-        message.error(
-          err?.message || "We couldn't save your details. Please try again."
-        );
-        return;
-      } finally {
-        setUpdatingIntentForPayment(false);
+        });
+        onUpdateBookingData?.({
+          email: values.email,
+          phone: values.phone,
+          booker_name: bookerName,
+        });
       }
+    } catch (err) {
+      const data = err?.response?.data || err;
+      const errObj = data?.error;
+      const msg =
+        (typeof data?.error === "string" ? data.error : null) ||
+        (typeof errObj === "string" ? errObj : null) ||
+        err?.message ||
+        "We couldn't save your details. Please try again.";
+      message.error(msg);
+      return;
+    } finally {
+      setUpdatingIntentForPayment(false);
+      setCreatingIntent(false);
     }
 
-        if (!clientSecret) {
-          console.warn(
-            "[Booking] update_intent SKIPPED (no clientSecret yet) — switching to payment step without updating metadata. Payment intent may have placeholder data.",
-            new Date().toISOString()
-          );
-        }
-        setShowMobileSummary(false);
+    setShowMobileSummary(false);
         setCheckoutStep("payment");
         if (typeof window !== "undefined" && window.innerWidth < 1024) {
       setTimeout(() => {
@@ -2745,6 +2774,40 @@ const ReviewAndPaymentStep = ({
         const { error: submitError } = await elements.submit();
         if (submitError) {
           message.error(submitError.message || "Whoops! Something went wrong. Please try again.");
+          return;
+        }
+
+        if (!hasCompleteValidGuestContact(form, bookingData)) {
+          message.error(
+            "Please go back and complete your name, email, and phone before paying.",
+          );
+          setCheckoutStep("guest");
+          return;
+        }
+
+        try {
+          const synced = await syncPaymentIntentGuestDetails({
+            paymentService,
+            clientSecret,
+            form,
+            bookingData,
+            participantsCount,
+            requirePerParticipantNames,
+            appliedDiscountId: appliedDiscount?.id ?? null,
+          });
+          if (!synced) {
+            message.error(
+              "Please go back and complete your contact details before paying.",
+            );
+            setCheckoutStep("guest");
+            return;
+          }
+        } catch (syncErr) {
+          const data = syncErr?.response?.data || syncErr;
+          message.error(
+            (typeof data?.error === "string" ? data.error : null) ||
+              "We couldn't save your details. Please try again.",
+          );
           return;
         }
 

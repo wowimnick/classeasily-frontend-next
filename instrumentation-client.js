@@ -17,9 +17,10 @@ if (sentryOptions) {
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 
-// Only initialize PostHog on production domain
+// Only initialize PostHog on production domain when configured via env
 if (
   typeof window !== "undefined" &&
+  process.env.NEXT_PUBLIC_POSTHOG_KEY &&
   (window.location.hostname === "classeasily.com" ||
     window.location.hostname === "www.classeasily.com")
 ) {

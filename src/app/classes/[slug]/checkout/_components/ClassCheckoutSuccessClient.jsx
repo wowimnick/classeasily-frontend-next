@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -98,7 +98,11 @@ export default function ClassCheckoutSuccessClient() {
 
       if (cancelled) return;
 
-      if (!data?.bookingData && !data?.bookingId) {
+      if (
+        !data?.bookingId &&
+        !data?.user_facing_reference &&
+        !data?.payment_intent_id
+      ) {
         setLoading(false);
         router.replace(`/classes/${slug}`);
         return;
@@ -138,6 +142,26 @@ export default function ClassCheckoutSuccessClient() {
     clearBookingSuccessPayload(slug);
     router.push(`/classes/${slug}`);
   };
+
+  const handleBookingDetailsFetched = useCallback(
+    (data) => {
+      setSuccessData((prev) => {
+        if (!prev) return prev;
+        const next = {
+          ...prev,
+          bookingId: data.booking_id ?? prev.bookingId,
+          user_facing_reference:
+            data.user_facing_reference ?? prev.user_facing_reference,
+          booking_group_id: data.booking_group_id ?? prev.booking_group_id,
+          participant_details:
+            data.participant_details ?? prev.participant_details,
+        };
+        saveBookingSuccessPayload(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   if (!slug) {
     return (
@@ -209,6 +233,7 @@ export default function ClassCheckoutSuccessClient() {
             bookingId={bookingId}
             reference={user_facing_reference}
             onRetryBooking={handleRetryBooking}
+            onBookingDetailsFetched={handleBookingDetailsFetched}
           />
         </MainContainer>
       </PageWrapper>
