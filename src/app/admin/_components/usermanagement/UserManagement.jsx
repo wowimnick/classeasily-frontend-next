@@ -1137,13 +1137,46 @@ const UserManagementDashboard = () => {
     }
   };
 
-  const handleBanAccountIps = (userId) =>
-    userAction(
-      userAdminService.banAccountIps,
-      userId,
-      "Login IPs banned for this account",
-      "Error banning login IPs."
-    );
+  const handleBanAccountIps = async (userId) => {
+    setLoading(true);
+    try {
+      const response = await userAdminService.banAccountIps(userId);
+      if (response.success) {
+        const data = response.data || {};
+        const bannedCount = data.banned_ips?.length || 0;
+        const reactivatedCount = data.reactivated_ips?.length || 0;
+        const alreadyCount = data.already_banned_ips?.length || 0;
+        const affectedCount = bannedCount + reactivatedCount;
+
+        if (affectedCount > 0) {
+          message.success(
+            `Banned ${affectedCount} login IP address${affectedCount === 1 ? "" : "es"}.`
+          );
+        } else if (alreadyCount > 0) {
+          message.info(
+            "All login IPs for this account are already in the banned list."
+          );
+        } else {
+          message.warning("No login IPs were banned.");
+        }
+
+        fetchUsers(pagination.current, pagination.pageSize);
+        if (isDetailsDrawerOpen && selectedUser?.userId === userId) {
+          fetchUserHistory(userId);
+        }
+      } else {
+        const err =
+          typeof response.error === "string"
+            ? response.error
+            : response.error?.detail || "Error banning login IPs.";
+        message.error(err);
+      }
+    } catch (error) {
+      message.error("Error banning login IPs.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLockAccount = (userId) =>
     userAction(
