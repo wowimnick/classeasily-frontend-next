@@ -58,6 +58,7 @@ import {
   BookOpen,
   Search,
   Link2,
+  ShieldBan,
 } from "lucide-react";
 import {
   AreaChart,
@@ -1123,7 +1124,11 @@ const UserManagementDashboard = () => {
           closeDetailsDrawer();
         }
       } else {
-        message.error(`Failed: ${response.error?.detail || "Unknown error"}`);
+        const err =
+          typeof response.error === "string"
+            ? response.error
+            : response.error?.detail || errorMsg;
+        message.error(err);
       }
     } catch (error) {
       message.error(errorMsg);
@@ -1131,6 +1136,14 @@ const UserManagementDashboard = () => {
       setLoading(false);
     }
   };
+
+  const handleBanAccountIps = (userId) =>
+    userAction(
+      userAdminService.banAccountIps,
+      userId,
+      "Login IPs banned for this account",
+      "Error banning login IPs."
+    );
 
   const handleLockAccount = (userId) =>
     userAction(
@@ -1337,29 +1350,51 @@ const UserManagementDashboard = () => {
                       onClick: () => handleImpersonateUser(user.userId),
                     },
                     { type: "divider" },
-                    user.status === "active"
-                      ? {
-                          key: "3",
-                          icon: <Lock size={14} />,
-                          label: (
-                            <Popconfirm
-                              title="Disable this account?"
-                              description="The user will be unable to sign in until re-enabled."
-                              onConfirm={() => handleLockAccount(user.userId)}
-                              okText="Disable"
-                              okButtonProps={{ danger: true }}
-                            >
-                              <span>Disable Account</span>
-                            </Popconfirm>
-                          ),
-                          danger: true,
-                        }
-                      : {
-                          key: "3",
-                          icon: <Unlock size={14} />,
-                          label: "Enable Account",
-                          onClick: () => handleUnlockAccount(user.userId),
-                        },
+                    ...(user.status === "active"
+                      ? [
+                          {
+                            key: "3",
+                            icon: <Lock size={14} />,
+                            label: (
+                              <Popconfirm
+                                title="Disable this account?"
+                                description="The user will be unable to sign in until re-enabled."
+                                onConfirm={() => handleLockAccount(user.userId)}
+                                okText="Disable"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <span>Disable Account</span>
+                              </Popconfirm>
+                            ),
+                            danger: true,
+                          },
+                        ]
+                      : user.status === "inactive"
+                        ? [
+                            {
+                              key: "3",
+                              icon: <Unlock size={14} />,
+                              label: "Enable Account",
+                              onClick: () => handleUnlockAccount(user.userId),
+                            },
+                          ]
+                        : []),
+                    {
+                      key: "ban-ips",
+                      icon: <ShieldBan size={14} />,
+                      label: (
+                        <Popconfirm
+                          title="Ban this user's login IPs?"
+                          description="All IP addresses from this user's login history will be blocked from API access."
+                          onConfirm={() => handleBanAccountIps(user.userId)}
+                          okText="Ban IPs"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <span>Ban Login IPs</span>
+                        </Popconfirm>
+                      ),
+                      danger: true,
+                    },
                     {
                       key: "4",
                       icon: <Trash2 size={14} />,
@@ -2295,11 +2330,26 @@ const UserManagementDashboard = () => {
                         Lock
                       </Button>
                     </Popconfirm>
-                  ) : (
-                    <Button size="small" icon={<Unlock size={14} />} onClick={() => handleUnlockAccount(selectedUser.userId)}>
+                  ) : selectedUser.status === "inactive" ? (
+                    <Button
+                      size="small"
+                      icon={<Unlock size={14} />}
+                      onClick={() => handleUnlockAccount(selectedUser.userId)}
+                    >
                       Unlock
                     </Button>
-                  )}
+                  ) : null}
+                  <Popconfirm
+                    title="Ban this user's login IPs?"
+                    description="All IP addresses from this user's login history will be blocked from API access."
+                    onConfirm={() => handleBanAccountIps(selectedUser.userId)}
+                    okText="Ban IPs"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button size="small" danger icon={<ShieldBan size={14} />}>
+                      Ban IPs
+                    </Button>
+                  </Popconfirm>
                   <CloseButton icon={<X size={20} />} onClick={closeDetailsDrawer} />
                 </Space>
               </MergedUserDrawerHeader>

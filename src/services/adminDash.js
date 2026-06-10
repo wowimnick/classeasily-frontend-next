@@ -677,7 +677,9 @@ export const userAdminService = {
    */
   lockAccount: async (userId) => {
     try {
-      const response = await axiosInstance.post(`/admin/users/${userId}/lock/`);
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/lock_account/`
+      );
       return {
         success: true,
         data: response.data,
@@ -686,7 +688,7 @@ export const userAdminService = {
       console.error(`Error locking account ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || "Failed to lock account",
+        error: error.response?.data?.detail || "Failed to lock account",
       };
     }
   },
@@ -698,7 +700,7 @@ export const userAdminService = {
   unlockAccount: async (userId) => {
     try {
       const response = await axiosInstance.post(
-        `/admin/users/${userId}/unlock/`
+        `/admin/users/${userId}/unlock_account/`
       );
       return {
         success: true,
@@ -708,7 +710,30 @@ export const userAdminService = {
       console.error(`Error unlocking account ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || "Failed to unlock account",
+        error: error.response?.data?.detail || "Failed to unlock account",
+      };
+    }
+  },
+
+  /**
+   * Ban all login IPs associated with a user account
+   * @param {number} userId - User ID
+   */
+  banAccountIps: async (userId) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/ban_account_ips/`
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error(`Error banning login IPs for user ${userId}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail || "Failed to ban account login IPs",
       };
     }
   },
@@ -798,6 +823,69 @@ export const userAdminService = {
       return {
         success: false,
         error: error.response?.data?.error || "Failed to fetch user metrics",
+      };
+    }
+  },
+};
+
+export const bannedIpService = {
+  /**
+   * List banned IP addresses
+   * @param {Object} params - Optional query params
+   */
+  list: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/banned-ips/", {
+        params,
+      });
+      return {
+        success: true,
+        data: toAdminList(response.data),
+      };
+    } catch (error) {
+      console.error("Error fetching banned IPs:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch banned IPs",
+      };
+    }
+  },
+
+  /**
+   * Ban an IP address
+   * @param {Object} payload - { ip_address, reason, expires_at? }
+   */
+  create: async (payload) => {
+    try {
+      const response = await axiosInstance.post("/admin/banned-ips/", payload);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error banning IP:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to ban IP address",
+      };
+    }
+  },
+
+  /**
+   * Remove a banned IP entry
+   * @param {number} id - BannedIP record ID
+   */
+  delete: async (id) => {
+    try {
+      await axiosInstance.delete(`/admin/banned-ips/${id}/`);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      console.error(`Error removing banned IP ${id}:`, error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to remove banned IP",
       };
     }
   },

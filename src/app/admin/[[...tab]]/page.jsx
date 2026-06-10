@@ -27,6 +27,10 @@ const UserAuditLog = dynamic(
   () => import("../_components/usermanagement/UserAuditLog"),
   { ssr: false }
 );
+const BannedIpManagement = dynamic(
+  () => import("../_components/ip-ban/BannedIpManagement"),
+  { ssr: false }
+);
 const BookingsList = dynamic(
   () => import("../_components/bookingmanagement/BookingsList"),
   { ssr: false }
@@ -186,6 +190,9 @@ export default function AdminPage() {
         break;
       case "audit":
         content = <UserAuditLog />;
+        break;
+      case "banned-ips":
+        content = <BannedIpManagement />;
         break;
       case "all-bookings":
         content = <BookingsList />;

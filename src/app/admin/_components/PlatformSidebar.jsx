@@ -491,6 +491,7 @@ const menuGroupsConfig = [
           { key: "users", label: "Users" },
           { key: "roles", label: "Roles & Permissions" },
           { key: "audit", label: "Audit Log" },
+          { key: "banned-ips", label: "Banned IPs" },
         ],
       },
     ],

@@ -3,6 +3,7 @@ export const ADMIN_TAB_PERMISSIONS = {
   users: "quickstart.view_customuser",
   roles: "quickstart.view_role",
   audit: "quickstart.view_auditlog",
+  "banned-ips": "quickstart.manage_ip_bans",
   "business-overview": "quickstart.view_business_metrics",
   "business-listings": "quickstart.view_businessinfo",
   "business-verification": "quickstart.view_all_verificationrequests",
