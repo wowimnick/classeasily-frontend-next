@@ -4,7 +4,6 @@ import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { message, Input, Alert, Button, Divider } from "antd";
 import NumberFlow from "@number-flow/react";
-import posthog from "posthog-js";
 import dayjs from "dayjs";
 import { ActionButton, CheckoutLink } from "./GiftcardStyles";
 import { loadStripe } from "@stripe/stripe-js";
@@ -17,6 +16,11 @@ import {
 } from "@stripe/react-stripe-js";
 import { theme as appTheme } from "@/components/theme";
 import { giftCardService } from "@/services/apiService";
+import {
+  captureGiftCardPurchase,
+  paymentIntentIdFromClientSecret,
+  savePendingGiftCardAnalytics,
+} from "@/lib/giftCardAnalytics";
 
 // --- STRIPE SETUP ---
 const stripePromise = loadStripe(
@@ -168,6 +172,19 @@ const ExpressCheckoutButton = ({
           return;
         }
 
+        const paymentIntentId =
+          intentData.paymentIntentId ||
+          intentData.payment_intent_id ||
+          paymentIntentIdFromClientSecret(clientSecret);
+
+        savePendingGiftCardAnalytics({
+          amount,
+          paymentIntentId,
+          recipientEmail: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+          sendToSelf: isSendToSelf,
+          deliveryMethod,
+        });
+
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
@@ -183,10 +200,14 @@ const ExpressCheckoutButton = ({
         } else {
           ev.complete("success");
           if (paymentIntent?.status === "succeeded") {
-            posthog.capture("giftcard_purchase_completed", {
+            captureGiftCardPurchase({
               amount,
-              recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
-              send_to_self: isSendToSelf,
+              paymentIntentId: paymentIntent.id,
+              recipientEmail: isSendToSelf
+                ? formData.senderEmail
+                : formData.recipientEmail,
+              sendToSelf: isSendToSelf,
+              deliveryMethod,
             });
             message.success("Gift card ordered successfully!");
             if (onSuccess) onSuccess();
@@ -295,12 +316,23 @@ const StripePaymentForm = ({
         throw new Error("Failed to initialize payment. Please try again.");
       }
 
+      savePendingGiftCardAnalytics({
+        amount,
+        paymentIntentId:
+          intentData.paymentIntentId ||
+          intentData.payment_intent_id ||
+          paymentIntentIdFromClientSecret(clientSecret),
+        recipientEmail: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+        sendToSelf: isSendToSelf,
+        deliveryMethod,
+      });
+
       // 3. Confirm Payment with the returned secret
       const result = await stripe.confirmPayment({
         elements,
         clientSecret,
         confirmParams: {
-          return_url: `${window.location.origin}/gift-cards/checkout`,
+          return_url: `${window.location.origin}/giftcards/checkout`,
           payment_method_data: {
             billing_details: {
               name: cardholderName,
@@ -320,10 +352,12 @@ const StripePaymentForm = ({
         result.paymentIntent &&
         result.paymentIntent.status === "succeeded"
       ) {
-        posthog.capture("giftcard_purchase_completed", {
+        captureGiftCardPurchase({
           amount,
-          recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
-          send_to_self: isSendToSelf,
+          paymentIntentId: result.paymentIntent.id,
+          recipientEmail: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+          sendToSelf: isSendToSelf,
+          deliveryMethod,
         });
         message.success("Gift card ordered successfully!");
         if (onSuccess) onSuccess();

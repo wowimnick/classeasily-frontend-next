@@ -32,21 +32,24 @@ export async function captureBookingCompleted(distinctId, properties = {}) {
   const insertId = dedupeKey ? String(dedupeKey) : undefined;
   const resolvedDistinctId = distinctId || "anonymous";
 
+  const sharedProps = {
+    revenue,
+    ...eventProps,
+    ...(revenue != null ? { $value: revenue } : {}),
+    product_type: eventProps.product_type || "class_booking",
+  };
+
   client.capture({
     distinctId: resolvedDistinctId,
     event: "booking_completed",
-    properties: { revenue, ...eventProps },
+    properties: sharedProps,
     ...(insertId ? { uuid: insertId } : {}),
   });
 
   client.capture({
     distinctId: resolvedDistinctId,
     event: "purchase",
-    properties: {
-      revenue,
-      ...eventProps,
-      ...(revenue != null ? { $value: revenue } : {}),
-    },
+    properties: sharedProps,
     ...(insertId ? { uuid: `purchase-${insertId}` } : {}),
   });
 

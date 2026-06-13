@@ -73,8 +73,10 @@ export function captureBookingPurchase({
     booking_id: actualBookingId || undefined,
     revenue,
     currency,
+    $value: revenue,
     participants: bookingData?.participants ?? 1,
     payment_intent_id: paymentIntentId || undefined,
+    product_type: "class_booking",
   };
 
   const captureOptions = { $insert_id: dedupeId };

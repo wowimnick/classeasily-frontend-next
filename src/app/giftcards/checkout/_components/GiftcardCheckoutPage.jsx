@@ -11,6 +11,10 @@ import styled from "styled-components";
 
 import posthog from "posthog-js";
 import FooterClient from "@/components/homepage/FooterClient";
+import {
+  captureGiftCardPurchase,
+  readPendingGiftCardAnalytics,
+} from "@/lib/giftCardAnalytics";
 
 // Import sub-components
 import GiftcardConfigStep from "./GiftcardConfigStep";
@@ -191,6 +195,26 @@ export default function GiftcardCheckoutPage() {
         g.initGradient("#giftcard-checkout-gradient-canvas");
       })
       .catch(() => {});
+  }, []);
+
+  // Stripe 3DS redirect lands here with payment_intent + redirect_status in the URL.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get("redirect_status");
+    const paymentIntentId = params.get("payment_intent");
+    if (redirectStatus !== "succeeded" || !paymentIntentId) return;
+
+    const pending = readPendingGiftCardAnalytics();
+    captureGiftCardPurchase({
+      amount: pending?.amount,
+      paymentIntentId,
+      recipientEmail: pending?.recipientEmail,
+      sendToSelf: pending?.sendToSelf,
+      deliveryMethod: pending?.deliveryMethod,
+    });
+    setStep("success");
+    window.history.replaceState({}, "", "/giftcards/checkout");
   }, []);
 
   return (
