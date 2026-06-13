@@ -58,6 +58,15 @@ const GlobalOverrides = createGlobalStyle`
   }
 `;
 
+/** Hero expanded pill (SearchFormWrapper) — location + date + collection + search btn */
+const HERO_PILL_H = 76;
+const HERO_EXPANDED_W = 780;
+const HERO_PILL_SHADOW = "0 5px 18px rgba(0, 0, 0, 0.14)";
+/** Explore-style compact docked mini pill (ClientHeader.jsx) */
+const DOCKED_COMPACT_H = 44;
+const DOCKED_COMPACT_W_FALLBACK = 260;
+const DOCKED_COMPACT_SHADOW = "0 2px 8px rgba(0, 0, 0, 0.1)";
+
 // --- STYLED COMPONENTS ---
 const HowItWorksButton = styled.button`
   background: transparent;
@@ -364,6 +373,7 @@ const SearchModeStage = styled.div`
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  min-height: ${HERO_PILL_H}px;
 `;
 
 const SearchModeHeightAnimator = styled(motion.div)`
@@ -371,6 +381,17 @@ const SearchModeHeightAnimator = styled(motion.div)`
   display: flex;
   justify-content: center;
   overflow: visible;
+  min-height: ${HERO_PILL_H}px;
+`;
+
+/** Keeps hero layout space while the docked pill is fixed in the header zone */
+const HeroSearchDockSlot = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  visibility: ${(p) => (p.$docked ? "hidden" : "visible")};
+  opacity: ${(p) => (p.$docked ? 0 : 1)};
+  pointer-events: ${(p) => (p.$docked ? "none" : "auto")};
 `;
 
 
@@ -603,14 +624,6 @@ const SecondaryLink = styled(Link)`
   }
 `;
 
-/** Hero expanded pill (SearchFormWrapper) — location + date + collection + search btn */
-const HERO_PILL_H = 76;
-const HERO_EXPANDED_W = 780;
-const HERO_PILL_SHADOW = "0 5px 18px rgba(0, 0, 0, 0.14)";
-/** Explore-style compact docked mini pill (ClientHeader.jsx) */
-const DOCKED_COMPACT_H = 44;
-const DOCKED_COMPACT_W_FALLBACK = 260;
-const DOCKED_COMPACT_SHADOW = "0 2px 8px rgba(0, 0, 0, 0.1)";
 const TORONTO_PRESET_DISPLAY = SUGGESTED_AREAS[0]?.displayName ?? "Toronto, ON";
 
 // --- FIX: FrozenContent Component ---
@@ -1374,36 +1387,25 @@ export default function BannerSearchClient({ mode }) {
               }}
             />
             <SearchModeHeightAnimator
-              animate={{ height: isDocked ? 0 : modeHeight }}
-              transition={
-                prefersReducedMotion || !isDocked
-                  ? { duration: 0 }
-                  : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }
-              }
+              animate={{ height: modeHeight || HERO_PILL_H }}
+              transition={{ duration: 0 }}
             >
               <motion.div
                 ref={guidedModeRef}
                 style={{ width: "100%", display: "flex", justifyContent: "center" }}
               >
-                <AnimatePresence>
-                  {!isDocked && (
-                    <SearchFormWrapper
-                      key="hero-pill"
-                      ref={containerRef}
-                      onSubmit={handleSearchSubmit}
-                      animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
-                      exit={
-                        prefersReducedMotion
-                          ? { opacity: 0 }
-                          : { opacity: 0, scale: 0.92, y: -12 }
-                      }
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    >
-                      {renderPillSegments()}
-                      {renderPopup()}
-                    </SearchFormWrapper>
-                  )}
-                </AnimatePresence>
+                <HeroSearchDockSlot $docked={isDocked}>
+                  <SearchFormWrapper
+                    key="hero-pill"
+                    ref={isDocked ? undefined : containerRef}
+                    onSubmit={handleSearchSubmit}
+                    animate={{ backgroundColor: activeField ? "#ebebeb" : "#ffffff" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  >
+                    {renderPillSegments()}
+                    {!isDocked && renderPopup()}
+                  </SearchFormWrapper>
+                </HeroSearchDockSlot>
               </motion.div>
             </SearchModeHeightAnimator>
         </SearchModeStage>
