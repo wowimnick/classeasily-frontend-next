@@ -99,27 +99,26 @@ const SearchFormWrapper = styled(motion.form)`
   }
 `;
 
-/** Dim layer only — clicks are handled by DockedPillOverlay (header is z-index 999) */
+/** Dim layer + outside-click dismiss when the docked pill is expanded */
 const DockedSearchBackdrop = styled(motion.div)`
   position: fixed;
   inset: 0;
   z-index: 999;
   background: rgba(0, 0, 0, 0.32);
-  pointer-events: none;
+  pointer-events: auto;
 `;
 
-/** Captures outside clicks; pill form stays interactive on top */
+/** Positions the docked pill below the header without blocking page interaction */
 const DockedPillOverlay = styled.div`
   position: fixed;
   top: 76px;
   left: 0;
   right: 0;
-  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   z-index: 1000;
-  pointer-events: auto;
+  pointer-events: none;
   padding: 0 1rem;
   box-sizing: border-box;
 `;
@@ -872,13 +871,9 @@ export default function BannerSearchClient({ mode }) {
     if (activeField) syncPopupPosition();
   }, [activeField, syncPopupPosition]);
 
-  const handleDockedOverlayMouseDown = useCallback(
-    (event) => {
-      if (event.target !== event.currentTarget) return;
-      closeActiveField();
-    },
-    [closeActiveField],
-  );
+  const handleDockedBackdropMouseDown = useCallback(() => {
+    closeActiveField();
+  }, [closeActiveField]);
 
   const scrollToHowItWorks = () => {
     const section = document.getElementById("how-it-works");
@@ -1381,7 +1376,7 @@ export default function BannerSearchClient({ mode }) {
             <SearchModeHeightAnimator
               animate={{ height: isDocked ? 0 : modeHeight }}
               transition={
-                prefersReducedMotion
+                prefersReducedMotion || !isDocked
                   ? { duration: 0 }
                   : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }
               }
@@ -1426,6 +1421,7 @@ export default function BannerSearchClient({ mode }) {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
                   aria-hidden
+                  onMouseDown={handleDockedBackdropMouseDown}
                 />
               )}
             </AnimatePresence>,
@@ -1435,7 +1431,7 @@ export default function BannerSearchClient({ mode }) {
           enableDockedPill &&
           isDocked &&
           createPortal(
-            <DockedPillOverlay onMouseDown={handleDockedOverlayMouseDown}>
+            <DockedPillOverlay>
               <AnimatePresence>
                 <DockedSearchFormWrapper
                     key="docked-pill"
