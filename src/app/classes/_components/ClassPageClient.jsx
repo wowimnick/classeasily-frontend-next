@@ -25,9 +25,18 @@ import { Alert, Button as AntButton, Divider, Modal } from "antd";
 import message from "@/lib/message";
 import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
-import MiniCalendar from "./MiniCalendar";
-import { getDurationText, getCancellationPolicyText } from "./steps/utils";
+import SelectTimeModal from "./SelectTimeModal";
+import { getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
+import {
+  mobileDrawerTheme,
+  MobileDrawerOverlay,
+  MobileDrawerContent,
+  MobileDrawerHandle,
+  MobileDrawerTitle,
+  ParticipantsStepperBtn,
+  ParticipantsStepperValue,
+} from "./mobileBookingStyles";
 import { BP, down, up } from "@/styles/breakpoints";
 
 /** Max width for fixed glass footers (tablet / iPad — avoids full-bleed bars) */
@@ -37,6 +46,30 @@ const MOBILE_STICKY_FOOTER_MAX_WIDTH_PX = 480;
 const Z_DESKTOP_PEEK_BAR = 900;
 /** Host + cancellation modals / drawers — above peek bar and header search popovers (~2600) */
 const Z_CLASS_HOST_AND_POLICIES = 5000;
+
+/**
+ * Format a "YYYY-MM-DD" date string as a compact preview label for the
+ * Upcoming availability strip (e.g. "Tomorrow, June 19" / "Mon, June 22").
+ */
+function formatSectionHeaderPreview(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const dayAfter = new Date(today);
+  dayAfter.setDate(today.getDate() + 2);
+
+  let prefix = "";
+  if (date.getTime() === tomorrow.getTime()) prefix = "Tomorrow, ";
+  else if (date.getTime() === dayAfter.getTime()) prefix = "Day after, ";
+
+  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  if (prefix) return `${prefix}${monthDay}`;
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  return `${weekday}, ${monthDay}`;
+}
 
 /** Normalize option cancellation fields (camelCase from API + rare snake_case). */
 function getOptionCancellation(opt) {
@@ -499,199 +532,119 @@ const letterVariants = {
   }),
 };
 
-/* --- Mobile Reserve flow: mini calendar section (mobile only) --- */
+/* --- Mobile Reserve flow: "Upcoming availability" preview strip (mobile only) --- */
 const WhenSection = styled.section`
   display: none;
-  
+
   ${down(BP.TABLET)} {
     display: block;
     margin-bottom: 1.5rem;
     padding: 0 1rem;
   }
 `;
-const WhenTitle = styled.h2`
-  font-size: 20px;
-  font-weight: 600;
-  color: #000;
-  margin: 0 0 1rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-const WhenCalendarWrap = styled.div`
-  display: flex;
-  justify-content: center;
-  width: 100%;
+
+const AvailabilityStripHeader = styled.h2`
+  font-size: 28px;
+  font-weight: 800;
+  color: #000000;
+  letter-spacing: -0.01em;
+  margin: 0 0 16px 0;
 `;
 
-/* --- Mobile drawers (date / time / participants) - shared chrome, same pattern as checkout --- */
-const mobileDrawerTheme = {
-  primary: "#ff385c",
-  primaryFade: "rgba(255, 56, 92, 0.04)",
-  textPrimary: "#111827",
-  textSecondary: "#6b7280",
-  border: "#e5e7eb",
-  bg: "#ffffff",
-  bgSecondary: "#f3f4f6",
-  radiusSm: "16px",
-};
-const MobileDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: 3000;
+const AvailabilityStrip = styled.div`
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 0 8px;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 4px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
-const MobileDrawerContent = styled(Drawer.Content)`
-  background: ${mobileDrawerTheme.bg};
+
+const AvailabilityCard = styled.button`
+  flex: 0 0 auto;
+  width: 220px;
+  min-height: 120px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  max-height: 85vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 3001;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
-  outline: none;
+  gap: 4px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
 `;
-const MobileDrawerHandle = styled.div`
-  width: 40px;
-  height: 4px;
-  background: ${mobileDrawerTheme.border};
-  border-radius: 2px;
-  margin: 12px auto;
-  flex-shrink: 0;
-`;
-const MobileDrawerTitle = styled.h3`
-  margin: 0 0 1rem 0;
-  font-size: 1.125rem;
+
+const AvailabilityCardDate = styled.span`
+  font-size: 16px;
   font-weight: 700;
-  color: ${mobileDrawerTheme.textPrimary};
-  text-align: center;
+  color: #000000;
 `;
-const MobileDrawerBody = styled.div`
-  padding: 0 1rem 1rem;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
+
+const AvailabilityCardTime = styled.span`
+  font-size: 15px;
+  font-weight: 400;
+  color: #3d3d3d;
+  margin-top: 2px;
 `;
-const MobileDrawerSubtitle = styled.span`
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-top: 4px;
+
+const AvailabilityCardSpots = styled.span`
+  font-size: 15px;
+  font-weight: 400;
+  color: #3d3d3d;
+  margin-top: 14px;
 `;
+
+const AvailabilityStripDivider = styled.div`
+  height: 1px;
+  background: #ebebeb;
+  margin: 0 0 20px 0;
+`;
+
+/* --- Mobile drawers chrome + theme live in ./mobileBookingStyles.js (imported above). --- */
 const ParticipantsDrawerHint = styled.p`
   margin: 0 1rem 0.25rem;
   font-size: 0.875rem;
   color: #6b7280;
   text-align: center;
 `;
-const TimeSlotList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow-y: auto;
-  flex: 1;
-  padding: 0;
-  border: 1px solid ${mobileDrawerTheme.border};
-  border-radius: ${mobileDrawerTheme.radiusSm};
-  margin: 0 1rem 1rem;
-`;
-const TimeSlotRow = styled(motion.button)`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: ${mobileDrawerTheme.bg};
-  border: none;
-  border-top: 1px solid ${mobileDrawerTheme.border};
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  width: 100%;
-  transition: background 0.2s;
 
-  &:first-of-type {
-    border-top: none;
-  }
-  &:hover:not(:disabled) {
-    background: ${mobileDrawerTheme.primaryFade};
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  ${(p) =>
-    p.$selected &&
-    `
-    background: ${mobileDrawerTheme.primaryFade};
-  `}
-`;
-const TimeSlotTime = styled.span`
-  font-size: 1rem;
-  font-weight: 700;
-  color: ${mobileDrawerTheme.textPrimary};
-`;
-const TimeSlotMeta = styled.span`
-  font-size: 0.75rem;
-  color: ${mobileDrawerTheme.textSecondary};
-  display: block;
-  margin-top: 2px;
-`;
-const TimeSlotPrice = styled.span`
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${mobileDrawerTheme.textPrimary};
-  background: ${mobileDrawerTheme.bgSecondary};
-  padding: 6px 12px;
-  border-radius: 8px;
-  min-width: 70px;
-  text-align: center;
-  ${(p) => p.$selected && `background: ${mobileDrawerTheme.primaryFade}; color: ${mobileDrawerTheme.primary};`}
-`;
-
-/* --- Participants edit drawer (mobile reserve flow, same pattern as checkout) --- */
+/* --- Participants edit drawer (mobile reserve flow, same pattern as checkout) ---
+   ParticipantsStepperBtn/Value now live in ./mobileBookingStyles.js (imported above). */
 const ParticipantsStepperWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
   padding: 24px 1rem;
-`;
-const ParticipantsStepperBtn = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #e5e7eb;
-  background: white;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #111827;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, border-color 0.2s;
-  &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #ff385c;
-    color: #ff385c;
-  }
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-`;
-const ParticipantsStepperValue = styled.span`
-  font-size: 1.25rem;
-  font-weight: 700;
-  min-width: 2rem;
-  text-align: center;
 `;
 const ParticipantsApplyButton = styled.button`
   margin: 0 1rem 1.5rem;
@@ -1054,7 +1007,7 @@ const MobileBookingFooter = ({ option, onBookNow, hidden, currencyCode = "CAD" }
   };
 
   const { display, per } = getPriceDisplay();
-  const buttonText = isCourse ? "View Dates" : "Select Time";
+  const buttonText = "Show dates";
 
   return (
     <MobileBookingFooterContainer data-hidden={hidden}>
@@ -1692,19 +1645,66 @@ export default function ClassPageClient({
               {mobileReserve.isMobileView && optionToDisplayOnCard && (
                 <>
                   <WhenSection id="when-section">
-                    <WhenTitle>Pick a date</WhenTitle>
-                    <WhenCalendarWrap>
-                      <MiniCalendar
-                        availableSlots={mobileReserve.mobileAvailableSlots}
-                        loading={mobileReserve.mobileSlotsLoading}
-                        selectedDate={mobileReserve.mobileSelectedDate}
-                        onDateSelect={mobileReserve.handleMobileDateSelect}
-                        currentDate={mobileReserve.mobileCalendarMonth}
-                        onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
-                        minSelectableDate={mobileReserve.mobileMinSelectableDate}
-                        today={mobileReserve.mobileToday}
-                      />
-                    </WhenCalendarWrap>
+                    <AvailabilityStripDivider />
+                    <AvailabilityStripHeader>Upcoming availability</AvailabilityStripHeader>
+                    {mobileReserve.mobileSlotsLoading ? (
+                      <div style={{ color: "#717171", fontSize: 14, padding: "8px 0" }}>
+                        Loading availability…
+                      </div>
+                    ) : (
+                      <AvailabilityStrip>
+                        {(() => {
+                          // Build preview cards: first slot of each of the first ~6 available dates.
+                          const slots = mobileReserve.mobileAvailableSlots || {};
+                          const minStr = mobileReserve.mobileMinSelectableDate
+                            ? getLocalYYYYMMDD(mobileReserve.mobileMinSelectableDate)
+                            : null;
+                          const dates = Object.keys(slots)
+                            .filter((d) => !minStr || d >= minStr)
+                            .filter((d) => Array.isArray(slots[d]) && slots[d].length > 0)
+                            .sort()
+                            .slice(0, 6);
+                          if (dates.length === 0) {
+                            return (
+                              <div style={{ color: "#717171", fontSize: 14, padding: "8px 0" }}>
+                                No upcoming availability.
+                              </div>
+                            );
+                          }
+                          return dates.map((dateStr) => {
+                            const slot = slots[dateStr][0];
+                            return (
+                              <AvailabilityCard
+                                key={dateStr}
+                                type="button"
+                                onClick={() => {
+                                  const [y, m, d] = dateStr.split("-").map(Number);
+                                  const dateObj = new Date(y, m - 1, d);
+                                  mobileReserve.handleMobileDateSelect(dateObj);
+                                }}
+                              >
+                                <AvailabilityCardDate>
+                                  {formatSectionHeaderPreview(dateStr)}
+                                </AvailabilityCardDate>
+                                <AvailabilityCardTime>
+                                  {formatTimeRangeForDisplay(
+                                    dateStr,
+                                    slot.time,
+                                    slot.duration,
+                                    classData?.business_timezone || "Etc/UTC",
+                                    Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                  )}
+                                </AvailabilityCardTime>
+                                <AvailabilityCardSpots>
+                                  {slot.available_spots}{" "}
+                                  {slot.available_spots === 1 ? "spot" : "spots"} available
+                                </AvailabilityCardSpots>
+                              </AvailabilityCard>
+                            );
+                          });
+                        })()}
+                      </AvailabilityStrip>
+                    )}
                   </WhenSection>
                   {!classData.coordinates && <SectionDividerAnt />}
                 </>
@@ -1899,101 +1899,38 @@ export default function ClassPageClient({
             ) : (
               <MobileBookingFooter
                 option={optionToDisplayOnCard}
-                onBookNow={handleOpenBookingModal}
+                onBookNow={() => mobileReserve.handleOpenSelectTimeModal()}
                 hidden={isReviewsModalOpen}
                 currencyCode={displayCurrency}
               />
             )
           )}
 
-          {/* Date drawer: calendar only. Selecting a date closes this and opens the time drawer (same as checkout). */}
-          <Drawer.Root
-            open={mobileReserve.mobileDateDrawerOpen}
-            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileDateDrawerOpen)}
-            shouldScaleBackground
-          >
-            <Drawer.Portal>
-              <MobileDrawerOverlay />
-              <MobileDrawerContent>
-                <MobileDrawerHandle />
-                <MobileDrawerTitle>Pick a date</MobileDrawerTitle>
-                <MobileDrawerBody>
-                  <MiniCalendar
-                    availableSlots={mobileReserve.mobileAvailableSlots}
-                    loading={mobileReserve.mobileSlotsLoading}
-                    selectedDate={mobileReserve.mobileSelectedDate}
-                    onDateSelect={mobileReserve.handleMobileDateSelectFromDrawer}
-                    currentDate={mobileReserve.mobileCalendarMonth}
-                    onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
-                    minSelectableDate={mobileReserve.mobileMinSelectableDate}
-                    today={mobileReserve.mobileToday}
-                  />
-                </MobileDrawerBody>
-              </MobileDrawerContent>
-            </Drawer.Portal>
-          </Drawer.Root>
-
-          <Drawer.Root
-            open={mobileReserve.mobileTimeDrawerOpen}
-            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileTimeDrawerOpen)}
-            shouldScaleBackground
-          >
-            <Drawer.Portal>
-              <MobileDrawerOverlay />
-              <MobileDrawerContent>
-                <MobileDrawerHandle />
-                <MobileDrawerTitle>
-                  Select time
-                  {mobileReserve.mobileSelectedDate && (
-                    <MobileDrawerSubtitle>
-                      {formatNaiveDate(getLocalYYYYMMDD(mobileReserve.mobileSelectedDate), "EEEE, MMMM d")}
-                    </MobileDrawerSubtitle>
-                  )}
-                </MobileDrawerTitle>
-                <TimeSlotList>
-                  {mobileReserve.mobileSelectedDate &&
-                    (mobileReserve.mobileAvailableSlots[getLocalYYYYMMDD(mobileReserve.mobileSelectedDate)] || []).map((slot) => {
-                      const isSelected = mobileReserve.mobileSelectedSlot?.id === slot.instance_id;
-                      const price = parseFloat(slot.price);
-                      const soldOut = Number(slot.available_spots) === 0;
-                      return (
-                        <TimeSlotRow
-                          type="button"
-                          key={slot.instance_id}
-                          $selected={isSelected}
-                          disabled={soldOut}
-                          onClick={() => {
-                            if (!soldOut) mobileReserve.handleMobileTimeSelect(slot);
-                          }}
-                        >
-                          <div>
-                            <TimeSlotTime>
-                              {formatTimeRangeForDisplay(
-                                getLocalYYYYMMDD(mobileReserve.mobileSelectedDate),
-                                slot.time,
-                                slot.duration,
-                                classData?.business_timezone || "Etc/UTC",
-                                Intl.DateTimeFormat().resolvedOptions().timeZone
-                              )}
-                            </TimeSlotTime>
-                            <TimeSlotMeta>
-                              {soldOut
-                                ? `${getDurationText(slot.duration)} · Sold out`
-                                : `${getDurationText(slot.duration)} · ${slot.available_spots} spots left`}
-                            </TimeSlotMeta>
-                          </div>
-                          <TimeSlotPrice $selected={isSelected}>
-                            {price === 0
-                              ? "Free"
-                              : formatMoneyCompact(price, displayCurrency).text}
-                          </TimeSlotPrice>
-                        </TimeSlotRow>
-                      );
-                    })}
-                </TimeSlotList>
-              </MobileDrawerContent>
-            </Drawer.Portal>
-          </Drawer.Root>
+          {/* Unified "Select a time" modal (replaces the old separate date + time drawers).
+              Opens from the footer "Show dates" button and from edit-date/edit-time in the
+              reserve-review summary. Slot selection closes this modal and opens the review drawer. */}
+          <SelectTimeModal
+            open={mobileReserve.mobileSelectTimeModalOpen}
+            onOpenChange={mobileReserve.handleSelectTimeModalOpenChange}
+            availableSlots={mobileReserve.mobileAvailableSlots}
+            loading={mobileReserve.mobileSlotsLoading}
+            selectedDate={mobileReserve.mobileSelectedDate}
+            selectedSlot={mobileReserve.mobileSelectedSlot}
+            participants={mobileReserve.mobileParticipants}
+            participantsMax={mobileReserve.mobileParticipantsMax}
+            onParticipantsChange={(n) => {
+              mobileReserve.setMobileParticipantsDraft(n);
+              mobileReserve.setMobileParticipants(n);
+            }}
+            onSelectSlot={mobileReserve.handleSelectTimeModalSlot}
+            minSelectableDate={mobileReserve.mobileMinSelectableDate}
+            today={mobileReserve.mobileToday}
+            businessTimezone={classData?.business_timezone || "Etc/UTC"}
+            currency={displayCurrency}
+            option={optionToDisplayOnCard}
+            initialCalendarExpanded={mobileReserve.mobileCalendarExpanded}
+            scrollToDate={mobileReserve.mobileScrollToDate}
+          />
 
           {/* Participants drawer: open from Edit guests in review drawer; closing reopens review. */}
           <Drawer.Root
