@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
 import { homepageService } from "@/services/apiService";
 import styles from "./ScrollingBookerReviews.module.css";
 
@@ -91,10 +92,16 @@ function ReviewChip({ review }) {
 
 export default function ScrollingBookerReviews() {
   const [reviews, setReviews] = useState(FALLBACK_REVIEWS);
-  const viewportRef = useRef(null);
-  const trackRef = useRef(null);
-  const [offsetPx, setOffsetPx] = useState(0);
-  const [maxOffsetPx, setMaxOffsetPx] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "center",
+    containScroll: "trimSnaps",
+    loop: false,
+    dragFree: false,
+    watchDrag: false,
+    duration: 28,
+  });
+  const [prevDisabled, setPrevDisabled] = useState(true);
+  const [nextDisabled, setNextDisabled] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,51 +124,34 @@ export default function ScrollingBookerReviews() {
     };
   }, []);
 
-  const measureBounds = useCallback(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
-    if (!viewport || !track) return;
-
-    const maxOffset = Math.max(0, track.scrollWidth - viewport.clientWidth);
-    setMaxOffsetPx(maxOffset);
-    setOffsetPx((prev) => Math.min(prev, maxOffset));
+  const onSelect = useCallback((api) => {
+    setPrevDisabled(!api.canScrollPrev());
+    setNextDisabled(!api.canScrollNext());
   }, []);
 
   useEffect(() => {
-    setOffsetPx(0);
-    measureBounds();
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+    if (!emblaApi) return;
+    onSelect(emblaApi);
+    emblaApi.on("reInit", onSelect);
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("reInit", onSelect);
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
-    const resizeObserver = new ResizeObserver(measureBounds);
-    resizeObserver.observe(viewport);
-    if (trackRef.current) resizeObserver.observe(trackRef.current);
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.reInit();
+  }, [emblaApi, reviews]);
 
-    return () => resizeObserver.disconnect();
-  }, [reviews, measureBounds]);
+  const scrollPrev = useCallback(() => {
+    emblaApi?.scrollPrev();
+  }, [emblaApi]);
 
-  const getScrollStep = useCallback(() => {
-    const track = trackRef.current;
-    const firstChip = track?.firstElementChild;
-    if (!firstChip) return 228;
-    const trackStyles = track ? getComputedStyle(track) : null;
-    const gap = trackStyles ? parseFloat(trackStyles.gap || "8") : 8;
-    return firstChip.getBoundingClientRect().width + gap;
-  }, []);
-
-  const scrollByStep = useCallback(
-    (direction) => {
-      const step = getScrollStep();
-      setOffsetPx((prev) => {
-        const next = prev + direction * step;
-        return Math.max(0, Math.min(maxOffsetPx, next));
-      });
-    },
-    [getScrollStep, maxOffsetPx],
-  );
-
-  const canScrollPrev = offsetPx > 4;
-  const canScrollNext = offsetPx < maxOffsetPx - 4;
+  const scrollNext = useCallback(() => {
+    emblaApi?.scrollNext();
+  }, [emblaApi]);
 
   return (
     <section className={styles.section} aria-label="Recent booker reviews">
@@ -172,24 +162,19 @@ export default function ScrollingBookerReviews() {
           type="button"
           className={styles.navBtn}
           aria-label="Show previous reviews"
-          disabled={!canScrollPrev}
-          onClick={() => scrollByStep(-1)}
+          disabled={prevDisabled}
+          onClick={scrollPrev}
         >
           <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
         </button>
 
         <div className={styles.fadeWrap}>
-          <div ref={viewportRef} className={styles.viewport}>
-            <div
-              ref={trackRef}
-              className={styles.trackScroll}
-              style={{ transform: `translateX(-${offsetPx}px)` }}
-            >
+          <div ref={emblaRef} className={styles.viewport}>
+            <div className={styles.trackScroll}>
               {reviews.map((review, index) => (
-                <ReviewChip
-                  key={`${review.reviewer_name}-${index}`}
-                  review={review}
-                />
+                <div className={styles.slide} key={`${review.reviewer_name}-${index}`}>
+                  <ReviewChip review={review} />
+                </div>
               ))}
             </div>
           </div>
@@ -199,8 +184,8 @@ export default function ScrollingBookerReviews() {
           type="button"
           className={styles.navBtn}
           aria-label="Show more reviews"
-          disabled={!canScrollNext}
-          onClick={() => scrollByStep(1)}
+          disabled={nextDisabled}
+          onClick={scrollNext}
         >
           <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
         </button>
