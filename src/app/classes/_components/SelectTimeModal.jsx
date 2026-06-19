@@ -481,7 +481,6 @@ function CalendarLayer({
   setCalendarOpen,
   sortedDateStrs,
   minSelectableDate,
-  selectedDate,
   onDateConfirm,
 }) {
   const [draftDate, setDraftDate] = useState(null);
@@ -490,11 +489,12 @@ function CalendarLayer({
   useEffect(() => {
     if (calendarOpen) {
       setRendered(true);
-      setDraftDate(selectedDate ?? null);
+      setDraftDate(null);
     } else {
       setRendered(false);
+      setDraftDate(null);
     }
-  }, [calendarOpen, selectedDate]);
+  }, [calendarOpen]);
 
   const requestClose = () => setRendered(false);
 
@@ -686,7 +686,6 @@ export default function SelectTimeModal({
       setCalendarOpen={setCalendarOpen}
       sortedDateStrs={sortedDateStrs}
       minSelectableDate={minSelectableDate}
-      selectedDate={selectedDate}
       onDateConfirm={handleCalendarConfirm}
     />
   );

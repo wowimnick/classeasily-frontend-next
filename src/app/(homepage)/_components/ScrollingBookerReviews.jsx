@@ -96,8 +96,16 @@ export default function ScrollingBookerReviews() {
     let cancelled = false;
     homepageService.fetchFeaturedReviews().then((res) => {
       if (cancelled || !res?.success) return;
-      if (Array.isArray(res.reviews) && res.reviews.length > 0) {
-        setReviews(res.reviews);
+      const apiReviews = Array.isArray(res.reviews) ? res.reviews : [];
+      if (apiReviews.length > 0) {
+        setReviews(
+          apiReviews.map((review) => ({
+            reviewer_name: review.reviewer_name || "Guest",
+            rating: Number(review.rating) || 5,
+            comment: review.comment || "",
+            class_slug: review.class_slug || null,
+          })),
+        );
       }
     });
     return () => {

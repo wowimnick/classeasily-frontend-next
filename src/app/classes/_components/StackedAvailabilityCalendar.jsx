@@ -7,6 +7,7 @@ import { getLocalYYYYMMDD } from "@/services/utils";
 
 const INITIAL_MONTHS = 8;
 const MONTHS_PER_LOAD = 4;
+const MIN_DISPLAY_MONTHS = 4;
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -21,11 +22,11 @@ const Wrap = styled.div`
 
 const CloseBtn = styled.button`
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 10px;
   z-index: 3;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,9 +45,10 @@ const StickyWeekdayBar = styled.div`
   flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  padding: 44px 20px 8px;
+  gap: 6px;
+  padding: 28px 20px 10px;
   background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 6px 16px -10px rgba(15, 23, 42, 0.22);
 `;
 
 const WeekdayCell = styled.div`
@@ -61,15 +63,15 @@ const ScrollArea = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 20px 0;
+  padding: 8px 20px 0;
   -webkit-overflow-scrolling: touch;
 `;
 
 const MonthBlock = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 
   &:first-child {
-    margin-top: 4px;
+    margin-top: 2px;
   }
 `;
 
@@ -84,23 +86,37 @@ const MonthHeader = styled.h4`
 const DayGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  row-gap: 2px;
+  gap: 6px;
 `;
 
 const DayCell = styled.button`
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 1;
   border: none;
   background: transparent;
-  font-size: 14px;
-  font-weight: 400;
-  color: ${(p) => (p.$available ? "#000000" : "#d1d5db")};
-  cursor: ${(p) => (p.$available ? "pointer" : "default")};
-  border-radius: 50%;
   font-family: inherit;
   padding: 0;
+  cursor: ${(p) => (p.$available ? "pointer" : "default")};
+
+  &:disabled {
+    cursor: default;
+  }
+`;
+
+const DayInner = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: ${(p) => (p.$selected ? 500 : 400)};
+  color: ${(p) => (p.$available ? "#000000" : "#c4c4c4")};
+  text-decoration: ${(p) => (p.$available ? "none" : "line-through")};
+  text-decoration-thickness: 1px;
   transition: box-shadow 0.15s ease, color 0.15s ease;
 
   ${(p) =>
@@ -108,20 +124,16 @@ const DayCell = styled.button`
     `
     box-shadow: inset 0 0 0 1.5px #000000;
     color: #000000;
-    font-weight: 500;
+    text-decoration: none;
   `}
 
-  &:hover {
+  ${DayCell}:not(:disabled):hover & {
     ${(p) => p.$available && !p.$selected && `color: #000000;`}
-  }
-
-  &:disabled {
-    cursor: default;
   }
 `;
 
 const EmptyDayCell = styled.div`
-  height: 40px;
+  aspect-ratio: 1;
 `;
 
 const LoadMoreWrap = styled.div`
@@ -164,10 +176,7 @@ const NextBtn = styled.button`
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
-  opacity: ${(p) => (p.$visible ? 1 : 0)};
-  transform: translateY(${(p) => (p.$visible ? 0 : 6)}px);
-  pointer-events: ${(p) => (p.$visible ? "auto" : "none")};
+  transition: background 0.15s ease, transform 0.15s ease;
 
   &:hover {
     background: #e31c5f;
@@ -179,19 +188,36 @@ const NextBtn = styled.button`
 `;
 
 function buildAllMonths(sortedDateStrs, minSelectableDate) {
-  if (!sortedDateStrs.length) return [];
-  const minStr = minSelectableDate ? getLocalYYYYMMDD(minSelectableDate) : sortedDateStrs[0];
-  const firstStr = sortedDateStrs.find((d) => d >= minStr) || sortedDateStrs[0];
-  const lastStr = sortedDateStrs[sortedDateStrs.length - 1];
-  const [fy, fm] = firstStr.split("-").map(Number);
-  const [ly, lm] = lastStr.split("-").map(Number);
-  const cursor = new Date(fy, fm - 1, 1);
-  const end = new Date(ly, lm - 1, 1);
+  const anchor = minSelectableDate ? new Date(minSelectableDate) : new Date();
+  anchor.setDate(1);
+  anchor.setHours(0, 0, 0, 0);
+
+  let rangeEnd = new Date(anchor);
+  rangeEnd.setMonth(rangeEnd.getMonth() + MIN_DISPLAY_MONTHS - 1);
+
+  if (sortedDateStrs.length > 0) {
+    const lastStr = sortedDateStrs[sortedDateStrs.length - 1];
+    const [ly, lm] = lastStr.split("-").map(Number);
+    const lastMonth = new Date(ly, lm - 1, 1);
+    if (lastMonth > rangeEnd) {
+      rangeEnd = lastMonth;
+    }
+  }
+
   const months = [];
-  while (cursor <= end) {
+  const cursor = new Date(anchor);
+  while (cursor <= rangeEnd) {
     months.push(new Date(cursor));
     cursor.setMonth(cursor.getMonth() + 1, 1);
   }
+
+  while (months.length < MIN_DISPLAY_MONTHS) {
+    const last = months[months.length - 1] || anchor;
+    const next = new Date(last);
+    next.setMonth(next.getMonth() + 1, 1);
+    months.push(next);
+  }
+
   return months;
 }
 
@@ -208,7 +234,7 @@ export default function StackedAvailabilityCalendar({
 
   useEffect(() => {
     setVisibleMonthCount(INITIAL_MONTHS);
-  }, [sortedDateStrs.length]);
+  }, [sortedDateStrs.length, minSelectableDate]);
 
   const availableDateSet = useMemo(() => new Set(sortedDateStrs), [sortedDateStrs]);
 
@@ -231,7 +257,7 @@ export default function StackedAvailabilityCalendar({
   return (
     <Wrap>
       <CloseBtn type="button" aria-label="Close calendar" onClick={onClose}>
-        <X size={22} strokeWidth={1.75} />
+        <X size={18} strokeWidth={1.75} />
       </CloseBtn>
 
       <StickyWeekdayBar>
@@ -262,11 +288,12 @@ export default function StackedAvailabilityCalendar({
                 key={dateStr}
                 type="button"
                 $available={available}
-                $selected={selected}
                 disabled={!available}
                 onClick={() => available && handleDayClick(dateStr)}
               >
-                {dayNum}
+                <DayInner $available={available} $selected={selected}>
+                  {dayNum}
+                </DayInner>
               </DayCell>,
             );
           }
@@ -300,14 +327,9 @@ export default function StackedAvailabilityCalendar({
         )}
       </ScrollArea>
 
-      {showNextButton && (
+      {showNextButton && hasDraft && (
         <Footer>
-          <NextBtn
-            type="button"
-            $visible={hasDraft}
-            disabled={!hasDraft}
-            onClick={() => hasDraft && onConfirm?.()}
-          >
+          <NextBtn type="button" onClick={() => onConfirm?.()}>
             Next
           </NextBtn>
         </Footer>

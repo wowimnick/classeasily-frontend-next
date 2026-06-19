@@ -4526,9 +4526,10 @@ export const homepageService = {
       const response = await axiosInstance.get(
         API_ENDPOINTS.HOMEPAGE_FEATURED_REVIEWS,
       );
-      const data = Array.isArray(response.data)
-        ? response.data
-        : response.data?.reviews || [];
+      const payload = response.data;
+      const data = Array.isArray(payload)
+        ? payload
+        : payload?.results || payload?.reviews || [];
       return { success: true, reviews: data };
     } catch (error) {
       console.error(
