@@ -8,6 +8,7 @@ import {
   MobileDrawerHandle,
   mobileDrawerTheme,
 } from "./mobileBookingStyles";
+import { DesktopModalShell, DesktopCloseButton } from "./bookingShellStyles";
 
 const Sheet = styled(Drawer.Content)`
   background: ${mobileDrawerTheme.bg};
@@ -28,6 +29,13 @@ const Sheet = styled(Drawer.Content)`
 const Body = styled.div`
   padding: 0 1.25rem 1.5rem;
   overflow-y: auto;
+  position: relative;
+`;
+
+const DesktopBody = styled.div`
+  padding: 8px 1.5rem 1.75rem;
+  overflow-y: auto;
+  position: relative;
 `;
 
 const Title = styled.h3`
@@ -43,6 +51,18 @@ const CalendarWrap = styled.div`
   justify-content: center;
 `;
 
+function CalendarPanel({ title, onClose, children, CloseBtn }) {
+  return (
+    <>
+      <CloseBtn type="button" aria-label="Close" onClick={onClose}>
+        ×
+      </CloseBtn>
+      <Title>{title}</Title>
+      {children}
+    </>
+  );
+}
+
 export default function SelectCalendarDrawer({
   open,
   onOpenChange,
@@ -54,7 +74,43 @@ export default function SelectCalendarDrawer({
   onMonthChange,
   minSelectableDate,
   today,
+  variant = "drawer",
 }) {
+  const handleClose = () => onOpenChange?.(false);
+
+  const calendar = (
+    <CalendarWrap>
+      <MiniCalendar
+        availableSlots={availableSlots}
+        loading={loading}
+        selectedDate={selectedDate}
+        onDateSelect={onDateSelect}
+        currentDate={currentDate}
+        onMonthChange={onMonthChange}
+        minSelectableDate={minSelectableDate}
+        today={today}
+      />
+    </CalendarWrap>
+  );
+
+  if (variant === "modal") {
+    return (
+      <DesktopModalShell
+        open={open}
+        onClose={handleClose}
+        maxWidth={420}
+        maxHeight="auto"
+        ariaLabel="Pick a date"
+      >
+        <DesktopBody>
+          <CalendarPanel title="Pick a date" onClose={handleClose} CloseBtn={DesktopCloseButton}>
+            {calendar}
+          </CalendarPanel>
+        </DesktopBody>
+      </DesktopModalShell>
+    );
+  }
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
@@ -62,19 +118,9 @@ export default function SelectCalendarDrawer({
         <Sheet>
           <MobileDrawerHandle />
           <Body>
-            <Title>Pick a date</Title>
-            <CalendarWrap>
-              <MiniCalendar
-                availableSlots={availableSlots}
-                loading={loading}
-                selectedDate={selectedDate}
-                onDateSelect={onDateSelect}
-                currentDate={currentDate}
-                onMonthChange={onMonthChange}
-                minSelectableDate={minSelectableDate}
-                today={today}
-              />
-            </CalendarWrap>
+            <CalendarPanel title="Pick a date" onClose={handleClose} CloseBtn={DesktopCloseButton}>
+              {calendar}
+            </CalendarPanel>
           </Body>
         </Sheet>
       </Drawer.Portal>

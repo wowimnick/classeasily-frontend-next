@@ -78,7 +78,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   }, []);
 
   useEffect(() => {
-    if (!mounted || !optionToDisplayOnCard?.optionId || !isMobileView) return;
+    if (!mounted || !optionToDisplayOnCard?.optionId) return;
     const optionId = optionToDisplayOnCard.optionId;
     let cancelled = false;
 
@@ -109,7 +109,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     return () => {
       cancelled = true;
     };
-  }, [mounted, optionToDisplayOnCard?.optionId, isMobileView, mobileMinSelectableDate]);
+  }, [mounted, optionToDisplayOnCard?.optionId, mobileMinSelectableDate]);
 
   // Set initial calendar month to first available date — but do NOT auto-select a slot.
   // Users must explicitly pick a time via SelectTimeModal so the footer shows "Show dates".
@@ -205,19 +205,20 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
         (mobileSelectedDate ? getLocalYYYYMMDD(mobileSelectedDate) : null);
       if (!dateStr) return;
 
-      const maxSpots = slot.available_spots ?? 1;
+      const maxSpots = slot.available_spots ?? slot.maxParticipants ?? 1;
+      const instanceId = slot.instance_id ?? slot.id;
       const participants = Math.min(
         participantOverride ?? mobileParticipants,
         maxSpots,
       );
       setMobileSelectedSlot({
-        id: slot.instance_id,
+        id: instanceId,
         date: dateStr,
         time: slot.time,
-        available_spots: slot.available_spots,
+        available_spots: slot.available_spots ?? slot.maxParticipants,
         price: slot.price,
         duration: slot.duration,
-        minParticipants: slot.min_participants,
+        minParticipants: slot.min_participants ?? slot.minParticipants,
       });
       reopenReviewDrawerOnCloseEditRef.current = false;
       setMobileParticipants(participants);
@@ -237,14 +238,22 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     [mobileSelectedDate, mobileParticipants],
   );
 
-  /** Upcoming availability strip — skip modal, go straight to review summary with 1 guest. */
+  /** Upcoming availability strip / sidebar slot — skip modal, go straight to review summary with 1 guest. */
   const handleQuickSelectFromAvailability = useCallback(
     (slot, dateStr) => {
       if (!slot || !dateStr) return;
+      const normalized = {
+        instance_id: slot.instance_id ?? slot.id,
+        time: slot.time,
+        available_spots: slot.available_spots ?? slot.maxParticipants,
+        price: slot.price,
+        duration: slot.duration,
+        min_participants: slot.min_participants ?? slot.minParticipants,
+      };
       const [y, m, d] = dateStr.split("-").map(Number);
       setMobileSelectedDate(new Date(y, m - 1, d));
       setMobileParticipants(1);
-      handleMobileTimeSelect(slot, dateStr, 1);
+      handleMobileTimeSelect(normalized, dateStr, 1);
     },
     [handleMobileTimeSelect],
   );

@@ -18,6 +18,7 @@ import {
   estimateTotalWithTax,
 } from "@/lib/bookingPricing";
 import { moneyFormatLocale, toSchemaPriceCurrency } from "@/lib/seo";
+import { DesktopModalShell } from "./bookingShellStyles";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -382,6 +383,22 @@ const PriceRow = styled.div`
   }
 `;
 
+const ModalReviewShell = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-height: min(88vh, 760px);
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const ModalReviewBody = styled(DrawerBody)`
+  padding: 0 20px 16px;
+`;
+
+const ModalReviewFooter = styled(DrawerFooter)`
+  padding: 12px 20px 20px;
+`;
+
 export default function MobileReserveReviewDrawer({
   open,
   onClose,
@@ -390,6 +407,7 @@ export default function MobileReserveReviewDrawer({
   onEditDate,
   onEditTime,
   onEditGuests,
+  variant = "drawer",
 }) {
   const router = useRouter();
   const { user: authUser } = useAuthUser();
@@ -529,24 +547,24 @@ export default function MobileReserveReviewDrawer({
 
   if (!reserveData?.selectedSlot || !reserveData?.selectedOption) return null;
 
-  return (
-    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <Drawer.Portal>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerHandle />
-          <DrawerBody>
-            <HeaderRow>
-              <span style={{ gridColumn: 1 }} aria-hidden />
-              <Title>Review and continue</Title>
-              <CloseBtn
-                type="button"
-                onClick={onClose}
-                aria-label="Close review"
-              >
-                <X size={18} />
-              </CloseBtn>
-            </HeaderRow>
+  const BodyComponent = variant === "modal" ? ModalReviewBody : DrawerBody;
+  const FooterComponent = variant === "modal" ? ModalReviewFooter : DrawerFooter;
+
+  const reviewInner = (
+    <>
+      {variant === "drawer" && <DrawerHandle />}
+      <BodyComponent>
+        <HeaderRow>
+          <span style={{ gridColumn: 1 }} aria-hidden />
+          <Title>Review and continue</Title>
+          <CloseBtn
+            type="button"
+            onClick={onClose}
+            aria-label="Close review"
+          >
+            <X size={18} />
+          </CloseBtn>
+        </HeaderRow>
 
             <InfoCard>
               <ListingHeader>
@@ -632,15 +650,15 @@ export default function MobileReserveReviewDrawer({
                  </div>
               </div>
             </PolicySection>
-          </DrawerBody>
+      </BodyComponent>
 
-          <DrawerFooter>
-            <NextButton type="button" onClick={handleNext}>
-              Next
-            </NextButton>
-          </DrawerFooter>
+      <FooterComponent>
+        <NextButton type="button" onClick={handleNext}>
+          Next
+        </NextButton>
+      </FooterComponent>
 
-            {/* NESTED DRAWER: Price Details */}
+      {/* NESTED DRAWER: Price Details */}
             <Drawer.Root open={priceOpen} onOpenChange={setPriceOpen}>
                 <Drawer.Portal>
                     <NestedDrawerOverlay />
@@ -681,7 +699,28 @@ export default function MobileReserveReviewDrawer({
                     </NestedDrawerContent>
                 </Drawer.Portal>
             </Drawer.Root>
-        </DrawerContent>
+    </>
+  );
+
+  if (variant === "modal") {
+    return (
+      <DesktopModalShell
+        open={open}
+        onClose={onClose}
+        maxWidth={520}
+        maxHeight="88vh"
+        ariaLabel="Review and continue"
+      >
+        <ModalReviewShell>{reviewInner}</ModalReviewShell>
+      </DesktopModalShell>
+    );
+  }
+
+  return (
+    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <Drawer.Portal>
+        <DrawerOverlay />
+        <DrawerContent>{reviewInner}</DrawerContent>
       </Drawer.Portal>
     </Drawer.Root>
   );

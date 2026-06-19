@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { CalendarDays } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   ParticipantsStepperBtn,
   ParticipantsStepperValue,
 } from "./mobileBookingStyles";
+import { DesktopModalShell, DesktopCloseButton } from "./bookingShellStyles";
 
 import {
   getLocalYYYYMMDD,
@@ -39,35 +40,57 @@ const Sheet = styled(Drawer.Content)`
   overflow: hidden;
 `;
 
+const SheetInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const DesktopInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: min(88vh, 720px);
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+`;
+
 const CloseButton = styled.button`
   position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 40px;
-  height: 40px;
+  top: 14px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: transparent;
   border: none;
-  border-radius: 50%;
   color: #717171;
-  font-size: 22px;
+  font-size: 32px;
   line-height: 1;
   cursor: pointer;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  z-index: 5;
+  padding: 0;
+
+  &:hover {
+    color: #111111;
+  }
 `;
 
 const HeaderWrap = styled.div`
   padding: 4px 24px 0;
   flex-shrink: 0;
   background: ${mobileDrawerTheme.bg};
+  position: relative;
+  z-index: 2;
 `;
 
 const Title = styled.h2`
   margin: 12px 0 0;
-  padding-right: 44px;
+  padding-right: 48px;
   font-size: 1.5rem;
   font-weight: 600;
   color: #111111;
@@ -112,9 +135,6 @@ const MonthToolbar = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 12px 0 16px;
-  margin: 0 -24px;
-  padding-left: 24px;
-  padding-right: 24px;
   box-shadow: 0 10px 20px -14px rgba(15, 23, 42, 0.22);
 `;
 
@@ -148,6 +168,7 @@ const CalendarToggleBtn = styled.button`
 
 const ScrollBody = styled.div`
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 8px 24px 32px;
   -webkit-overflow-scrolling: touch;
@@ -270,6 +291,164 @@ function formatSectionHeader(dateStr) {
   return prefix ? `${prefix}${monthDay}` : `${weekday}, ${monthDay}`;
 }
 
+function scrollSectionIntoView(container, el) {
+  if (!container || !el) return;
+  const offset = el.offsetTop - container.offsetTop;
+  container.scrollTo({ top: Math.max(0, offset - 4), behavior: "smooth" });
+}
+
+function SelectTimePanel({
+  onClose,
+  onOpenCalendar,
+  availableSlots,
+  loading,
+  selectedDate,
+  selectedSlot,
+  participants,
+  participantsMax,
+  onParticipantsChange,
+  onSelectSlot,
+  minSelectableDate,
+  today,
+  businessTimezone,
+  currency,
+  option,
+  scrollToDate,
+  scrollBodyRef,
+  sectionRefs,
+  sentinelRef,
+  visibleDateStrs,
+  sortedDateStrs,
+  visibleCount,
+  headerMonthDate,
+  CloseBtn,
+}) {
+  const isCourse = option?.booking_type === "Full Course";
+  const perGuestLabel = isCourse ? "/ course" : "/ guest";
+  const guestLabel =
+    participants === 1 ? "1 guest" : `${participants} guests`;
+
+  return (
+    <>
+      <CloseBtn type="button" aria-label="Close" onClick={onClose}>
+        ×
+      </CloseBtn>
+
+      <HeaderWrap>
+        <Title>Select a time</Title>
+
+        <GuestRow>
+          <GuestLabel>{guestLabel}</GuestLabel>
+          <StepperRow>
+            <CompactStepperBtn
+              type="button"
+              disabled={participants <= 1}
+              onClick={() => onParticipantsChange?.(Math.max(1, participants - 1))}
+              aria-label="Decrease guests"
+            >
+              −
+            </CompactStepperBtn>
+            <GuestStepperValue>{participants}</GuestStepperValue>
+            <CompactStepperBtn
+              type="button"
+              disabled={participants >= participantsMax}
+              onClick={() =>
+                onParticipantsChange?.(
+                  Math.min(participantsMax, participants + 1),
+                )
+              }
+              aria-label="Increase guests"
+            >
+              +
+            </CompactStepperBtn>
+          </StepperRow>
+        </GuestRow>
+
+        <MonthToolbar>
+          <MonthLabel>
+            {headerMonthDate.toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+          </MonthLabel>
+          <CalendarToggleBtn
+            type="button"
+            aria-label="Open calendar"
+            onClick={() => onOpenCalendar?.()}
+          >
+            <CalendarDays size={20} />
+          </CalendarToggleBtn>
+        </MonthToolbar>
+      </HeaderWrap>
+
+      <ScrollBody ref={scrollBodyRef}>
+        {loading ? (
+          <EmptyState>Loading availability…</EmptyState>
+        ) : sortedDateStrs.length === 0 ? (
+          <EmptyState>No upcoming availability for this class.</EmptyState>
+        ) : (
+          visibleDateStrs.map((dateStr) => {
+            const slots = availableSlots[dateStr] || [];
+            return (
+              <div
+                key={dateStr}
+                ref={(el) => {
+                  sectionRefs.current[dateStr] = el;
+                }}
+              >
+                <DateSectionHeader>{formatSectionHeader(dateStr)}</DateSectionHeader>
+                {slots.map((slot) => {
+                  const isSelected =
+                    selectedSlot?.id === (slot.instance_id ?? slot.id);
+                  const price = parseFloat(slot.price);
+                  const soldOut = Number(slot.available_spots) === 0;
+                  const priceText =
+                    price === 0
+                      ? "Free"
+                      : formatMoneyCompact(price, currency).text;
+                  return (
+                    <SlotCard
+                      type="button"
+                      key={slot.instance_id}
+                      $selected={isSelected}
+                      disabled={soldOut}
+                      onClick={() => !soldOut && onSelectSlot(slot, dateStr)}
+                    >
+                      <SlotLeft>
+                        <SlotTime>
+                          {formatTimeRangeForDisplay(
+                            dateStr,
+                            slot.time,
+                            slot.duration,
+                            businessTimezone,
+                            Intl.DateTimeFormat().resolvedOptions().timeZone,
+                          )}
+                        </SlotTime>
+                        <SlotPriceLine>
+                          <SlotPriceAmount>{priceText}</SlotPriceAmount>{" "}
+                          {perGuestLabel}
+                        </SlotPriceLine>
+                      </SlotLeft>
+                      <SlotRight>
+                        {soldOut
+                          ? "Sold out"
+                          : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"}`}
+                      </SlotRight>
+                    </SlotCard>
+                  );
+                })}
+              </div>
+            );
+          })
+        )}
+        {visibleDateStrs.length < sortedDateStrs.length && (
+          <Sentinel ref={sentinelRef} />
+        )}
+      </ScrollBody>
+    </>
+  );
+}
+
 export default function SelectTimeModal({
   open,
   onOpenChange,
@@ -288,11 +467,14 @@ export default function SelectTimeModal({
   currency = "CAD",
   option,
   scrollToDate = null,
+  variant = "drawer",
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_SECTIONS);
   const scrollBodyRef = useRef(null);
   const sectionRefs = useRef({});
   const sentinelRef = useRef(null);
+  const prevOpenRef = useRef(false);
+  const scrollTargetRef = useRef(null);
 
   const sortedDateStrs = useMemo(() => {
     if (!availableSlots || typeof availableSlots !== "object") return [];
@@ -310,13 +492,39 @@ export default function SelectTimeModal({
     return new Date(y, m - 1, d);
   }, [selectedDate, sortedDateStrs, today]);
 
-  const prevOpenRef = useRef(false);
+  const visibleDateStrs = sortedDateStrs.slice(0, visibleCount);
+
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setVisibleCount(INITIAL_SECTIONS);
+      scrollTargetRef.current = scrollToDate ? getLocalYYYYMMDD(scrollToDate) : null;
+      if (!scrollToDate && scrollBodyRef.current) {
+        scrollBodyRef.current.scrollTop = 0;
+      }
     }
     prevOpenRef.current = open;
-  }, [open]);
+  }, [open, scrollToDate]);
+
+  useEffect(() => {
+    if (!open || !scrollToDate) return;
+    const dateStr = getLocalYYYYMMDD(scrollToDate);
+    scrollTargetRef.current = dateStr;
+    const idx = sortedDateStrs.indexOf(dateStr);
+    if (idx === -1) return;
+    setVisibleCount((prev) => Math.max(prev, idx + 1));
+  }, [open, scrollToDate, sortedDateStrs]);
+
+  useLayoutEffect(() => {
+    if (!open || !scrollTargetRef.current) return;
+    const dateStr = scrollTargetRef.current;
+    const container = scrollBodyRef.current;
+    const el = sectionRefs.current[dateStr];
+    if (!container || !el) return;
+    const frame = requestAnimationFrame(() => {
+      scrollSectionIntoView(container, el);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, visibleCount, scrollToDate]);
 
   useEffect(() => {
     if (!open || sortedDateStrs.length === 0) return;
@@ -336,25 +544,49 @@ export default function SelectTimeModal({
     return () => observer.disconnect();
   }, [open, sortedDateStrs.length]);
 
-  useEffect(() => {
-    if (!open || !scrollToDate) return;
-    const dateStr = getLocalYYYYMMDD(scrollToDate);
-    const idx = sortedDateStrs.indexOf(dateStr);
-    if (idx === -1) return;
-    setVisibleCount((prev) => Math.max(prev, idx + 1));
-    requestAnimationFrame(() => {
-      const el = sectionRefs.current[dateStr];
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-  }, [open, scrollToDate, sortedDateStrs]);
+  const handleClose = () => onOpenChange?.(false);
 
-  const visibleDateStrs = sortedDateStrs.slice(0, visibleCount);
-  const isCourse = option?.booking_type === "Full Course";
-  const perGuestLabel = isCourse ? "/ course" : "/ guest";
-  const guestLabel =
-    participants === 1 ? "1 guest" : `${participants} guests`;
+  const panelProps = {
+    onClose: handleClose,
+    onOpenCalendar,
+    availableSlots,
+    loading,
+    selectedDate,
+    selectedSlot,
+    participants,
+    participantsMax,
+    onParticipantsChange,
+    onSelectSlot,
+    minSelectableDate,
+    today,
+    businessTimezone,
+    currency,
+    option,
+    scrollToDate,
+    scrollBodyRef,
+    sectionRefs,
+    sentinelRef,
+    visibleDateStrs,
+    sortedDateStrs,
+    visibleCount,
+    headerMonthDate,
+  };
+
+  if (variant === "modal") {
+    return (
+      <DesktopModalShell
+        open={open}
+        onClose={handleClose}
+        maxWidth={580}
+        maxHeight="88vh"
+        ariaLabel="Select a time"
+      >
+        <DesktopInner>
+          <SelectTimePanel {...panelProps} CloseBtn={DesktopCloseButton} />
+        </DesktopInner>
+      </DesktopModalShell>
+    );
+  }
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
@@ -362,124 +594,9 @@ export default function SelectTimeModal({
         <MobileDrawerOverlay />
         <Sheet>
           <MobileDrawerHandle />
-          <CloseButton
-            type="button"
-            aria-label="Close"
-            onClick={() => onOpenChange?.(false)}
-          >
-            ×
-          </CloseButton>
-
-          <HeaderWrap>
-            <Title>Select a time</Title>
-
-            <GuestRow>
-              <GuestLabel>{guestLabel}</GuestLabel>
-              <StepperRow>
-                <CompactStepperBtn
-                  type="button"
-                  disabled={participants <= 1}
-                  onClick={() => onParticipantsChange?.(Math.max(1, participants - 1))}
-                  aria-label="Decrease guests"
-                >
-                  −
-                </CompactStepperBtn>
-                <GuestStepperValue>{participants}</GuestStepperValue>
-                <CompactStepperBtn
-                  type="button"
-                  disabled={participants >= participantsMax}
-                  onClick={() =>
-                    onParticipantsChange?.(
-                      Math.min(participantsMax, participants + 1),
-                    )
-                  }
-                  aria-label="Increase guests"
-                >
-                  +
-                </CompactStepperBtn>
-              </StepperRow>
-            </GuestRow>
-
-            <MonthToolbar>
-              <MonthLabel>
-                {headerMonthDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </MonthLabel>
-              <CalendarToggleBtn
-                type="button"
-                aria-label="Open calendar"
-                onClick={() => onOpenCalendar?.()}
-              >
-                <CalendarDays size={20} />
-              </CalendarToggleBtn>
-            </MonthToolbar>
-          </HeaderWrap>
-
-          <ScrollBody ref={scrollBodyRef}>
-            {loading ? (
-              <EmptyState>Loading availability…</EmptyState>
-            ) : sortedDateStrs.length === 0 ? (
-              <EmptyState>No upcoming availability for this class.</EmptyState>
-            ) : (
-              visibleDateStrs.map((dateStr) => {
-                const slots = availableSlots[dateStr] || [];
-                return (
-                  <div
-                    key={dateStr}
-                    ref={(el) => {
-                      sectionRefs.current[dateStr] = el;
-                    }}
-                  >
-                    <DateSectionHeader>{formatSectionHeader(dateStr)}</DateSectionHeader>
-                    {slots.map((slot) => {
-                      const isSelected = selectedSlot?.id === slot.instance_id;
-                      const price = parseFloat(slot.price);
-                      const soldOut = Number(slot.available_spots) === 0;
-                      const priceText =
-                        price === 0
-                          ? "Free"
-                          : formatMoneyCompact(price, currency).text;
-                      return (
-                        <SlotCard
-                          type="button"
-                          key={slot.instance_id}
-                          $selected={isSelected}
-                          disabled={soldOut}
-                          onClick={() => !soldOut && onSelectSlot(slot, dateStr)}
-                        >
-                          <SlotLeft>
-                            <SlotTime>
-                              {formatTimeRangeForDisplay(
-                                dateStr,
-                                slot.time,
-                                slot.duration,
-                                businessTimezone,
-                                Intl.DateTimeFormat().resolvedOptions().timeZone,
-                              )}
-                            </SlotTime>
-                            <SlotPriceLine>
-                              <SlotPriceAmount>{priceText}</SlotPriceAmount>{" "}
-                              {perGuestLabel}
-                            </SlotPriceLine>
-                          </SlotLeft>
-                          <SlotRight>
-                            {soldOut
-                              ? "Sold out"
-                              : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"}`}
-                          </SlotRight>
-                        </SlotCard>
-                      );
-                    })}
-                  </div>
-                );
-              })
-            )}
-            {visibleDateStrs.length < sortedDateStrs.length && (
-              <Sentinel ref={sentinelRef} />
-            )}
-          </ScrollBody>
+          <SheetInner>
+            <SelectTimePanel {...panelProps} CloseBtn={CloseButton} />
+          </SheetInner>
         </Sheet>
       </Drawer.Portal>
     </Drawer.Root>

@@ -27,6 +27,7 @@ import { getLocalYYYYMMDD, formatTimeRangeForDisplay } from "@/services/utils";
 import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 import SelectTimeModal from "./SelectTimeModal";
 import SelectCalendarDrawer from "./SelectCalendarDrawer";
+import { DesktopModalShell } from "./bookingShellStyles";
 import { getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
 import {
@@ -1349,6 +1350,36 @@ export default function ClassPageClient({
 
   const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
 
+  const bookingVariant = mobileReserve.isMobileView ? "drawer" : "modal";
+
+  const handleShowDates = useCallback(
+    (optionId) => {
+      if (!classData) return;
+      const option =
+        optionId != null
+          ? classData.options?.find((o) => String(o.optionId) === String(optionId))
+          : optionToDisplayOnCard;
+      if (option?.booking_type === "Full Course") {
+        handleOpenBookingModal(option?.optionId);
+        return;
+      }
+      mobileReserve.handleOpenSelectTimeModal();
+    },
+    [classData, optionToDisplayOnCard, mobileReserve],
+  );
+
+  const handleSidebarSlotSelect = useCallback(
+    (option, schedule) => {
+      if (!schedule?.date) return;
+      if (option?.booking_type === "Full Course") {
+        handleDirectCheckoutFromSlot(option, schedule);
+        return;
+      }
+      mobileReserve.handleQuickSelectFromAvailability(schedule, schedule.date);
+    },
+    [handleDirectCheckoutFromSlot, mobileReserve],
+  );
+
   /* ── Peek bar: show price at viewport bottom when sidebar is off-screen ─────── */
   const sidebarRef = useRef(null);   // on StickySidebar — for width/left measurement
   const cardRef    = useRef(null);   // on SidebarBookingInner — card's top edge
@@ -1730,8 +1761,8 @@ export default function ClassPageClient({
                   classTitle={classData.title}
                   classImages={classData.images}
                   currency={displayCurrency}
-                  onBookNow={handleOpenBookingModal}
-                  onSelectSlot={handleDirectCheckoutFromSlot}
+                  onBookNow={handleShowDates}
+                  onSelectSlot={handleSidebarSlotSelect}
                   businessTimeZone={classData?.business_timezone}
                 />
               ) : null}
@@ -1767,9 +1798,7 @@ export default function ClassPageClient({
             )}
           </PeekPriceStack>
           <PeekCTABtn
-            onClick={() =>
-              handleOpenBookingModal(optionToDisplayOnCard.optionId)
-            }
+            onClick={() => handleShowDates(optionToDisplayOnCard.optionId)}
           >
             Show dates
           </PeekCTABtn>
@@ -1870,6 +1899,7 @@ export default function ClassPageClient({
             currency={displayCurrency}
             option={optionToDisplayOnCard}
             scrollToDate={mobileReserve.mobileScrollToDate}
+            variant={bookingVariant}
           />
 
           <SelectCalendarDrawer
@@ -1883,18 +1913,77 @@ export default function ClassPageClient({
             onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
             minSelectableDate={mobileReserve.mobileMinSelectableDate}
             today={mobileReserve.mobileToday}
+            variant={bookingVariant}
           />
 
-          {/* Participants drawer: open from Edit guests in review drawer; closing reopens review. */}
-          <Drawer.Root
-            open={mobileReserve.mobileParticipantsDrawerOpen}
-            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileParticipantsDrawerOpen)}
-            shouldScaleBackground
-          >
-            <Drawer.Portal>
-              <MobileDrawerOverlay />
-              <MobileDrawerContent>
-                <MobileDrawerHandle />
+          {/* Participants: drawer on mobile, centered modal on desktop */}
+          {mobileReserve.isMobileView ? (
+            <Drawer.Root
+              open={mobileReserve.mobileParticipantsDrawerOpen}
+              onOpenChange={mobileReserve.createEditDrawerOnOpenChange(
+                mobileReserve.setMobileParticipantsDrawerOpen,
+              )}
+              shouldScaleBackground
+            >
+              <Drawer.Portal>
+                <MobileDrawerOverlay />
+                <MobileDrawerContent>
+                  <MobileDrawerHandle />
+                  <MobileDrawerTitle>Number of guests</MobileDrawerTitle>
+                  <ParticipantsDrawerHint>
+                    Up to {mobileReserve.mobileParticipantsMax} guests for this time slot.
+                  </ParticipantsDrawerHint>
+                  <ParticipantsStepperWrap>
+                    <ParticipantsStepperBtn
+                      type="button"
+                      disabled={mobileReserve.mobileParticipantsDraft <= 1}
+                      onClick={() =>
+                        mobileReserve.setMobileParticipantsDraft((n) => Math.max(1, n - 1))
+                      }
+                      aria-label="Decrease guests"
+                    >
+                      −
+                    </ParticipantsStepperBtn>
+                    <ParticipantsStepperValue>
+                      {mobileReserve.mobileParticipantsDraft}
+                    </ParticipantsStepperValue>
+                    <ParticipantsStepperBtn
+                      type="button"
+                      disabled={
+                        mobileReserve.mobileParticipantsDraft >=
+                        mobileReserve.mobileParticipantsMax
+                      }
+                      onClick={() =>
+                        mobileReserve.setMobileParticipantsDraft((n) =>
+                          Math.min(mobileReserve.mobileParticipantsMax, n + 1),
+                        )
+                      }
+                      aria-label="Increase guests"
+                    >
+                      +
+                    </ParticipantsStepperBtn>
+                  </ParticipantsStepperWrap>
+                  <ParticipantsApplyButton
+                    type="button"
+                    onClick={mobileReserve.handleParticipantsApply}
+                  >
+                    Apply
+                  </ParticipantsApplyButton>
+                </MobileDrawerContent>
+              </Drawer.Portal>
+            </Drawer.Root>
+          ) : (
+            <DesktopModalShell
+              open={mobileReserve.mobileParticipantsDrawerOpen}
+              onClose={() =>
+                mobileReserve.createEditDrawerOnOpenChange(
+                  mobileReserve.setMobileParticipantsDrawerOpen,
+                )(false)
+              }
+              maxWidth={400}
+              ariaLabel="Number of guests"
+            >
+              <div style={{ padding: "8px 20px 20px" }}>
                 <MobileDrawerTitle>Number of guests</MobileDrawerTitle>
                 <ParticipantsDrawerHint>
                   Up to {mobileReserve.mobileParticipantsMax} guests for this time slot.
@@ -1903,16 +1992,27 @@ export default function ClassPageClient({
                   <ParticipantsStepperBtn
                     type="button"
                     disabled={mobileReserve.mobileParticipantsDraft <= 1}
-                    onClick={() => mobileReserve.setMobileParticipantsDraft((n) => Math.max(1, n - 1))}
+                    onClick={() =>
+                      mobileReserve.setMobileParticipantsDraft((n) => Math.max(1, n - 1))
+                    }
                     aria-label="Decrease guests"
                   >
                     −
                   </ParticipantsStepperBtn>
-                  <ParticipantsStepperValue>{mobileReserve.mobileParticipantsDraft}</ParticipantsStepperValue>
+                  <ParticipantsStepperValue>
+                    {mobileReserve.mobileParticipantsDraft}
+                  </ParticipantsStepperValue>
                   <ParticipantsStepperBtn
                     type="button"
-                    disabled={mobileReserve.mobileParticipantsDraft >= mobileReserve.mobileParticipantsMax}
-                    onClick={() => mobileReserve.setMobileParticipantsDraft((n) => Math.min(mobileReserve.mobileParticipantsMax, n + 1))}
+                    disabled={
+                      mobileReserve.mobileParticipantsDraft >=
+                      mobileReserve.mobileParticipantsMax
+                    }
+                    onClick={() =>
+                      mobileReserve.setMobileParticipantsDraft((n) =>
+                        Math.min(mobileReserve.mobileParticipantsMax, n + 1),
+                      )
+                    }
                     aria-label="Increase guests"
                   >
                     +
@@ -1924,9 +2024,9 @@ export default function ClassPageClient({
                 >
                   Apply
                 </ParticipantsApplyButton>
-              </MobileDrawerContent>
-            </Drawer.Portal>
-          </Drawer.Root>
+              </div>
+            </DesktopModalShell>
+          )}
 
           <MobileReserveReviewDrawer
             open={mobileReserve.mobileReviewDrawerOpen}
@@ -1940,6 +2040,7 @@ export default function ClassPageClient({
             onEditDate={mobileReserve.handleMobileEditDateOrTime}
             onEditTime={mobileReserve.handleMobileEditDateOrTime}
             onEditGuests={mobileReserve.handleMobileEditGuests}
+            variant={bookingVariant}
           />
 
           {isBookingModalOpen && (
