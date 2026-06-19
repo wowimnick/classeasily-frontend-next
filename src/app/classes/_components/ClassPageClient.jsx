@@ -26,6 +26,7 @@ import message from "@/lib/message";
 import { getLocalYYYYMMDD, formatTimeRangeForDisplay } from "@/services/utils";
 import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 import SelectTimeModal from "./SelectTimeModal";
+import SelectCalendarDrawer from "./SelectCalendarDrawer";
 import { getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
 import {
@@ -1824,7 +1825,10 @@ export default function ClassPageClient({
             mobileReserve.mobileSlotsLoading ? (
               <MobileBookingFooterSkeleton
                 hidden={
-                  isReviewsModalOpen || mobileReserve.mobileReviewDrawerOpen
+                  isReviewsModalOpen ||
+                  mobileReserve.mobileReviewDrawerOpen ||
+                  mobileReserve.mobileSelectTimeModalOpen ||
+                  mobileReserve.mobileCalendarDrawerOpen
                 }
               />
             ) : (
@@ -1832,7 +1836,10 @@ export default function ClassPageClient({
                 option={optionToDisplayOnCard}
                 onBookNow={() => mobileReserve.handleOpenSelectTimeModal()}
                 hidden={
-                  isReviewsModalOpen || mobileReserve.mobileReviewDrawerOpen
+                  isReviewsModalOpen ||
+                  mobileReserve.mobileReviewDrawerOpen ||
+                  mobileReserve.mobileSelectTimeModalOpen ||
+                  mobileReserve.mobileCalendarDrawerOpen
                 }
                 currencyCode={displayCurrency}
               />
@@ -1845,7 +1852,7 @@ export default function ClassPageClient({
           <SelectTimeModal
             open={mobileReserve.mobileSelectTimeModalOpen}
             onOpenChange={mobileReserve.handleSelectTimeModalOpenChange}
-            onDateSelect={mobileReserve.setMobileSelectedDate}
+            onOpenCalendar={mobileReserve.handleOpenCalendarFromSelectTime}
             availableSlots={mobileReserve.mobileAvailableSlots}
             loading={mobileReserve.mobileSlotsLoading}
             selectedDate={mobileReserve.mobileSelectedDate}
@@ -1862,8 +1869,20 @@ export default function ClassPageClient({
             businessTimezone={classData?.business_timezone || "Etc/UTC"}
             currency={displayCurrency}
             option={optionToDisplayOnCard}
-            initialCalendarExpanded={mobileReserve.mobileCalendarExpanded}
             scrollToDate={mobileReserve.mobileScrollToDate}
+          />
+
+          <SelectCalendarDrawer
+            open={mobileReserve.mobileCalendarDrawerOpen}
+            onOpenChange={mobileReserve.handleCalendarDrawerOpenChange}
+            availableSlots={mobileReserve.mobileAvailableSlots}
+            loading={mobileReserve.mobileSlotsLoading}
+            selectedDate={mobileReserve.mobileSelectedDate}
+            onDateSelect={mobileReserve.handleCalendarDateSelect}
+            currentDate={mobileReserve.mobileCalendarMonth}
+            onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
+            minSelectableDate={mobileReserve.mobileMinSelectableDate}
+            today={mobileReserve.mobileToday}
           />
 
           {/* Participants drawer: open from Edit guests in review drawer; closing reopens review. */}
@@ -1918,8 +1937,8 @@ export default function ClassPageClient({
               selectedOption: optionToDisplayOnCard,
               participants: mobileReserve.mobileParticipants,
             }}
-            onEditDate={mobileReserve.handleMobileEditDate}
-            onEditTime={mobileReserve.handleMobileEditTime}
+            onEditDate={mobileReserve.handleMobileEditDateOrTime}
+            onEditTime={mobileReserve.handleMobileEditDateOrTime}
             onEditGuests={mobileReserve.handleMobileEditGuests}
           />
 

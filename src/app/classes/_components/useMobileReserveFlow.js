@@ -46,10 +46,12 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
 
   // Unified "Select a time" modal (replaces old separate date/time drawers).
   const [mobileSelectTimeModalOpen, setMobileSelectTimeModalOpen] = useState(false);
-  const [mobileCalendarExpanded, setMobileCalendarExpanded] = useState(false);
+  const [mobileCalendarDrawerOpen, setMobileCalendarDrawerOpen] = useState(false);
   const [mobileScrollToDate, setMobileScrollToDate] = useState(null);
 
   const reopenReviewDrawerOnCloseEditRef = useRef(false);
+  const reopenSelectTimeAfterCalendarRef = useRef(false);
+  const pendingCalendarFromSelectTimeRef = useRef(false);
   const hasFiredDateSelectedRef = useRef(false);
 
   const mobileMinSelectableDate = useMemo(() => {
@@ -164,18 +166,36 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
 
   /** Open the unified SelectTimeModal from the sticky footer "Show dates" button. */
   const handleOpenSelectTimeModal = useCallback(() => {
-    setMobileCalendarExpanded(false);
     setMobileScrollToDate(null);
     setMobileSelectTimeModalOpen(true);
   }, []);
 
-  /** Open the modal scrolled to a specific date (from upcoming availability strip card). */
-  const handleOpenSelectTimeModalForDate = useCallback((date) => {
+  /** Close time modal and open the separate calendar drawer (MiniCalendar). */
+  const handleOpenCalendarFromSelectTime = useCallback(() => {
+    reopenSelectTimeAfterCalendarRef.current = true;
+    pendingCalendarFromSelectTimeRef.current = true;
+    setMobileSelectTimeModalOpen(false);
+    setTimeout(() => {
+      pendingCalendarFromSelectTimeRef.current = false;
+      setMobileCalendarDrawerOpen(true);
+    }, DRAWER_TRANSITION_MS);
+  }, []);
+
+  const handleCalendarDateSelect = useCallback((date) => {
     setMobileSelectedDate(date);
     setMobileCalendarMonth(date);
-    setMobileCalendarExpanded(false);
     setMobileScrollToDate(date);
-    setMobileSelectTimeModalOpen(true);
+    reopenSelectTimeAfterCalendarRef.current = false;
+    setMobileCalendarDrawerOpen(false);
+    setTimeout(() => setMobileSelectTimeModalOpen(true), DRAWER_TRANSITION_MS);
+  }, []);
+
+  const handleCalendarDrawerOpenChange = useCallback((open) => {
+    setMobileCalendarDrawerOpen(open);
+    if (!open && reopenSelectTimeAfterCalendarRef.current) {
+      reopenSelectTimeAfterCalendarRef.current = false;
+      setTimeout(() => setMobileSelectTimeModalOpen(true), DRAWER_TRANSITION_MS);
+    }
   }, []);
 
   const handleMobileTimeSelect = useCallback(
@@ -260,21 +280,20 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     setTimeout(openDrawer, DRAWER_TRANSITION_MS);
   }, []);
 
-  const handleMobileEditDate = useCallback(() => {
+  /** Edit date or time from review summary — both reopen the same time-selection modal. */
+  const handleMobileEditDateOrTime = useCallback(() => {
     openEditDrawerAfterClose(() => {
-      setMobileCalendarExpanded(true);
-      setMobileScrollToDate(null);
+      const dateStr = mobileSelectedSlot?.date;
+      if (dateStr) {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        setMobileSelectedDate(dateObj);
+        setMobileCalendarMonth(dateObj);
+        setMobileScrollToDate(dateObj);
+      }
       setMobileSelectTimeModalOpen(true);
     });
-  }, [openEditDrawerAfterClose]);
-
-  const handleMobileEditTime = useCallback(() => {
-    openEditDrawerAfterClose(() => {
-      setMobileCalendarExpanded(false);
-      setMobileScrollToDate(mobileSelectedDate);
-      setMobileSelectTimeModalOpen(true);
-    });
-  }, [openEditDrawerAfterClose, mobileSelectedDate]);
+  }, [openEditDrawerAfterClose, mobileSelectedSlot?.date]);
 
   const handleMobileEditGuests = useCallback(() => {
     openEditDrawerAfterClose(() => {
@@ -297,6 +316,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   const handleSelectTimeModalOpenChange = useCallback((open) => {
     setMobileSelectTimeModalOpen(open);
     if (!open) {
+      if (pendingCalendarFromSelectTimeRef.current) return;
       setMobileScrollToDate(null);
       if (reopenReviewDrawerOnCloseEditRef.current) {
         reopenReviewDrawerOnCloseEditRef.current = false;
@@ -334,8 +354,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     mobileReviewDrawerOpen,
     setMobileReviewDrawerOpen,
     handleReserveClick,
-    handleMobileEditDate,
-    handleMobileEditTime,
+    handleMobileEditDateOrTime,
     handleMobileEditGuests,
     handleMobileCalendarMonthChange,
     createEditDrawerOnOpenChange,
@@ -344,10 +363,12 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     // Unified SelectTimeModal
     mobileSelectTimeModalOpen,
     setMobileSelectTimeModalOpen,
-    mobileCalendarExpanded,
+    mobileCalendarDrawerOpen,
     mobileScrollToDate,
     handleOpenSelectTimeModal,
-    handleOpenSelectTimeModalForDate,
+    handleOpenCalendarFromSelectTime,
+    handleCalendarDateSelect,
+    handleCalendarDrawerOpenChange,
     handleQuickSelectFromAvailability,
     handleSelectTimeModalSlot,
     handleSelectTimeModalOpenChange,
