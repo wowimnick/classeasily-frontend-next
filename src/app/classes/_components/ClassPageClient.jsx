@@ -1679,8 +1679,9 @@ export default function ClassPageClient({
                                 type="button"
                                 onClick={() => {
                                   const [y, m, d] = dateStr.split("-").map(Number);
-                                  const dateObj = new Date(y, m - 1, d);
-                                  mobileReserve.handleMobileDateSelect(dateObj);
+                                  mobileReserve.handleOpenSelectTimeModalForDate(
+                                    new Date(y, m - 1, d),
+                                  );
                                 }}
                               >
                                 <AvailabilityCardDate>
@@ -1912,6 +1913,7 @@ export default function ClassPageClient({
           <SelectTimeModal
             open={mobileReserve.mobileSelectTimeModalOpen}
             onOpenChange={mobileReserve.handleSelectTimeModalOpenChange}
+            onDateSelect={mobileReserve.setMobileSelectedDate}
             availableSlots={mobileReserve.mobileAvailableSlots}
             loading={mobileReserve.mobileSlotsLoading}
             selectedDate={mobileReserve.mobileSelectedDate}

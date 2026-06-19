@@ -15,7 +15,7 @@ export const DRAWER_TRANSITION_MS = 150;
 /** Default participant count when slot allows more */
 export const DEFAULT_PARTICIPANTS = 2;
 
-/** Total horizon for mobile availability (matches former “far future” fix). */
+/** Total horizon for mobile availability (matches former "far future" fix). */
 const MOBILE_AVAILABILITY_RANGE_DAYS = 540;
 
 function buildMobileAvailabilityRange(minSelectableDate) {
@@ -29,8 +29,7 @@ function buildMobileAvailabilityRange(minSelectableDate) {
 
 /**
  * Encapsulates all state and handlers for the mobile reserve flow:
- * inline calendar → time drawer → reserve footer → review drawer → edit drawers (date/time/guests).
- * Flow behavior is unchanged; this hook only isolates logic for readability.
+ * upcoming availability strip → SelectTimeModal → reserve footer → review drawer.
  */
 export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) {
   const [isMobileView, setIsMobileView] = useState(false);
@@ -39,13 +38,17 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   const [mobileSelectedSlot, setMobileSelectedSlot] = useState(null);
   const [mobileSelectedDate, setMobileSelectedDate] = useState(null);
   const [mobileCalendarMonth, setMobileCalendarMonth] = useState(() => new Date());
-  const [mobileTimeDrawerOpen, setMobileTimeDrawerOpen] = useState(false);
-  const [mobileDateDrawerOpen, setMobileDateDrawerOpen] = useState(false);
   const [mobileParticipantsDrawerOpen, setMobileParticipantsDrawerOpen] = useState(false);
   const [mobileParticipants, setMobileParticipants] = useState(DEFAULT_PARTICIPANTS);
   const [mobileParticipantsDraft, setMobileParticipantsDraft] = useState(DEFAULT_PARTICIPANTS);
   const [mobileReviewDrawerOpen, setMobileReviewDrawerOpen] = useState(false);
   const [mobileAvailabilityError, setMobileAvailabilityError] = useState(false);
+
+  // Unified "Select a time" modal (replaces old separate date/time drawers).
+  const [mobileSelectTimeModalOpen, setMobileSelectTimeModalOpen] = useState(false);
+  const [mobileCalendarExpanded, setMobileCalendarExpanded] = useState(false);
+  const [mobileScrollToDate, setMobileScrollToDate] = useState(null);
+
   const reopenReviewDrawerOnCloseEditRef = useRef(false);
   const hasFiredDateSelectedRef = useRef(false);
 
@@ -83,12 +86,12 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       setMobileSlotsLoading(true);
       setMobileAvailabilityError(false);
       setMobileAvailableSlots({});
+      setMobileSelectedSlot(null);
+      setMobileSelectedDate(null);
+      hasFiredDateSelectedRef.current = false;
 
       try {
-        const data = await scheduleService.getAvailabilityForOption(
-          optionId,
-          range,
-        );
+        const data = await scheduleService.getAvailabilityForOption(optionId, range);
         if (cancelled) return;
         if (data && typeof data === "object") {
           setMobileAvailableSlots(data);
@@ -106,47 +109,26 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     };
   }, [mounted, optionToDisplayOnCard?.optionId, isMobileView, mobileMinSelectableDate]);
 
+  // Set initial calendar month to first available date — but do NOT auto-select a slot.
+  // Users must explicitly pick a time via SelectTimeModal so the footer shows "Show dates".
   useEffect(() => {
     if (mobileSlotsLoading || Object.keys(mobileAvailableSlots).length === 0) return;
     const sortedDates = Object.keys(mobileAvailableSlots)
       .filter((d) => d >= getLocalYYYYMMDD(mobileMinSelectableDate))
       .sort();
-    const firstSlotForDate = (dateStr) => {
-      const slots = mobileAvailableSlots[dateStr];
-      if (!Array.isArray(slots) || slots.length === 0) return null;
-      const slot = slots[0];
-      return {
-        id: slot.instance_id,
-        date: dateStr,
-        time: slot.time,
-        available_spots: slot.available_spots,
-        price: slot.price,
-        duration: slot.duration,
-        minParticipants: slot.min_participants,
-      };
-    };
+    if (sortedDates.length === 0) return;
+
     const firstDateObj = (dateStr) => {
       const [y, m, d] = dateStr.split("-").map(Number);
       return new Date(y, m - 1, d);
     };
-    setMobileSelectedSlot((prev) => {
-      if (prev) return prev;
-      for (const dateStr of sortedDates) {
-        const slot = firstSlotForDate(dateStr);
-        if (slot) return slot;
-      }
-      return null;
-    });
-    setMobileSelectedDate((prev) => {
-      if (prev) return prev;
-      for (const dateStr of sortedDates) {
-        if (firstSlotForDate(dateStr)) return firstDateObj(dateStr);
-      }
-      return null;
-    });
+
     setMobileCalendarMonth((prev) => {
       for (const dateStr of sortedDates) {
-        if (firstSlotForDate(dateStr)) return firstDateObj(dateStr);
+        const slots = mobileAvailableSlots[dateStr];
+        if (Array.isArray(slots) && slots.length > 0) {
+          return firstDateObj(dateStr);
+        }
       }
       return prev;
     });
@@ -155,13 +137,13 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   useEffect(() => {
     if (!mobileSelectedSlot) return;
     setMobileParticipants(
-      Math.min(DEFAULT_PARTICIPANTS, mobileSelectedSlot.available_spots ?? 2)
+      Math.min(DEFAULT_PARTICIPANTS, mobileSelectedSlot.available_spots ?? 2),
     );
   }, [mobileSelectedSlot?.id]);
 
   const mobileParticipantsMax = useMemo(
     () => Math.max(1, mobileSelectedSlot?.available_spots ?? 2),
-    [mobileSelectedSlot?.available_spots]
+    [mobileSelectedSlot?.available_spots],
   );
 
   const handleMobileCalendarMonthChange = useCallback((direction) => {
@@ -172,15 +154,29 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     });
   }, []);
 
-  const handleMobileDateSelect = useCallback((date) => {
+  /** Open the unified SelectTimeModal from the sticky footer "Show dates" button. */
+  const handleOpenSelectTimeModal = useCallback(() => {
+    setMobileCalendarExpanded(false);
+    setMobileScrollToDate(null);
+    setMobileSelectTimeModalOpen(true);
+  }, []);
+
+  /** Open the modal scrolled to a specific date (from upcoming availability strip card). */
+  const handleOpenSelectTimeModalForDate = useCallback((date) => {
     setMobileSelectedDate(date);
-    setMobileTimeDrawerOpen(true);
+    setMobileCalendarMonth(date);
+    setMobileCalendarExpanded(false);
+    setMobileScrollToDate(date);
+    setMobileSelectTimeModalOpen(true);
   }, []);
 
   const handleMobileTimeSelect = useCallback(
-    (slot) => {
-      const dateStr = mobileSelectedDate ? getLocalYYYYMMDD(mobileSelectedDate) : null;
+    (slot, dateStrOverride) => {
+      const dateStr =
+        dateStrOverride ||
+        (mobileSelectedDate ? getLocalYYYYMMDD(mobileSelectedDate) : null);
       if (!dateStr) return;
+
       const participants = Math.min(DEFAULT_PARTICIPANTS, slot.available_spots ?? 2);
       setMobileSelectedSlot({
         id: slot.instance_id,
@@ -193,7 +189,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       });
       reopenReviewDrawerOnCloseEditRef.current = false;
       setMobileParticipants(participants);
-      // PostHog: Track date/slot selection in mobile reserve flow (MiniCalendar + time drawer; same event as CalendarStep)
+
       if (!hasFiredDateSelectedRef.current) {
         hasFiredDateSelectedRef.current = true;
         posthog.capture("booking_date_selected", {
@@ -202,15 +198,27 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
           participants,
         });
       }
-      setMobileTimeDrawerOpen(false);
+
+      setMobileSelectTimeModalOpen(false);
       setTimeout(() => setMobileReviewDrawerOpen(true), DRAWER_TRANSITION_MS);
     },
-    [mobileSelectedDate]
+    [mobileSelectedDate],
+  );
+
+  /** Slot selection from SelectTimeModal — sets date then delegates to handleMobileTimeSelect. */
+  const handleSelectTimeModalSlot = useCallback(
+    (slot, dateStr) => {
+      if (dateStr) {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        setMobileSelectedDate(new Date(y, m - 1, d));
+      }
+      handleMobileTimeSelect(slot, dateStr);
+    },
+    [handleMobileTimeSelect],
   );
 
   const handleReserveClick = useCallback(() => {
     if (!mobileSelectedSlot || !optionToDisplayOnCard || !classData?.slug) return;
-    // PostHog: If slot was auto-selected (user never opened time drawer), fire date_selected when they tap Reserve
     if (!hasFiredDateSelectedRef.current) {
       hasFiredDateSelectedRef.current = true;
       posthog.capture("booking_date_selected", {
@@ -229,12 +237,20 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   }, []);
 
   const handleMobileEditDate = useCallback(() => {
-    openEditDrawerAfterClose(() => setMobileDateDrawerOpen(true));
+    openEditDrawerAfterClose(() => {
+      setMobileCalendarExpanded(true);
+      setMobileScrollToDate(null);
+      setMobileSelectTimeModalOpen(true);
+    });
   }, [openEditDrawerAfterClose]);
 
   const handleMobileEditTime = useCallback(() => {
-    openEditDrawerAfterClose(() => setMobileTimeDrawerOpen(true));
-  }, [openEditDrawerAfterClose]);
+    openEditDrawerAfterClose(() => {
+      setMobileCalendarExpanded(false);
+      setMobileScrollToDate(mobileSelectedDate);
+      setMobileSelectTimeModalOpen(true);
+    });
+  }, [openEditDrawerAfterClose, mobileSelectedDate]);
 
   const handleMobileEditGuests = useCallback(() => {
     openEditDrawerAfterClose(() => {
@@ -242,14 +258,6 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       setMobileParticipantsDrawerOpen(true);
     });
   }, [openEditDrawerAfterClose, mobileParticipants]);
-
-  const handleMobileDateSelectFromDrawer = useCallback((date) => {
-    reopenReviewDrawerOnCloseEditRef.current = false;
-    setMobileSelectedDate(date);
-    setMobileCalendarMonth(date);
-    setMobileDateDrawerOpen(false);
-    setMobileTimeDrawerOpen(true);
-  }, []);
 
   const createEditDrawerOnOpenChange = useCallback((setDrawerOpen) => {
     return (open) => {
@@ -259,6 +267,18 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
         setMobileReviewDrawerOpen(true);
       }
     };
+  }, []);
+
+  /** onOpenChange for SelectTimeModal — reopen review drawer when closing from edit flow. */
+  const handleSelectTimeModalOpenChange = useCallback((open) => {
+    setMobileSelectTimeModalOpen(open);
+    if (!open) {
+      setMobileScrollToDate(null);
+      if (reopenReviewDrawerOnCloseEditRef.current) {
+        reopenReviewDrawerOnCloseEditRef.current = false;
+        setMobileReviewDrawerOpen(true);
+      }
+    }
   }, []);
 
   const handleParticipantsApply = useCallback(() => {
@@ -279,15 +299,12 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     mobileCalendarMonth,
     mobileMinSelectableDate,
     mobileToday,
-    mobileTimeDrawerOpen,
-    setMobileTimeDrawerOpen,
-    mobileDateDrawerOpen,
-    setMobileDateDrawerOpen,
     mobileParticipantsDrawerOpen,
     setMobileParticipantsDrawerOpen,
     mobileParticipants,
     mobileParticipantsDraft,
     setMobileParticipantsDraft,
+    setMobileParticipants,
     mobileParticipantsMax,
     mobileReviewDrawerOpen,
     setMobileReviewDrawerOpen,
@@ -295,12 +312,19 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     handleMobileEditDate,
     handleMobileEditTime,
     handleMobileEditGuests,
-    handleMobileDateSelect,
-    handleMobileDateSelectFromDrawer,
-    handleMobileTimeSelect,
     handleMobileCalendarMonthChange,
     createEditDrawerOnOpenChange,
     handleParticipantsApply,
     mobileAvailabilityError,
+    // Unified SelectTimeModal
+    mobileSelectTimeModalOpen,
+    setMobileSelectTimeModalOpen,
+    mobileCalendarExpanded,
+    mobileScrollToDate,
+    handleOpenSelectTimeModal,
+    handleOpenSelectTimeModalForDate,
+    handleSelectTimeModalSlot,
+    handleSelectTimeModalOpenChange,
+    setMobileSelectedDate,
   };
 }

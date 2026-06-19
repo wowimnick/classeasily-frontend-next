@@ -1,78 +1,118 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import { homepageService } from "@/services/apiService";
 import styles from "./ScrollingBookerReviews.module.css";
 
-const BOOKER_REVIEWS = [
+const FALLBACK_REVIEWS = [
   {
-    id: 1,
-    quote: "Booked a pottery class in minutes — so easy!",
-    name: "Sarah M.",
+    reviewer_name: "Sarah M.",
+    rating: 5,
+    comment: "Booked a pottery class in minutes — so easy!",
+    class_slug: null,
   },
   {
-    id: 2,
-    quote: "Found the perfect date night experience nearby.",
-    name: "James K.",
+    reviewer_name: "James K.",
+    rating: 5,
+    comment: "Found the perfect date night experience nearby.",
+    class_slug: null,
   },
   {
-    id: 3,
-    quote: "Clear pricing and instant confirmation. Loved it.",
-    name: "Priya S.",
+    reviewer_name: "Priya S.",
+    rating: 5,
+    comment: "Clear pricing and instant confirmation. Loved it.",
+    class_slug: null,
   },
   {
-    id: 4,
-    quote: "Our group cooking class was flawless start to finish.",
-    name: "Marcus T.",
+    reviewer_name: "Marcus T.",
+    rating: 5,
+    comment: "Our group cooking class was flawless start to finish.",
+    class_slug: null,
   },
   {
-    id: 5,
-    quote: "Way better than scrolling for weekend ideas.",
-    name: "Elena R.",
+    reviewer_name: "Elena R.",
+    rating: 5,
+    comment: "Way better than scrolling for weekend ideas.",
+    class_slug: null,
   },
   {
-    id: 6,
-    quote: "Amazing host — booking took less than a minute.",
-    name: "David L.",
-  },
-  {
-    id: 7,
-    quote: "Surprised my partner with a wine tasting. Huge hit!",
-    name: "Amelia C.",
-  },
-  {
-    id: 8,
-    quote: "Simple checkout and helpful reminders before class.",
-    name: "Noah P.",
+    reviewer_name: "David L.",
+    rating: 5,
+    comment: "Amazing host — booking took less than a minute.",
+    class_slug: null,
   },
 ];
 
-function ReviewChip({ review }) {
+const PLATFORM_RATING = 4.9;
+const PLATFORM_REVIEW_COUNT = "20k+";
+
+function StatsHeader() {
   return (
-    <article className={styles.chip} aria-label={`Review from ${review.name}`}>
+    <div className={styles.statsHeader}>
+      <span className={styles.starRating} aria-hidden="true">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} size={11} fill="#f59e0b" stroke="#f59e0b" />
+        ))}
+      </span>
+      <span className={styles.statsScore}>{PLATFORM_RATING.toFixed(1)}</span>
+      <span className={styles.statsCount}>({PLATFORM_REVIEW_COUNT} reviews)</span>
+    </div>
+  );
+}
+
+function ReviewChip({ review }) {
+  const rating = Number(review.rating) || 5;
+  const href = review.class_slug ? `/classes/${review.class_slug}` : null;
+  const Tag = href ? "a" : "div";
+  const tagProps = href ? { href, prefetch: false } : { "aria-hidden": true };
+
+  return (
+    <Tag
+      className={styles.chip}
+      aria-label={href ? `Review from ${review.reviewer_name}` : undefined}
+      {...tagProps}
+    >
       <div className={styles.stars} aria-hidden="true">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={9} fill="#f59e0b" stroke="#f59e0b" />
+          <Star
+            key={i}
+            size={9}
+            fill={i < rating ? "#f59e0b" : "none"}
+            stroke="#f59e0b"
+          />
         ))}
       </div>
-      <p className={styles.quote}>&ldquo;{review.quote}&rdquo;</p>
-      <span className={styles.name}>{review.name}</span>
-    </article>
+      <p className={styles.quote}>&ldquo;{review.comment}&rdquo;</p>
+      <span className={styles.name}>{review.reviewer_name}</span>
+    </Tag>
   );
 }
 
 export default function ScrollingBookerReviews() {
-  const loop = [...BOOKER_REVIEWS, ...BOOKER_REVIEWS];
+  const [reviews, setReviews] = useState(FALLBACK_REVIEWS);
+
+  useEffect(() => {
+    let cancelled = false;
+    homepageService.fetchFeaturedReviews().then((res) => {
+      if (cancelled || !res?.success) return;
+      if (Array.isArray(res.reviews) && res.reviews.length > 0) {
+        setReviews(res.reviews);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <section
-      className={styles.section}
-      aria-label="Recent booker reviews"
-    >
+    <section className={styles.section} aria-label="Recent booker reviews">
+      <StatsHeader />
       <div className={styles.viewport}>
-        <div className={styles.track}>
-          {loop.map((review, index) => (
+        <div className={styles.trackScroll}>
+          {reviews.map((review, index) => (
             <ReviewChip
-              key={`${review.id}-${index}`}
+              key={`${review.reviewer_name}-${index}`}
               review={review}
             />
           ))}

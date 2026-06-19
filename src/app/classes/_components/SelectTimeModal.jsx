@@ -366,6 +366,7 @@ function formatSectionHeader(dateStr) {
 export default function SelectTimeModal({
   open,
   onOpenChange,
+  onDateSelect,
   availableSlots,
   loading,
   selectedDate,
@@ -476,6 +477,7 @@ export default function SelectTimeModal({
       const [y, m, d] = dateStr.split("-").map(Number);
       const dateObj = new Date(y, m - 1, d);
       setCalendarExpanded(false);
+      onDateSelect?.(dateObj);
       const idx = sortedDateStrs.indexOf(dateStr);
       if (idx !== -1) {
         setVisibleCount((prev) => Math.max(prev, idx + 1));
@@ -484,9 +486,8 @@ export default function SelectTimeModal({
           if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       }
-      onOpenChange?.(dateObj); // notify parent of date selection (optional)
     },
-    [availableDateSet, sortedDateStrs, onOpenChange],
+    [availableDateSet, sortedDateStrs, onDateSelect],
   );
 
   const isCourse = option?.booking_type === "Full Course";

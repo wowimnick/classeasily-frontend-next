@@ -161,6 +161,8 @@ export const API_ENDPOINTS = {
 
   // Reviews
   REVIEWS_SUBMIT: "/reviews/submit/",
+  /** Gemini-selected Google reviews for the homepage hero strip. */
+  HOMEPAGE_FEATURED_REVIEWS: "/homepage/featured-reviews/",
 
   // Payments
   PAYMENTS_CREATE_INTENT: "/payments/create-payment-intent/",
@@ -4510,6 +4512,30 @@ export const giftCardService = {
         error.response?.data || error,
       );
       throw error.response?.data || error;
+    }
+  },
+};
+
+/**
+ * Homepage hero featured reviews (Gemini-selected Google reviews).
+ * Backend caches the response for 1 hour; selection refreshes once per deploy.
+ */
+export const homepageService = {
+  fetchFeaturedReviews: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.HOMEPAGE_FEATURED_REVIEWS,
+      );
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.reviews || [];
+      return { success: true, reviews: data };
+    } catch (error) {
+      console.error(
+        "Error fetching homepage featured reviews:",
+        error.response?.data || error,
+      );
+      return { success: false, reviews: [] };
     }
   },
 };
