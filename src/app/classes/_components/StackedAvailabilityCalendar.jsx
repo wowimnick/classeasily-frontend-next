@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { ChevronLeft } from "lucide-react";
+import { X } from "lucide-react";
 import { getLocalYYYYMMDD } from "@/services/utils";
 
-const INITIAL_MONTHS = 6;
-const MONTHS_PER_LOAD = 3;
+const INITIAL_MONTHS = 8;
+const MONTHS_PER_LOAD = 4;
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -16,66 +16,37 @@ const Wrap = styled.div`
   height: 100%;
   min-height: 0;
   background: #ffffff;
+  position: relative;
 `;
 
-const TopBar = styled.div`
+const CloseBtn = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px 8px;
-  flex-shrink: 0;
-  border-bottom: 1px solid #ebebeb;
-`;
-
-const BackBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
   border: none;
   background: transparent;
   color: #000000;
   cursor: pointer;
-  border-radius: 50%;
+  padding: 0;
 
   &:hover {
-    background: #f3f4f6;
+    opacity: 0.65;
   }
 `;
 
-const TopTitle = styled.h3`
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #000000;
-  letter-spacing: -0.01em;
-`;
-
-const ScrollArea = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 8px 20px 20px;
-  -webkit-overflow-scrolling: touch;
-`;
-
-const MonthBlock = styled.div`
-  margin-bottom: 28px;
-`;
-
-const MonthHeader = styled.div`
-  font-size: 1rem;
-  font-weight: 600;
-  color: #000000;
-  margin-bottom: 12px;
-  letter-spacing: -0.01em;
-`;
-
-const WeekdayRow = styled.div`
+const StickyWeekdayBar = styled.div`
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 6px;
+  padding: 44px 20px 8px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
 `;
 
 const WeekdayCell = styled.div`
@@ -83,67 +54,127 @@ const WeekdayCell = styled.div`
   font-size: 11px;
   font-weight: 500;
   color: #717171;
-  padding: 4px 0;
+  letter-spacing: 0.02em;
+`;
+
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 0;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const MonthBlock = styled.div`
+  margin-bottom: 20px;
+
+  &:first-child {
+    margin-top: 4px;
+  }
+`;
+
+const MonthHeader = styled.h4`
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000000;
+  letter-spacing: -0.01em;
 `;
 
 const DayGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  row-gap: 2px;
 `;
 
 const DayCell = styled.button`
-  aspect-ratio: 1 / 1;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: transparent;
   font-size: 14px;
-  font-weight: 500;
-  color: ${(p) => (p.$available ? "#000000" : "#d4d4d4")};
+  font-weight: 400;
+  color: ${(p) => (p.$available ? "#000000" : "#d1d5db")};
   cursor: ${(p) => (p.$available ? "pointer" : "default")};
   border-radius: 50%;
   font-family: inherit;
   padding: 0;
-  transition: background 0.15s;
-
-  &:hover {
-    background: ${(p) => (p.$available ? "#f3f4f6" : "transparent")};
-  }
+  transition: box-shadow 0.15s ease, color 0.15s ease;
 
   ${(p) =>
     p.$selected &&
     `
-    background: #000000;
-    color: #ffffff;
-    &:hover { background: #000000; }
+    box-shadow: inset 0 0 0 1.5px #000000;
+    color: #000000;
+    font-weight: 500;
   `}
+
+  &:hover {
+    ${(p) => p.$available && !p.$selected && `color: #000000;`}
+  }
 
   &:disabled {
     cursor: default;
   }
 `;
 
-const EmptyDayCell = styled.div``;
+const EmptyDayCell = styled.div`
+  height: 40px;
+`;
+
+const LoadMoreWrap = styled.div`
+  padding: 8px 0 16px;
+`;
 
 const LoadMoreBtn = styled.button`
   display: block;
   width: 100%;
-  margin: 8px 0 4px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
   border: 1px solid #ebebeb;
   background: #ffffff;
   color: #000000;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 
   &:hover {
     background: #fafafa;
+  }
+`;
+
+const Footer = styled.div`
+  flex-shrink: 0;
+  padding: 12px 20px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+`;
+
+const NextBtn = styled.button`
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  background: #ff385c;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+  opacity: ${(p) => (p.$visible ? 1 : 0)};
+  transform: translateY(${(p) => (p.$visible ? 0 : 6)}px);
+  pointer-events: ${(p) => (p.$visible ? "auto" : "none")};
+
+  &:hover {
+    background: #e31c5f;
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
@@ -166,14 +197,18 @@ function buildAllMonths(sortedDateStrs, minSelectableDate) {
 
 export default function StackedAvailabilityCalendar({
   sortedDateStrs,
-  availableSlots,
   minSelectableDate,
-  selectedDate,
-  onDateSelect,
+  draftDate,
+  onDraftDateSelect,
+  onConfirm,
   onClose,
-  showTopBar = true,
+  showNextButton = true,
 }) {
   const [visibleMonthCount, setVisibleMonthCount] = useState(INITIAL_MONTHS);
+
+  useEffect(() => {
+    setVisibleMonthCount(INITIAL_MONTHS);
+  }, [sortedDateStrs.length]);
 
   const availableDateSet = useMemo(() => new Set(sortedDateStrs), [sortedDateStrs]);
 
@@ -184,24 +219,26 @@ export default function StackedAvailabilityCalendar({
 
   const visibleMonths = allMonths.slice(0, visibleMonthCount);
   const hasMoreMonths = visibleMonthCount < allMonths.length;
-  const selectedDateStr = selectedDate ? getLocalYYYYMMDD(selectedDate) : null;
+  const draftDateStr = draftDate ? getLocalYYYYMMDD(draftDate) : null;
+  const hasDraft = Boolean(draftDateStr);
 
   const handleDayClick = (dateStr) => {
     if (!availableDateSet.has(dateStr)) return;
     const [y, m, d] = dateStr.split("-").map(Number);
-    onDateSelect?.(new Date(y, m - 1, d));
+    onDraftDateSelect?.(new Date(y, m - 1, d));
   };
 
   return (
     <Wrap>
-      {showTopBar && (
-        <TopBar>
-          <BackBtn type="button" aria-label="Back to times" onClick={onClose}>
-            <ChevronLeft size={22} />
-          </BackBtn>
-          <TopTitle>Select a date</TopTitle>
-        </TopBar>
-      )}
+      <CloseBtn type="button" aria-label="Close calendar" onClick={onClose}>
+        <X size={22} strokeWidth={1.75} />
+      </CloseBtn>
+
+      <StickyWeekdayBar>
+        {WEEKDAY_LABELS.map((w, i) => (
+          <WeekdayCell key={i}>{w}</WeekdayCell>
+        ))}
+      </StickyWeekdayBar>
 
       <ScrollArea>
         {visibleMonths.map((monthDate) => {
@@ -219,7 +256,7 @@ export default function StackedAvailabilityCalendar({
           for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
             const available = availableDateSet.has(dateStr);
-            const selected = selectedDateStr === dateStr;
+            const selected = draftDateStr === dateStr;
             cells.push(
               <DayCell
                 key={dateStr}
@@ -242,29 +279,39 @@ export default function StackedAvailabilityCalendar({
                   year: "numeric",
                 })}
               </MonthHeader>
-              <WeekdayRow>
-                {WEEKDAY_LABELS.map((w, i) => (
-                  <WeekdayCell key={i}>{w}</WeekdayCell>
-                ))}
-              </WeekdayRow>
               <DayGrid>{cells}</DayGrid>
             </MonthBlock>
           );
         })}
 
         {hasMoreMonths && (
-          <LoadMoreBtn
-            type="button"
-            onClick={() =>
-              setVisibleMonthCount((n) =>
-                Math.min(n + MONTHS_PER_LOAD, allMonths.length),
-              )
-            }
-          >
-            Load more dates
-          </LoadMoreBtn>
+          <LoadMoreWrap>
+            <LoadMoreBtn
+              type="button"
+              onClick={() =>
+                setVisibleMonthCount((n) =>
+                  Math.min(n + MONTHS_PER_LOAD, allMonths.length),
+                )
+              }
+            >
+              Load more dates
+            </LoadMoreBtn>
+          </LoadMoreWrap>
         )}
       </ScrollArea>
+
+      {showNextButton && (
+        <Footer>
+          <NextBtn
+            type="button"
+            $visible={hasDraft}
+            disabled={!hasDraft}
+            onClick={() => hasDraft && onConfirm?.()}
+          >
+            Next
+          </NextBtn>
+        </Footer>
+      )}
     </Wrap>
   );
 }

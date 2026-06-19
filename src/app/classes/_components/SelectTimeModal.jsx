@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
+import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays } from "lucide-react";
 
 import {
@@ -41,23 +42,6 @@ const Sheet = styled(Drawer.Content)`
   overflow: hidden;
 `;
 
-const NestedCalendarSheet = styled(Drawer.Content)`
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  border-top-left-radius: 28px;
-  border-top-right-radius: 28px;
-  height: 92vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 3016;
-  box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.2);
-  outline: none;
-  overflow: hidden;
-`;
-
 const SheetInner = styled.div`
   display: flex;
   flex-direction: column;
@@ -76,7 +60,7 @@ const DesktopInner = styled.div`
   position: relative;
 `;
 
-const CalendarOverlay = styled.div`
+const MotionCalendarOverlay = styled(motion.div)`
   position: absolute;
   inset: 0;
   z-index: 12;
@@ -85,7 +69,10 @@ const CalendarOverlay = styled.div`
   flex-direction: column;
   min-height: 0;
   border-radius: inherit;
+  will-change: transform, opacity;
 `;
+
+const CALENDAR_TRANSITION = { duration: 0.3, ease: [0.32, 0.72, 0, 1] };
 
 const CloseButton = styled.button`
   position: absolute;
@@ -290,8 +277,8 @@ const SlotPriceAmount = styled.span`
 
 const SlotRight = styled.span`
   font-size: 0.78rem;
-  font-weight: 400;
-  color: #717171;
+  font-weight: ${(p) => (p.$lowSpots ? 500 : 400)};
+  color: ${(p) => (p.$lowSpots ? "#ff385c" : "#717171")};
   text-align: right;
   align-self: flex-end;
   flex-shrink: 0;
@@ -464,10 +451,14 @@ function SelectTimePanel({
                           {perGuestLabel}
                         </SlotPriceLine>
                       </SlotLeft>
-                      <SlotRight>
+                      <SlotRight
+                        $lowSpots={
+                          !soldOut && Number(slot.available_spots) < 3
+                        }
+                      >
                         {soldOut
                           ? "Sold out"
-                          : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"}`}
+                          : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"} available`}
                       </SlotRight>
                     </SlotCard>
                   );
@@ -489,41 +480,67 @@ function CalendarLayer({
   calendarOpen,
   setCalendarOpen,
   sortedDateStrs,
-  availableSlots,
   minSelectableDate,
   selectedDate,
-  onDateSelect,
+  onDateConfirm,
 }) {
-  if (!calendarOpen) return null;
+  const [draftDate, setDraftDate] = useState(null);
+  const [rendered, setRendered] = useState(false);
 
-  const calendar = (
-    <StackedAvailabilityCalendar
-      sortedDateStrs={sortedDateStrs}
-      availableSlots={availableSlots}
-      minSelectableDate={minSelectableDate}
-      selectedDate={selectedDate}
-      onDateSelect={(date) => {
-        onDateSelect?.(date);
-        setCalendarOpen(false);
-      }}
-      onClose={() => setCalendarOpen(false)}
-    />
-  );
+  useEffect(() => {
+    if (calendarOpen) {
+      setRendered(true);
+      setDraftDate(selectedDate ?? null);
+    } else {
+      setRendered(false);
+    }
+  }, [calendarOpen, selectedDate]);
 
-  if (variant === "modal") {
-    return <CalendarOverlay>{calendar}</CalendarOverlay>;
-  }
+  const requestClose = () => setRendered(false);
+
+  const handleExitComplete = () => {
+    if (!rendered) setCalendarOpen(false);
+  };
+
+  const handleConfirm = () => {
+    if (!draftDate) return;
+    onDateConfirm?.(draftDate);
+    setRendered(false);
+  };
+
+  const isDrawer = variant === "drawer";
+  const motionProps = isDrawer
+    ? {
+        initial: { opacity: 0, y: "100%" },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: "100%" },
+      }
+    : {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 20 },
+      };
 
   return (
-    <Drawer.Root open={calendarOpen} onOpenChange={setCalendarOpen}>
-      <Drawer.Portal>
-        <MobileDrawerOverlay style={{ zIndex: 3015 }} />
-        <NestedCalendarSheet>
-          <MobileDrawerHandle />
-          {calendar}
-        </NestedCalendarSheet>
-      </Drawer.Portal>
-    </Drawer.Root>
+    <AnimatePresence onExitComplete={handleExitComplete}>
+      {rendered && (
+        <MotionCalendarOverlay
+          key="calendar-overlay"
+          {...motionProps}
+          transition={CALENDAR_TRANSITION}
+        >
+          <StackedAvailabilityCalendar
+            sortedDateStrs={sortedDateStrs}
+            minSelectableDate={minSelectableDate}
+            draftDate={draftDate}
+            onDraftDateSelect={setDraftDate}
+            onConfirm={handleConfirm}
+            onClose={requestClose}
+            showNextButton
+          />
+        </MotionCalendarOverlay>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -630,6 +647,16 @@ export default function SelectTimeModal({
 
   const handleClose = () => onOpenChange?.(false);
 
+  const handleCalendarConfirm = (date) => {
+    const dateStr = getLocalYYYYMMDD(date);
+    scrollTargetRef.current = dateStr;
+    const idx = sortedDateStrs.indexOf(dateStr);
+    if (idx !== -1) {
+      setVisibleCount((prev) => Math.max(prev, idx + 1));
+    }
+    onDateSelect?.(date);
+  };
+
   const panelProps = {
     onClose: handleClose,
     onOpenCalendar: () => setCalendarOpen(true),
@@ -658,10 +685,9 @@ export default function SelectTimeModal({
       calendarOpen={calendarOpen}
       setCalendarOpen={setCalendarOpen}
       sortedDateStrs={sortedDateStrs}
-      availableSlots={availableSlots}
       minSelectableDate={minSelectableDate}
       selectedDate={selectedDate}
-      onDateSelect={onDateSelect}
+      onDateConfirm={handleCalendarConfirm}
     />
   );
 
@@ -691,11 +717,11 @@ export default function SelectTimeModal({
             <MobileDrawerHandle />
             <SheetInner>
               <SelectTimePanel {...panelProps} CloseBtn={CloseButton} />
+              {calendarLayer}
             </SheetInner>
           </Sheet>
         </Drawer.Portal>
       </Drawer.Root>
-      {calendarLayer}
     </>
   );
 }
