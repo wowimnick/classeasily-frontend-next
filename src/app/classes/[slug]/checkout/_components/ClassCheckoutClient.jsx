@@ -15,9 +15,19 @@ import ClientHeader from "@/components/layout/ClientHeader";
 import CheckoutErrorBoundary from "@/components/common/CheckoutErrorBoundary";
 import { saveBookingSuccessPayload } from "@/lib/bookingSuccessStorage";
 import { getLocalYYYYMMDD } from "@/services/utils";
-import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
-import { getDurationText } from "@/app/classes/_components/steps/utils";
-import MiniCalendar from "@/app/classes/_components/MiniCalendar";
+import SelectTimeModal from "@/app/classes/_components/SelectTimeModal";
+import { toSchemaPriceCurrency } from "@/lib/seo";
+
+const CHECKOUT_AVAILABILITY_RANGE_DAYS = 540;
+
+function buildCheckoutAvailabilityRange(minSelectableDate) {
+  const rangeEnd = new Date(minSelectableDate);
+  rangeEnd.setDate(rangeEnd.getDate() + CHECKOUT_AVAILABILITY_RANGE_DAYS);
+  return {
+    start_date: getLocalYYYYMMDD(minSelectableDate),
+    end_date: getLocalYYYYMMDD(rangeEnd),
+  };
+}
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -310,65 +320,6 @@ const ConfirmButton = styled(motion.button)`
   }
 `;
 
-const ChangeDateDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: 3000;
-`;
-const ChangeDateDrawerContent = styled(Drawer.Content)`
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  max-height: 90vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 3001;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
-  outline: none;
-`;
-const ChangeDateDrawerHandle = styled.div`
-  width: 40px;
-  height: 4px;
-  background: #e5e7eb;
-  border-radius: 2px;
-  margin: 12px auto;
-`;
-const ChangeDateTimeList = styled.div`
-  overflow-y: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-`;
-const ChangeDateTimeRow = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: #fff;
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  width: 100%;
-  transition: background 0.2s;
-  &:first-of-type {
-    border-top: none;
-  }
-  &:hover:not(:disabled) {
-    background: rgba(255, 56, 92, 0.04);
-  }
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-`;
-
 const ChangeParticipantsDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
@@ -517,13 +468,12 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const [paymentAction, setPaymentAction] = useState(null);
   const cancelledIntentRef = useRef(false);
 
-  const [changeDateDrawerOpen, setChangeDateDrawerOpen] = useState(false);
-  const [changeTimeDrawerOpen, setChangeTimeDrawerOpen] = useState(false);
-  const [changeDateAvailableSlots, setChangeDateAvailableSlots] = useState({});
-  const [changeDateLoading, setChangeDateLoading] = useState(false);
-  const [changeDateSelectedDate, setChangeDateSelectedDate] = useState(null);
-  const [changeDateCalendarMonth, setChangeDateCalendarMonth] = useState(() => new Date());
-  const [changeTimeLoading, setChangeTimeLoading] = useState(false);
+  const [selectTimeModalOpen, setSelectTimeModalOpen] = useState(false);
+  const [checkoutAvailableSlots, setCheckoutAvailableSlots] = useState({});
+  const [checkoutSlotsLoading, setCheckoutSlotsLoading] = useState(false);
+  const [checkoutSelectedDate, setCheckoutSelectedDate] = useState(null);
+  const [checkoutScrollToDate, setCheckoutScrollToDate] = useState(null);
+  const [checkoutParticipants, setCheckoutParticipants] = useState(1);
 
   const [changeParticipantsDrawerOpen, setChangeParticipantsDrawerOpen] = useState(false);
   const [participantsDraft, setParticipantsDraft] = useState(1);
@@ -755,56 +705,34 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   }, []);
 
   useEffect(() => {
-    if (!changeDateDrawerOpen || !bookingData?.selectedOption?.optionId) return;
-    const slot = bookingData.selectedSlots?.[0];
-    if (slot?.date) {
-      const [y, m, d] = slot.date.split("-").map(Number);
-      const dateObj = new Date(y, m - 1, d);
-      setChangeDateSelectedDate(dateObj);
-      setChangeDateCalendarMonth(dateObj);
-    }
-    const optionId = bookingData.selectedOption.optionId;
-    setChangeDateLoading(true);
-    const start = slot?.date
-      ? (() => {
-          const [yr, mo] = slot.date.split("-").map(Number);
-          return new Date(yr, mo - 1, 1);
-        })()
-      : new Date();
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 2, 1);
-    scheduleService
-      .getAvailabilityForOption(optionId, {
-        start_date: getLocalYYYYMMDD(start),
-        end_date: getLocalYYYYMMDD(end),
-      })
-      .then((res) => {
-        if (res && typeof res === "object") setChangeDateAvailableSlots(res);
-      })
-      .finally(() => setChangeDateLoading(false));
-  }, [changeDateDrawerOpen, bookingData?.selectedOption?.optionId, bookingData?.selectedSlots]);
+    if (!selectTimeModalOpen || !bookingData?.selectedOption?.optionId) return;
+    if (Object.keys(checkoutAvailableSlots).length > 0) return;
 
-  useEffect(() => {
-    if (!changeTimeDrawerOpen || !bookingData?.selectedOption?.optionId) return;
-    const dateStr = changeDateSelectedDate
-      ? getLocalYYYYMMDD(changeDateSelectedDate)
-      : bookingData?.selectedSlots?.[0]?.date;
-    if (!dateStr || changeDateAvailableSlots[dateStr]) return;
-    setChangeTimeLoading(true);
-    const [y, m] = dateStr.split("-").map(Number);
-    const start = new Date(y, m - 1, 1);
-    const end = new Date(y, m, 0);
+    const optionId = bookingData.selectedOption.optionId;
+    const range = buildCheckoutAvailabilityRange(changeDateMinSelectable);
+    let cancelled = false;
+    setCheckoutSlotsLoading(true);
+
     scheduleService
-      .getAvailabilityForOption(bookingData.selectedOption.optionId, {
-        start_date: getLocalYYYYMMDD(start),
-        end_date: getLocalYYYYMMDD(end),
-      })
+      .getAvailabilityForOption(optionId, range)
       .then((res) => {
-        if (res && typeof res === "object")
-          setChangeDateAvailableSlots((prev) => ({ ...prev, ...res }));
+        if (!cancelled && res && typeof res === "object") {
+          setCheckoutAvailableSlots(res);
+        }
       })
-      .finally(() => setChangeTimeLoading(false));
-  }, [changeTimeDrawerOpen, changeDateSelectedDate, bookingData?.selectedOption?.optionId, bookingData?.selectedSlots?.[0]?.date, changeDateAvailableSlots]);
+      .finally(() => {
+        if (!cancelled) setCheckoutSlotsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selectTimeModalOpen,
+    bookingData?.selectedOption?.optionId,
+    checkoutAvailableSlots,
+    changeDateMinSelectable,
+  ]);
 
   const changeParticipantsMax = useMemo(() => {
     const slot = bookingData?.selectedSlots?.[0];
@@ -830,49 +758,104 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
     changeParticipantsMin,
   ]);
 
-  const handleChangeDateSelect = useCallback((date) => {
-    setChangeDateSelectedDate(date);
-    setChangeDateDrawerOpen(false);
-    setChangeTimeDrawerOpen(true);
+  const checkoutSelectedSlot = useMemo(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    if (!slot) return null;
+    return {
+      id: slot.id,
+      date: slot.date,
+      time: slot.time,
+      available_spots: slot.available_spots,
+      price: slot.price,
+      duration: slot.duration,
+      minParticipants: slot.minParticipants ?? slot.min_participants,
+    };
+  }, [bookingData?.selectedSlots]);
+
+  const displayCurrency = useMemo(
+    () => toSchemaPriceCurrency(classData?.currency_code || "CAD"),
+    [classData?.currency_code],
+  );
+
+  const openSelectTimeModal = useCallback(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    const participants = Math.max(
+      changeParticipantsMin,
+      bookingData?.participants || changeParticipantsMin,
+    );
+    setCheckoutParticipants(participants);
+
+    if (slot?.date) {
+      const [y, m, d] = slot.date.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      setCheckoutSelectedDate(dateObj);
+      setCheckoutScrollToDate(dateObj);
+    }
+
+    setSelectTimeModalOpen(true);
+  }, [
+    bookingData?.participants,
+    bookingData?.selectedSlots,
+    changeParticipantsMin,
+  ]);
+
+  const handleCheckoutCalendarDatePicked = useCallback((date) => {
+    setCheckoutSelectedDate(date);
+    setCheckoutScrollToDate(date);
   }, []);
-  const handleChangeDateMonthChange = useCallback((direction) => {
-    setChangeDateCalendarMonth((prev) => {
-      const next = new Date(prev);
-      next.setMonth(prev.getMonth() + direction, 1);
-      return next;
-    });
+
+  const handleSelectTimeModalOpenChange = useCallback((open) => {
+    setSelectTimeModalOpen(open);
+    if (!open) setCheckoutScrollToDate(null);
   }, []);
-  const handleChangeTimeSelect = useCallback(
-    (slot) => {
+
+  const handleCheckoutSelectTimeSlot = useCallback(
+    (slot, dateStr) => {
       if (!bookingData) return;
-      const dateStr =
-        changeDateSelectedDate
-          ? getLocalYYYYMMDD(changeDateSelectedDate)
-          : bookingData?.selectedSlots?.[0]?.date;
-      if (!dateStr) return;
+      const resolvedDateStr =
+        dateStr ||
+        (checkoutSelectedDate
+          ? getLocalYYYYMMDD(checkoutSelectedDate)
+          : bookingData?.selectedSlots?.[0]?.date);
+      if (!resolvedDateStr) return;
+
       const participants = Math.min(
-        bookingData.participants || 2,
-        slot.available_spots ?? 2
+        checkoutParticipants || bookingData.participants || changeParticipantsMin,
+        slot.available_spots ?? slot.maxParticipants ?? checkoutParticipants,
       );
+      const instanceId = slot.instance_id ?? slot.id;
       const newSlot = {
-        id: slot.instance_id,
-        date: dateStr,
+        id: instanceId,
+        date: resolvedDateStr,
         time: slot.time,
-        available_spots: slot.available_spots,
+        available_spots: slot.available_spots ?? slot.maxParticipants,
         price: slot.price,
         duration: slot.duration,
-        minParticipants: slot.min_participants,
+        minParticipants: slot.min_participants ?? slot.minParticipants,
       };
+
+      const existingName = bookingData.participant_details?.[0]?.name || "";
       handleUpdateBookingData({
         selectedSlots: [newSlot],
         participants,
-        participant_details: Array.from({ length: participants }, () => ({ name: bookingData.participant_details?.[0]?.name || "" })),
+        participant_details: Array.from({ length: participants }, (_, index) => ({
+          name: bookingData.participant_details?.[index]?.name || existingName,
+        })),
         price: parseFloat(slot.price) || 0,
       });
-      setChangeDateSelectedDate(null);
-      setChangeTimeDrawerOpen(false);
+
+      const [y, m, d] = resolvedDateStr.split("-").map(Number);
+      setCheckoutSelectedDate(new Date(y, m - 1, d));
+      setSelectTimeModalOpen(false);
+      setCheckoutScrollToDate(null);
     },
-    [changeDateSelectedDate, bookingData, handleUpdateBookingData]
+    [
+      bookingData,
+      checkoutParticipants,
+      checkoutSelectedDate,
+      changeParticipantsMin,
+      handleUpdateBookingData,
+    ],
   );
 
   const handleChangeParticipantsApply = useCallback(() => {
@@ -989,8 +972,8 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             userTimeZone={userTimeZone}
             businessTimeZone={businessTimeZone}
             confirmFooter={FooterContent}
-            onRequestChangeDate={isMobileView ? () => setChangeDateDrawerOpen(true) : undefined}
-            onRequestChangeTime={isMobileView ? () => setChangeTimeDrawerOpen(true) : undefined}
+            onRequestChangeDate={isMobileView ? openSelectTimeModal : undefined}
+            onRequestChangeTime={isMobileView ? openSelectTimeModal : undefined}
             onRequestChangeParticipants={() => setChangeParticipantsDrawerOpen(true)}
           />
           </CheckoutErrorBoundary>
@@ -1014,110 +997,28 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           </MobileFooterWrap>
         </MainContainer>
 
-        {/* Date drawer: calendar only. Selecting a date closes this and opens the time drawer. */}
-        <Drawer.Root open={changeDateDrawerOpen} onOpenChange={setChangeDateDrawerOpen} shouldScaleBackground>
-          <Drawer.Portal>
-            <ChangeDateDrawerOverlay />
-            <ChangeDateDrawerContent>
-              <ChangeDateDrawerHandle />
-              <div style={{ padding: "0 1rem 1rem", overflowY: "auto" }}>
-                <h3 style={{ margin: "0 0 1.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
-                  Pick a date
-                </h3>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
-                  <MiniCalendar
-                    availableSlots={changeDateAvailableSlots}
-                    loading={changeDateLoading}
-                    selectedDate={changeDateSelectedDate}
-                    onDateSelect={handleChangeDateSelect}
-                    currentDate={changeDateCalendarMonth}
-                    onMonthChange={handleChangeDateMonthChange}
-                    minSelectableDate={changeDateMinSelectable}
-                    today={changeDateToday}
-                  />
-                </div>
-              </div>
-            </ChangeDateDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-
-        {/* Time drawer: time list only (for current booking date or date just chosen in date drawer). */}
-        <Drawer.Root
-          open={changeTimeDrawerOpen}
-          onOpenChange={(open) => {
-            setChangeTimeDrawerOpen(open);
-            if (!open) setChangeDateSelectedDate(null);
-          }}
-          shouldScaleBackground
-        >
-          <Drawer.Portal>
-            <ChangeDateDrawerOverlay />
-            <ChangeDateDrawerContent>
-              <ChangeDateDrawerHandle />
-              <div style={{ padding: "0 1rem 1rem", overflowY: "auto" }}>
-                <h3 style={{ margin: "0 0 0.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
-                  Select time
-                </h3>
-                {(() => {
-                  const timeDrawerDateStr =
-                    changeDateSelectedDate
-                      ? getLocalYYYYMMDD(changeDateSelectedDate)
-                      : bookingData?.selectedSlots?.[0]?.date;
-                  const timeDrawerDateLabel = timeDrawerDateStr
-                    ? formatNaiveDate(timeDrawerDateStr, "EEEE, MMMM d")
-                    : "";
-                  return (
-                    <>
-                      <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", fontWeight: 500, color: "#6b7280", textAlign: "center" }}>
-                        {timeDrawerDateLabel}
-                      </p>
-                      {changeTimeLoading ? (
-                        <p style={{ margin: "0 1rem", fontSize: "0.875rem", color: "#6b7280" }}>Loading times…</p>
-                      ) : (
-                        <ChangeDateTimeList>
-                          {(changeDateAvailableSlots[timeDrawerDateStr] || []).map((slot) => {
-                            const price = parseFloat(slot.price);
-                            const soldOut = Number(slot.available_spots) === 0;
-                            return (
-                              <ChangeDateTimeRow
-                                type="button"
-                                key={slot.instance_id}
-                                disabled={soldOut}
-                                onClick={() => {
-                                  if (!soldOut) handleChangeTimeSelect(slot);
-                                }}
-                              >
-                                <div>
-                                  <span style={{ fontSize: "1rem", fontWeight: 700, color: "#111" }}>
-                                    {formatTimeRangeForDisplay(
-                                      timeDrawerDateStr,
-                                      slot.time,
-                                      slot.duration,
-                                      businessTimeZone,
-                                      userTimeZone
-                                    )}
-                                  </span>
-                                  <span style={{ display: "block", fontSize: "0.75rem", color: "#6b7280", marginTop: 2 }}>
-                                    {soldOut
-                                      ? `${getDurationText(slot.duration)} · Sold out`
-                                      : `${getDurationText(slot.duration)} · ${slot.available_spots} spots left`}
-                                  </span>
-                                </div>
-                                <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-                                  {price === 0 ? "Free" : `$${price.toFixed(2)}`}
-                                </span>
-                              </ChangeDateTimeRow>
-                            );
-                          })}
-                        </ChangeDateTimeList>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </ChangeDateDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
+        {isMobileView && (
+          <SelectTimeModal
+            open={selectTimeModalOpen}
+            onOpenChange={handleSelectTimeModalOpenChange}
+            onDateSelect={handleCheckoutCalendarDatePicked}
+            availableSlots={checkoutAvailableSlots}
+            loading={checkoutSlotsLoading}
+            selectedDate={checkoutSelectedDate}
+            selectedSlot={checkoutSelectedSlot}
+            participants={checkoutParticipants}
+            participantsMax={changeParticipantsMax}
+            onParticipantsChange={setCheckoutParticipants}
+            onSelectSlot={handleCheckoutSelectTimeSlot}
+            minSelectableDate={changeDateMinSelectable}
+            today={changeDateToday}
+            businessTimezone={businessTimeZone}
+            currency={displayCurrency}
+            option={bookingData?.selectedOption}
+            scrollToDate={checkoutScrollToDate}
+            variant="drawer"
+          />
+        )}
 
         {isMobileView ? (
           <Drawer.Root
