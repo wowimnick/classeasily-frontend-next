@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { scheduleService } from "@/services/apiService";
 import posthog from "posthog-js";
 import { BP } from "@/styles/breakpoints";
+import message from "@/lib/message";
 
 /** Breakpoint (px) below which mobile reserve flow is shown */
 export const MOBILE_RESERVE_BREAKPOINT = BP.TABLET;
@@ -15,7 +17,9 @@ export const DRAWER_TRANSITION_MS = 150;
 /** Default participant count when quick-selecting from upcoming availability */
 export const DEFAULT_PARTICIPANTS = 1;
 
-/** Total horizon for mobile availability (matches former "far future" fix). */
+const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
+
+/** Total horizon for availability fetch. */
 const MOBILE_AVAILABILITY_RANGE_DAYS = 540;
 
 function buildMobileAvailabilityRange(minSelectableDate) {
@@ -28,10 +32,15 @@ function buildMobileAvailabilityRange(minSelectableDate) {
 }
 
 /**
- * Encapsulates all state and handlers for the mobile reserve flow:
- * upcoming availability strip → SelectTimeModal → reserve footer → review drawer.
+ * Booking flow state: availability → select time → (mobile: review) → checkout.
  */
-export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) {
+export function useMobileReserveFlow(
+  mounted,
+  classData,
+  optionToDisplayOnCard,
+  authUser,
+) {
+  const router = useRouter();
   const [isMobileView, setIsMobileView] = useState(false);
   const [mobileAvailableSlots, setMobileAvailableSlots] = useState({});
   const [mobileSlotsLoading, setMobileSlotsLoading] = useState(false);
@@ -43,15 +52,10 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   const [mobileParticipantsDraft, setMobileParticipantsDraft] = useState(DEFAULT_PARTICIPANTS);
   const [mobileReviewDrawerOpen, setMobileReviewDrawerOpen] = useState(false);
   const [mobileAvailabilityError, setMobileAvailabilityError] = useState(false);
-
-  // Unified "Select a time" modal (replaces old separate date/time drawers).
   const [mobileSelectTimeModalOpen, setMobileSelectTimeModalOpen] = useState(false);
-  const [mobileCalendarDrawerOpen, setMobileCalendarDrawerOpen] = useState(false);
   const [mobileScrollToDate, setMobileScrollToDate] = useState(null);
 
   const reopenReviewDrawerOnCloseEditRef = useRef(false);
-  const reopenSelectTimeAfterCalendarRef = useRef(false);
-  const pendingCalendarFromSelectTimeRef = useRef(false);
   const hasFiredDateSelectedRef = useRef(false);
 
   const mobileMinSelectableDate = useMemo(() => {
@@ -99,7 +103,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
           setMobileAvailableSlots(data);
         }
       } catch (e) {
-        console.error("Mobile availability fetch failed", e);
+        console.error("Availability fetch failed", e);
         if (!cancelled) setMobileAvailabilityError(true);
       } finally {
         if (!cancelled) setMobileSlotsLoading(false);
@@ -111,8 +115,6 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     };
   }, [mounted, optionToDisplayOnCard?.optionId, mobileMinSelectableDate]);
 
-  // Set initial calendar month to first available date — but do NOT auto-select a slot.
-  // Users must explicitly pick a time via SelectTimeModal so the footer shows "Show dates".
   useEffect(() => {
     if (mobileSlotsLoading || Object.keys(mobileAvailableSlots).length === 0) return;
     const sortedDates = Object.keys(mobileAvailableSlots)
@@ -156,46 +158,71 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     return mobileModalParticipantsMax;
   }, [mobileSelectedSlot?.available_spots, mobileModalParticipantsMax]);
 
-  const handleMobileCalendarMonthChange = useCallback((direction) => {
-    setMobileCalendarMonth((prev) => {
-      const next = new Date(prev);
-      next.setMonth(prev.getMonth() + direction, 1);
-      return next;
-    });
-  }, []);
+  const goToCheckout = useCallback(
+    (slotState, participants) => {
+      if (!classData?.slug || !optionToDisplayOnCard || !slotState) return;
+      if (typeof window === "undefined") return;
 
-  /** Open the unified SelectTimeModal from the sticky footer "Show dates" button. */
+      const bookerName = authUser
+        ? `${authUser.first_name || ""} ${authUser.last_name || ""}`.trim()
+        : "";
+      const bookerEmail = authUser?.email?.trim() || "";
+      const bookerPhone = String(
+        authUser?.phone_number || authUser?.phone || "",
+      ).trim();
+
+      const checkoutSlot = {
+        id: slotState.id,
+        date: slotState.date,
+        time: slotState.time,
+        duration: slotState.duration,
+        available_spots: slotState.available_spots,
+        price: slotState.price,
+        isCourse: optionToDisplayOnCard.booking_type === "Full Course",
+        min_participants: slotState.minParticipants ?? 1,
+      };
+
+      try {
+        sessionStorage.setItem(
+          CHECKOUT_STORAGE_KEY,
+          JSON.stringify({
+            classSlug: classData.slug,
+            classData,
+            bookingData: {
+              selectedSlots: [checkoutSlot],
+              participants,
+              participant_details: Array.from({ length: participants }, (_, i) => ({
+                name: i === 0 ? bookerName : "",
+              })),
+              notes: "",
+              price: parseFloat(slotState.price || 0) || 0,
+              selectedOption: optionToDisplayOnCard,
+              userName: bookerName,
+              userEmail: bookerEmail,
+              userPhone: bookerPhone,
+            },
+          }),
+        );
+        setMobileSelectTimeModalOpen(false);
+        setMobileReviewDrawerOpen(false);
+        router.push(`/classes/${classData.slug}/checkout`);
+      } catch (e) {
+        console.error("Checkout redirect failed", e);
+        message.error("Couldn't open checkout. Please try again.");
+      }
+    },
+    [classData, optionToDisplayOnCard, authUser, router],
+  );
+
   const handleOpenSelectTimeModal = useCallback(() => {
     setMobileScrollToDate(null);
     setMobileSelectTimeModalOpen(true);
   }, []);
 
-  /** Close time modal and open the separate calendar drawer (MiniCalendar). */
-  const handleOpenCalendarFromSelectTime = useCallback(() => {
-    reopenSelectTimeAfterCalendarRef.current = true;
-    pendingCalendarFromSelectTimeRef.current = true;
-    setMobileSelectTimeModalOpen(false);
-    setTimeout(() => {
-      pendingCalendarFromSelectTimeRef.current = false;
-      setMobileCalendarDrawerOpen(true);
-    }, DRAWER_TRANSITION_MS);
-  }, []);
-
-  const handleCalendarDateSelect = useCallback((date) => {
+  const handleCalendarDatePicked = useCallback((date) => {
     setMobileSelectedDate(date);
     setMobileCalendarMonth(date);
     setMobileScrollToDate(date);
-    reopenSelectTimeAfterCalendarRef.current = false;
-    setMobileCalendarDrawerOpen(false);
-    setTimeout(() => setMobileSelectTimeModalOpen(true), DRAWER_TRANSITION_MS);
-  }, []);
-
-  const handleCalendarDrawerOpenChange = useCallback((open) => {
-    setMobileCalendarDrawerOpen(open);
-    if (!open && reopenSelectTimeAfterCalendarRef.current) {
-      reopenSelectTimeAfterCalendarRef.current = false;
-      setTimeout(() => setMobileSelectTimeModalOpen(true), DRAWER_TRANSITION_MS);
-    }
   }, []);
 
   const handleMobileTimeSelect = useCallback(
@@ -211,7 +238,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
         participantOverride ?? mobileParticipants,
         maxSpots,
       );
-      setMobileSelectedSlot({
+      const slotState = {
         id: instanceId,
         date: dateStr,
         time: slot.time,
@@ -219,7 +246,9 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
         price: slot.price,
         duration: slot.duration,
         minParticipants: slot.min_participants ?? slot.minParticipants,
-      });
+      };
+
+      setMobileSelectedSlot(slotState);
       reopenReviewDrawerOnCloseEditRef.current = false;
       setMobileParticipants(participants);
 
@@ -232,13 +261,16 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
         });
       }
 
-      setMobileSelectTimeModalOpen(false);
-      setTimeout(() => setMobileReviewDrawerOpen(true), DRAWER_TRANSITION_MS);
+      if (isMobileView) {
+        setMobileSelectTimeModalOpen(false);
+        setTimeout(() => setMobileReviewDrawerOpen(true), DRAWER_TRANSITION_MS);
+      } else {
+        goToCheckout(slotState, participants);
+      }
     },
-    [mobileSelectedDate, mobileParticipants],
+    [mobileSelectedDate, mobileParticipants, isMobileView, goToCheckout],
   );
 
-  /** Upcoming availability strip / sidebar slot — skip modal, go straight to review summary with 1 guest. */
   const handleQuickSelectFromAvailability = useCallback(
     (slot, dateStr) => {
       if (!slot || !dateStr) return;
@@ -258,7 +290,6 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     [handleMobileTimeSelect],
   );
 
-  /** Slot selection from SelectTimeModal — sets date then delegates to handleMobileTimeSelect. */
   const handleSelectTimeModalSlot = useCallback(
     (slot, dateStr) => {
       if (dateStr) {
@@ -270,26 +301,12 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     [handleMobileTimeSelect],
   );
 
-  const handleReserveClick = useCallback(() => {
-    if (!mobileSelectedSlot || !optionToDisplayOnCard || !classData?.slug) return;
-    if (!hasFiredDateSelectedRef.current) {
-      hasFiredDateSelectedRef.current = true;
-      posthog.capture("booking_date_selected", {
-        date: mobileSelectedSlot.date,
-        time: mobileSelectedSlot.time,
-        participants: mobileParticipants,
-      });
-    }
-    setMobileReviewDrawerOpen(true);
-  }, [mobileSelectedSlot, optionToDisplayOnCard, classData, mobileParticipants]);
-
   const openEditDrawerAfterClose = useCallback((openDrawer) => {
     reopenReviewDrawerOnCloseEditRef.current = true;
     setMobileReviewDrawerOpen(false);
     setTimeout(openDrawer, DRAWER_TRANSITION_MS);
   }, []);
 
-  /** Edit date or time from review summary — both reopen the same time-selection modal. */
   const handleMobileEditDateOrTime = useCallback(() => {
     openEditDrawerAfterClose(() => {
       const dateStr = mobileSelectedSlot?.date;
@@ -321,11 +338,9 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     };
   }, []);
 
-  /** onOpenChange for SelectTimeModal — reopen review drawer when closing from edit flow. */
   const handleSelectTimeModalOpenChange = useCallback((open) => {
     setMobileSelectTimeModalOpen(open);
     if (!open) {
-      if (pendingCalendarFromSelectTimeRef.current) return;
       setMobileScrollToDate(null);
       if (reopenReviewDrawerOnCloseEditRef.current) {
         reopenReviewDrawerOnCloseEditRef.current = false;
@@ -362,22 +377,15 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     mobileModalParticipantsMax,
     mobileReviewDrawerOpen,
     setMobileReviewDrawerOpen,
-    handleReserveClick,
     handleMobileEditDateOrTime,
     handleMobileEditGuests,
-    handleMobileCalendarMonthChange,
     createEditDrawerOnOpenChange,
     handleParticipantsApply,
     mobileAvailabilityError,
-    // Unified SelectTimeModal
     mobileSelectTimeModalOpen,
-    setMobileSelectTimeModalOpen,
-    mobileCalendarDrawerOpen,
     mobileScrollToDate,
     handleOpenSelectTimeModal,
-    handleOpenCalendarFromSelectTime,
-    handleCalendarDateSelect,
-    handleCalendarDrawerOpenChange,
+    handleCalendarDatePicked,
     handleQuickSelectFromAvailability,
     handleSelectTimeModalSlot,
     handleSelectTimeModalOpenChange,

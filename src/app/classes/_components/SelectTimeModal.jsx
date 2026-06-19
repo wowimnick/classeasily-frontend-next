@@ -13,6 +13,7 @@ import {
   ParticipantsStepperValue,
 } from "./mobileBookingStyles";
 import { DesktopModalShell, DesktopCloseButton } from "./bookingShellStyles";
+import StackedAvailabilityCalendar from "./StackedAvailabilityCalendar";
 
 import {
   getLocalYYYYMMDD,
@@ -40,12 +41,30 @@ const Sheet = styled(Drawer.Content)`
   overflow: hidden;
 `;
 
+const NestedCalendarSheet = styled(Drawer.Content)`
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  height: 92vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3016;
+  box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.2);
+  outline: none;
+  overflow: hidden;
+`;
+
 const SheetInner = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 `;
 
 const DesktopInner = styled.div`
@@ -55,6 +74,17 @@ const DesktopInner = styled.div`
   min-height: 0;
   overflow: hidden;
   position: relative;
+`;
+
+const CalendarOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: inherit;
 `;
 
 const CloseButton = styled.button`
@@ -76,7 +106,7 @@ const CloseButton = styled.button`
   padding: 0;
 
   &:hover {
-    color: #111111;
+    color: #000000;
   }
 `;
 
@@ -93,7 +123,7 @@ const Title = styled.h2`
   padding-right: 48px;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111111;
+  color: #000000;
   letter-spacing: -0.02em;
 `;
 
@@ -101,13 +131,19 @@ const GuestRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 0 16px;
+  padding: 20px 0 0;
 `;
 
 const GuestLabel = styled.span`
   font-size: 1.05rem;
   font-weight: 500;
-  color: #374151;
+  color: #000000;
+`;
+
+const HeaderDivider = styled.div`
+  height: 1px;
+  background: #ebebeb;
+  margin: 16px 0 0;
 `;
 
 const StepperRow = styled.div`
@@ -128,20 +164,21 @@ const GuestStepperValue = styled(ParticipantsStepperValue)`
   font-size: 1.1rem;
   font-weight: 600;
   min-width: 1.5rem;
+  color: #000000;
 `;
 
 const MonthToolbar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0 16px;
+  padding: 14px 0 16px;
   box-shadow: 0 10px 20px -14px rgba(15, 23, 42, 0.22);
 `;
 
 const MonthLabel = styled.span`
   font-size: 1.05rem;
   font-weight: 500;
-  color: #111111;
+  color: #000000;
   letter-spacing: -0.01em;
 `;
 
@@ -154,7 +191,7 @@ const CalendarToggleBtn = styled.button`
   border-radius: 50%;
   border: 1px solid #e5e7eb;
   background: #ffffff;
-  color: #4b5563;
+  color: #000000;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -178,7 +215,7 @@ const DateSectionHeader = styled.h3`
   margin: 24px 0 12px;
   font-size: 1.05rem;
   font-weight: 500;
-  color: #374151;
+  color: #000000;
   letter-spacing: -0.01em;
 
   &:first-child {
@@ -213,7 +250,7 @@ const SlotCard = styled.button`
   ${(p) =>
     p.$selected &&
     `
-    border-color: #111111;
+    border-color: #000000;
     background: #fafafa;
     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
   `}
@@ -236,25 +273,25 @@ const SlotLeft = styled.div`
 const SlotTime = styled.span`
   font-size: 1.05rem;
   font-weight: 500;
-  color: #111111;
+  color: #000000;
   letter-spacing: -0.01em;
 `;
 
 const SlotPriceLine = styled.span`
   font-size: 0.78rem;
   font-weight: 400;
-  color: #9ca3af;
+  color: #717171;
 `;
 
 const SlotPriceAmount = styled.span`
-  color: #111111;
+  color: #000000;
   font-weight: 500;
 `;
 
 const SlotRight = styled.span`
   font-size: 0.78rem;
   font-weight: 400;
-  color: #9ca3af;
+  color: #717171;
   text-align: right;
   align-self: flex-end;
   flex-shrink: 0;
@@ -268,7 +305,7 @@ const Sentinel = styled.div`
 const EmptyState = styled.div`
   padding: 40px 16px;
   text-align: center;
-  color: #9ca3af;
+  color: #717171;
   font-size: 0.9rem;
 `;
 
@@ -308,18 +345,14 @@ function SelectTimePanel({
   participantsMax,
   onParticipantsChange,
   onSelectSlot,
-  minSelectableDate,
-  today,
   businessTimezone,
   currency,
   option,
-  scrollToDate,
   scrollBodyRef,
   sectionRefs,
   sentinelRef,
   visibleDateStrs,
   sortedDateStrs,
-  visibleCount,
   headerMonthDate,
   CloseBtn,
 }) {
@@ -364,6 +397,8 @@ function SelectTimePanel({
           </StepperRow>
         </GuestRow>
 
+        <HeaderDivider />
+
         <MonthToolbar>
           <MonthLabel>
             {headerMonthDate.toLocaleDateString("en-US", {
@@ -398,8 +433,8 @@ function SelectTimePanel({
               >
                 <DateSectionHeader>{formatSectionHeader(dateStr)}</DateSectionHeader>
                 {slots.map((slot) => {
-                  const isSelected =
-                    selectedSlot?.id === (slot.instance_id ?? slot.id);
+                  const slotId = slot.instance_id ?? slot.id;
+                  const isSelected = selectedSlot?.id === slotId;
                   const price = parseFloat(slot.price);
                   const soldOut = Number(slot.available_spots) === 0;
                   const priceText =
@@ -409,7 +444,7 @@ function SelectTimePanel({
                   return (
                     <SlotCard
                       type="button"
-                      key={slot.instance_id}
+                      key={slotId}
                       $selected={isSelected}
                       disabled={soldOut}
                       onClick={() => !soldOut && onSelectSlot(slot, dateStr)}
@@ -449,10 +484,53 @@ function SelectTimePanel({
   );
 }
 
+function CalendarLayer({
+  variant,
+  calendarOpen,
+  setCalendarOpen,
+  sortedDateStrs,
+  availableSlots,
+  minSelectableDate,
+  selectedDate,
+  onDateSelect,
+}) {
+  if (!calendarOpen) return null;
+
+  const calendar = (
+    <StackedAvailabilityCalendar
+      sortedDateStrs={sortedDateStrs}
+      availableSlots={availableSlots}
+      minSelectableDate={minSelectableDate}
+      selectedDate={selectedDate}
+      onDateSelect={(date) => {
+        onDateSelect?.(date);
+        setCalendarOpen(false);
+      }}
+      onClose={() => setCalendarOpen(false)}
+    />
+  );
+
+  if (variant === "modal") {
+    return <CalendarOverlay>{calendar}</CalendarOverlay>;
+  }
+
+  return (
+    <Drawer.Root open={calendarOpen} onOpenChange={setCalendarOpen}>
+      <Drawer.Portal>
+        <MobileDrawerOverlay style={{ zIndex: 3015 }} />
+        <NestedCalendarSheet>
+          <MobileDrawerHandle />
+          {calendar}
+        </NestedCalendarSheet>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
 export default function SelectTimeModal({
   open,
   onOpenChange,
-  onOpenCalendar,
+  onDateSelect,
   availableSlots,
   loading,
   selectedDate,
@@ -470,6 +548,7 @@ export default function SelectTimeModal({
   variant = "drawer",
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_SECTIONS);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const scrollBodyRef = useRef(null);
   const sectionRefs = useRef({});
   const sentinelRef = useRef(null);
@@ -495,8 +574,13 @@ export default function SelectTimeModal({
   const visibleDateStrs = sortedDateStrs.slice(0, visibleCount);
 
   useEffect(() => {
+    if (!open) setCalendarOpen(false);
+  }, [open]);
+
+  useEffect(() => {
     if (open && !prevOpenRef.current) {
       setVisibleCount(INITIAL_SECTIONS);
+      setCalendarOpen(false);
       scrollTargetRef.current = scrollToDate ? getLocalYYYYMMDD(scrollToDate) : null;
       if (!scrollToDate && scrollBodyRef.current) {
         scrollBodyRef.current.scrollTop = 0;
@@ -515,7 +599,7 @@ export default function SelectTimeModal({
   }, [open, scrollToDate, sortedDateStrs]);
 
   useLayoutEffect(() => {
-    if (!open || !scrollTargetRef.current) return;
+    if (!open || !scrollTargetRef.current || calendarOpen) return;
     const dateStr = scrollTargetRef.current;
     const container = scrollBodyRef.current;
     const el = sectionRefs.current[dateStr];
@@ -524,10 +608,10 @@ export default function SelectTimeModal({
       scrollSectionIntoView(container, el);
     });
     return () => cancelAnimationFrame(frame);
-  }, [open, visibleCount, scrollToDate]);
+  }, [open, visibleCount, scrollToDate, calendarOpen]);
 
   useEffect(() => {
-    if (!open || sortedDateStrs.length === 0) return;
+    if (!open || sortedDateStrs.length === 0 || calendarOpen) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
@@ -542,13 +626,13 @@ export default function SelectTimeModal({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [open, sortedDateStrs.length]);
+  }, [open, sortedDateStrs.length, calendarOpen]);
 
   const handleClose = () => onOpenChange?.(false);
 
   const panelProps = {
     onClose: handleClose,
-    onOpenCalendar,
+    onOpenCalendar: () => setCalendarOpen(true),
     availableSlots,
     loading,
     selectedDate,
@@ -557,20 +641,29 @@ export default function SelectTimeModal({
     participantsMax,
     onParticipantsChange,
     onSelectSlot,
-    minSelectableDate,
-    today,
     businessTimezone,
     currency,
     option,
-    scrollToDate,
     scrollBodyRef,
     sectionRefs,
     sentinelRef,
     visibleDateStrs,
     sortedDateStrs,
-    visibleCount,
     headerMonthDate,
   };
+
+  const calendarLayer = (
+    <CalendarLayer
+      variant={variant}
+      calendarOpen={calendarOpen}
+      setCalendarOpen={setCalendarOpen}
+      sortedDateStrs={sortedDateStrs}
+      availableSlots={availableSlots}
+      minSelectableDate={minSelectableDate}
+      selectedDate={selectedDate}
+      onDateSelect={onDateSelect}
+    />
+  );
 
   if (variant === "modal") {
     return (
@@ -583,22 +676,26 @@ export default function SelectTimeModal({
       >
         <DesktopInner>
           <SelectTimePanel {...panelProps} CloseBtn={DesktopCloseButton} />
+          {calendarLayer}
         </DesktopInner>
       </DesktopModalShell>
     );
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
-      <Drawer.Portal>
-        <MobileDrawerOverlay />
-        <Sheet>
-          <MobileDrawerHandle />
-          <SheetInner>
-            <SelectTimePanel {...panelProps} CloseBtn={CloseButton} />
-          </SheetInner>
-        </Sheet>
-      </Drawer.Portal>
-    </Drawer.Root>
+    <>
+      <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
+        <Drawer.Portal>
+          <MobileDrawerOverlay />
+          <Sheet>
+            <MobileDrawerHandle />
+            <SheetInner>
+              <SelectTimePanel {...panelProps} CloseBtn={CloseButton} />
+            </SheetInner>
+          </Sheet>
+        </Drawer.Portal>
+      </Drawer.Root>
+      {calendarLayer}
+    </>
   );
 }

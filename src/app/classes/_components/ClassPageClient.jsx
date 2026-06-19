@@ -26,7 +26,6 @@ import message from "@/lib/message";
 import { getLocalYYYYMMDD, formatTimeRangeForDisplay } from "@/services/utils";
 import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 import SelectTimeModal from "./SelectTimeModal";
-import SelectCalendarDrawer from "./SelectCalendarDrawer";
 import { DesktopModalShell } from "./bookingShellStyles";
 import { getCancellationPolicyText } from "./steps/utils";
 import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
@@ -1348,7 +1347,12 @@ export default function ClassPageClient({
     );
   }, [classData]);
 
-  const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
+  const mobileReserve = useMobileReserveFlow(
+    mounted,
+    classData,
+    optionToDisplayOnCard,
+    currentUser,
+  );
 
   const bookingVariant = mobileReserve.isMobileView ? "drawer" : "modal";
 
@@ -1856,8 +1860,7 @@ export default function ClassPageClient({
                 hidden={
                   isReviewsModalOpen ||
                   mobileReserve.mobileReviewDrawerOpen ||
-                  mobileReserve.mobileSelectTimeModalOpen ||
-                  mobileReserve.mobileCalendarDrawerOpen
+                  mobileReserve.mobileSelectTimeModalOpen
                 }
               />
             ) : (
@@ -1867,8 +1870,7 @@ export default function ClassPageClient({
                 hidden={
                   isReviewsModalOpen ||
                   mobileReserve.mobileReviewDrawerOpen ||
-                  mobileReserve.mobileSelectTimeModalOpen ||
-                  mobileReserve.mobileCalendarDrawerOpen
+                  mobileReserve.mobileSelectTimeModalOpen
                 }
                 currencyCode={displayCurrency}
               />
@@ -1881,7 +1883,7 @@ export default function ClassPageClient({
           <SelectTimeModal
             open={mobileReserve.mobileSelectTimeModalOpen}
             onOpenChange={mobileReserve.handleSelectTimeModalOpenChange}
-            onOpenCalendar={mobileReserve.handleOpenCalendarFromSelectTime}
+            onDateSelect={mobileReserve.handleCalendarDatePicked}
             availableSlots={mobileReserve.mobileAvailableSlots}
             loading={mobileReserve.mobileSlotsLoading}
             selectedDate={mobileReserve.mobileSelectedDate}
@@ -1899,20 +1901,6 @@ export default function ClassPageClient({
             currency={displayCurrency}
             option={optionToDisplayOnCard}
             scrollToDate={mobileReserve.mobileScrollToDate}
-            variant={bookingVariant}
-          />
-
-          <SelectCalendarDrawer
-            open={mobileReserve.mobileCalendarDrawerOpen}
-            onOpenChange={mobileReserve.handleCalendarDrawerOpenChange}
-            availableSlots={mobileReserve.mobileAvailableSlots}
-            loading={mobileReserve.mobileSlotsLoading}
-            selectedDate={mobileReserve.mobileSelectedDate}
-            onDateSelect={mobileReserve.handleCalendarDateSelect}
-            currentDate={mobileReserve.mobileCalendarMonth}
-            onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
-            minSelectableDate={mobileReserve.mobileMinSelectableDate}
-            today={mobileReserve.mobileToday}
             variant={bookingVariant}
           />
 
@@ -2028,20 +2016,22 @@ export default function ClassPageClient({
             </DesktopModalShell>
           )}
 
-          <MobileReserveReviewDrawer
-            open={mobileReserve.mobileReviewDrawerOpen}
-            onClose={() => mobileReserve.setMobileReviewDrawerOpen(false)}
-            classData={classData}
-            reserveData={{
-              selectedSlot: mobileReserve.mobileSelectedSlot,
-              selectedOption: optionToDisplayOnCard,
-              participants: mobileReserve.mobileParticipants,
-            }}
-            onEditDate={mobileReserve.handleMobileEditDateOrTime}
-            onEditTime={mobileReserve.handleMobileEditDateOrTime}
-            onEditGuests={mobileReserve.handleMobileEditGuests}
-            variant={bookingVariant}
-          />
+          {mobileReserve.isMobileView && (
+            <MobileReserveReviewDrawer
+              open={mobileReserve.mobileReviewDrawerOpen}
+              onClose={() => mobileReserve.setMobileReviewDrawerOpen(false)}
+              classData={classData}
+              reserveData={{
+                selectedSlot: mobileReserve.mobileSelectedSlot,
+                selectedOption: optionToDisplayOnCard,
+                participants: mobileReserve.mobileParticipants,
+              }}
+              onEditDate={mobileReserve.handleMobileEditDateOrTime}
+              onEditTime={mobileReserve.handleMobileEditDateOrTime}
+              onEditGuests={mobileReserve.handleMobileEditGuests}
+              variant="drawer"
+            />
+          )}
 
           {isBookingModalOpen && (
             <BookingModal
