@@ -40,35 +40,69 @@
   letter-spacing: 0;
 }
 
-.viewport {
-  position: relative;
-  overflow-x: auto;
-  overflow-y: hidden;
+.carouselShell {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
   width: 100%;
-  /* Room for drop shadow inside the clip box — no extra layout gap (see section margin) */
-  padding-bottom: 36px;
-  box-sizing: content-box;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+}
+
+.navBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 4px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #222222;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+.navBtn:disabled {
+  opacity: 0.28;
+  cursor: default;
+  box-shadow: none;
+}
+
+.fadeWrap {
+  position: relative;
+  min-width: 0;
   mask-image: linear-gradient(
     to right,
     transparent 0,
-    #000 56px,
-    #000 calc(100% - 56px),
+    #000 88px,
+    #000 calc(100% - 88px),
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0,
-    #000 56px,
-    #000 calc(100% - 56px),
+    #000 88px,
+    #000 calc(100% - 88px),
     transparent 100%
   );
 }
 
-.viewport::-webkit-scrollbar {
-  display: none;
+.viewport {
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  width: 100%;
+  padding-bottom: 36px;
+  box-sizing: content-box;
 }
 
 .trackScroll {
@@ -78,6 +112,8 @@
   width: max-content;
   padding: 8px 4px 4px;
   overflow: visible;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
 }
 
 .chip {
@@ -94,7 +130,6 @@
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.06),
     0 10px 20px rgba(15, 23, 42, 0.03);
-  scroll-snap-align: start;
   text-decoration: none;
   color: inherit;
   transition: transform 120ms ease, box-shadow 120ms ease;
@@ -155,22 +190,34 @@
     font-size: 11.5px;
   }
 
-  .viewport {
-    padding-bottom: 32px;
+  .carouselShell {
+    gap: 4px;
+  }
+
+  .navBtn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .fadeWrap {
     mask-image: linear-gradient(
       to right,
       transparent 0,
-      #000 36px,
-      #000 calc(100% - 36px),
+      #000 64px,
+      #000 calc(100% - 64px),
       transparent 100%
     );
     -webkit-mask-image: linear-gradient(
       to right,
       transparent 0,
-      #000 36px,
-      #000 calc(100% - 36px),
+      #000 64px,
+      #000 calc(100% - 64px),
       transparent 100%
     );
+  }
+
+  .viewport {
+    padding-bottom: 32px;
   }
 
   .chip {
@@ -206,10 +253,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .viewport {
-    overflow-x: auto;
+  .carouselShell {
+    display: block;
+  }
+
+  .navBtn {
+    display: none;
+  }
+
+  .fadeWrap {
     mask-image: none;
     -webkit-mask-image: none;
+  }
+
+  .viewport {
+    overflow: visible;
     padding-bottom: 36px;
   }
 
@@ -221,6 +279,8 @@
     margin: 0 auto;
     padding: 8px 0 4px;
     box-sizing: border-box;
+    transform: none;
+    transition: none;
   }
 
   .chip {
