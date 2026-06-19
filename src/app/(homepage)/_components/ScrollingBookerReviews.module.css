@@ -47,7 +47,6 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding-bottom: var(--reviews-shadow-room);
   box-sizing: border-box;
 }
 
@@ -58,6 +57,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
+  margin-bottom: var(--reviews-shadow-room);
   padding: 0;
   border: 1px solid #e5e7eb;
   border-radius: 50%;
@@ -82,6 +82,7 @@
 .fadeWrap {
   position: relative;
   min-width: 0;
+  overflow: visible;
   mask-image: linear-gradient(
     to right,
     transparent 0,
@@ -102,7 +103,9 @@
   position: relative;
   overflow: hidden;
   width: 100%;
-  box-sizing: border-box;
+  /* Room for drop shadow inside the clip box — section margin pulls content below up */
+  padding-bottom: var(--reviews-shadow-room);
+  box-sizing: content-box;
 }
 
 .trackScroll {
@@ -199,6 +202,7 @@
   .navBtn {
     width: 26px;
     height: 26px;
+    margin-bottom: var(--reviews-shadow-room);
   }
 
   .fadeWrap {
@@ -240,6 +244,10 @@
     --reviews-shadow-room: 30px;
   }
 
+  .navBtn {
+    margin-bottom: var(--reviews-shadow-room);
+  }
+
   .chip {
     width: 200px;
     padding: 7px 10px;
@@ -250,11 +258,11 @@
   .carouselShell {
     display: block;
     --reviews-shadow-room: 36px;
-    padding-bottom: var(--reviews-shadow-room);
   }
 
   .navBtn {
     display: none;
+    margin-bottom: 0;
   }
 
   .fadeWrap {

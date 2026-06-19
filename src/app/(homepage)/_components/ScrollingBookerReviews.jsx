@@ -124,6 +124,16 @@ export default function ScrollingBookerReviews() {
     };
   }, []);
 
+  const scrollToInitialSlide = useCallback(
+    (api) => {
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      if (isMobile && reviews.length > 1) {
+        api.scrollTo(1, false);
+      }
+    },
+    [reviews.length],
+  );
+
   const onSelect = useCallback((api) => {
     setPrevDisabled(!api.canScrollPrev());
     setNextDisabled(!api.canScrollNext());
@@ -143,7 +153,9 @@ export default function ScrollingBookerReviews() {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.reInit();
-  }, [emblaApi, reviews]);
+    scrollToInitialSlide(emblaApi);
+    onSelect(emblaApi);
+  }, [emblaApi, reviews, scrollToInitialSlide, onSelect]);
 
   const scrollPrev = useCallback(() => {
     emblaApi?.scrollPrev();
