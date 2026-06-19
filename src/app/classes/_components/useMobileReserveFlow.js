@@ -12,8 +12,8 @@ export const MOBILE_RESERVE_BREAKPOINT = BP.TABLET;
 /** Delay (ms) between closing one drawer and opening another to avoid overlap */
 export const DRAWER_TRANSITION_MS = 150;
 
-/** Default participant count when slot allows more */
-export const DEFAULT_PARTICIPANTS = 2;
+/** Default participant count when quick-selecting from upcoming availability */
+export const DEFAULT_PARTICIPANTS = 1;
 
 /** Total horizon for mobile availability (matches former "far future" fix). */
 const MOBILE_AVAILABILITY_RANGE_DAYS = 540;
@@ -136,15 +136,23 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
 
   useEffect(() => {
     if (!mobileSelectedSlot) return;
-    setMobileParticipants(
-      Math.min(DEFAULT_PARTICIPANTS, mobileSelectedSlot.available_spots ?? 2),
+    setMobileParticipants((prev) =>
+      Math.min(Math.max(1, prev), mobileSelectedSlot.available_spots ?? 1),
     );
   }, [mobileSelectedSlot?.id]);
 
-  const mobileParticipantsMax = useMemo(
-    () => Math.max(1, mobileSelectedSlot?.available_spots ?? 2),
-    [mobileSelectedSlot?.available_spots],
-  );
+  const mobileModalParticipantsMax = useMemo(() => {
+    const allSlots = Object.values(mobileAvailableSlots).flat();
+    if (!allSlots.length) return 10;
+    return Math.max(...allSlots.map((s) => s.available_spots ?? 1), 1);
+  }, [mobileAvailableSlots]);
+
+  const mobileParticipantsMax = useMemo(() => {
+    if (mobileSelectedSlot?.available_spots != null) {
+      return Math.max(1, mobileSelectedSlot.available_spots);
+    }
+    return mobileModalParticipantsMax;
+  }, [mobileSelectedSlot?.available_spots, mobileModalParticipantsMax]);
 
   const handleMobileCalendarMonthChange = useCallback((direction) => {
     setMobileCalendarMonth((prev) => {
@@ -171,13 +179,17 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   }, []);
 
   const handleMobileTimeSelect = useCallback(
-    (slot, dateStrOverride) => {
+    (slot, dateStrOverride, participantOverride) => {
       const dateStr =
         dateStrOverride ||
         (mobileSelectedDate ? getLocalYYYYMMDD(mobileSelectedDate) : null);
       if (!dateStr) return;
 
-      const participants = Math.min(DEFAULT_PARTICIPANTS, slot.available_spots ?? 2);
+      const maxSpots = slot.available_spots ?? 1;
+      const participants = Math.min(
+        participantOverride ?? mobileParticipants,
+        maxSpots,
+      );
       setMobileSelectedSlot({
         id: slot.instance_id,
         date: dateStr,
@@ -202,7 +214,19 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       setMobileSelectTimeModalOpen(false);
       setTimeout(() => setMobileReviewDrawerOpen(true), DRAWER_TRANSITION_MS);
     },
-    [mobileSelectedDate],
+    [mobileSelectedDate, mobileParticipants],
+  );
+
+  /** Upcoming availability strip — skip modal, go straight to review summary with 1 guest. */
+  const handleQuickSelectFromAvailability = useCallback(
+    (slot, dateStr) => {
+      if (!slot || !dateStr) return;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      setMobileSelectedDate(new Date(y, m - 1, d));
+      setMobileParticipants(1);
+      handleMobileTimeSelect(slot, dateStr, 1);
+    },
+    [handleMobileTimeSelect],
   );
 
   /** Slot selection from SelectTimeModal — sets date then delegates to handleMobileTimeSelect. */
@@ -306,6 +330,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     setMobileParticipantsDraft,
     setMobileParticipants,
     mobileParticipantsMax,
+    mobileModalParticipantsMax,
     mobileReviewDrawerOpen,
     setMobileReviewDrawerOpen,
     handleReserveClick,
@@ -323,6 +348,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     mobileScrollToDate,
     handleOpenSelectTimeModal,
     handleOpenSelectTimeModalForDate,
+    handleQuickSelectFromAvailability,
     handleSelectTimeModalSlot,
     handleSelectTimeModalOpenChange,
     setMobileSelectedDate,

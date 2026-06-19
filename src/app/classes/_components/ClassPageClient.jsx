@@ -23,7 +23,7 @@ import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
 import { Alert, Button as AntButton, Divider, Modal } from "antd";
 import message from "@/lib/message";
-import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
+import { getLocalYYYYMMDD, formatTimeRangeForDisplay } from "@/services/utils";
 import { formatMoneyCompact, toSchemaPriceCurrency } from "@/lib/seo";
 import SelectTimeModal from "./SelectTimeModal";
 import { getCancellationPolicyText } from "./steps/utils";
@@ -349,7 +349,7 @@ const MobileBookingFooterContainer = styled.div`
     -webkit-backdrop-filter: blur(8px) saturate(180%);
     padding: 0.5rem 1rem;
     border: 1px solid rgba(255, 255, 255, 0.125);
-    border-radius: 12px;
+    border-radius: 22px;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     z-index: 100;
     max-width: ${MOBILE_STICKY_FOOTER_MAX_WIDTH_PX}px;
@@ -370,20 +370,35 @@ const MobileBookingFooterContainer = styled.div`
 const FooterPriceInfo = styled.div`
   display: flex;
   flex-direction: column;
-  padding-right: 1.25rem;
-  line-height: 1.2;
+  padding-right: 1rem;
+  line-height: 1.25;
 `;
 
-const FooterPrice = styled.span`
-  font-size: 0.9rem;
+const FooterPriceLine = styled.div`
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 4px;
+`;
+
+const FooterFrom = styled.span`
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #222;
+`;
+
+const FooterAmount = styled.span`
+  font-size: 1.15rem;
   font-weight: 600;
   color: #222;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+`;
 
-  span {
-    font-size: 0.8rem;
-    font-weight: 400;
-    color: #717171;
-  }
+const FooterPer = styled.span`
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #717171;
 `;
 
 /* Curved easing: smooth motion, no straight lines */
@@ -544,10 +559,10 @@ const WhenSection = styled.section`
 `;
 
 const AvailabilityStripHeader = styled.h2`
-  font-size: 28px;
-  font-weight: 800;
-  color: #000000;
-  letter-spacing: -0.01em;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #111111;
+  letter-spacing: -0.02em;
   margin: 0 0 16px 0;
 `;
 
@@ -585,7 +600,7 @@ const AvailabilityCard = styled.button`
   width: 220px;
   min-height: 120px;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 20px;
   background: #ffffff;
   border: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -605,8 +620,8 @@ const AvailabilityCard = styled.button`
 
 const AvailabilityCardDate = styled.span`
   font-size: 16px;
-  font-weight: 700;
-  color: #000000;
+  font-weight: 600;
+  color: #111111;
 `;
 
 const AvailabilityCardTime = styled.span`
@@ -660,65 +675,6 @@ const ParticipantsApplyButton = styled.button`
   &:hover {
     background: #e62e4e;
   }
-`;
-
-/* --- Mobile Reserve footer (replaces Select Time when slot is chosen) --- */
-const ReserveFooterContainer = styled.div`
-  display: none;
-  @media (max-width: ${MOBILE_RESERVE_BREAKPOINT}px) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: fixed;
-    bottom: 0.75rem;
-    left: 0.75rem;
-    right: 0.75rem;
-    width: auto;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    padding: 0.75rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-    max-width: ${MOBILE_STICKY_FOOTER_MAX_WIDTH_PX}px;
-    margin-left: auto;
-    margin-right: auto;
-    &[data-hidden="true"] {
-      transform: translateY(calc(100% + 2rem));
-      opacity: 0;
-      pointer-events: none;
-    }
-  }
-`;
-const ReserveFooterSummary = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-right: 0.75rem;
-  min-width: 0;
-`;
-const ReserveFooterPrice = styled.span`
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111;
-`;
-const ReserveFooterMeta = styled.span`
-  font-size: 0.75rem;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-const ReserveButton = styled(AntButton)`
-  flex-shrink: 0;
-  border-radius: 10px;
-  font-weight: 600;
-  height: 44px;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-  font-size: 0.9375rem;
 `;
 
 /* Footer layout constants (match MobileBookingFooterContainer) */
@@ -988,33 +944,38 @@ const MobileBookingFooter = ({ option, onBookNow, hidden, currencyCode = "CAD" }
   const { schedules, booking_type } = option;
   const isCourse = booking_type === "Full Course";
 
-  const getPriceDisplay = () => {
-    if (!schedules || schedules.length === 0)
-      return { display: "N/A", per: "" };
+  const getMinPrice = () => {
+    if (!schedules || schedules.length === 0) return null;
     const prices = schedules
       .map((s) => parseFloat(s.price || 0))
       .filter((p) => p > 0);
-    if (prices.length === 0) return { display: "Free", per: "" };
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const minText = formatMoneyCompact(min, currencyCode).text;
-    const priceDisplay =
-      min === max
-        ? minText
-        : `${minText} - ${formatMoneyCompact(max, currencyCode).text}`;
-    const perWhat = isCourse ? "course" : "person";
-    return { display: priceDisplay, per: perWhat };
+    if (prices.length === 0) return null;
+    return Math.min(...prices);
   };
 
-  const { display, per } = getPriceDisplay();
-  const buttonText = "Show dates";
+  const minPrice = getMinPrice();
+  const perLabel = isCourse ? "/ course" : "/ guest";
+  const buttonText = isCourse ? "View dates" : "Show dates";
 
   return (
     <MobileBookingFooterContainer data-hidden={hidden}>
       <FooterPriceInfo>
-        <FooterPrice>
-          {display} {per && <span>/ {per}</span>}
-        </FooterPrice>
+        <FooterPriceLine>
+          {minPrice != null ? (
+            <>
+              <FooterFrom>From </FooterFrom>
+              <FooterAmount>
+                {formatMoneyCompact(minPrice, currencyCode).text}
+              </FooterAmount>
+              <FooterPer>{perLabel}</FooterPer>
+            </>
+          ) : (
+            <>
+              <FooterAmount>Free</FooterAmount>
+              {perLabel && <FooterPer>{perLabel}</FooterPer>}
+            </>
+          )}
+        </FooterPriceLine>
       </FooterPriceInfo>
       <AntButton
         type="primary"
@@ -1022,13 +983,13 @@ const MobileBookingFooter = ({ option, onBookNow, hidden, currencyCode = "CAD" }
         data-mobile-footer-cta
         onClick={() => onBookNow(option.optionId)}
         style={{
-          borderRadius: "8px",
+          borderRadius: "9999px",
           fontWeight: 600,
-          minHeight: 44,
-          height: 44,
-          paddingLeft: 20,
-          paddingRight: 20,
-          fontSize: "0.875rem",
+          minHeight: 48,
+          height: 48,
+          paddingLeft: 22,
+          paddingRight: 22,
+          fontSize: "1rem",
         }}
       >
         {buttonText}
@@ -1677,12 +1638,12 @@ export default function ClassPageClient({
                               <AvailabilityCard
                                 key={dateStr}
                                 type="button"
-                                onClick={() => {
-                                  const [y, m, d] = dateStr.split("-").map(Number);
-                                  mobileReserve.handleOpenSelectTimeModalForDate(
-                                    new Date(y, m - 1, d),
-                                  );
-                                }}
+                                onClick={() =>
+                                  mobileReserve.handleQuickSelectFromAvailability(
+                                    slot,
+                                    dateStr,
+                                  )
+                                }
                               >
                                 <AvailabilityCardDate>
                                   {formatSectionHeaderPreview(dateStr)}
@@ -1809,7 +1770,7 @@ export default function ClassPageClient({
               handleOpenBookingModal(optionToDisplayOnCard.optionId)
             }
           >
-            Reserve
+            Show dates
           </PeekCTABtn>
         </PeekBar>
       )}
@@ -1861,47 +1822,18 @@ export default function ClassPageClient({
           {/* Mobile Footer Logic */}
           {optionToDisplayOnCard && mounted && (
             mobileReserve.mobileSlotsLoading ? (
-              <MobileBookingFooterSkeleton hidden={isReviewsModalOpen} />
-            ) : mobileReserve.mobileSelectedSlot ? (
-              mobileReserve.isMobileView && (
-                <ReserveFooterContainer data-hidden={isReviewsModalOpen}>
-                  <ReserveFooterSummary>
-                    <ReserveFooterPrice>
-                      {mobileReserve.mobileSelectedSlot.price != null && parseFloat(mobileReserve.mobileSelectedSlot.price) > 0
-                        ? formatMoneyCompact(
-                            parseFloat(mobileReserve.mobileSelectedSlot.price),
-                            displayCurrency,
-                          ).text
-                        : "Free"}
-                      <span style={{ fontWeight: 400, color: "#6b7280", fontSize: "0.8rem" }}>
-                        {" "}
-                        {optionToDisplayOnCard?.booking_type === "Full Course"
-                          ? "/ course"
-                          : "/ guest"}
-                      </span>
-                    </ReserveFooterPrice>
-                    <ReserveFooterMeta>
-                      {formatNaiveDate(mobileReserve.mobileSelectedSlot.date, "EEE, MMM d")} ·{" "}
-                      {formatTimeRangeForDisplay(
-                        mobileReserve.mobileSelectedSlot.date,
-                        mobileReserve.mobileSelectedSlot.time,
-                        mobileReserve.mobileSelectedSlot.duration,
-                        classData?.business_timezone || "Etc/UTC",
-                        Intl.DateTimeFormat().resolvedOptions().timeZone
-                      )}
-                      {` · ${mobileReserve.mobileParticipants} guest${mobileReserve.mobileParticipants !== 1 ? "s" : ""}`}
-                    </ReserveFooterMeta>
-                  </ReserveFooterSummary>
-                  <ReserveButton type="primary" onClick={mobileReserve.handleReserveClick}>
-                    Reserve
-                  </ReserveButton>
-                </ReserveFooterContainer>
-              )
+              <MobileBookingFooterSkeleton
+                hidden={
+                  isReviewsModalOpen || mobileReserve.mobileReviewDrawerOpen
+                }
+              />
             ) : (
               <MobileBookingFooter
                 option={optionToDisplayOnCard}
                 onBookNow={() => mobileReserve.handleOpenSelectTimeModal()}
-                hidden={isReviewsModalOpen}
+                hidden={
+                  isReviewsModalOpen || mobileReserve.mobileReviewDrawerOpen
+                }
                 currencyCode={displayCurrency}
               />
             )
@@ -1919,7 +1851,7 @@ export default function ClassPageClient({
             selectedDate={mobileReserve.mobileSelectedDate}
             selectedSlot={mobileReserve.mobileSelectedSlot}
             participants={mobileReserve.mobileParticipants}
-            participantsMax={mobileReserve.mobileParticipantsMax}
+            participantsMax={mobileReserve.mobileModalParticipantsMax}
             onParticipantsChange={(n) => {
               mobileReserve.setMobileParticipantsDraft(n);
               mobileReserve.setMobileParticipants(n);

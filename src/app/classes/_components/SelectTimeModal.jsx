@@ -3,48 +3,32 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import {
   mobileDrawerTheme,
   MobileDrawerOverlay,
+  MobileDrawerHandle,
   ParticipantsStepperBtn,
   ParticipantsStepperValue,
 } from "./mobileBookingStyles";
 
 import {
   getLocalYYYYMMDD,
-  formatNaiveDate,
   formatTimeRangeForDisplay,
 } from "@/services/utils";
 import { formatMoneyCompact } from "@/lib/seo";
-import { getDurationText } from "./steps/utils";
-
-/* ============================================================
-   SelectTimeModal — unified date/time picker for mobile class pages.
-
-   Structure:
-   - Sticky header: close button, title, guest stepper, month nav (toggles calendar)
-   - Calendar expansion (when toggled): vertically-stacked multi-month grid
-   - Scrolling body: infinite (windowed) list of date sections + slot cards
-
-   The full 540-day availability map is fetched up front by
-   useMobileReserveFlow, so "infinite scroll" here is pure client-side
-   windowing — no additional network requests.
-   ============================================================ */
 
 const MAX_MONTHS = 6;
-const INITIAL_SECTIONS = 2;
+const INITIAL_SECTIONS = 3;
 const SECTIONS_PER_LOAD = 2;
-
-/* ---------- styled components ---------- */
 
 const Sheet = styled(Drawer.Content)`
   background: ${mobileDrawerTheme.bg};
   display: flex;
   flex-direction: column;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
   height: 92vh;
   position: fixed;
   bottom: 0;
@@ -58,121 +42,126 @@ const Sheet = styled(Drawer.Content)`
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 12px;
-  right: 16px;
-  width: 44px;
-  height: 44px;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: #f3f4f6;
   border: none;
+  border-radius: 50%;
   color: #717171;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   z-index: 2;
 `;
 
 const HeaderWrap = styled.div`
-  padding: 16px 24px 0;
+  padding: 4px 24px 0;
   flex-shrink: 0;
   background: ${mobileDrawerTheme.bg};
 `;
 
 const Title = styled.h2`
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  color: #000000;
-  letter-spacing: -0.01em;
+  margin: 12px 0 0;
+  padding-right: 44px;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #111111;
+  letter-spacing: -0.02em;
 `;
 
 const GuestRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 0 16px;
+  padding: 18px 0 14px;
 `;
 
-const GuestLabelLeft = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const GuestMain = styled.span`
-  font-size: 16px;
-  font-weight: 700;
-  color: #000000;
-`;
-
-const GuestSub = styled.span`
-  font-size: 14px;
-  font-weight: 400;
-  color: #717171;
+const GuestLabel = styled.span`
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
 `;
 
 const StepperRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 `;
 
 const CompactStepperBtn = styled(ParticipantsStepperBtn)`
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+  font-weight: 500;
+`;
+
+const GuestStepperValue = styled(ParticipantsStepperValue)`
   font-size: 1rem;
+  font-weight: 600;
+  min-width: 1.5rem;
 `;
 
-const Divider = styled.div`
-  height: 1px;
-  background: #ebebeb;
-  width: 100%;
-`;
-
-const MonthNavRow = styled.button`
+const MonthToolbar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 16px 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
+  padding: 4px 0 14px;
 `;
 
 const MonthLabel = styled.span`
-  font-size: 17px;
-  font-weight: 700;
-  color: #000000;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111111;
+  letter-spacing: -0.01em;
 `;
 
-const CalendarIconWrap = styled.span`
+const CalendarToggleBtn = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #717171;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+
+  &[aria-expanded="true"] {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+  }
 `;
 
-/* Calendar expansion */
 const CalendarWrap = styled.div`
-  padding: 8px 0 16px;
-  max-height: 60vh;
+  padding: 0 0 12px;
+  max-height: 42vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
 `;
 
 const MonthBlock = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 `;
 
 const MonthHeader = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: #000000;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
   text-align: center;
   margin-bottom: 8px;
 `;
@@ -186,8 +175,8 @@ const WeekdayRow = styled.div`
 const WeekdayCell = styled.div`
   text-align: center;
   font-size: 11px;
-  font-weight: 600;
-  color: #717171;
+  font-weight: 500;
+  color: #9ca3af;
   padding: 4px 0;
 `;
 
@@ -206,7 +195,7 @@ const DayCell = styled.button`
   background: transparent;
   font-size: 14px;
   font-weight: 500;
-  color: ${(p) => (p.$available ? "#000000" : "#d4d4d4")};
+  color: ${(p) => (p.$available ? "#111111" : "#d4d4d4")};
   cursor: ${(p) => (p.$available ? "pointer" : "default")};
   border-radius: 50%;
   transition: background 0.15s;
@@ -220,9 +209,9 @@ const DayCell = styled.button`
   ${(p) =>
     p.$selected &&
     `
-    background: #000000;
+    background: #111111;
     color: #ffffff;
-    &:hover { background: #000000; }
+    &:hover { background: #111111; }
   `}
 
   &:disabled {
@@ -232,7 +221,6 @@ const DayCell = styled.button`
 
 const EmptyDayCell = styled.div``;
 
-/* Scrolling body */
 const ScrollBody = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -241,13 +229,14 @@ const ScrollBody = styled.div`
 `;
 
 const DateSectionHeader = styled.h3`
-  margin: 28px 0 12px;
-  font-size: 17px;
-  font-weight: 700;
-  color: #000000;
+  margin: 22px 0 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+  letter-spacing: -0.01em;
 
   &:first-child {
-    margin-top: 8px;
+    margin-top: 6px;
   }
 `;
 
@@ -256,29 +245,30 @@ const SlotCard = styled.button`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px 18px;
-  border-radius: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
   border: 1px solid #ebebeb;
   background: ${mobileDrawerTheme.bg};
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  margin-bottom: 10px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  margin-bottom: 8px;
+  transition: border-color 0.15s, background 0.15s;
 
   &:hover {
-    border-color: #bdbdbd;
+    border-color: #d1d5db;
+    background: #fafafa;
   }
 
   ${(p) =>
     p.$selected &&
     `
-    border-color: #000000;
-    box-shadow: 0 0 0 1px #000000;
+    border-color: #111111;
+    background: #fafafa;
   `}
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 `;
@@ -290,25 +280,21 @@ const SlotLeft = styled.div`
 `;
 
 const SlotTime = styled.span`
-  font-size: 16px;
-  font-weight: 700;
-  color: #000000;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #111111;
 `;
 
 const SlotPrice = styled.span`
-  font-size: 15px;
-  color: #000000;
+  font-size: 0.875rem;
+  color: #6b7280;
   font-weight: 400;
-`;
-
-const SlotPriceAmount = styled.span`
-  font-weight: 600;
 `;
 
 const SlotRight = styled.span`
-  font-size: 13px;
+  font-size: 0.8rem;
   font-weight: 400;
-  color: #717171;
+  color: #9ca3af;
   text-align: right;
   align-self: center;
 `;
@@ -321,27 +307,13 @@ const Sentinel = styled.div`
 const EmptyState = styled.div`
   padding: 40px 16px;
   text-align: center;
-  color: #717171;
-  font-size: 14px;
+  color: #9ca3af;
+  font-size: 0.9rem;
 `;
-
-/* ---------- helpers ---------- */
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
-function getGuestWord(n) {
-  return n === 1 ? "guest" : "guests";
-}
-
-function buildMonthDate(year, month) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setFullYear(year, month, 1);
-  return d;
-}
-
 function formatSectionHeader(dateStr) {
-  // dateStr = "YYYY-MM-DD"
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -354,14 +326,11 @@ function formatSectionHeader(dateStr) {
   let prefix = "";
   if (date.getTime() === tomorrow.getTime()) prefix = "Tomorrow, ";
   else if (date.getTime() === dayAfter.getTime()) prefix = "Day after, ";
-  // else: no prefix, just weekday + date
 
   const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
   const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   return prefix ? `${prefix}${monthDay}` : `${weekday}, ${monthDay}`;
 }
-
-/* ---------- component ---------- */
 
 export default function SelectTimeModal({
   open,
@@ -389,7 +358,6 @@ export default function SelectTimeModal({
   const sectionRefs = useRef({});
   const sentinelRef = useRef(null);
 
-  // Sorted list of available date strings (>= minSelectableDate).
   const sortedDateStrs = useMemo(() => {
     if (!availableSlots || typeof availableSlots !== "object") return [];
     const minStr = minSelectableDate ? getLocalYYYYMMDD(minSelectableDate) : null;
@@ -399,21 +367,22 @@ export default function SelectTimeModal({
       .sort();
   }, [availableSlots, minSelectableDate]);
 
-  // Reset windowing + calendar state when the modal transitions from closed -> open.
-  // This is intentional derived-state reset on a controlled prop transition; the
-  // setState calls only fire on that transition (guarded by prevOpenRef), so there
-  // is no cascading-render risk in practice.
+  const headerMonthDate = useMemo(() => {
+    if (selectedDate) return selectedDate;
+    if (sortedDateStrs.length === 0) return today || new Date();
+    const [y, m, d] = sortedDateStrs[0].split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }, [selectedDate, sortedDateStrs, today]);
+
   const prevOpenRef = useRef(false);
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisibleCount(INITIAL_SECTIONS);
       setCalendarExpanded(initialCalendarExpanded);
     }
     prevOpenRef.current = open;
   }, [open, initialCalendarExpanded]);
 
-  // Infinite scroll: observe sentinel, append sections.
   useEffect(() => {
     if (!open || sortedDateStrs.length === 0) return;
     const sentinel = sentinelRef.current;
@@ -430,19 +399,14 @@ export default function SelectTimeModal({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [open, sortedDateStrs.length]);
+  }, [open, sortedDateStrs.length, calendarExpanded]);
 
-  // Scroll to a specific date section when requested (e.g. from preview strip / calendar tap).
-  // Expanding the visible window so the target section is rendered is a necessary
-  // side effect of the scrollToDate prop changing.
   useEffect(() => {
     if (!open || !scrollToDate) return;
     const dateStr = getLocalYYYYMMDD(scrollToDate);
     const idx = sortedDateStrs.indexOf(dateStr);
     if (idx === -1) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisibleCount((prev) => Math.max(prev, idx + 1));
-    // Defer scroll until the section is rendered.
     requestAnimationFrame(() => {
       const el = sectionRefs.current[dateStr];
       if (el) {
@@ -453,7 +417,6 @@ export default function SelectTimeModal({
 
   const visibleDateStrs = sortedDateStrs.slice(0, visibleCount);
 
-  // Months to render in the calendar expansion.
   const months = useMemo(() => {
     const start = new Date(today || new Date());
     start.setDate(1);
@@ -468,7 +431,6 @@ export default function SelectTimeModal({
   }, [today]);
 
   const availableDateSet = useMemo(() => new Set(sortedDateStrs), [sortedDateStrs]);
-
   const selectedDateStr = selectedDate ? getLocalYYYYMMDD(selectedDate) : null;
 
   const handleCalendarDateTap = useCallback(
@@ -492,12 +454,15 @@ export default function SelectTimeModal({
 
   const isCourse = option?.booking_type === "Full Course";
   const perGuestLabel = isCourse ? "/ course" : "/ guest";
+  const guestLabel =
+    participants === 1 ? "1 guest" : `${participants} guests`;
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         <MobileDrawerOverlay />
         <Sheet>
+          <MobileDrawerHandle />
           <CloseButton
             type="button"
             aria-label="Close"
@@ -509,14 +474,8 @@ export default function SelectTimeModal({
           <HeaderWrap>
             <Title>Select a time</Title>
 
-            {/* Guest count row */}
             <GuestRow>
-              <GuestLabelLeft>
-                <GuestMain>
-                  {participants} {participants === 1 ? "adult" : "adults"}
-                </GuestMain>
-                <GuestSub>Age 13+</GuestSub>
-              </GuestLabelLeft>
+              <GuestLabel>{guestLabel}</GuestLabel>
               <StepperRow>
                 <CompactStepperBtn
                   type="button"
@@ -526,9 +485,7 @@ export default function SelectTimeModal({
                 >
                   −
                 </CompactStepperBtn>
-                <ParticipantsStepperValue>
-                  {participants}
-                </ParticipantsStepperValue>
+                <GuestStepperValue>{participants}</GuestStepperValue>
                 <CompactStepperBtn
                   type="button"
                   disabled={participants >= participantsMax}
@@ -543,35 +500,33 @@ export default function SelectTimeModal({
                 </CompactStepperBtn>
               </StepperRow>
             </GuestRow>
-            <Divider />
 
-            {/* Month nav row (toggles calendar) */}
-            <MonthNavRow
-              type="button"
-              onClick={() => setCalendarExpanded((v) => !v)}
-              aria-expanded={calendarExpanded}
-            >
+            <MonthToolbar>
               <MonthLabel>
-                {new Date().toLocaleDateString("en-US", {
+                {headerMonthDate.toLocaleDateString("en-US", {
                   month: "long",
                   year: "numeric",
                 })}
               </MonthLabel>
-              <CalendarIconWrap>
-                <CalendarDays size={22} />
-              </CalendarIconWrap>
-            </MonthNavRow>
-            <Divider />
+              <CalendarToggleBtn
+                type="button"
+                aria-label="Open calendar"
+                aria-expanded={calendarExpanded}
+                onClick={() => setCalendarExpanded((v) => !v)}
+              >
+                <CalendarDays size={20} />
+              </CalendarToggleBtn>
+            </MonthToolbar>
           </HeaderWrap>
 
-          {calendarExpanded ? (
+          {calendarExpanded && (
             <CalendarWrap>
               {months.map((monthDate) => {
                 const year = monthDate.getFullYear();
                 const month = monthDate.getMonth();
                 const firstDay = new Date(year, month, 1);
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const startWeekday = firstDay.getDay(); // 0=Sun
+                const startWeekday = firstDay.getDay();
                 const cells = [];
                 for (let i = 0; i < startWeekday; i++) {
                   cells.push(<EmptyDayCell key={`e-${i}`} />);
@@ -611,71 +566,70 @@ export default function SelectTimeModal({
                 );
               })}
             </CalendarWrap>
-          ) : (
-            <ScrollBody ref={scrollBodyRef}>
-              {loading ? (
-                <EmptyState>Loading availability…</EmptyState>
-              ) : sortedDateStrs.length === 0 ? (
-                <EmptyState>No upcoming availability for this class.</EmptyState>
-              ) : (
-                visibleDateStrs.map((dateStr) => {
-                  const slots = availableSlots[dateStr] || [];
-                  return (
-                    <div
-                      key={dateStr}
-                      ref={(el) => {
-                        sectionRefs.current[dateStr] = el;
-                      }}
-                    >
-                      <DateSectionHeader>{formatSectionHeader(dateStr)}</DateSectionHeader>
-                      {slots.map((slot) => {
-                        const isSelected = selectedSlot?.id === slot.instance_id;
-                        const price = parseFloat(slot.price);
-                        const soldOut = Number(slot.available_spots) === 0;
-                        const priceText =
-                          price === 0
-                            ? "Free"
-                            : formatMoneyCompact(price, currency).text;
-                        return (
-                          <SlotCard
-                            type="button"
-                            key={slot.instance_id}
-                            $selected={isSelected}
-                            disabled={soldOut}
-                            onClick={() => !soldOut && onSelectSlot(slot, dateStr)}
-                          >
-                            <SlotLeft>
-                              <SlotTime>
-                                {formatTimeRangeForDisplay(
-                                  dateStr,
-                                  slot.time,
-                                  slot.duration,
-                                  businessTimezone,
-                                  Intl.DateTimeFormat().resolvedOptions().timeZone,
-                                )}
-                              </SlotTime>
-                              <SlotPrice>
-                                <SlotPriceAmount>{priceText}</SlotPriceAmount>{" "}
-                                {perGuestLabel}
-                              </SlotPrice>
-                            </SlotLeft>
-                            <SlotRight>
-                              {soldOut
-                                ? "Sold out"
-                                : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"} available`}
-                            </SlotRight>
-                          </SlotCard>
-                        );
-                      })}
-                    </div>
-                  );
-                })
-              )}
-              {visibleDateStrs.length < sortedDateStrs.length && (
-                <Sentinel ref={sentinelRef} />
-              )}
-            </ScrollBody>
           )}
+
+          <ScrollBody ref={scrollBodyRef}>
+            {loading ? (
+              <EmptyState>Loading availability…</EmptyState>
+            ) : sortedDateStrs.length === 0 ? (
+              <EmptyState>No upcoming availability for this class.</EmptyState>
+            ) : (
+              visibleDateStrs.map((dateStr) => {
+                const slots = availableSlots[dateStr] || [];
+                return (
+                  <div
+                    key={dateStr}
+                    ref={(el) => {
+                      sectionRefs.current[dateStr] = el;
+                    }}
+                  >
+                    <DateSectionHeader>{formatSectionHeader(dateStr)}</DateSectionHeader>
+                    {slots.map((slot) => {
+                      const isSelected = selectedSlot?.id === slot.instance_id;
+                      const price = parseFloat(slot.price);
+                      const soldOut = Number(slot.available_spots) === 0;
+                      const priceText =
+                        price === 0
+                          ? "Free"
+                          : formatMoneyCompact(price, currency).text;
+                      return (
+                        <SlotCard
+                          type="button"
+                          key={slot.instance_id}
+                          $selected={isSelected}
+                          disabled={soldOut}
+                          onClick={() => !soldOut && onSelectSlot(slot, dateStr)}
+                        >
+                          <SlotLeft>
+                            <SlotTime>
+                              {formatTimeRangeForDisplay(
+                                dateStr,
+                                slot.time,
+                                slot.duration,
+                                businessTimezone,
+                                Intl.DateTimeFormat().resolvedOptions().timeZone,
+                              )}
+                            </SlotTime>
+                            <SlotPrice>
+                              {priceText} {perGuestLabel}
+                            </SlotPrice>
+                          </SlotLeft>
+                          <SlotRight>
+                            {soldOut
+                              ? "Sold out"
+                              : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"}`}
+                          </SlotRight>
+                        </SlotCard>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+            {visibleDateStrs.length < sortedDateStrs.length && (
+              <Sentinel ref={sentinelRef} />
+            )}
+          </ScrollBody>
         </Sheet>
       </Drawer.Portal>
     </Drawer.Root>
