@@ -275,13 +275,27 @@ const SlotPriceAmount = styled.span`
   font-weight: 500;
 `;
 
-const SlotRight = styled.span`
+const SlotRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  flex-shrink: 0;
+`;
+
+const SlotSpots = styled.span`
   font-size: 0.78rem;
   font-weight: ${(p) => (p.$lowSpots ? 500 : 400)};
   color: ${(p) => (p.$lowSpots ? "#ff385c" : "#717171")};
   text-align: right;
-  align-self: flex-end;
-  flex-shrink: 0;
+`;
+
+const SlotReserve = styled.span`
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #ff385c;
+  letter-spacing: 0.01em;
 `;
 
 const Sentinel = styled.div`
@@ -451,14 +465,17 @@ function SelectTimePanel({
                           {perGuestLabel}
                         </SlotPriceLine>
                       </SlotLeft>
-                      <SlotRight
-                        $lowSpots={
-                          !soldOut && Number(slot.available_spots) < 3
-                        }
-                      >
-                        {soldOut
-                          ? "Sold out"
-                          : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"} available`}
+                      <SlotRight>
+                        <SlotSpots
+                          $lowSpots={
+                            !soldOut && Number(slot.available_spots) < 3
+                          }
+                        >
+                          {soldOut
+                            ? "Sold out"
+                            : `${slot.available_spots} ${slot.available_spots === 1 ? "spot" : "spots"} available`}
+                        </SlotSpots>
+                        {!soldOut && <SlotReserve>Reserve</SlotReserve>}
                       </SlotRight>
                     </SlotCard>
                   );

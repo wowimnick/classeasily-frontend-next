@@ -105,6 +105,8 @@ const DayCell = styled.button`
   }
 `;
 
+const BRAND_RED = "#ff385c";
+
 const DayInner = styled.span`
   display: flex;
   align-items: center;
@@ -113,22 +115,36 @@ const DayInner = styled.span`
   height: 36px;
   border-radius: 50%;
   font-size: 14px;
-  font-weight: ${(p) => (p.$selected ? 500 : 400)};
+  font-weight: ${(p) => (p.$selected || p.$available ? 500 : 400)};
   color: ${(p) => (p.$available ? "#000000" : "#c4c4c4")};
   text-decoration: ${(p) => (p.$available ? "none" : "line-through")};
   text-decoration-thickness: 1px;
-  transition: box-shadow 0.15s ease, color 0.15s ease;
+  transition: box-shadow 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+  ${(p) =>
+    p.$available &&
+    !p.$selected &&
+    `
+    box-shadow: inset 0 0 0 1.5px ${BRAND_RED};
+  `}
 
   ${(p) =>
     p.$selected &&
     `
-    box-shadow: inset 0 0 0 1.5px #000000;
-    color: #000000;
+    box-shadow: inset 0 0 0 1.5px ${BRAND_RED};
+    background: ${BRAND_RED};
+    color: #ffffff;
     text-decoration: none;
   `}
 
   ${DayCell}:not(:disabled):hover & {
-    ${(p) => p.$available && !p.$selected && `color: #000000;`}
+    ${(p) =>
+      p.$available &&
+      !p.$selected &&
+      `
+      box-shadow: inset 0 0 0 2px ${BRAND_RED};
+      color: #000000;
+    `}
   }
 `;
 
