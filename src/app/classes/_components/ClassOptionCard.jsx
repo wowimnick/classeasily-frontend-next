@@ -154,14 +154,31 @@ const SlotTime = styled.span`
   white-space: nowrap;
 `;
 
-const SlotSpots = styled.span`
+const SlotRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 3px;
   flex-shrink: 0;
+  margin-left: 14px;
+`;
+
+const SlotSpots = styled.span`
   font-size: 13px;
   font-weight: 500;
   color: #000;
-  margin-left: 14px;
   white-space: nowrap;
   line-height: 1.25;
+  text-align: right;
+`;
+
+const SlotReserve = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: #ff385c;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
 `;
 
 /* ── Show all dates link ─────────────────────────────────────────── */
@@ -469,9 +486,12 @@ const ClassOptionCard = ({
                     </SlotTime>
                   </SlotLeft>
                   {spots != null && (
-                    <SlotSpots>
-                      {spots === 1 ? "1 spot left" : `${spots} spots`}
-                    </SlotSpots>
+                    <SlotRight>
+                      <SlotSpots>
+                        {spots === 1 ? "1 spot left" : `${spots} spots`}
+                      </SlotSpots>
+                      <SlotReserve>Reserve</SlotReserve>
+                    </SlotRight>
                   )}
                 </SlotCard>
               );
@@ -495,13 +515,16 @@ const ClassOptionCard = ({
                   <SlotTime>{formatSlotTime(s.date, s.time, s.duration)}</SlotTime>
                 </SlotLeft>
                 {spots != null && (
-                  <SlotSpots>
-                    {spots === 0
-                      ? "Full"
-                      : spots === 1
-                      ? "1 spot left"
-                      : `${spots} spots available`}
-                  </SlotSpots>
+                  <SlotRight>
+                    <SlotSpots>
+                      {spots === 0
+                        ? "Full"
+                        : spots === 1
+                        ? "1 spot left"
+                        : `${spots} spots available`}
+                    </SlotSpots>
+                    {spots !== 0 && <SlotReserve>Reserve</SlotReserve>}
+                  </SlotRight>
                 )}
               </SlotCard>
             );

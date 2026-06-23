@@ -636,7 +636,21 @@ const AvailabilityCardSpots = styled.span`
   font-size: 15px;
   font-weight: 400;
   color: #3d3d3d;
+`;
+
+const AvailabilityCardFooter = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 14px;
+`;
+
+const AvailabilityCardReserve = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: #ff385c;
+  flex-shrink: 0;
 `;
 
 const AvailabilityStripDivider = styled.div`
@@ -1693,10 +1707,13 @@ export default function ClassPageClient({
                                     Intl.DateTimeFormat().resolvedOptions().timeZone,
                                   )}
                                 </AvailabilityCardTime>
-                                <AvailabilityCardSpots>
-                                  {slot.available_spots}{" "}
-                                  {slot.available_spots === 1 ? "spot" : "spots"} available
-                                </AvailabilityCardSpots>
+                                <AvailabilityCardFooter>
+                                  <AvailabilityCardSpots>
+                                    {slot.available_spots}{" "}
+                                    {slot.available_spots === 1 ? "spot" : "spots"} available
+                                  </AvailabilityCardSpots>
+                                  <AvailabilityCardReserve>Reserve</AvailabilityCardReserve>
+                                </AvailabilityCardFooter>
                               </AvailabilityCard>
                             );
                           });
