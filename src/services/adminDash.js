@@ -3686,6 +3686,9 @@ export const corporateAdminService = {
     axiosInstance.get(`/admin/corporate-shortlists/${shortlistId}/`),
   updateShortlist: (shortlistId, payload) =>
     axiosInstance.patch(`/admin/corporate-shortlists/${shortlistId}/`, payload),
+  /** Patch intro_message and presentation JSON (accent, hero, CTA, section toggles). */
+  patchShortlistPresentation: (shortlistId, payload) =>
+    axiosInstance.patch(`/admin/corporate-shortlists/${shortlistId}/`, payload),
   addOption: (shortlistId, payload) =>
     axiosInstance.post(`/admin/corporate-shortlists/${shortlistId}/options/`, payload),
   addOptionFromClass: (shortlistId, payload) =>

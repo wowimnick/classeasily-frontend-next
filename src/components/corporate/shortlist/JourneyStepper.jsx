@@ -3,81 +3,105 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 import { BP, down } from "@/styles/breakpoints";
 
 const StepperNav = styled(motion.nav)`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.1rem 0.2rem;
   width: 100%;
-  max-width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
   box-sizing: border-box;
 `;
 
-const StepRow = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  flex-wrap: nowrap;
+const TrackRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  position: relative;
 `;
 
-const StepItem = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.12rem 0.4rem 0.12rem 0.28rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: ${(p) => (p.$active ? 650 : 500)};
-  letter-spacing: 0.01em;
-  color: ${(p) => (p.$active ? "#111111" : "#717171")};
-  background: ${(p) => (p.$active ? "#f4f4f4" : "transparent")};
-  white-space: nowrap;
-
-  ${down(BP.MOBILE)} {
-    font-size: 0.625rem;
-    padding: 0.1rem 0.32rem 0.1rem 0.24rem;
-    gap: 0.28rem;
-  }
+const TrackLine = styled.div`
+  position: absolute;
+  top: 7px;
+  left: calc(12.5% + 6px);
+  right: calc(12.5% + 6px);
+  height: 2px;
+  background: #ebebeb;
+  border-radius: 1px;
+  z-index: 0;
 `;
 
-const MotionStepItem = motion(StepItem);
+const TrackFill = styled(motion.div)`
+  position: absolute;
+  top: 7px;
+  left: calc(12.5% + 6px);
+  height: 2px;
+  background: #ff385c;
+  border-radius: 1px;
+  z-index: 1;
+  transform-origin: left center;
+`;
+
+const StepCol = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+`;
+
+const MotionStepCol = motion(StepCol);
 
 const StepDot = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   flex-shrink: 0;
-  font-size: 0.55rem;
-  font-weight: 700;
-  border: 1px solid
-    ${(p) => (p.$active ? "#111111" : p.$done ? "#d4d4d4" : "rgba(0,0,0,0.18)")};
-  background: ${(p) => (p.$active ? "#111111" : p.$done ? "#e8e8e8" : "#ffffff")};
-  color: ${(p) => (p.$active ? "#ffffff" : "#222222")};
+  box-sizing: border-box;
+  border: 2px solid
+    ${(p) => (p.$active ? "#111111" : p.$done ? "#ff385c" : "#d4d4d4")};
+  background: ${(p) => (p.$active ? "#111111" : p.$done ? "#ff385c" : "transparent")};
+  color: #ffffff;
+
+  svg {
+    width: 9px;
+    height: 9px;
+    stroke-width: 3;
+  }
 
   ${down(BP.MOBILE)} {
-    width: 13px;
-    height: 13px;
-    font-size: 0.5rem;
+    width: 14px;
+    height: 14px;
+
+    svg {
+      width: 8px;
+      height: 8px;
+    }
   }
 `;
 
-const Separator = styled.span`
-  display: inline-flex;
-  align-items: center;
-  color: #d4d4d4;
-  font-size: 0.65rem;
-  line-height: 1;
-  padding: 0 0.05rem;
-  user-select: none;
-`;
+const StepLabel = styled.span`
+  font-size: 0.68rem;
+  font-weight: ${(p) => (p.$active ? 650 : 500)};
+  letter-spacing: 0.01em;
+  color: ${(p) => (p.$active ? "#111111" : p.$done ? "#334155" : "#717171")};
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
 
-const MotionSep = motion(Separator);
+  ${down(BP.MOBILE)} {
+    font-size: 0.625rem;
+  }
+`;
 
 const STEPS = [
   { id: "choose", label: "Compare", labelFull: "Compare options" },
@@ -90,32 +114,26 @@ const railVariants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.05,
+      staggerChildren: 0.06,
       delayChildren: 0.02,
     },
   },
 };
 
 const stepVariants = {
-  hidden: { opacity: 0, y: 4 },
+  hidden: { opacity: 0, y: 6, scale: 0.92 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 380, damping: 28 },
-  },
-};
-
-const sepVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.15 },
+    scale: 1,
+    transition: { type: "spring", stiffness: 380, damping: 26 },
   },
 };
 
 export default function JourneyStepper({ currentStep = "choose" }) {
   const order = STEPS.map((s) => s.id);
   const idx = Math.max(0, order.indexOf(currentStep));
+  const fillPct = idx <= 0 ? 0 : ((idx) / (STEPS.length - 1)) * 100;
 
   return (
     <StepperNav
@@ -124,27 +142,29 @@ export default function JourneyStepper({ currentStep = "choose" }) {
       animate="visible"
       aria-label="Booking steps"
     >
-      <StepRow>
+      <TrackRow>
+        <TrackLine aria-hidden />
+        <TrackFill
+          aria-hidden
+          initial={{ width: 0 }}
+          animate={{ width: `${fillPct}%` }}
+          transition={{ type: "spring", stiffness: 200, damping: 28 }}
+        />
         {STEPS.map((s, i) => {
           const done = i < idx;
           const active = i === idx;
           return (
-            <React.Fragment key={s.id}>
-              <MotionStepItem variants={stepVariants} $active={active} $done={done}>
-                <StepDot $active={active} $done={done} aria-hidden>
-                  {done ? "✓" : i + 1}
-                </StepDot>
-                <span title={s.labelFull}>{s.label}</span>
-              </MotionStepItem>
-              {i < STEPS.length - 1 && (
-                <MotionSep variants={sepVariants} aria-hidden>
-                  /
-                </MotionSep>
-              )}
-            </React.Fragment>
+            <MotionStepCol key={s.id} variants={stepVariants}>
+              <StepDot $active={active} $done={done} aria-hidden>
+                {done ? <Check aria-hidden /> : null}
+              </StepDot>
+              <StepLabel $active={active} $done={done} title={s.labelFull}>
+                {s.label}
+              </StepLabel>
+            </MotionStepCol>
           );
         })}
-      </StepRow>
+      </TrackRow>
     </StepperNav>
   );
 }

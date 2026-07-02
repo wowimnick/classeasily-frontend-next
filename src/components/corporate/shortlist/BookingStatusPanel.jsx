@@ -143,6 +143,36 @@ const DepositCta = styled(Link)`
   }
 `;
 
+const BalanceCta = styled(Link)`
+  display: inline-block;
+  margin-top: 1rem;
+  background: ${BRAND_RED};
+  color: #fff;
+  padding: 0.65rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid ${BRAND_RED};
+    outline-offset: 2px;
+  }
+`;
+
+const SecondaryInvoiceLink = styled.a`
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: ${TEXT_MUTED};
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: ${TEXT_BODY};
+  }
+`;
+
 const MAIN_FLOW = [
   { id: "pending_deposit", label: "Awaiting deposit" },
   { id: "deposit_paid", label: "Deposit received" },
@@ -177,6 +207,9 @@ function isStepActive(i, status) {
 export default function BookingStatusPanel({ booking, token, currency }) {
   const st = booking?.status;
   const isTerminal = st === "cancelled" || st === "refunded";
+  const balanceDue = Number(booking?.balance_cents) > 0;
+  const showPayBalance =
+    balanceDue && (st === "deposit_paid" || st === "invoiced");
 
   return (
     <Wrap>
@@ -220,15 +253,30 @@ export default function BookingStatusPanel({ booking, token, currency }) {
       {booking.invoice_url && st !== "fully_paid" && st !== "completed" ? (
         <InvoiceCard>
           <InvoiceTitle>Balance invoice</InvoiceTitle>
-          <InvoiceLink href={booking.invoice_url} target="_blank" rel="noreferrer">
-            Open balance invoice
-          </InvoiceLink>
+          {showPayBalance ? (
+            <>
+              <BalanceCta href={`/corporate/shortlist/${token}/balance?booking=${booking.id}`}>
+                Pay balance · {formatMoney(booking.balance_cents, currency)}
+              </BalanceCta>
+              <SecondaryInvoiceLink href={booking.invoice_url} target="_blank" rel="noreferrer">
+                Or open Stripe invoice
+              </SecondaryInvoiceLink>
+            </>
+          ) : (
+            <InvoiceLink href={booking.invoice_url} target="_blank" rel="noreferrer">
+              Open balance invoice
+            </InvoiceLink>
+          )}
           {booking.invoice_due_at ? (
             <p style={{ margin: "0.5rem 0 0", fontSize: "0.88rem", color: TEXT_MUTED }}>
               Due {dayjs(booking.invoice_due_at).format("MMM D, YYYY")}
             </p>
           ) : null}
         </InvoiceCard>
+      ) : showPayBalance ? (
+        <BalanceCta href={`/corporate/shortlist/${token}/balance?booking=${booking.id}`}>
+          Pay balance · {formatMoney(booking.balance_cents, currency)}
+        </BalanceCta>
       ) : null}
 
       {st === "pending_deposit" ? (

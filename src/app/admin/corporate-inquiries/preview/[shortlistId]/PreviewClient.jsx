@@ -123,7 +123,11 @@ export default function PreviewClient({ shortlistId }) {
       <Banner>Admin preview — this is what the business sees. No emails are sent.</Banner>
       {previewHeader}
       <Container>
-        <ShortlistHero companyName={payload.inquiry?.company_name} />
+        <ShortlistHero
+          companyName={payload.inquiry?.company_name}
+          introMessage={payload.intro_message}
+          presentation={payload.presentation}
+        />
         <JourneyStepper currentStep="choose" />
         {options.length === 0 ? (
           <p style={{ color: "#64748b" }}>No active options on this shortlist.</p>
@@ -134,6 +138,7 @@ export default function PreviewClient({ shortlistId }) {
             depositPercent={depPct}
             highlightOption={highlightOption}
             onHighlight={setHighlightOption}
+            presentation={payload.presentation}
             onChoose={() => noopChoose()}
           />
         )}

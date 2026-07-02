@@ -144,7 +144,7 @@ function computeStats(reviews, totalCount) {
   };
 }
 
-export default function ReviewsPageClient({ initialData }) {
+export default function ReviewsPageClient({ initialData, initialPage = 1 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isTabletUp = useMediaQuery("(min-width: 640px)");
@@ -152,7 +152,6 @@ export default function ReviewsPageClient({ initialData }) {
 
   const columnCount = isDesktopUp ? 3 : isTabletUp ? 2 : 1;
 
-  const initialPage = Number(searchParams.get("page")) || 1;
   const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(initialData);
@@ -165,11 +164,11 @@ export default function ReviewsPageClient({ initialData }) {
   }, []);
 
   useEffect(() => {
-    if (page === 1 && initialData?.success) {
+    if (page === initialPage && initialData?.success) {
       return;
     }
     fetchReviews(page);
-  }, [page, fetchReviews, initialData?.success]);
+  }, [page, fetchReviews, initialData?.success, initialPage]);
 
   const updatePage = (nextPage) => {
     setPage(nextPage);
@@ -198,23 +197,7 @@ export default function ReviewsPageClient({ initialData }) {
 
   return (
     <>
-      <section className={styles.heroSection}>
-        <div className={styles.heroInner}>
-          <div className={styles.heroBadge}>
-            <Star size={14} fill="#4285f4" stroke="#4285f4" aria-hidden />
-            Verified Google reviews
-          </div>
-          <h1 className={styles.heroTitle}>
-            Loved by thousands of class-goers
-          </h1>
-          <p className={styles.heroSubtitle}>
-            Real feedback from people who booked experiences on ClassEasily —
-            pulled from verified Google reviews of our host businesses.
-          </p>
-        </div>
-      </section>
-
-      <PageShell>
+      <PageShell id="reviews-content" aria-label="Google reviews">
         <StatsStripWrap>
           <StatsStrip aria-label="Review statistics">
             <StatCard>

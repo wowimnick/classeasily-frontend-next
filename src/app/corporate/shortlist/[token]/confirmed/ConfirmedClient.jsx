@@ -5,18 +5,19 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import styled from "styled-components";
-import { CircleCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 import { corporateBookingService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import Footer from "@/components/homepage/Footer";
 import { formatMoney } from "@/components/corporate/shortlist/formatMoney";
 import JourneyStepper from "@/components/corporate/shortlist/JourneyStepper";
 import BookingStatusPanel from "@/components/corporate/shortlist/BookingStatusPanel";
-import { ACCENT_DARK, BORDER, BRAND_RED, HERO_MUTED, SURFACE_MUTED, TEXT_BODY } from "@/components/corporate/tokens";
+import { ACCENT_DARK, BORDER, BRAND_RED, TEXT_BODY, TEXT_MUTED } from "@/components/corporate/tokens";
 
 const Wrap = styled.div`
   min-height: 100vh;
-  background: linear-gradient(180deg, ${SURFACE_MUTED} 0%, #fff 100%);
+  background: #fcfcfc;
 `;
 
 const Inner = styled.div`
@@ -25,26 +26,82 @@ const Inner = styled.div`
   padding: 2.5rem 0 4rem;
 `;
 
-const Panel = styled.div`
+const Panel = styled(motion.div)`
   text-align: center;
+`;
+
+const CheckCircle = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff0f3;
+  margin-bottom: 1.25rem;
+
+  svg {
+    color: ${BRAND_RED};
+  }
 `;
 
 const Headline = styled.h1`
   color: ${ACCENT_DARK};
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  margin: 0 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+  line-height: 1.15;
+`;
+
+const Reference = styled.p`
+  margin: 0 0 0.35rem;
+  font-size: 15px;
+  color: ${TEXT_MUTED};
+  font-variant-numeric: tabular-nums;
 `;
 
 const Lead = styled.p`
   color: ${TEXT_BODY};
-  font-size: 1.05rem;
-  line-height: 1.6;
-  margin: 0 0 1.25rem;
+  font-size: 17px;
+  line-height: 1.55;
+  margin: 0 0 1.5rem;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
+const Timeline = styled.ol`
+  list-style: none;
+  margin: 0 auto 1.5rem;
+  padding: 0;
+  max-width: 360px;
+  text-align: left;
+`;
+
+const TlItem = styled.li`
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.5rem 0;
+  font-size: 14px;
+  color: ${TEXT_BODY};
+  line-height: 1.45;
+
+  &::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${BRAND_RED};
+    margin-top: 6px;
+  }
+`;
+
+const BookingWrap = styled.div`
+  text-align: left;
+  margin-bottom: 1.5rem;
 `;
 
 const SaveTip = styled.div`
@@ -81,17 +138,27 @@ const Pulse = styled.span`
   }
 `;
 
-const BookingWrap = styled.div`
-  text-align: left;
-  margin-bottom: 1.5rem;
-`;
+const DEPOSIT_TIMELINE = [
+  "Your deposit is confirmed and your date is reserved.",
+  "We'll coordinate final details with your host.",
+  "The remaining balance is invoiced before your event.",
+];
+
+const BALANCE_TIMELINE = [
+  "Your balance payment is confirmed — you're paid in full.",
+  "We'll send a receipt to your billing contact.",
+  "Your host will reach out with final event details.",
+];
 
 function ConfirmedInner({ token }) {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("booking");
+  const mode = searchParams.get("mode");
+  const isBalanceMode = mode === "balance";
   const [booking, setBooking] = useState(null);
   const [err, setErr] = useState("");
   const prevStatusRef = useRef(null);
+  const confettiFired = useRef(false);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -101,16 +168,21 @@ function ConfirmedInner({ token }) {
         const b = await corporateBookingService.getBooking(token, bookingId);
         setBooking(b);
         const prev = prevStatusRef.current;
-        const successStates = ["deposit_paid", "invoiced", "fully_paid"];
-        if (prev === "pending_deposit" && successStates.includes(b.status)) {
-          try {
-            confetti({ particleCount: 80, spread: 70, origin: { y: 0.65 } });
-          } catch {
-            /* optional */
+        const depositSuccess = ["deposit_paid", "invoiced", "fully_paid"];
+        const balanceSuccess = ["fully_paid"];
+        const targetStates = isBalanceMode ? balanceSuccess : depositSuccess;
+        if (prev && !targetStates.includes(prev) && targetStates.includes(b.status)) {
+          if (!confettiFired.current) {
+            confettiFired.current = true;
+            try {
+              confetti({ particleCount: 80, spread: 70, origin: { y: 0.65 } });
+            } catch {
+              /* optional */
+            }
           }
         }
         prevStatusRef.current = b.status;
-        if (successStates.includes(b.status)) {
+        if (targetStates.includes(b.status)) {
           clearInterval(t);
         }
       } catch (e) {
@@ -121,7 +193,7 @@ function ConfirmedInner({ token }) {
     poll();
     t = setInterval(poll, 2500);
     return () => clearInterval(t);
-  }, [token, bookingId]);
+  }, [token, bookingId, isBalanceMode]);
 
   if (!bookingId) {
     return <p style={{ color: "#b91c1c" }}>Invalid confirmation link.</p>;
@@ -133,10 +205,9 @@ function ConfirmedInner({ token }) {
 
   if (!booking) {
     return (
-      <Panel>
+      <Panel initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <Headline>
-          <Pulse aria-hidden />
-          Confirming your payment…
+          <Pulse aria-hidden /> Confirming your payment…
         </Headline>
         <Lead>Hang tight while we confirm your payment with the bank.</Lead>
       </Panel>
@@ -144,37 +215,60 @@ function ConfirmedInner({ token }) {
   }
 
   const pending = booking.status === "pending_deposit";
+  const awaitingBalance =
+    isBalanceMode && booking.status !== "fully_paid" && booking.status !== "completed";
   const cur = booking.currency || "usd";
+  const confirmed = isBalanceMode
+    ? booking.status === "fully_paid" || booking.status === "completed"
+    : !pending && booking.status !== "pending_deposit";
+  const timeline = isBalanceMode ? BALANCE_TIMELINE : DEPOSIT_TIMELINE;
 
   return (
-    <Panel>
-      <JourneyStepper currentStep={pending ? "pay" : "done"} />
+    <Panel initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <JourneyStepper currentStep={confirmed ? "done" : "pay"} />
 
       <BookingWrap>
         <BookingStatusPanel booking={booking} token={token} currency={cur} />
       </BookingWrap>
 
-      {pending ? (
+      {pending || awaitingBalance ? (
         <>
           <Headline>
-            <Pulse aria-hidden />
-            Confirming your payment…
+            <Pulse aria-hidden /> Confirming your payment…
           </Headline>
-          <Lead>Your deposit is processing. This usually takes a few seconds.</Lead>
+          <Lead>
+            {isBalanceMode
+              ? "Your balance payment is processing. This usually takes a few seconds."
+              : "Your deposit is processing. This usually takes a few seconds."}
+          </Lead>
         </>
       ) : (
         <>
-          <Headline>
-            <CircleCheck size={32} color={BRAND_RED} strokeWidth={2.25} aria-hidden />
-            You&apos;re in
-          </Headline>
+          <CheckCircle>
+            <Check size={36} strokeWidth={2.5} aria-hidden />
+          </CheckCircle>
+          <Headline>{isBalanceMode ? "Paid in full" : "You're in"}</Headline>
+          <Reference>Reference {booking.reference}</Reference>
           <Lead>
-            Reference <strong>{booking.reference}</strong>
-            <br />
-            Deposit: {formatMoney(booking.deposit_cents, cur)}
-            <br />
-            Remaining balance will be invoiced to your work email.
+            {isBalanceMode ? (
+              <>
+                Total paid: {formatMoney(booking.total_cents, cur)}
+                <br />
+                Thank you — your corporate booking is fully settled.
+              </>
+            ) : (
+              <>
+                Deposit: {formatMoney(booking.deposit_cents, cur)}
+                <br />
+                Remaining balance will be invoiced to your billing contact.
+              </>
+            )}
           </Lead>
+          <Timeline aria-label="What happens next">
+            {timeline.map((step) => (
+              <TlItem key={step}>{step}</TlItem>
+            ))}
+          </Timeline>
         </>
       )}
 

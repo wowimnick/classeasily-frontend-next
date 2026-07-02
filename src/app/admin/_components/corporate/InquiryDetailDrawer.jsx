@@ -133,21 +133,7 @@ export default function InquiryDetailDrawer({
       title={inquiryRow?.company_name || "Inquiry"}
       extra={drawerExtra}
       styles={{ body: { paddingTop: 12 } }}
-      footer={
-        <Space direction="vertical" style={{ width: "100%" }} size="small">
-          <Text type={validation.ok ? "success" : "secondary"}>{validation.detail}</Text>
-          <Button
-            type="primary"
-            loading={sending}
-            disabled={sendDisabled}
-            onClick={handleSend}
-            title={sendTooltip}
-            block
-          >
-            Send shortlist email
-          </Button>
-        </Space>
-      }
+      footer={null}
     >
       {inquiryRow ? (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
@@ -242,6 +228,10 @@ export default function InquiryDetailDrawer({
                   onRefresh={onRefreshShortlist}
                   pendingOpenSlot={pendingAddSlot}
                   onConsumedPendingSlot={consumePendingSlot}
+                  publicShortlistUrl={publicShortlistUrl}
+                  previewHref={previewHref}
+                  onSend={handleSend}
+                  sending={sending}
                 />
               )}
             </>

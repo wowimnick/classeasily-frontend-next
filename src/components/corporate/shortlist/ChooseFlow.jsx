@@ -10,6 +10,7 @@ import { Ticket, ChevronDown, MapPin, Clock, Users, Building2, Tag, ListChecks }
 import { getDurationText } from "@/app/classes/_components/steps/utils.jsx";
 import { theme as appTheme } from "@/components/theme";
 import { formatMoney } from "./formatMoney";
+import SupportContactModal from "./SupportContactModal";
 
 /* ─── Page shell (matches ClassCheckoutClient PageWrapper + MainContainer) ─── */
 
@@ -297,30 +298,29 @@ const DesktopInlineFooter = styled.div`
 const SectionCard = styled.div`
   background: white;
   border-radius: 16px;
-  border: none;
+  border: 1px solid #ebebeb;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  box-shadow: none;
+  transition: border-color 0.2s ease;
 
   @media (max-width: 1023px) {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     margin-bottom: 24px;
   }
 `;
 
 const SectionHeader = styled.div`
-  padding: 20px 24px;
+  padding: 24px 24px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: white;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: none;
 
   h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    color: #111827;
+    color: #0f172a;
   }
 
   @media (max-width: 1023px) {
@@ -334,12 +334,22 @@ const SectionHeader = styled.div`
 `;
 
 const SectionContentInner = styled.div`
-  padding: 16px 20px 20px;
+  padding: 16px 24px 24px;
   border-top: none;
 
   @media (max-width: 1023px) {
-    padding: 0;
+    padding: 0 20px 20px;
     border-top: none;
+  }
+`;
+
+const AddressGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -655,6 +665,7 @@ function formatSelectedDatetime(iso, dateChoices) {
 }
 
 export default function ChooseFlow({
+  token,
   option,
   depositPercent,
   currency,
@@ -736,7 +747,14 @@ export default function ChooseFlow({
       billing_contact_name: v.billing_contact_name,
       billing_email: v.billing_email,
       po_number: v.po_number || "",
-      billing_address: {},
+      billing_address: {
+        line1: v.billing_line1?.trim?.() || "",
+        line2: v.billing_line2?.trim?.() || "",
+        city: v.billing_city?.trim?.() || "",
+        state: v.billing_state?.trim?.() || "",
+        postal_code: v.billing_postal_code?.trim?.() || "",
+        country: v.billing_country?.trim?.() || "",
+      },
     });
   };
 
@@ -755,8 +773,13 @@ export default function ChooseFlow({
         </DesktopTotalRow>
         <DesktopPriceRow>
           <DesktopPriceText>Balance after deposit</DesktopPriceText>
-          <DesktopPriceText>{formatMoney(balance, currency)}</DesktopPriceText>
+          <DesktopPriceText style={{ fontVariantNumeric: "tabular-nums" }}>
+            {formatMoney(balance, currency)}
+          </DesktopPriceText>
         </DesktopPriceRow>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>
+          Remainder invoiced before your event per your AP terms.
+        </p>
       </DesktopSummarySection>
       {compact ? (
         <p
@@ -1104,8 +1127,79 @@ export default function ChooseFlow({
                             <Input size="middle" placeholder="Purchase order or cost center" />
                           </Form.Item>
                         </CheckoutFieldRow>
+                        <CheckoutFieldRow>
+                          <Form.Item
+                            name="billing_line1"
+                            label={<FieldLabel>Address line 1</FieldLabel>}
+                            rules={[{ required: true, message: "Required" }]}
+                            style={{ marginBottom: 0 }}
+                          >
+                            <Input size="middle" placeholder="Street address" />
+                          </Form.Item>
+                        </CheckoutFieldRow>
+                        <CheckoutFieldRow>
+                          <Form.Item
+                            name="billing_line2"
+                            label={<FieldLabel>Address line 2 (optional)</FieldLabel>}
+                            style={{ marginBottom: 0 }}
+                          >
+                            <Input size="middle" placeholder="Suite, floor, etc." />
+                          </Form.Item>
+                        </CheckoutFieldRow>
+                        <AddressGrid>
+                          <CheckoutFieldRow>
+                            <Form.Item
+                              name="billing_city"
+                              label={<FieldLabel>City</FieldLabel>}
+                              rules={[{ required: true, message: "Required" }]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input size="middle" placeholder="City" />
+                            </Form.Item>
+                          </CheckoutFieldRow>
+                          <CheckoutFieldRow>
+                            <Form.Item
+                              name="billing_state"
+                              label={<FieldLabel>State / Province</FieldLabel>}
+                              rules={[{ required: true, message: "Required" }]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input size="middle" placeholder="State or province" />
+                            </Form.Item>
+                          </CheckoutFieldRow>
+                        </AddressGrid>
+                        <AddressGrid>
+                          <CheckoutFieldRow>
+                            <Form.Item
+                              name="billing_postal_code"
+                              label={<FieldLabel>Postal code</FieldLabel>}
+                              rules={[{ required: true, message: "Required" }]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input size="middle" placeholder="ZIP / postal code" />
+                            </Form.Item>
+                          </CheckoutFieldRow>
+                          <CheckoutFieldRow>
+                            <Form.Item
+                              name="billing_country"
+                              label={<FieldLabel>Country</FieldLabel>}
+                              rules={[{ required: true, message: "Required" }]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input size="middle" placeholder="Country" />
+                            </Form.Item>
+                          </CheckoutFieldRow>
+                        </AddressGrid>
                       </SectionContentInner>
                     </SectionCard>
+
+                    {token ? (
+                      <SupportContactModal
+                        token={token}
+                        defaultName={defaultName}
+                        defaultEmail={defaultEmail}
+                      />
+                    ) : null}
                   </PaymentSection>
                 </LeftColumnWrap>
 

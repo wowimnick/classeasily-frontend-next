@@ -14,6 +14,7 @@ import {
   Typography,
   message,
 } from "antd";
+import { HolderOutlined } from "@ant-design/icons";
 import { corporateAdminService, classManagementService } from "@/services/adminDash";
 import { dollarsToCents, centsToDollarsInput } from "./dollarsField";
 import ProposedTimesEditor from "./ProposedTimesEditor";
@@ -26,6 +27,7 @@ export default function OptionEditCard({
   activeOptionsSorted,
   onRefresh,
   onSwapDown,
+  dragHandleProps,
 }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -127,13 +129,22 @@ export default function OptionEditCard({
       size="small"
       title={
         <Space wrap>
+          {dragHandleProps ? (
+            <Button
+              type="text"
+              size="small"
+              icon={<HolderOutlined />}
+              style={{ cursor: "grab", padding: "0 4px" }}
+              {...dragHandleProps}
+            />
+          ) : null}
           <span>Slot {option.position}</span>
           <Text type="secondary">{srcLabel}</Text>
         </Space>
       }
       extra={
         <Space>
-          {canMoveDown ? (
+          {!dragHandleProps && canMoveDown && onSwapDown ? (
             <Button size="small" onClick={() => onSwapDown(sortIndex)}>
               Move down
             </Button>

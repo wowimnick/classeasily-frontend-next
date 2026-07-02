@@ -9,11 +9,11 @@ import ExploreHeader from "@/components/explore/ExploreHeader";
 import FooterSmart from "@/components/homepage/FooterSmart";
 import { BP, down, up } from "@/components/corporate/tokens";
 import ShortlistLandingIntro from "@/components/corporate/shortlist/ShortlistLandingIntro";
-import ShortlistHero from "./_components/ShortlistHero";
-import ShortlistComparisonTable from "./_components/ShortlistComparisonTable";
-import ChooseFlow from "./_components/ChooseFlow";
-import BookingStatusPanel from "./_components/BookingStatusPanel";
-import JourneyStepper from "./_components/JourneyStepper";
+import ShortlistHero from "@/components/corporate/shortlist/ShortlistHero";
+import ShortlistComparisonTable from "@/components/corporate/shortlist/ShortlistComparisonTable";
+import ChooseFlow from "@/components/corporate/shortlist/ChooseFlow";
+import BookingStatusPanel from "@/components/corporate/shortlist/BookingStatusPanel";
+import JourneyStepper from "@/components/corporate/shortlist/JourneyStepper";
 import { ShortlistMainSkeleton } from "./_components/ShortlistMainSkeleton";
 
 const PageWrap = styled.div`
@@ -216,6 +216,8 @@ export default function ShortlistPageClient({ token }) {
   const active = data?.active_booking;
   const currency = data?.currency || "usd";
   const depPct = data?.deposit_percent ?? 25;
+  const introMessage = data?.intro_message;
+  const presentation = data?.presentation || {};
 
   const journeyStep = deriveJourneyStep({ active, chooseOption });
 
@@ -329,7 +331,11 @@ export default function ShortlistPageClient({ token }) {
           </StepperTrackInner>
         </StepperTrack>
         <Container>
-          <ShortlistHero companyName={inquiry?.company_name} />
+          <ShortlistHero
+            companyName={inquiry?.company_name}
+            introMessage={introMessage}
+            presentation={presentation}
+          />
 
           <AnimatePresence>
             {error && (
@@ -365,6 +371,7 @@ export default function ShortlistPageClient({ token }) {
                   transition={{ duration: 0.3 }}
                 >
                   <ChooseFlow
+                    token={token}
                     option={chooseOption}
                     depositPercent={depPct}
                     currency={currency}
@@ -395,6 +402,7 @@ export default function ShortlistPageClient({ token }) {
                   depositPercent={depPct}
                   highlightOption={highlightOption}
                   onHighlight={setHighlightOption}
+                  presentation={presentation}
                   onChoose={(opt) => {
                     setChooseOption(opt);
                     setError("");

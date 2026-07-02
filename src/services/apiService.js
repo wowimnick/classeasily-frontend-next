@@ -2228,6 +2228,19 @@ export const corporateBookingService = {
     );
     return response.data;
   },
+  createBalanceIntent: async (token, bookingId) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/booking/${bookingId}/balance-intent/`,
+    );
+    return response.data;
+  },
+  submitSupport: async (token, payload) => {
+    const response = await axiosInstance.post(
+      `/corporate/shortlist/${token}/support/`,
+      payload,
+    );
+    return response.data;
+  },
 };
 
 // --- Class Services (Public Context) ---
