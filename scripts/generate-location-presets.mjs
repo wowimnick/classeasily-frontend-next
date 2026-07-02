@@ -148,10 +148,8 @@ async function main() {
       apiBaseUrl: baseUrl,
     });
   } catch (error) {
-    console.error(
-      "[location-presets] Generation failed.",
-      error,
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[location-presets] Generation failed (${message}).`);
     const existing = await readExistingPresets();
     if (existing.length > 0) {
       console.warn(
@@ -164,9 +162,21 @@ async function main() {
       source: "fallback",
       reason: "fetch_failed",
       apiBaseUrl: baseUrl,
-      error: error instanceof Error ? error.message : "unknown_error",
+      error: message,
     });
   }
 }
 
-main();
+main().catch(async (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[location-presets] Unexpected error (${message}). Using fallback presets.`);
+  try {
+    await writeOutput(FALLBACK_GTA_PRESETS, {
+      source: "fallback",
+      reason: "unexpected_error",
+      error: message,
+    });
+  } catch {
+    process.exitCode = 0;
+  }
+});

@@ -172,7 +172,8 @@ async function main() {
       apiBaseUrl: baseUrl,
     });
   } catch (error) {
-    console.error("[i-want-collections] Generation failed.", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[i-want-collections] Generation failed (${message}).`);
     const existing = await readExistingCollections();
     if (existing.length > 0) {
       console.warn(
@@ -184,9 +185,23 @@ async function main() {
       source: "empty",
       reason: "fetch_failed",
       apiBaseUrl: baseUrl,
-      error: error instanceof Error ? error.message : "unknown_error",
+      error: message,
     });
   }
 }
 
-main();
+main().catch(async (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[i-want-collections] Unexpected error (${message}).`);
+  try {
+    const existing = await readExistingCollections();
+    if (existing.length > 0) return;
+    await writeOutput([], {
+      source: "empty",
+      reason: "unexpected_error",
+      error: message,
+    });
+  } catch {
+    process.exitCode = 0;
+  }
+});

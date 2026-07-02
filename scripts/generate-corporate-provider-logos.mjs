@@ -203,6 +203,17 @@ function dedupeLogos(logos) {
   return result;
 }
 
+async function readExistingLogos() {
+  try {
+    const raw = await readFile(outputFile, "utf8");
+    const parsed = JSON.parse(raw);
+    const logos = Array.isArray(parsed?.logos) ? parsed.logos : [];
+    return logos.filter((item) => item?.logo && item?.name);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchAllBusinesses(baseUrl) {
   const all = [];
   let page = 1;
@@ -213,7 +224,10 @@ async function fetchAllBusinesses(baseUrl) {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {
-      throw new Error(`Failed businesses fetch (${response.status}) for URL: ${nextUrl}`);
+      console.warn(
+        `[corporate-logos] Businesses API returned ${response.status}; using cached/fallback logos.`,
+      );
+      return all;
     }
     const payload = await response.json();
     const parsed = parseListPayload(payload);
@@ -267,6 +281,13 @@ async function main() {
     const logos = await filterLogosWithActivePublicClasses(baseUrl, candidates, LOGO_LIMIT);
 
     if (!logos.length) {
+      const existing = await readExistingLogos();
+      if (existing.length > 0) {
+        console.warn(
+          `[corporate-logos] No eligible logos from API; keeping ${existing.length} existing logo(s).`,
+        );
+        return;
+      }
       console.warn("[corporate-logos] No logos with active public classes. Using fallback logos.");
       await writeOutput(fallbackLogos, {
         source: "fallback",
@@ -284,13 +305,35 @@ async function main() {
       limit: LOGO_LIMIT,
     });
   } catch (error) {
-    console.error("[corporate-logos] Generation failed. Using fallback logos.", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[corporate-logos] Generation failed (${message}). Trying cached/fallback logos.`);
+    const existing = await readExistingLogos();
+    if (existing.length > 0) {
+      console.warn(
+        `[corporate-logos] Keeping ${existing.length} existing logo(s) from ${outputFile}`,
+      );
+      return;
+    }
     await writeOutput(fallbackLogos, {
       source: "fallback",
       reason: "fetch_failed",
-      error: error instanceof Error ? error.message : "unknown_error",
+      error: message,
     });
   }
 }
 
-main();
+main().catch(async (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[corporate-logos] Unexpected error (${message}). Writing fallback logos.`);
+  try {
+    const existing = await readExistingLogos();
+    if (existing.length > 0) return;
+    await writeOutput(fallbackLogos, {
+      source: "fallback",
+      reason: "unexpected_error",
+      error: message,
+    });
+  } catch {
+    process.exitCode = 0;
+  }
+});
