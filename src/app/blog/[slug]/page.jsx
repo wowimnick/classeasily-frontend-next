@@ -14,9 +14,23 @@ import {
 } from "@/lib/server-data-fetchers";
 
 // CRITICAL: Generate all blog post paths at build time
+const BUILD_PLACEHOLDER_SLUG = "__build_placeholder";
+
 export async function generateStaticParams() {
-  const { posts } = await fetchBlogPosts(100);
-  return posts.map((post) => ({ slug: post.slug }));
+  try {
+    const { posts } = await fetchBlogPosts(100);
+    const slugs = (posts || [])
+      .filter((post) => post?.slug)
+      .map((post) => ({ slug: post.slug }));
+
+    // Next.js 16 (Cache Components) requires at least one result from generateStaticParams.
+    if (slugs.length === 0) {
+      return [{ slug: BUILD_PLACEHOLDER_SLUG }];
+    }
+    return slugs;
+  } catch {
+    return [{ slug: BUILD_PLACEHOLDER_SLUG }];
+  }
 }
 
 // Generate metadata for SEO
@@ -88,6 +102,11 @@ export async function generateMetadata({ params }) {
 export default async function BlogPostPage({ params }) {
   // FIXED: Await params in Next.js 15
   const { slug } = await params;
+
+  // Placeholder slug only exists so `generateStaticParams` satisfies Next when the API is empty.
+  if (slug === BUILD_PLACEHOLDER_SLUG) {
+    notFound();
+  }
 
   // Fetch all data at build time (static generation) using helper functions
   const [postResult, recentPostsResult] = await Promise.all([

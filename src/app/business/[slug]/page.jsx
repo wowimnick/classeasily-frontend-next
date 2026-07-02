@@ -8,25 +8,34 @@ import {
 } from "@/lib/server-data-fetchers";
 
 // Generate static params for business pages at build time
+const BUILD_PLACEHOLDER_SLUG = "__build_placeholder";
+
 export async function generateStaticParams() {
   try {
     const businessesResult = await fetchPublicBusinesses();
 
     if (!businessesResult.success || !businessesResult.data) {
       console.warn("No businesses found for static generation");
-      return [];
+      return [{ slug: BUILD_PLACEHOLDER_SLUG }];
     }
 
     const businesses = businessesResult.results || [];
-    const paths = businesses.map((business) => ({
-      slug: business.slug,
-    }));
+    const paths = businesses
+      .filter((business) => business?.slug)
+      .map((business) => ({
+        slug: business.slug,
+      }));
 
     console.log(`[Build] Generated ${paths.length} static business pages`);
+
+    // Next.js 16 (Cache Components) requires at least one result from generateStaticParams.
+    if (paths.length === 0) {
+      return [{ slug: BUILD_PLACEHOLDER_SLUG }];
+    }
     return paths;
   } catch (error) {
     console.error("Error generating static params:", error);
-    return [];
+    return [{ slug: BUILD_PLACEHOLDER_SLUG }];
   }
 }
 
@@ -94,6 +103,11 @@ export async function generateMetadata({ params }) {
 export default async function BusinessPage({ params }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
+
+  // Placeholder slug only exists so `generateStaticParams` satisfies Next when the API is empty.
+  if (slug === BUILD_PLACEHOLDER_SLUG) {
+    notFound();
+  }
 
   console.log(`[Business Page] Rendering: ${slug}`);
 
