@@ -699,6 +699,64 @@ export async function fetchClassReviews(slug, page = 1, pageSize = 6) {
   }
 }
 
+/**
+ * Fetch recent platform-wide Google reviews (rating >= 4).
+ * Endpoint: /reviews/recent/
+ */
+export async function fetchRecentReviews(
+  page = 1,
+  pageSize = 12,
+  { ratingMin = 4, sort = "newest" } = {},
+) {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+      rating_min: String(ratingMin),
+      sort,
+    });
+    const response = await fetch(
+      `${BASE_URL}/reviews/recent/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "force-cache",
+        next: {
+          revalidate: 3600,
+          tags: ["recent-reviews", `recent-reviews-page-${page}`],
+        },
+      },
+    );
+    if (!response.ok) {
+      return {
+        success: false,
+        results: [],
+        count: 0,
+        next: null,
+        previous: null,
+      };
+    }
+    const data = await response.json();
+    const results = data.results ?? data ?? [];
+    return {
+      success: true,
+      results: Array.isArray(results) ? results : [],
+      count: data.count ?? results.length,
+      next: data.next ?? null,
+      previous: data.previous ?? null,
+    };
+  } catch (error) {
+    console.error("Error fetching recent reviews:", error);
+    return {
+      success: false,
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    };
+  }
+}
+
 // ==================== BUSINESS FUNCTIONS ====================
 
 /**

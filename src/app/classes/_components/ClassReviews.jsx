@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow, isValid } from "date-fns";
 import { classService } from "@/services/apiService";
 import { fetchReviewTranslation } from "@/lib/reviewTranslationClient";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 // --- ANIMATIONS & SKELETONS ---
 
@@ -153,8 +154,24 @@ const VaulHandle = styled.div`
 
 const VaulBody = styled.div`
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 0 16px 20px 16px;
+`;
+
+const VaulScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const ModalScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 20px;
 `;
 
 // --- MAIN UI STYLED COMPONENTS ---
@@ -595,11 +612,13 @@ const SortChip = styled.button`
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
-  &[data-active="true"] {
-    background: #111111;
-    color: #ffffff;
-    border-color: #111111;
-  }
+  ${(p) =>
+    p.$active &&
+    css`
+      background: #111111;
+      color: #ffffff;
+      border-color: #111111;
+    `}
 
   &:hover {
     border-color: #bbbbbb;
@@ -663,6 +682,7 @@ const normalizeReview = (review, index = 0) => {
   return {
     ...review,
     id: baseId,
+    rating: Number(review.rating) || 0,
     reviewer_avatar_url:
       review.reviewer_avatar_url || review.user?.avatar_thumb_url,
     reviewer_name: review.reviewer_name || review.user?.name,
@@ -855,8 +875,18 @@ const Reviews = ({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [modalSort, setModalSort] = useState("recent");
+  const modalListRef = useRef(null);
+  const modalSortRef = useRef("recent");
 
-  const sortedModalReviews = useMemo(() => {
+  useBodyScrollLock(isModalVisible);
+
+  useEffect(() => {
+    modalSortRef.current = modalSort;
+  }, [modalSort]);
+
+  const displayModalReviews = useMemo(() => {
+    if (mode !== "business") return modalReviews;
+
     const list = [...modalReviews];
     const idKey = (r) => String(r.id ?? "");
     const time = (r) => {
@@ -885,7 +915,7 @@ const Reviews = ({
     else list.sort(cmpRecent);
 
     return list;
-  }, [modalReviews, modalSort]);
+  }, [modalReviews, modalSort, mode]);
 
   // On the class page only show positive reviews; modal "See all" shows every review.
   const displayPreviewReviews = useMemo(
@@ -998,8 +1028,9 @@ const Reviews = ({
   }, [slug, initialReviewCount, normalizedServerReviews.length, mode]);
 
   const loadModalReviews = useCallback(
-    async (page) => {
+    async (page, sort) => {
       if (!slug) return;
+      const activeSort = sort ?? modalSortRef.current;
 
       try {
         setLoadingMore(true);
@@ -1021,6 +1052,7 @@ const Reviews = ({
             slug,
             page,
             10,
+            { sort: activeSort },
           );
           if (result.success) {
             setModalReviews((prev) => {
@@ -1046,6 +1078,22 @@ const Reviews = ({
 
   loadModalReviewsRef.current = loadModalReviews;
 
+  const handleSortChange = useCallback(
+    (sort) => {
+      if (sort === modalSortRef.current) return;
+      setModalSort(sort);
+      modalSortRef.current = sort;
+      setModalPage(1);
+      setModalHasMore(true);
+      setModalReviews([]);
+      if (modalListRef.current) {
+        modalListRef.current.scrollTop = 0;
+      }
+      loadModalReviews(1, sort);
+    },
+    [loadModalReviews],
+  );
+
   const handleOpenModal = () => {
     setIsModalVisible(true);
     if (modalReviews.length === 0) {
@@ -1062,7 +1110,7 @@ const Reviews = ({
 
   const renderReviewContent = (review, index, isModal) => {
     const isExpanded = expandedReviews[review.id];
-    const isLastElement = isModal && index === sortedModalReviews.length - 1;
+    const isLastElement = isModal && index === displayModalReviews.length - 1;
     const refProp = isLastElement ? { ref: lastReviewElementRef } : {};
 
     const avatarUrl =
@@ -1328,36 +1376,46 @@ const Reviews = ({
             body: {
               padding: 0,
               maxHeight: "70vh",
-              overflowY: "auto",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
             },
           }}
         >
-          <ModalToolbar style={{ padding: "0 24px 12px" }}>
+          <ModalToolbar
+            style={{
+              flexShrink: 0,
+              padding: "12px 24px",
+              marginBottom: 0,
+              borderBottom: "1px solid #eeeeee",
+              background: "#fff",
+            }}
+          >
             <SortLabel>Sort</SortLabel>
             <SortChip
               type="button"
-              data-active={modalSort === "recent"}
-              onClick={() => setModalSort("recent")}
+              $active={modalSort === "recent"}
+              onClick={() => handleSortChange("recent")}
             >
               Most recent
             </SortChip>
             <SortChip
               type="button"
-              data-active={modalSort === "high"}
-              onClick={() => setModalSort("high")}
+              $active={modalSort === "high"}
+              onClick={() => handleSortChange("high")}
             >
               Highest rated
             </SortChip>
             <SortChip
               type="button"
-              data-active={modalSort === "low"}
-              onClick={() => setModalSort("low")}
+              $active={modalSort === "low"}
+              onClick={() => handleSortChange("low")}
             >
               Lowest rated
             </SortChip>
           </ModalToolbar>
-          <div style={{ padding: "0 24px 20px" }}>
-            {sortedModalReviews.map((review, index) => (
+          <ModalScroll ref={modalListRef}>
+            {displayModalReviews.map((review, index) => (
               <Fragment key={`${String(review.id)}-${index}`}>
                 {renderReviewContent(review, index, true)}
               </Fragment>
@@ -1369,13 +1427,17 @@ const Reviews = ({
               </div>
             )}
             {!loadingMore && modalHasMore && <div style={{ height: 20 }} />}
-          </div>
+          </ModalScroll>
         </Modal>
       )}
 
       {/* --- MOBILE: VAUL DRAWER --- */}
       {isMobile && (
-        <VaulDrawer.Root open={isModalVisible} onOpenChange={setIsModalVisible}>
+        <VaulDrawer.Root
+          open={isModalVisible}
+          onOpenChange={setIsModalVisible}
+          repositionInputs={false}
+        >
           <VaulDrawer.Portal>
             <VaulOverlay />
             <VaulContent>
@@ -1391,38 +1453,40 @@ const Reviews = ({
                   <SortLabel>Sort</SortLabel>
                   <SortChip
                     type="button"
-                    data-active={modalSort === "recent"}
-                    onClick={() => setModalSort("recent")}
+                    $active={modalSort === "recent"}
+                    onClick={() => handleSortChange("recent")}
                   >
                     Most recent
                   </SortChip>
                   <SortChip
                     type="button"
-                    data-active={modalSort === "high"}
-                    onClick={() => setModalSort("high")}
+                    $active={modalSort === "high"}
+                    onClick={() => handleSortChange("high")}
                   >
                     Highest rated
                   </SortChip>
                   <SortChip
                     type="button"
-                    data-active={modalSort === "low"}
-                    onClick={() => setModalSort("low")}
+                    $active={modalSort === "low"}
+                    onClick={() => handleSortChange("low")}
                   >
                     Lowest rated
                   </SortChip>
                 </ModalToolbar>
-                {sortedModalReviews.map((review, index) => (
-                  <Fragment key={`${String(review.id)}-${index}`}>
-                    {renderReviewContent(review, index, true)}
-                  </Fragment>
-                ))}
-                {loadingMore && (
-                  <div style={{ padding: "0 0 20px 0" }}>
-                    <ReviewSkeletonLoader />
-                    <ReviewSkeletonLoader />
-                  </div>
-                )}
-                {!loadingMore && modalHasMore && <div style={{ height: 50 }} />}
+                <VaulScroll ref={modalListRef}>
+                  {displayModalReviews.map((review, index) => (
+                    <Fragment key={`${String(review.id)}-${index}`}>
+                      {renderReviewContent(review, index, true)}
+                    </Fragment>
+                  ))}
+                  {loadingMore && (
+                    <div style={{ padding: "0 0 20px 0" }}>
+                      <ReviewSkeletonLoader />
+                      <ReviewSkeletonLoader />
+                    </div>
+                  )}
+                  {!loadingMore && modalHasMore && <div style={{ height: 50 }} />}
+                </VaulScroll>
               </VaulBody>
             </VaulContent>
           </VaulDrawer.Portal>

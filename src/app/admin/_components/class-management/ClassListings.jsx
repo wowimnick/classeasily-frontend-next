@@ -32,6 +32,7 @@ import {
   Popconfirm,
   Badge,
   Alert,
+  Switch,
 } from "antd";
 import {
   Search,
@@ -58,6 +59,7 @@ import {
   Briefcase,
   DollarSign,
   Plus,
+  EyeOff,
 } from "lucide-react";
 import { classManagementService, userAdminService } from "@/services/adminDash";
 import { applyImpersonationSession } from "@/lib/auth-client";
@@ -1046,6 +1048,19 @@ export default function ClassListings() {
   const [classStats, setClassStats] = useState({});
   /** Include in schedule warning list (hidden by default): 'inactive' | 'suspended' | 'inactiveBiz' */
   const [scheduleWarningInclude, setScheduleWarningInclude] = useState([]);
+  /** Server-side runway bucket for schedule warnings */
+  const [scheduleRunwayBucket, setScheduleRunwayBucket] = useState("all");
+  /** When true, API returns ignored warnings (shown greyed out) */
+  const [showIgnoredScheduleWarnings, setShowIgnoredScheduleWarnings] =
+    useState(false);
+
+  const scheduleAnalyticsParams = useMemo(
+    () => ({
+      runway_bucket: scheduleRunwayBucket,
+      include_ignored: showIgnoredScheduleWarnings,
+    }),
+    [scheduleRunwayBucket, showIgnoredScheduleWarnings],
+  );
   const filteredScheduleWarnings = useMemo(() => {
     const raw = classStats.classesWithLowSchedules ?? [];
     const include = new Set(
@@ -1172,13 +1187,16 @@ export default function ClassListings() {
     debouncedFetch,
   ]);
 
-  const fetchStats = useCallback(() => {
-    setStatsLoading(true);
-    classManagementService
-      .getClassAnalytics()
-      .then((res) => res.success && setClassStats(res.data || {}))
-      .finally(() => setStatsLoading(false));
-  }, []);
+  const fetchStats = useCallback(
+    (analyticsParams = scheduleAnalyticsParams) => {
+      setStatsLoading(true);
+      classManagementService
+        .getClassAnalytics(analyticsParams)
+        .then((res) => res.success && setClassStats(res.data || {}))
+        .finally(() => setStatsLoading(false));
+    },
+    [scheduleAnalyticsParams],
+  );
 
   const fetchCollections = useCallback(async () => {
     const res = await classManagementService.getCollections();
@@ -1188,9 +1206,12 @@ export default function ClassListings() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(scheduleAnalyticsParams);
+  }, [fetchStats, scheduleAnalyticsParams]);
+
+  useEffect(() => {
     fetchCollections();
-  }, [fetchStats, fetchCollections]);
+  }, [fetchCollections]);
 
   const handleTableChange = (newPagination, filters, sorter) => {
     const singleSorter = Array.isArray(sorter) ? sorter[0] : sorter;
@@ -1406,8 +1427,50 @@ export default function ClassListings() {
 
   const refreshData = () => {
     fetchClasses(filterParams, { ...pagination, current: 1 }, sortedInfo);
-    fetchStats();
+    fetchStats(scheduleAnalyticsParams);
     fetchCollections();
+  };
+
+  const handleIgnoreScheduleWarning = async (classId) => {
+    const res = await classManagementService.ignoreScheduleWarning(classId);
+    if (!res.success) {
+      message.error(res.error || "Failed to ignore warning");
+      return;
+    }
+    const key = `schedule-ignore-${classId}`;
+    message.success({
+      content: (
+        <span>
+          Warning hidden.{" "}
+          <Button
+            type="link"
+            size="small"
+            style={{ padding: 0, height: "auto" }}
+            onClick={async () => {
+              message.destroy(key);
+              await handleUnignoreScheduleWarning(classId, { silent: true });
+            }}
+          >
+            Undo
+          </Button>
+        </span>
+      ),
+      key,
+      duration: 5,
+    });
+    fetchStats(scheduleAnalyticsParams);
+  };
+
+  const handleUnignoreScheduleWarning = async (classId, { silent } = {}) => {
+    const res = await classManagementService.unignoreScheduleWarning(classId);
+    if (!res.success) {
+      message.error(res.error || "Failed to restore warning");
+      return;
+    }
+    if (!silent) {
+      message.success("Warning restored");
+    }
+    fetchStats(scheduleAnalyticsParams);
   };
 
   const handleLoginAsOwner = async (ownerId) => {
@@ -1920,22 +1983,51 @@ export default function ClassListings() {
               </Text>
             </div>
           </Space>
-          <Tooltip title="Show rows that are hidden by default (does not change data).">
+          <Space size={8} wrap style={{ justifyContent: "flex-end" }}>
             <Select
-              mode="multiple"
-              allowClear
               size="small"
-              placeholder="Include…"
-              style={{ minWidth: 160, maxWidth: 320 }}
-              value={scheduleWarningInclude}
-              onChange={(v) => setScheduleWarningInclude(v)}
+              value={scheduleRunwayBucket}
+              onChange={setScheduleRunwayBucket}
+              style={{ minWidth: 180 }}
               options={[
-                { value: "inactive", label: "Inactive class" },
-                { value: "suspended", label: "Suspended" },
-                { value: "inactiveBiz", label: "Inactive business" },
+                { value: "all", label: "All warnings" },
+                { value: "expired", label: "Expired" },
+                { value: "7d", label: "Expiring in 7 days" },
+                { value: "14d", label: "Expiring in 14 days" },
+                { value: "30d", label: "Expiring in 30 days" },
+                { value: "60d", label: "Expiring in 60 days" },
+                { value: "none", label: "No upcoming sessions" },
               ]}
             />
-          </Tooltip>
+            <Tooltip title="Include warnings you previously ignored">
+              <Space size={6}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Show ignored
+                </Text>
+                <Switch
+                  size="small"
+                  checked={showIgnoredScheduleWarnings}
+                  onChange={setShowIgnoredScheduleWarnings}
+                />
+              </Space>
+            </Tooltip>
+            <Tooltip title="Show rows that are hidden by default (does not change data).">
+              <Select
+                mode="multiple"
+                allowClear
+                size="small"
+                placeholder="Include…"
+                style={{ minWidth: 160, maxWidth: 320 }}
+                value={scheduleWarningInclude}
+                onChange={(v) => setScheduleWarningInclude(v)}
+                options={[
+                  { value: "inactive", label: "Inactive class" },
+                  { value: "suspended", label: "Suspended" },
+                  { value: "inactiveBiz", label: "Inactive business" },
+                ]}
+              />
+            </Tooltip>
+          </Space>
         </div>
 
         {filteredScheduleWarnings.length === 0 ? (
@@ -1956,6 +2048,8 @@ export default function ClassListings() {
               style: { marginBottom: 0 },
             }}
             renderItem={(item) => {
+              const classId = item.classId ?? item.class_id;
+              const isIgnored = Boolean(item.ignored);
               const endIso =
                 item.furthestScheduledSessionDate ??
                 item.lastScheduleDate ??
@@ -1974,9 +2068,37 @@ export default function ClassListings() {
 
               return (
                 <List.Item
-                  key={item.classId ?? item.class_id}
-                  style={{ padding: "10px 0", gap: 8 }}
+                  key={classId}
+                  style={{
+                    padding: "10px 0",
+                    gap: 8,
+                    opacity: isIgnored ? 0.55 : 1,
+                  }}
                   actions={[
+                    isIgnored ? (
+                      <Button
+                        key="unignore"
+                        type="link"
+                        size="small"
+                        onClick={() => handleUnignoreScheduleWarning(classId)}
+                        style={{ paddingInline: 4 }}
+                      >
+                        Un-ignore
+                      </Button>
+                    ) : (
+                      <Tooltip key="ignore-tip" title="Hide this warning for your account">
+                        <Button
+                          key="ignore"
+                          type="link"
+                          size="small"
+                          icon={<EyeOff size={14} />}
+                          onClick={() => handleIgnoreScheduleWarning(classId)}
+                          style={{ paddingInline: 4 }}
+                        >
+                          Ignore
+                        </Button>
+                      </Tooltip>
+                    ),
                     <Button
                       key="schedules"
                       type="link"
@@ -1993,7 +2115,7 @@ export default function ClassListings() {
                       size="small"
                       onClick={() =>
                         showClassDetails({
-                          classId: item.classId ?? item.class_id,
+                          classId,
                           title: item.title,
                         })
                       }
@@ -2021,6 +2143,7 @@ export default function ClassListings() {
                         <Text strong style={{ fontSize: 14 }}>
                           {item.title}
                         </Text>
+                        {isIgnored ? <Tag>Ignored</Tag> : null}
                         {scheduleWarningStatusTag(item.status)}
                         {!bizOn ? <Tag color="volcano">Biz off</Tag> : null}
                       </Space>

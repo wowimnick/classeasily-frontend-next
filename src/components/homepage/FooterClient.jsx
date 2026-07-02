@@ -409,6 +409,7 @@ export default function FooterClient({ collections = [] }) {
               <NavTitle>ClassEasily</NavTitle>
               <NavList>
                 <li><NavLink href="/blog">Our Blog</NavLink></li>
+                <li><NavLink href="/reviews">Reviews</NavLink></li>
                 <li><NavLink href="/explore">Explore Classes</NavLink></li>
                 <li><NavLink href="/content-policy">Content Policy</NavLink></li>
               </NavList>

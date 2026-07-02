@@ -17,6 +17,7 @@ import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useMediaQuery } from "@/styles/breakpoints-hooks";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import message from "@/lib/message";
 import posthog from "posthog-js";
 import dayjs from "dayjs";
@@ -278,19 +279,12 @@ const BookingModal = ({
         business_name: classData?.business_name,
         has_multiple_options: hasMultipleOptions,
       });
+    } else {
+      setIsVisible(false);
     }
   }, [isOpen, classData, hasMultipleOptions]);
 
-  useEffect(() => {
-    if (isVisible) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isVisible]);
+  useBodyScrollLock(isVisible);
 
   const effectiveInitialParticipants = useMemo(() => {
     if (typeof window !== "undefined" && isOpen) {

@@ -163,6 +163,8 @@ export const API_ENDPOINTS = {
   REVIEWS_SUBMIT: "/reviews/submit/",
   /** Gemini-selected Google reviews for the homepage hero strip. */
   HOMEPAGE_FEATURED_REVIEWS: "/homepage/featured-reviews/",
+  /** Recent good Google reviews across the platform (public marketing page). */
+  REVIEWS_RECENT: "/reviews/recent/",
 
   // Payments
   PAYMENTS_CREATE_INTENT: "/payments/create-payment-intent/",
@@ -2368,12 +2370,17 @@ export const classService = {
     }
   },
 
-  fetchClassReviewsPaginated: async (classId, page = 1, pageSize = 10) => {
+  fetchClassReviewsPaginated: async (
+    classId,
+    page = 1,
+    pageSize = 10,
+    { sort = "recent" } = {},
+  ) => {
     try {
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.PUBLIC_CLASSES}${classId}/reviews/`,
         {
-          params: { page, page_size: pageSize },
+          params: { page, page_size: pageSize, sort },
         },
       );
       return {
@@ -4537,6 +4544,50 @@ export const homepageService = {
         error.response?.data || error,
       );
       return { success: false, reviews: [] };
+    }
+  },
+};
+
+/**
+ * Public platform reviews page (Google reviews, rating >= 4).
+ */
+export const reviewsService = {
+  fetchRecent: async (
+    page = 1,
+    pageSize = 12,
+    { ratingMin = 4, sort = "newest" } = {},
+  ) => {
+    try {
+      const params = {
+        page,
+        page_size: pageSize,
+        rating_min: ratingMin,
+        sort,
+      };
+      const response = await axiosInstance.get(API_ENDPOINTS.REVIEWS_RECENT, {
+        params,
+      });
+      const data = response.data;
+      const results = data.results ?? data ?? [];
+      return {
+        success: true,
+        results: Array.isArray(results) ? results : [],
+        count: data.count ?? results.length,
+        next: data.next ?? null,
+        previous: data.previous ?? null,
+      };
+    } catch (error) {
+      console.error(
+        "Error fetching recent reviews:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        results: [],
+        count: 0,
+        next: null,
+        previous: null,
+      };
     }
   },
 };

@@ -1937,11 +1937,33 @@ export const classManagementService = {
 
   /**
    * Get class analytics
+   * @param {Object} params - Optional filters (runway_bucket, include_ignored, status, business_active)
    */
-  getClassAnalytics: async () => {
+  getClassAnalytics: async (params = {}) => {
     try {
-      // Use the new admin endpoint
-      const response = await axiosInstance.get("/admin/classes/analytics/");
+      const queryParams = new URLSearchParams();
+      if (params.runway_bucket) {
+        queryParams.append("runway_bucket", params.runway_bucket);
+      }
+      if (params.include_ignored != null) {
+        queryParams.append(
+          "include_ignored",
+          params.include_ignored ? "true" : "false",
+        );
+      }
+      if (params.status) queryParams.append("status", params.status);
+      if (params.business_active != null) {
+        queryParams.append(
+          "business_active",
+          params.business_active ? "true" : "false",
+        );
+      }
+
+      const qs = queryParams.toString();
+      const endpoint = qs
+        ? `/admin/classes/analytics/?${qs}`
+        : "/admin/classes/analytics/";
+      const response = await axiosInstance.get(endpoint);
 
       return {
         success: true,
@@ -1952,6 +1974,46 @@ export const classManagementService = {
       return {
         success: false,
         error: error.response?.data?.error || "Failed to fetch class analytics",
+      };
+    }
+  },
+
+  /**
+   * Hide a schedule warning for the current admin user.
+   * @param {string|number} classId
+   */
+  ignoreScheduleWarning: async (classId) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/classes/${classId}/ignore-schedule-warning/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error ignoring schedule warning for ${classId}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to ignore schedule warning",
+      };
+    }
+  },
+
+  /**
+   * Restore a previously ignored schedule warning for the current admin user.
+   * @param {string|number} classId
+   */
+  unignoreScheduleWarning: async (classId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/admin/classes/${classId}/ignore-schedule-warning/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error un-ignoring schedule warning for ${classId}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to un-ignore schedule warning",
       };
     }
   },
