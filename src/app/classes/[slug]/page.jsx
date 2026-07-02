@@ -1,6 +1,8 @@
 import React from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
+import { cacheLife } from "next/cache";
+import { connection } from "next/server";
 
 import {
   fetchClassDetail,
@@ -122,6 +124,53 @@ export async function generateStaticParams() {
   }
 }
 
+const FALLBACK_CLASS_METADATA = {
+  title: "Experience Details | ClassEasily",
+  description:
+    "View details and book this experience for your next date night or friend gathering on ClassEasily.",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+};
+
+const NOT_FOUND_CLASS_METADATA = {
+  title: "Experience Not Found | ClassEasily",
+  description: "The experience you're looking for could not be found.",
+  robots: { index: false, follow: false },
+};
+
+async function fetchClassMetadataContext(slug) {
+  if (!slug || slug === "__build_placeholder") {
+    return null;
+  }
+
+  const classResult = await fetchClassDetail(slug);
+  if (!classResult.success || !classResult.data) {
+    return null;
+  }
+
+  const classData = classResult.data;
+  const businessFetchResult = classData.business_slug
+    ? await fetchBusinessDetail(classData.business_slug)
+    : { success: false, data: null };
+
+  return {
+    classData,
+    businessData:
+      businessFetchResult.success && businessFetchResult.data
+        ? businessFetchResult.data
+        : null,
+  };
+}
+
 // Fetch class data with proper tagged business fetch (fetch helpers swallow errors; no try/catch around notFound())
 async function getClassData(slug) {
   if (!slug) {
@@ -167,72 +216,78 @@ async function getClassData(slug) {
 }
 
 export async function generateMetadata({ params }) {
-  const resolvedParams = await params;
-  const { classData, businessData } = await getClassData(resolvedParams.slug);
+  "use cache";
+  cacheLife("classDetail");
 
-  if (
-    classData?.slug &&
-    resolvedParams.slug &&
-    resolvedParams.slug !== classData.slug
-  ) {
-    permanentRedirect(`/classes/${classData.slug}`);
-  }
+  try {
+    const resolvedParams = await params;
+    const context = await fetchClassMetadataContext(resolvedParams.slug);
 
-  const site = getSiteUrl();
-  const pageTitle = classData?.title
-    ? `${String(classData.title)} | ClassEasily`
-    : "Experience Details | ClassEasily";
-  const pageDescription =
-    safeTextSnippet(classData?.description, 160) ||
-    "View details and book this experience for your next date night or friend gathering on ClassEasily.";
-  const canonicalUrl = `${site}/classes/${classData.slug}`;
-  const imageUrl =
-    classData.images?.length > 0
-      ? classData.images[0].medium_url || classData.images[0].original_url
-      : `${site}/placeholder-image.jpg`;
+    if (!context) {
+      return NOT_FOUND_CLASS_METADATA;
+    }
 
-  return {
-    title: pageTitle,
-    description: pageDescription,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
+    const { classData, businessData } = context;
+    const site = getSiteUrl();
+    const canonicalSlug = classData.slug || resolvedParams.slug;
+    const pageTitle = classData?.title
+      ? `${String(classData.title)} | ClassEasily`
+      : "Experience Details | ClassEasily";
+    const pageDescription =
+      safeTextSnippet(classData?.description, 160) ||
+      "View details and book this experience for your next date night or friend gathering on ClassEasily.";
+    const canonicalUrl = `${site}/classes/${canonicalSlug}`;
+    const imageUrl =
+      classData.images?.length > 0
+        ? classData.images[0].medium_url || classData.images[0].original_url
+        : `${site}/placeholder-image.jpg`;
+
+    return {
       title: pageTitle,
       description: pageDescription,
-      url: canonicalUrl,
-      siteName: "ClassEasily",
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt:
-            classData?.title != null
-              ? String(classData.title)
-              : "Class experience",
-        },
-      ],
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: pageTitle,
-      description: pageDescription,
-      images: [imageUrl],
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
+      alternates: {
+        canonical: canonicalUrl,
+      },
+      openGraph: {
+        title: pageTitle,
+        description: pageDescription,
+        url: canonicalUrl,
+        siteName: "ClassEasily",
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt:
+              classData?.title != null
+                ? String(classData.title)
+                : "Class experience",
+          },
+        ],
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: pageTitle,
+        description: pageDescription,
+        images: [imageUrl],
+      },
+      robots: {
         index: true,
         follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
       },
-    },
-  };
+    };
+  } catch (error) {
+    console.error("Critical error in class generateMetadata:", error);
+    return FALLBACK_CLASS_METADATA;
+  }
 }
 
 // Build Course JSON-LD for <script type="application/ld+json"> (must not be in metadata.other)
@@ -366,6 +421,7 @@ function buildBreadcrumbSchema(classData) {
 }
 
 export default async function ClassPage({ params }) {
+  await connection();
   const resolvedParams = await params;
   const { classData, businessData, initialReviews } = await getClassData(
     resolvedParams.slug,
