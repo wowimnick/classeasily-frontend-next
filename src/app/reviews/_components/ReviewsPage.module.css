@@ -48,21 +48,23 @@
 }
 
 .ctaSection {
-  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  color: #fff;
+  background: #ffffff;
+  color: #111827;
   text-align: center;
   padding: 3rem 1.25rem;
   margin-top: 2rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .ctaTitle {
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 700;
   margin: 0 0 0.5rem;
+  color: #111827;
 }
 
 .ctaSubtitle {
-  color: #d1d5db;
+  color: #6b7280;
   margin: 0 0 1.5rem;
   font-size: 1rem;
 }

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import { Empty, Pagination, Radio, Select, Spin } from "antd";
+import { Empty, Pagination, Spin } from "antd";
 import { Star, ShieldCheck } from "lucide-react";
 import { reviewsService } from "@/services/apiService";
+import { useMediaQuery } from "@/styles/breakpoints-hooks";
 import ReviewCard from "./ReviewCard";
 import styles from "./ReviewsPage.module.css";
 
@@ -18,14 +19,21 @@ const PageShell = styled.main`
   padding: 0 1.25rem 3rem;
 `;
 
+const StatsStripWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: -1.25rem 0 2rem;
+  position: relative;
+  z-index: 1;
+`;
+
 const StatsStrip = styled.section`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin: -1.25rem auto 2rem;
+  width: 100%;
   max-width: 900px;
-  position: relative;
-  z-index: 1;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -73,31 +81,18 @@ const DistSegment = styled.div`
   min-width: ${(p) => (p.$pct > 0 ? "4px" : "0")};
 `;
 
-const FilterBar = styled.div`
+const Masonry = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 1.5rem;
-  padding: 14px 16px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  align-items: flex-start;
+  gap: 16px;
 `;
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
+const MasonryColumn = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
 `;
 
 const PaginationWrap = styled.div`
@@ -105,6 +100,28 @@ const PaginationWrap = styled.div`
   justify-content: center;
   margin-top: 2rem;
 `;
+
+/** Greedy multi-column balance so masonry columns stay close in height. */
+function distributeReviewsToColumns(reviews, columnCount) {
+  if (!reviews?.length) return [];
+  if (columnCount <= 1) return [reviews];
+  const cols = Array.from({ length: columnCount }, () => []);
+  const sums = Array(columnCount).fill(0);
+  const weight = (r) => {
+    const text = String(r?.comment || r?.text || "").length;
+    const imgs = Array.isArray(r?.image_urls) ? r.image_urls.length : 0;
+    return 40 + Math.min(text, 1200) / 6 + imgs * 80;
+  };
+  reviews.forEach((r) => {
+    let j = 0;
+    for (let k = 1; k < columnCount; k += 1) {
+      if (sums[k] < sums[j]) j = k;
+    }
+    cols[j].push(r);
+    sums[j] += weight(r);
+  });
+  return cols;
+}
 
 function computeStats(reviews, totalCount) {
   if (!reviews?.length) {
@@ -130,35 +147,29 @@ function computeStats(reviews, totalCount) {
 export default function ReviewsPageClient({ initialData }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isTabletUp = useMediaQuery("(min-width: 640px)");
+  const isDesktopUp = useMediaQuery("(min-width: 1024px)");
+
+  const columnCount = isDesktopUp ? 3 : isTabletUp ? 2 : 1;
 
   const initialPage = Number(searchParams.get("page")) || 1;
   const [page, setPage] = useState(initialPage);
-  const [ratingMin, setRatingMin] = useState(4);
-  const [sort, setSort] = useState("newest");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(initialData);
 
-  const fetchReviews = useCallback(async (nextPage, nextRatingMin, nextSort) => {
+  const fetchReviews = useCallback(async (nextPage) => {
     setLoading(true);
-    const res = await reviewsService.fetchRecent(nextPage, PAGE_SIZE, {
-      ratingMin: nextRatingMin,
-      sort: nextSort,
-    });
+    const res = await reviewsService.fetchRecent(nextPage, PAGE_SIZE);
     setData(res);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (
-      page === 1 &&
-      ratingMin === 4 &&
-      sort === "newest" &&
-      initialData?.success
-    ) {
+    if (page === 1 && initialData?.success) {
       return;
     }
-    fetchReviews(page, ratingMin, sort);
-  }, [page, ratingMin, sort, fetchReviews, initialData?.success]);
+    fetchReviews(page);
+  }, [page, fetchReviews, initialData?.success]);
 
   const updatePage = (nextPage) => {
     setPage(nextPage);
@@ -173,24 +184,16 @@ export default function ReviewsPageClient({ initialData }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRatingFilter = (value) => {
-    const min = value === "5" ? 5 : 4;
-    setRatingMin(min);
-    setPage(1);
-    router.replace("/reviews", { scroll: false });
-  };
-
-  const handleSortChange = (value) => {
-    setSort(value);
-    setPage(1);
-    router.replace("/reviews", { scroll: false });
-  };
-
   const reviews = data?.results ?? [];
   const total = data?.count ?? 0;
   const stats = useMemo(
     () => computeStats(reviews, total),
     [reviews, total],
+  );
+
+  const masonryColumns = useMemo(
+    () => distributeReviewsToColumns(reviews, columnCount),
+    [reviews, columnCount],
   );
 
   return (
@@ -212,73 +215,64 @@ export default function ReviewsPageClient({ initialData }) {
       </section>
 
       <PageShell>
-        <StatsStrip aria-label="Review statistics">
-          <StatCard>
-            <StatValue>
-              <Star size={20} fill="#f59e0b" stroke="#f59e0b" aria-hidden />
-              {stats.avgRating > 0 ? stats.avgRating.toFixed(1) : "—"}
-            </StatValue>
-            <StatLabel>Average rating (this page)</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{stats.count.toLocaleString()}</StatValue>
-            <StatLabel>Google reviews shown</StatLabel>
-            {reviews.length > 0 ? (
-              <DistributionBar aria-hidden>
-                <DistSegment $pct={stats.fivePct} $color="#f59e0b" />
-                <DistSegment $pct={stats.fourPct} $color="#fcd34d" />
-              </DistributionBar>
-            ) : null}
-          </StatCard>
-          <StatCard>
-            <StatValue>
-              <ShieldCheck size={22} color="#16a34a" aria-hidden />
-            </StatValue>
-            <StatLabel>Verified Google reviews</StatLabel>
-          </StatCard>
-        </StatsStrip>
-
-        <FilterBar>
-          <Radio.Group
-            value={ratingMin === 5 ? "5" : "4"}
-            onChange={(e) => handleRatingFilter(e.target.value)}
-            optionType="button"
-            buttonStyle="solid"
-            size="middle"
-          >
-            <Radio.Button value="4">All good (4★+)</Radio.Button>
-            <Radio.Button value="5">5★ only</Radio.Button>
-          </Radio.Group>
-
-          <Select
-            value={sort}
-            onChange={handleSortChange}
-            style={{ minWidth: 160 }}
-            options={[
-              { value: "newest", label: "Newest" },
-              { value: "highest", label: "Highest rated" },
-            ]}
-          />
-        </FilterBar>
+        <StatsStripWrap>
+          <StatsStrip aria-label="Review statistics">
+            <StatCard>
+              <StatValue>
+                <Star size={20} fill="#f59e0b" stroke="#f59e0b" aria-hidden />
+                {stats.avgRating > 0 ? stats.avgRating.toFixed(1) : "—"}
+              </StatValue>
+              <StatLabel>Average rating (this page)</StatLabel>
+            </StatCard>
+            <StatCard>
+              <StatValue>{stats.count.toLocaleString()}</StatValue>
+              <StatLabel>Google reviews shown</StatLabel>
+              {reviews.length > 0 ? (
+                <DistributionBar aria-hidden>
+                  <DistSegment $pct={stats.fivePct} $color="#f59e0b" />
+                  <DistSegment $pct={stats.fourPct} $color="#fcd34d" />
+                </DistributionBar>
+              ) : null}
+            </StatCard>
+            <StatCard>
+              <StatValue>
+                <ShieldCheck size={22} color="#16a34a" aria-hidden />
+              </StatValue>
+              <StatLabel>Verified Google reviews</StatLabel>
+            </StatCard>
+          </StatsStrip>
+        </StatsStripWrap>
 
         <Spin spinning={loading}>
           {reviews.length === 0 && !loading ? (
             <Empty
-              description="No reviews match these filters yet."
+              description="No reviews yet."
               style={{ padding: "3rem 0" }}
             >
               <Link href="/explore">Browse classes</Link>
             </Empty>
           ) : (
-            <Grid>
-              {reviews.map((review, i) => (
-                <ReviewCard
-                  key={review.id ?? `${review.reviewer_name}-${i}`}
-                  review={review}
-                  index={i}
-                />
+            <Masonry>
+              {masonryColumns.map((column, colIndex) => (
+                <MasonryColumn key={`col-${colIndex}`}>
+                  {column.map((review, i) => {
+                    const globalIndex =
+                      colIndex === 0
+                        ? i
+                        : masonryColumns
+                            .slice(0, colIndex)
+                            .reduce((acc, c) => acc + c.length, 0) + i;
+                    return (
+                      <ReviewCard
+                        key={review.id ?? `${review.reviewer_name}-${globalIndex}`}
+                        review={review}
+                        index={globalIndex}
+                      />
+                    );
+                  })}
+                </MasonryColumn>
               ))}
-            </Grid>
+            </Masonry>
           )}
         </Spin>
 

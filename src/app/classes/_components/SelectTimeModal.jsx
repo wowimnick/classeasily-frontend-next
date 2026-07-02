@@ -21,6 +21,7 @@ import {
   formatTimeRangeForDisplay,
 } from "@/services/utils";
 import { formatMoneyCompact } from "@/lib/seo";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 const INITIAL_SECTIONS = 3;
 const SECTIONS_PER_LOAD = 2;
@@ -588,6 +589,8 @@ export default function SelectTimeModal({
   const sentinelRef = useRef(null);
   const prevOpenRef = useRef(false);
   const scrollTargetRef = useRef(null);
+
+  useBodyScrollLock(open);
 
   const sortedDateStrs = useMemo(() => {
     if (!availableSlots || typeof availableSlots !== "object") return [];
