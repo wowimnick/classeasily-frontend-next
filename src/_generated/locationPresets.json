@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-03T00:33:28.823Z",
-  "count": 3,
+  "generatedAt": "2026-07-02T02:21:03.492Z",
+  "count": 1,
   "presets": [
     {
       "name": "Toronto",
@@ -11,34 +11,9 @@
         "lng": -79.3832
       },
       "provinceSlug": "ontario",
-      "citySlug": "toronto",
-      "classCount": 10
-    },
-    {
-      "name": "Aurora",
-      "displayName": "Aurora, ON",
-      "description": "York Region",
-      "coords": {
-        "lat": 44.0056,
-        "lng": -79.4663
-      },
-      "provinceSlug": "ontario",
-      "citySlug": "aurora",
-      "classCount": 4
-    },
-    {
-      "name": "Richmond Hill",
-      "displayName": "Richmond Hill, ON",
-      "description": "York Region",
-      "coords": {
-        "lat": 43.8828,
-        "lng": -79.4403
-      },
-      "provinceSlug": "ontario",
-      "citySlug": "richmond-hill",
-      "classCount": 4
+      "citySlug": "toronto"
     }
   ],
-  "source": "api",
-  "apiBaseUrl": "http://localhost:8000/api"
+  "source": "fallback",
+  "reason": "missing_api_base_url"
 }

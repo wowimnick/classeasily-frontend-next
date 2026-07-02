@@ -181,7 +181,11 @@ function buildReviewsJsonLd(initialData, page = 1) {
   ];
 }
 
-export default async function ReviewsPage({ searchParams }) {
+/**
+ * Inner async component + Suspense: required with cacheComponents so awaiting
+ * searchParams does not block the route shell (see blocking-route docs).
+ */
+async function ReviewsPageContent({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp?.page) || 1);
   const initialData = await fetchRecentReviews(page, 12);
@@ -196,11 +200,21 @@ export default async function ReviewsPage({ searchParams }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }}
         />
       ))}
-      <ExploreHeader showOptionsWrapper={false} />
-      <ReviewsHero />
       <ReviewsCrawlableList reviews={initialData?.results ?? []} />
       <Suspense fallback={null}>
         <ReviewsPageClient initialData={initialData} initialPage={page} />
+      </Suspense>
+    </>
+  );
+}
+
+export default function ReviewsPage({ searchParams }) {
+  return (
+    <>
+      <ExploreHeader showOptionsWrapper={false} />
+      <ReviewsHero />
+      <Suspense fallback={null}>
+        <ReviewsPageContent searchParams={searchParams} />
       </Suspense>
       <Footer />
     </>

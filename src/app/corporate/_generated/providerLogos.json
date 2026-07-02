@@ -1,68 +1,40 @@
 {
-  "generatedAt": "2026-06-03T00:33:26.528Z",
+  "generatedAt": "2026-07-02T02:21:03.447Z",
   "count": 8,
   "logos": [
     {
-      "name": "Sample Business 55",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/a33afb91-1875-44a0-8cb2-29dd6f90b6bd-sig.webp",
-      "reviewCount": 1,
-      "slug": "sample-business-3",
-      "activePublicClassCount": 5
+      "name": "Google",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/google.svg"
     },
     {
-      "name": "Shaken & Stirred Cocktail Academy",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Cocktail_Making_Logo.webp",
-      "reviewCount": 1,
-      "slug": "shaken-stirred-cocktail-academy",
-      "activePublicClassCount": 1
+      "name": "Spotify",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/spotify.svg"
     },
     {
-      "name": "Frame & Form Studio",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Frame_Form_Logo.webp",
-      "reviewCount": 0,
-      "slug": "frame-form-studio",
-      "activePublicClassCount": 2
+      "name": "Slack",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/slack.svg"
     },
     {
-      "name": "Glow & Glass Studio",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Facebook_Header.webp",
-      "reviewCount": 0,
-      "slug": "glow-glass-studio",
-      "activePublicClassCount": 2
+      "name": "Shopify",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/shopify.svg"
     },
     {
-      "name": "Mud & Muse Pottery",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Pottery_Mock_B_Logo.webp",
-      "reviewCount": 0,
-      "slug": "mud-muse-pottery",
-      "activePublicClassCount": 2
+      "name": "Notion",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/notion.svg"
     },
     {
-      "name": "Palette & Pour Studio",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Annies_painting_school_logo.webp",
-      "reviewCount": 0,
-      "slug": "palette-pour-studio",
-      "activePublicClassCount": 2
+      "name": "Airbnb",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/airbnb.svg"
     },
     {
-      "name": "Wax & Wane Studio",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/WaxWane_Logo.webp",
-      "reviewCount": 0,
-      "slug": "wax-wane-studio",
-      "activePublicClassCount": 5
+      "name": "Adobe",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/adobe.svg"
     },
     {
-      "name": "Yummy Food Studio",
-      "logo": "https://d2mzhwd15ea85i.cloudfront.net/public/medium/business_images/Delicious-food-yummy-logo-by-yahyaanasatokillah.webp",
-      "reviewCount": 0,
-      "slug": "yummy-food-studio",
-      "activePublicClassCount": 3
+      "name": "Zoom",
+      "logo": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/zoom.svg"
     }
   ],
-  "source": "api",
-  "apiBaseUrl": "http://localhost:8000/api",
-  "fetchedBusinesses": 11,
-  "detailConcurrency": 8,
-  "maxDetailChecks": 300,
-  "limit": 120
+  "source": "fallback",
+  "reason": "missing_api_base_url"
 }
