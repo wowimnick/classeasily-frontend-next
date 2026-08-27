@@ -1,9 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import dynamic from "next/dynamic";
 import { marketingTheme as t, SUPPORT_EMAIL, REGISTER_HREF, PRICING_HREF } from "./tokens";
+import CopyrightYear from "./CopyrightYear";
 
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
@@ -212,7 +214,13 @@ export default function MarketingFooter() {
           </div>
         </Top>
         <Bottom>
-          <span>© {new Date().getFullYear()} ClassEasily. All rights reserved.</span>
+          <span>
+            ©{" "}
+            <Suspense fallback={2026}>
+              <CopyrightYear />
+            </Suspense>{" "}
+            ClassEasily. All rights reserved.
+          </span>
           <Legal>
             <A href="/copyright-policy">Copyright</A>
             <A href="/content-policy">Content policy</A>
