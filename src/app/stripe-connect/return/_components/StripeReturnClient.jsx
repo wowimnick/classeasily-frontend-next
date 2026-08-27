@@ -34,6 +34,10 @@ function StripeReturnClientContent() {
     });
 
     if (stripeReturn === "true" || stripeRefresh === "true") {
+      if (originalIntent === "onboarding") {
+        router.replace("/business/register?step=preview");
+        return;
+      }
       if (originalIntent === "dashboard_settings") {
         sessionStorage.setItem("forceOpenSettingsTab", "preferences");
         localStorage.setItem(

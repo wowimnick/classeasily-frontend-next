@@ -1,7 +1,4 @@
-// app/not-found.jsx
-import { Suspense } from "react";
-import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 
 export const metadata = {
   title: "404 - Page Not Found",
@@ -10,15 +7,11 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <ExploreHeader />
-
+    <MarketingChrome>
       <main
         style={{
           flex: 1,
-          padding: "10rem 1.5rem",
+          padding: "6rem 1.5rem",
           backgroundColor: "white",
           display: "flex",
           alignItems: "center",
@@ -45,7 +38,6 @@ export default function NotFound() {
             }}
             aria-hidden
           >
-            {/* Use public SVG so it works in both dev and production build (no SVGR in prod) */}
             <img
               src="/404.svg"
               alt=""
@@ -96,10 +88,6 @@ export default function NotFound() {
           </div>
         </div>
       </main>
-
-      <Suspense>
-        <Footer />
-      </Suspense>
-    </div>
+    </MarketingChrome>
   );
 }

@@ -7,7 +7,7 @@ export function OrganizationSchema() {
     url: "https://classeasily.com",
     logo: "https://i.imgur.com/biTTckW.png",
     description:
-      "ClassEasily is a platform designed to help find the best experiences and activities in the area. We offer a wide range of options, from workshops to fun and engaging events, all tailored to make your time enjoyable and memorable. Whether you're looking for a fun activity to do with friends or family, or just want to explore new experiences, ClassEasily has got you covered.",
+      "ClassEasily is booking and CRM software for small businesses. Embed a widget on your website and manage bookings, capacity, payments, and customers.",
     sameAs: [
       "https://www.facebook.com/p/ClassEasily-61577902526917/",
       "https://twitter.com/classeasily",
@@ -33,15 +33,6 @@ export function WebsiteSchema() {
     "@type": "WebSite",
     name: "ClassEasily",
     url: "https://classeasily.com",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate:
-          "https://classeasily.com/explore?keyword={search_term_string}",
-      },
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return (

@@ -13,22 +13,18 @@ import { Suspense } from "react";
 export const metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "ClassEasily - Discover Fun Local Experiences",
+    default: "ClassEasily — Booking and CRM for small businesses",
     template: "%s | ClassEasily",
   },
   description:
-    "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
+    "Easy to set up, priced for small teams, without the bloat of enterprise tools. Embed a booking widget on your site and manage bookings, capacity, payments, and customers.",
   keywords: [
-    "experiences",
-    "local hosts",
-    "guest activities",
-    "fun experiences",
-    "local guides",
-    "workshops",
-    "social events",
-    "hosted activities",
-    "adventures",
-    "learn new skills",
+    "booking software",
+    "small business CRM",
+    "booking widget",
+    "appointment booking",
+    "class booking software",
+    "online payments",
   ],
   authors: [{ name: "ClassEasily" }],
   creator: "ClassEasily",
@@ -39,15 +35,15 @@ export const metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "ClassEasily - Discover Unique Local Experiences",
+    title: "ClassEasily — Booking and CRM for small businesses",
     description:
-      "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
+      "Embed a booking widget on your site. Manage capacity, payments, and customers from one dashboard.",
     images: [
       {
         url: getDefaultOgImageUrl(),
         width: 1200,
         height: 630,
-        alt: "ClassEasily - Discover Local Experiences",
+        alt: "ClassEasily",
       },
     ],
     url: getSiteUrl(),
@@ -57,9 +53,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClassEasily - Discover Unique Local Experiences",
+    title: "ClassEasily — Booking and CRM for small businesses",
     description:
-      "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
+      "Embed a booking widget on your site. Manage capacity, payments, and customers from one dashboard.",
     images: [getDefaultOgImageUrl()],
     creator: "@classeasily",
   },

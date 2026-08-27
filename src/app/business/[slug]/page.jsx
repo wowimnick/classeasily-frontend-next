@@ -1,6 +1,6 @@
 // app/businesses/[slug]/page.jsx (or app/business/[slug]/page.jsx - whatever your route is)
 
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import BusinessPageClient from "../_components/BusinessPageClient";
 import {
   fetchBusinessDetail,
@@ -40,7 +40,14 @@ export async function generateStaticParams() {
 }
 
 // Generate metadata for SEO
-export async function generateMetadata({ params }) {
+export async function generateMetadata() {
+  return {
+    title: "ClassEasily",
+    robots: { index: false, follow: false },
+  };
+}
+
+async function generateMetadataMarketplace({ params }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 
@@ -101,108 +108,6 @@ export async function generateMetadata({ params }) {
 
 // Main page component
 export default async function BusinessPage({ params }) {
-  const resolvedParams = await Promise.resolve(params);
-  const slug = resolvedParams.slug;
-
-  // Placeholder slug only exists so `generateStaticParams` satisfies Next when the API is empty.
-  if (slug === BUILD_PLACEHOLDER_SLUG) {
-    notFound();
-  }
-
-  console.log(`[Business Page] Rendering: ${slug}`);
-
-  // Fetch business data using server-data-fetchers
-  const result = await fetchBusinessDetail(slug);
-  const businessData = result.success ? result.data : null;
-
-  // Return 404 if business not found
-  if (!businessData) {
-    console.warn(`[Business Page] Not found: ${slug}`);
-    notFound();
-  }
-
-  // Validate required data
-  if (!businessData.businessName || !businessData.slug) {
-    console.error("[Business Page] Invalid data structure:", businessData);
-    notFound();
-  }
-
-  // Generate structured data for SEO
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "@id": `https://classeasily.com/businesses/${slug}`,
-    name: businessData.businessName,
-    description: businessData.businessDescription,
-    image: businessData.business_image_medium_url,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: businessData.businessAddress,
-      addressLocality: businessData.businessCity,
-      addressRegion: businessData.businessState,
-      addressCountry: "CA",
-    },
-    aggregateRating: businessData.average_rating
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: parseFloat(businessData.average_rating),
-          reviewCount: businessData.totalReviews || 0,
-          bestRating: 5,
-          worstRating: 1,
-        }
-      : undefined,
-    url: `https://classeasily.com/businesses/${slug}`,
-    telephone: businessData.studentContactPhone,
-    email: businessData.studentContactEmail,
-    openingHoursSpecification:
-      businessData.businessHours?.map((hours) => ({
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: hours.day,
-        opens: hours.isOpen ? hours.open : undefined,
-        closes: hours.isOpen ? hours.close : undefined,
-      })) || undefined,
-  };
-
-  // Breadcrumb structured data
-  const breadcrumbData = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: "https://classeasily.com",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Businesses",
-        item: "https://classeasily.com/businesses",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: businessData.businessName,
-        item: `https://classeasily.com/businesses/${slug}`,
-      },
-    ],
-  };
-
-  return (
-    <>
-      {/* Structured Data for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbData) }}
-      />
-
-      {/* Client Component with data */}
-      <BusinessPageClient initialData={businessData} slug={slug} />
-    </>
-  );
+  await Promise.resolve(params);
+  permanentRedirect("/");
 }

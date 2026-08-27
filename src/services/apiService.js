@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
 
   // Business Management
   BUSINESS_REGISTER: "/business/register/",
+  BUSINESS_ONBOARDING_STATE: "/my-business/onboarding-state/",
   MY_BUSINESSES: "/my-businesses/",
   MY_BUSINESS_PROFILE: "/my-business/profile/",
   MY_BUSINESS_INSTAGRAM_FOLLOWERS_SYNC: "/my-business/instagram-followers-sync/",
@@ -604,6 +605,33 @@ export const businessService = {
     }
   },
 
+  getOnboardingState: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.BUSINESS_ONBOARDING_STATE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to load onboarding state",
+        status: error.response?.status,
+      };
+    }
+  },
+
+  completeOnboarding: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.BUSINESS_ONBOARDING_STATE,
+        { complete: true },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: "Failed to complete onboarding" };
+    }
+  },
+
   getMyBusinesses: async () => {
     try {
       const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESSES);
@@ -966,16 +994,18 @@ export const businessService = {
     billing_interval,
     success_url,
     cancel_url,
+    ui_mode,
   } = {}) => {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT,
-        { plan_id, billing_interval, success_url, cancel_url },
+        { plan_id, billing_interval, success_url, cancel_url, ui_mode },
       );
       return {
         success: true,
         url: response.data?.checkout_url || response.data?.url,
         session_id: response.data?.session_id,
+        client_secret: response.data?.client_secret,
       };
     } catch (error) {
       console.error(
@@ -1998,10 +2028,11 @@ export const businessService = {
       };
     }
   },
-  createStripeAccountLink: async () => {
+  createStripeAccountLink: async (originalIntent = "dashboard_settings") => {
     try {
       const response = await axiosInstance.post(
         `${BASE_URL}/my-business/stripe-connect/`,
+        { original_intent: originalIntent },
       ); // Ensure this matches your backend URL
       return { success: true, data: response.data }; // Expects { accountLinkUrl: "..." }
     } catch (error) {

@@ -1,8 +1,7 @@
 // Blog tag archive: /blog/tag/[tag] — SEO-friendly, static generation
 
 import { notFound } from "next/navigation";
-import Footer from "@/components/homepage/Footer";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 import {
   fetchBlogPosts,
   fetchBlogPostsByTag,
@@ -117,7 +116,7 @@ export default async function BlogTagPage({ params }) {
         />
       )}
 
-      <ExploreHeader showOptionsWrapper={false} />
+      <MarketingChrome>
       <div className="blog-tag-page">
         <BlogPageClient
           posts={posts}
@@ -125,7 +124,7 @@ export default async function BlogTagPage({ params }) {
           subtitle={subtitle}
         />
       </div>
-      <Footer />
+      </MarketingChrome>
     </>
   );
 }

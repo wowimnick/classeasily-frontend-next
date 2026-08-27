@@ -1,10 +1,9 @@
 // @ts-check
 /**
- * E2E: Homepage UI elements and public CTAs.
- * Ensures main sections and buttons are present and visible.
+ * E2E: Homepage UI elements and public CTAs for the SaaS marketing site.
  */
 import { test, expect } from '@playwright/test';
-import { dismissCookieBannerIfVisible, gotoPath, openHeaderGuestMenu } from './helpers.js';
+import { dismissCookieBannerIfVisible, gotoPath } from './helpers.js';
 
 test.describe('Homepage UI and public buttons', () => {
   test.describe.configure({ timeout: 120000 });
@@ -18,44 +17,33 @@ test.describe('Homepage UI and public buttons', () => {
     await expect(page.getByRole('main')).toBeVisible();
   });
 
-  test('How it works section and toggles are visible', async ({ page }) => {
-    const howItWorks = page.getByRole('heading', { name: /How does ClassEasily work/i });
+  test('hero copy and primary CTA are visible', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: /Booking and CRM software for small businesses/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /Get started/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /See pricing/i })).toBeVisible();
+  });
+
+  test('How it works section has three steps, no adventurer toggle', async ({ page }) => {
+    const howItWorks = page.getByText('How it works', { exact: true });
     await howItWorks.scrollIntoViewIfNeeded();
     await expect(howItWorks).toBeVisible();
-    await expect(page.getByRole('button', { name: /for Adventurers/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /for Hosts/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Embed the widget/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /for Adventurers/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /for Hosts/i })).toHaveCount(0);
   });
 
-  test('How it works toggle switches content', async ({ page }) => {
-    const forHosts = page.getByRole('button', { name: /for Hosts/i });
-    await forHosts.scrollIntoViewIfNeeded();
-    await forHosts.click();
-    await expect(forHosts).toHaveAttribute('aria-pressed', 'true');
-    const forAdventurers = page.getByRole('button', { name: /for Adventurers/i });
-    await forAdventurers.click();
-    await expect(forAdventurers).toHaveAttribute('aria-pressed', 'true');
+  test('pricing preview shows plan names', async ({ page }) => {
+    await expect(page.getByText('Basic', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Growth', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Advanced', { exact: true }).first()).toBeVisible();
   });
 
-  test('Gift Cards CTA section and purchase link are visible', async ({ page }) => {
-    const giftHeading = page.getByRole('heading', { name: /Gift a fun experience/i });
-    await giftHeading.scrollIntoViewIfNeeded();
-    await expect(giftHeading).toBeVisible();
-    await expect(page.getByRole('link', { name: /Purchase Gift Card/i })).toBeVisible();
-  });
-
-  test('For Hosts section and Start Hosting button are visible', async ({ page }) => {
-    // Start Hosting is a button inside a link (legacyBehavior); match by href + text
-    const startHosting = page.locator('a[href="/business"]').filter({ hasText: 'Start Hosting' });
-    await startHosting.first().scrollIntoViewIfNeeded();
-    await expect(startHosting.first()).toBeVisible();
-    // Desktop heading has id for-hosts-title; mobile heading is hidden on desktop so we target the visible one
-    await expect(page.locator('#for-hosts-title')).toBeVisible();
-  });
-
-  test('Guest menu shows Log in and Sign up when opened', async ({ page }) => {
-    await openHeaderGuestMenu(page);
-    await expect(page.getByText('Log in', { exact: true })).toBeVisible();
-    await expect(page.getByText('Sign up', { exact: true })).toBeVisible();
+  test('header shows Log in and Get started for guests', async ({ page }) => {
+    const header = page.locator('header').first();
+    await expect(header.getByRole('button', { name: /Log in/i })).toBeVisible();
+    await expect(header.getByRole('link', { name: /Get started/i })).toBeVisible();
   });
 
   test('mobile viewport still shows main content', async ({ page }) => {

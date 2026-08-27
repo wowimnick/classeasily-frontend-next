@@ -1,54 +1,6 @@
-import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import { cacheLife, cacheTag } from "next/cache";
-import { preloadHomepageData } from "@/lib/server-data-fetchers";
-import "./(homepage)/_components/homepage.css";
+import SaaSHomePage from "@/components/marketing/SaaSHomePage";
 
-import BannerSearch from "./(homepage)/_components/BannerSearch";
-import SharedMainClientHeader from "@/components/layout/SharedMainClientHeader";
-import { HomepageCategoriesFallback } from "./(homepage)/_components/HomepageCategories";
-import BannerSearchClient from "./(homepage)/_components/BannerSearchClient";
-import { FindClassSkeleton } from "./(homepage)/_components/FindClassSkeleton";
-
-// --- CLIENT COMPONENTS (Lazy Loaded) ---
-
-// Categories Carousel
-const HomepageCategories = dynamic(
-  () => import("./(homepage)/_components/HomepageCategories"),
-  {},
-);
-
-// Class Rows (Carousels)
-const FindClassClientWrapper = dynamic(
-  () => import("./(homepage)/_components/FindClassClientWrapper"),
-  {
-    loading: () => <FindClassSkeleton />,
-  },
-);
-
-// Below-fold sections
-const HowItWorks = dynamic(
-  () => import("./(homepage)/_components/HowItWorks"),
-  { loading: () => <div style={{ height: "600px" }} /> },
-);
-
-const GiftCardsCTA = dynamic(
-  () => import("./(homepage)/_components/GiftCardsCTA"),
-  { loading: () => <div style={{ height: "500px" }} /> },
-);
-
-import ForHostsClient from "./(homepage)/_components/ForHostsClient";
-
-const Testimonials = dynamic(
-  () => import("./(homepage)/_components/Testimonials"),
-  { loading: () => <div style={{ height: "400px" }} /> },
-);
-
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  loading: () => <div style={{ height: "300px" }} />,
-});
-
-// Overlays (Client logic only)
 const CancellationOverlay = dynamic(
   () => import("./(homepage)/_components/CancellationOverlay"),
 );
@@ -68,153 +20,99 @@ import HomepageConversationOverlayClient from "./(homepage)/_components/Homepage
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
-  title: "ClassEasily - Find Local Classes & Experiences Near You",
+  title: "ClassEasily — Booking and CRM software for small businesses",
   description:
-    "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
+    "Easy to set up, priced for small teams, without the bloat of enterprise tools. Embed a booking widget on your site and manage bookings, capacity, payments, and customers.",
   alternates: {
     canonical: "/",
   },
+  keywords: [
+    "booking software",
+    "small business CRM",
+    "booking widget",
+    "appointment booking",
+    "class booking",
+    "online payments",
+  ],
   openGraph: {
-    title: "ClassEasily - Find Local Classes & Experiences Near You",
+    title: "ClassEasily — Booking and CRM for small businesses",
     description:
-      "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
+      "Embed a booking widget on your site. Manage capacity, payments, and customers from one dashboard.",
     type: "website",
     images: [
       {
         url: "https://i.imgur.com/biTTckW.png",
         width: 1200,
         height: 630,
-        alt: "ClassEasily - Discover local experiences",
+        alt: "ClassEasily",
       },
     ],
   },
 };
 
-export default async function HomePage() {
-  "use cache";
-  cacheLife("homepage");
-  // Cache Components: fetch() tags are not enough for this cached shell — match backend trigger_nextjs_revalidation tags.
-  cacheTag("homepage-content");
-  cacheTag("collections");
-  cacheTag("homepage-classes");
-
-  // Parallel data fetching
-  const { row_collections, categories } = await preloadHomepageData();
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "ClassEasily",
-    url: "https://classeasily.com",
-    description:
-      "Discover and book local experiences in your area for your next date night or friend gathering on ClassEasily.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target:
-        "https://classeasily.com/explore?collection={search_term_string}",
-      "query-input": "required name=search_term_string",
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Can I embed ClassEasily on Wix, Shopify, or Squarespace?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Paste the booking widget on Wix, Shopify, Squarespace, or a custom site. Customers book without leaving your brand.",
+      },
     },
-  };
+    {
+      "@type": "Question",
+      name: "How much does ClassEasily cost?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Plans start at CAD $29/month plus a small per-booking commission. There is no setup fee.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How long does setup take?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Create an account, pick a plan, embed the widget — you can take bookings the same day.",
+      },
+    },
+  ],
+};
 
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "What is ClassEasily?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "ClassEasily is a marketplace to discover and book local workshops, classes, and experiences near you. Guests browse verified hosts; hosts list schedules, take bookings, and get paid through the platform.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "How do I find classes near me?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Use the search and explore pages on classeasily.com to filter by location, collection, or activity type, then book a session that fits your schedule.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "How can I host classes on ClassEasily?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Register your business at classeasily.com/business, complete verification, then create class listings with schedules. ClassEasily handles discovery, booking, and payments.",
-        },
-      },
-    ],
-  };
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "ClassEasily",
+  applicationCategory: "BusinessApplication",
+  offers: {
+    "@type": "Offer",
+    price: "29",
+    priceCurrency: "CAD",
+  },
+  description:
+    "Booking and CRM software for small businesses. Embed a widget on your website and manage bookings, capacity, payments, and customers.",
+};
 
+export default function HomePage() {
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
       />
-
-      <div className="homepage-style">
-        <BannerSearchClient mode="announcement" />
-        <SharedMainClientHeader topOffset={58} />
-
-        <div className="homepage-sheet">
-          <main className="main-content">
-            <BannerSearch />
-
-            {row_collections?.map((collection) => (
-              <Suspense key={collection.title} fallback={<FindClassSkeleton />}>
-                <FindClassClientWrapper
-                  title={collection.title}
-                  subtitle={collection.subtitle}
-                  initialClasses={collection.classes}
-                  seeAllLink={collection.seeAllLink || "/explore"}
-                />
-              </Suspense>
-            ))}
-
-            <Suspense
-              fallback={<HomepageCategoriesFallback categories={categories} />}
-            >
-              <HomepageCategories initialCategories={categories} />
-            </Suspense>
-
-            <section id="how-it-works">
-              <Suspense fallback={<div style={{ height: "600px" }} />}>
-                <HowItWorks />
-              </Suspense>
-            </section>
-
-            <Suspense fallback={<div style={{ height: "500px" }} />}>
-              <GiftCardsCTA />
-            </Suspense>
-
-            <Suspense fallback={<div style={{ height: "500px" }} />}>
-              <ForHostsClient />
-            </Suspense>
-
-            <Suspense fallback={<div style={{ height: "400px" }} />}>
-              <Testimonials />
-            </Suspense>
-          </main>
-
-          <Suspense fallback={<div style={{ height: "300px" }} />}>
-            <Footer />
-          </Suspense>
-        </div>
-
-        {/* Global Overlays - Loaded only when needed logic triggers */}
-        <CancellationOverlay />
-        <InviteOverlay />
-        <PasswordResetOverlay />
-        <ClaimAccountOverlay />
-        <VerifyEmailOverlay />
-        <HomepageConversationOverlayClient />
-      </div>
+      <SaaSHomePage />
+      <CancellationOverlay />
+      <InviteOverlay />
+      <PasswordResetOverlay />
+      <ClaimAccountOverlay />
+      <VerifyEmailOverlay />
+      <HomepageConversationOverlayClient />
     </>
   );
 }

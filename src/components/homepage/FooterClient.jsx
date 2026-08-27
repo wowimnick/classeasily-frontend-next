@@ -379,7 +379,7 @@ export default function FooterClient({ collections = [] }) {
               <LogoName>ClassEasily</LogoName>
             </LogoRow>
             <BrandDesc>
-              ClassEasily helps you discover and book local classes, workshops, and experiences — making it easy to learn something new.
+              ClassEasily is booking and CRM software for small businesses — easy to set up, priced for small teams.
             </BrandDesc>
             <BrandBottomRow>
               <SocialRow>
@@ -409,8 +409,8 @@ export default function FooterClient({ collections = [] }) {
               <NavTitle>ClassEasily</NavTitle>
               <NavList>
                 <li><NavLink href="/blog">Our Blog</NavLink></li>
-                <li><NavLink href="/reviews">Reviews</NavLink></li>
-                <li><NavLink href="/explore">Explore Classes</NavLink></li>
+                <li><NavLink href="/about">About</NavLink></li>
+                <li><NavLink href="/pricing">Pricing</NavLink></li>
                 <li><NavLink href="/content-policy">Content Policy</NavLink></li>
               </NavList>
             </NavCol>
@@ -418,8 +418,8 @@ export default function FooterClient({ collections = [] }) {
             <NavCol>
               <NavTitle>Businesses</NavTitle>
               <NavList>
-                <li><NavLink href="/corporate">ClassEasily for teams</NavLink></li>
-                <li><NavLink href="/business">Become a Host</NavLink></li>
+                <li><NavLink href="/#features">Product</NavLink></li>
+                <li><NavLink href="/business/register">Get started</NavLink></li>
                 <li><NavLink href="/business/help/">Business Help</NavLink></li>
                 <li><NavLink href="/business/register">Registration</NavLink></li>
               </NavList>

@@ -499,8 +499,8 @@ const HeaderContent = ({
   }, [pathname]);
 
   useEffect(() => {
-    router.prefetch("/corporate");
-    router.prefetch("/business");
+    router.prefetch("/pricing");
+    router.prefetch("/business/register");
   }, [router]);
 
   // FIX: This listener was closing the menu when clicking inside CustomUserMenu because
@@ -587,22 +587,22 @@ const HeaderContent = ({
 
         <Selection>
           <HeaderNavLink
-            href="/corporate"
+            href="/pricing"
             prefetch
             $navColor={activeColor}
             $isScrolled={isScrolled}
             $onLightHero={heroLightChrome}
           >
-            Corporate
+            Pricing
           </HeaderNavLink>
           <HeaderNavLink
-            href="/business"
+            href="/business/register"
             prefetch
             $navColor={activeColor}
             $isScrolled={isScrolled}
             $onLightHero={heroLightChrome}
           >
-            Become a host
+            Get started
           </HeaderNavLink>
 
           <AuthContainer key="auth">

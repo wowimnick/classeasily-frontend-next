@@ -42,6 +42,13 @@ export async function openHeaderGuestMenu(page) {
  * @param {import('@playwright/test').Page} page
  */
 export async function openLoginModalFromHeader(page) {
+  const header = page.locator('header').first();
+  await header.waitFor({ state: 'visible', timeout: 60_000 });
+  const loginBtn = header.getByRole('button', { name: /^Log in$/i });
+  if (await loginBtn.isVisible().catch(() => false)) {
+    await loginBtn.click({ timeout: 15_000 });
+    return;
+  }
   await openHeaderGuestMenu(page);
   await page.getByText('Log in', { exact: true }).click({ timeout: 15_000 });
 }

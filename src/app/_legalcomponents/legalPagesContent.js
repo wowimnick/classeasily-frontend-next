@@ -955,7 +955,7 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "At ClassEasily, we aim for a transparent and straightforward fee structure. We connect Guests seeking unique experiences with talented Hosts offering workshops and activities. Our fees help us operate the platform, provide support, and continuously improve our services.",
+          text: "ClassEasily is booking and CRM software. You pay a monthly subscription plus a small per-booking commission on widget bookings. There is no setup fee. Stripe card processing fees are charged by Stripe separately.",
         },
         {
           type: "p",
@@ -981,20 +981,29 @@ export const feeContent = {
     {
       title: "Fees for Hosts (Instructors & Businesses)",
       content: [
-        { type: "h3", text: "ClassEasily Service Fee" },
         {
           type: "p",
-          text: "For each completed booking, ClassEasily deducts a Service Fee from the Host's payout. This fee is calculated as a percentage of the pre-tax Experience Price set by the Host.",
+          text: "The current product is a monthly widget subscription plus a small commission on widget bookings. See <a href='/pricing'>Pricing</a> for Basic ($29), Growth ($49), and Advanced ($89). There is no setup fee.",
+        },
+        { type: "h3", text: "Widget plans (current product)" },
+        {
+          type: "p",
+          text: "Widget subscribers pay the monthly plan fee plus a per-booking commission of 2–4% depending on plan, as listed on the <a href='/pricing'>Pricing</a> page and in the Host dashboard. Stripe processing fees are separate from ClassEasily's commission.",
+        },
+        { type: "h3", text: "Legacy marketplace bookings" },
+        {
+          type: "p",
+          text: "The consumer marketplace is retired. The 20% marketplace service fee below applies only to leftover marketplace bookings, not to widget bookings.",
         },
         {
           type: "ul",
           items: [
-            "<strong>Current Service Fee:</strong> 20% of the pre-tax Experience Price (subject to change with notice).",
+            "<strong>Legacy marketplace service fee:</strong> 20% of the pre-tax Experience Price (subject to change with notice). This is not the fee for the current widget product.",
           ],
         },
         {
           type: "p",
-          text: "Example: A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The ClassEasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
+          text: "Example (legacy marketplace only): A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The ClassEasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
         },
         {
           type: "ul",
@@ -1030,12 +1039,12 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "Hosts may subscribe to a Widget Subscription plan to access the embeddable booking widget, marketplace listing, and plan-specific features. All Widget Subscription fees are billed monthly in CAD and automatically renew unless cancelled, as described in our <a href='/terms-of-service'>Terms of Service</a>.",
+          text: "Hosts may subscribe to a Widget Subscription plan to access the embeddable booking widget and plan-specific features. All Widget Subscription fees are billed monthly in CAD and automatically renew unless cancelled, as described in our <a href='/terms-of-service'>Terms of Service</a>.",
         },
         {
           type: "ul",
           items: [
-            "<strong>Basic:</strong> CAD $29/month — includes widget on your website, marketplace listing, and a 4% per-booking commission on widget bookings.",
+            "<strong>Basic:</strong> CAD $29/month — includes the booking widget on your website and a 4% per-booking commission on widget bookings.",
             "<strong>Growth:</strong> CAD $49/month — includes everything in Basic, plus branded booking emails, widget analytics, automated reminders, memberships, promo codes, and a 3% per-booking commission on widget bookings.",
             "<strong>Advanced:</strong> CAD $89/month — includes everything in Growth and a 2% per-booking commission on widget bookings.",
           ],

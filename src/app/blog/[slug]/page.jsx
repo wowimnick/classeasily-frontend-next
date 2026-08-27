@@ -1,9 +1,8 @@
 // src/app/blog/[slug]/page.jsx - FIXED FOR Next.js 15
 
 import { notFound } from "next/navigation";
-import Footer from "@/components/homepage/Footer";
 import BlogPostClient from "./_components/BlogPostClient";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 
 import {
   fetchBlogPosts,
@@ -147,9 +146,9 @@ export default async function BlogPostPage({ params }) {
         />
       )}
 
-      <ExploreHeader showOptionsWrapper={false} />
+      <MarketingChrome>
       <BlogPostClient post={post} sidebarData={sidebarData} />
-      <Footer />
+      </MarketingChrome>
     </>
   );
 }

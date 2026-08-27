@@ -1,8 +1,7 @@
 // src/app/blog/page.jsx - FIXED FOR STATIC GENERATION + SEO + Next.js 16
 
-import Footer from "@/components/homepage/Footer";
 import BlogPageClient from "./_components/BlogPageClient";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 
 import {
   fetchBlogPosts,
@@ -10,15 +9,15 @@ import {
 } from "@/lib/server-data-fetchers";
 
 export const metadata = {
-  title: "The ClassEasily Blog | Insights for Learners and Instructors",
+  title: "The ClassEasily Blog",
   description:
-    "Discover expert tips, learning strategies, and instructor insights. Your guide to making the most of online and in-person classes.",
+    "Tips on booking software, running a small service business, and getting more customers from your website.",
   keywords:
-    "online classes, learning tips, instructor insights, education blog, class finder",
+    "booking software, small business, booking widget, CRM, class booking",
   openGraph: {
-    title: "The ClassEasily Blog | Expert Learning Insights",
+    title: "The ClassEasily Blog",
     description:
-      "Inspiration and insights for our community of learners and instructors.",
+      "Insights for small businesses using ClassEasily for bookings and CRM.",
     type: "website",
     url: "https://classeasily.com/blog",
     siteName: "ClassEasily",
@@ -34,7 +33,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "The ClassEasily Blog",
-    description: "Expert insights for learners and instructors",
+    description: "Insights for small businesses using ClassEasily for bookings and CRM.",
     images: ["https://classeasily.com/images/blog-og-image.jpg"],
   },
   alternates: {
@@ -68,9 +67,9 @@ export default async function BlogPage() {
         />
       )}
 
-      <ExploreHeader showOptionsWrapper={false} />
+      <MarketingChrome>
       <BlogPageClient posts={posts} />
-      <Footer />
+      </MarketingChrome>
     </>
   );
 }

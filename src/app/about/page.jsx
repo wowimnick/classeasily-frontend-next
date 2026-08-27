@@ -1,63 +1,30 @@
-import { cacheLife } from "next/cache";
 import Link from "next/link";
-import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
-  title: "About ClassEasily | Local Classes & Experiences",
+  title: "About ClassEasily",
   description:
-    "ClassEasily helps you discover and book local workshops and experiences, and gives hosts tools to grow. Learn what we do and who we serve.",
-  alternates: {
-    canonical: "/about",
-  },
+    "ClassEasily is booking and CRM software for small businesses. Embed a widget on your site and manage bookings, capacity, payments, and customers.",
+  alternates: { canonical: "/about" },
   openGraph: {
     title: "About ClassEasily",
     description:
-      "A marketplace for local workshops and experiences—built for guests who love to learn and hosts who love to teach.",
+      "Booking and CRM software for small businesses — easy to set up, priced for small teams.",
     url: "/about",
     siteName: "ClassEasily",
     type: "website",
-    images: [
-      {
-        url: "https://i.imgur.com/biTTckW.png",
-        width: 1200,
-        height: 630,
-        alt: "ClassEasily",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "About ClassEasily",
-    description:
-      "Discover local classes, book experiences, and grow your teaching business on one platform.",
-    images: ["https://i.imgur.com/biTTckW.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
   },
 };
 
-export default async function AboutPage() {
-  "use cache";
-  cacheLife("max");
-
+export default function AboutPage() {
   const aboutJsonLd = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
     name: "About ClassEasily",
     url: "https://classeasily.com/about",
     description:
-      "ClassEasily connects guests with local workshops and experiences and provides hosts with listing, booking, and payment tools.",
+      "ClassEasily is booking and CRM software for small businesses.",
     mainEntity: {
       "@type": "Organization",
       name: "ClassEasily",
@@ -66,12 +33,11 @@ export default async function AboutPage() {
   };
 
   return (
-    <>
+    <MarketingChrome>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
       />
-      <ExploreHeader showOptionsWrapper={false} />
       <main
         style={{
           maxWidth: "720px",
@@ -84,24 +50,21 @@ export default async function AboutPage() {
           About ClassEasily
         </h1>
         <p style={{ marginBottom: "1rem" }}>
-          <strong>ClassEasily</strong> is a marketplace for local workshops,
-          classes, and experiences—from pottery and glassblowing to cooking,
-          fitness, and creative nights out. We help people find memorable things
-          to do nearby and make it easy to book with trusted hosts.
+          <strong>ClassEasily</strong> is booking and CRM software for small
+          businesses. Embed a booking widget on your own site — Wix, Shopify,
+          Squarespace, or custom — and manage capacity, payments, and customers
+          from one dashboard.
         </p>
         <p style={{ marginBottom: "1rem" }}>
-          For instructors, studios, and small businesses, ClassEasily offers
-          tools to list experiences, manage schedules, take bookings, and reach
-          new students. Our goal is to support independent hosts with fair,
-          transparent pricing and a smooth experience for both sides.
+          We started with local studios and still work closely with them. The
+          product is built for any appointment-based team that wants to take
+          bookings without enterprise software.
         </p>
         <p style={{ marginBottom: "1.5rem" }}>
-          Ready to explore? Start at{" "}
-          <Link href="/explore">Explore</Link> or learn about hosting on{" "}
-          <Link href="/business">ClassEasily for business</Link>.
+          <Link href="/pricing">See pricing</Link> or{" "}
+          <Link href="/business/register">get started</Link>.
         </p>
       </main>
-      <Footer />
-    </>
+    </MarketingChrome>
   );
 }

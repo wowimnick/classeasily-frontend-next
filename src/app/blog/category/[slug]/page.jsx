@@ -1,8 +1,7 @@
 // Blog category archive: /blog/category/[slug] — SEO-friendly, static generation
 
 import { notFound } from "next/navigation";
-import Footer from "@/components/homepage/Footer";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+import MarketingChrome from "@/components/marketing/MarketingChrome";
 import {
   fetchBlogCategories,
   fetchBlogPostsByCategory,
@@ -109,7 +108,7 @@ export default async function BlogCategoryPage({ params }) {
         />
       )}
 
-      <ExploreHeader showOptionsWrapper={false} />
+      <MarketingChrome>
       <div className="blog-category-page">
         <BlogPageClient
           posts={posts}
@@ -117,7 +116,7 @@ export default async function BlogCategoryPage({ params }) {
           subtitle={`${category.post_count || posts.length} ${(category.post_count || posts.length) === 1 ? "post" : "posts"} in this category.`}
         />
       </div>
-      <Footer />
+      </MarketingChrome>
     </>
   );
 }

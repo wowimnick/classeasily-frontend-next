@@ -7,11 +7,9 @@ export const PLAN_IDS = ["basic", "growth", "advanced"];
 
 export const PLAN_FEATURES_BASIC = [
   { label: "Widget on your website" },
-  {
-    label: "Marketplace listing",
-    tooltip:
-      "Get discovered by customers searching for classes on ClassEasily.",
-  },
+  { label: "Scheduling and capacity" },
+  { label: "Online payments" },
+  { label: "Customer list" },
   { label: "One dashboard & payout" },
   { label: "Brand colors & fonts" },
   { label: "Popup or inline embed" },
@@ -37,7 +35,7 @@ export const PLAN_FEATURES_GROWTH = [
   {
     label: "Widget revenue & booking analytics",
     tooltip:
-      "Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.",
+      "Track widget conversion rates, revenue by class, and booking trends.",
   },
   {
     label: "Automated pre-class reminders",
@@ -84,10 +82,20 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     plans: { basic: true, growth: true, advanced: true },
   },
   {
-    id: "marketplace",
-    label: "Marketplace listing",
-    tooltip:
-      "Get discovered by customers searching for classes on ClassEasily.",
+    id: "scheduling",
+    label: "Scheduling and capacity",
+    valueType: "check",
+    plans: { basic: true, growth: true, advanced: true },
+  },
+  {
+    id: "payments",
+    label: "Online payments",
+    valueType: "check",
+    plans: { basic: true, growth: true, advanced: true },
+  },
+  {
+    id: "crm",
+    label: "Customer list / CRM",
     valueType: "check",
     plans: { basic: true, growth: true, advanced: true },
   },
@@ -137,7 +145,7 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     id: "widget_analytics",
     label: "Widget revenue & booking analytics",
     tooltip:
-      "Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.",
+      "Track widget conversion rates, revenue by class, and booking trends.",
     valueType: "check",
     plans: { basic: false, growth: true, advanced: true },
   },

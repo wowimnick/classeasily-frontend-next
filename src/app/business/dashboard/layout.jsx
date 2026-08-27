@@ -16,6 +16,7 @@ import BusinessHeader from "./_components/BusinessHeader";
 import SideMenu from "./_components/SideMenu";
 import SetupGuideWrapper from "./_components/SetupGuideWrapper";
 import DashboardContext from "./_components/DashboardContext";
+import PaidAccessGate from "./_components/PaidAccessGate";
 
 const PageLayout = styled.div`
   display: flex;
@@ -125,7 +126,9 @@ export default function DashboardLayout({ children }) {
   return (
     <ClientOnlyWrapper>
       <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
-        <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        <PaidAccessGate>
+          <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </PaidAccessGate>
       </PermissionProtectedRoute>
     </ClientOnlyWrapper>
   );

@@ -215,10 +215,14 @@ async function getClassData(slug) {
   };
 }
 
-export async function generateMetadata({ params }) {
-  "use cache";
-  cacheLife("classDetail");
+export async function generateMetadata() {
+  return {
+    title: "ClassEasily",
+    robots: { index: false, follow: false },
+  };
+}
 
+async function generateMetadataMarketplace({ params }) {
   try {
     const resolvedParams = await params;
     const context = await fetchClassMetadataContext(resolvedParams.slug);
@@ -422,135 +426,6 @@ function buildBreadcrumbSchema(classData) {
 
 export default async function ClassPage({ params }) {
   await connection();
-  const resolvedParams = await params;
-  const { classData, businessData, initialReviews } = await getClassData(
-    resolvedParams.slug,
-  );
-
-  if (
-    classData?.slug &&
-    resolvedParams.slug &&
-    resolvedParams.slug !== classData.slug
-  ) {
-    permanentRedirect(`/classes/${classData.slug}`);
-  }
-
-  const breadcrumbItems = [
-    { key: "home", title: <Link href="/">Home</Link> },
-    { key: "explore", title: <Link href="/explore">Explore</Link> },
-  ];
-
-  const locationText =
-    classData?.business_city && classData?.business_state
-      ? `${classData.business_city}, ${classData.business_state}`
-      : classData?.business_state || classData?.business_city || null;
-
-  if (locationText) {
-    const locationSearchParams = new URLSearchParams({
-      location: locationText,
-    });
-    breadcrumbItems.push({
-      key: "location",
-      title: (
-        <Link href={`/explore?${locationSearchParams.toString()}`}>
-          {locationText}
-        </Link>
-      ),
-    });
-  }
-
-  breadcrumbItems.push({
-    key: "class",
-    title:
-      classData?.title != null ? String(classData.title) : "Experience",
-  });
-
-  const courseSchema = buildCourseSchema(classData, businessData);
-  const breadcrumbSchema = buildBreadcrumbSchema(classData);
-
-  return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <main style={{ flex: 1 }}>
-        <noscript>
-          <section
-            style={{
-              maxWidth: 720,
-              margin: "24px auto",
-              padding: "0 16px",
-              fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.5,
-            }}
-          >
-            <h1 style={{ fontSize: "1.5rem", margin: "0 0 12px" }}>
-              {classData?.title != null ? String(classData.title) : "Experience"}
-            </h1>
-            <p style={{ margin: "0 0 16px", color: "#374151" }}>
-              {safeTextSnippet(stripHtmlToText(classData?.description), 800)}
-            </p>
-            <p style={{ margin: 0 }}>
-              <a href={`/classes/${classData.slug}/checkout`}>Continue to booking</a>
-            </p>
-          </section>
-        </noscript>
-        <ClassReviewsSeo
-          classTitle={
-            classData?.title != null ? String(classData.title) : ""
-          }
-          reviews={initialReviews}
-        />
-        <ClassPageClient
-          classData={classData}
-          businessData={businessData}
-          initialReviews={initialReviews}
-        />
-      </main>
-      <div
-        style={{
-          maxWidth: "1200px",
-          padding: "24px",
-          margin: "0 auto",
-          width: "100%",
-        }}
-      >
-        <nav aria-label="Breadcrumb" style={{ fontSize: 14, color: "#717171" }}>
-          <ol
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              listStyle: "none",
-              padding: 0,
-              margin: 0,
-              alignItems: "center",
-            }}
-          >
-            {breadcrumbItems.map((item, idx) => (
-              <li
-                key={item.key}
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
-                {idx > 0 ? (
-                  <span style={{ color: "#d4d4d4", userSelect: "none" }} aria-hidden>
-                    /
-                  </span>
-                ) : null}
-                {item.title}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      </div>
-      <FooterSmart />
-    </div>
-  );
+  await params;
+  permanentRedirect("/");
 }

@@ -269,6 +269,46 @@ const nextConfig = {
         destination: "/?reset_uid=:uid&reset_token=:token",
         permanent: false,
       },
+      {
+        source: "/explore",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/explore/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/reviews",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/giftcards",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/giftcards/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/corporate",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/booking-widget",
+        destination: "/pricing",
+        permanent: true,
+      },
+      {
+        source: "/business",
+        destination: "/",
+        permanent: true,
+      },
     ];
   },
 

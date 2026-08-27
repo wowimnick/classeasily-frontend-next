@@ -5,7 +5,6 @@ import {
   gotoPath,
   hasTestCredentials,
   loginAsUser,
-  openHeaderGuestMenu,
   openLoginModalFromHeader,
 } from './helpers.js';
 
@@ -16,10 +15,10 @@ test.describe('Auth flows', () => {
     await dismissCookieBannerIfVisible(page);
   });
 
-  test('guest menu shows Log in and Sign up', async ({ page }) => {
-    await openHeaderGuestMenu(page);
-    await expect(page.getByText('Log in', { exact: true })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Sign up', { exact: true })).toBeVisible();
+  test('header shows Log in for guests', async ({ page }) => {
+    await expect(page.locator('header').getByRole('button', { name: /Log in/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('login with invalid credentials shows error or stays on page', async ({ page }) => {
