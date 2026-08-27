@@ -56,6 +56,14 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
+      name: "Do I need a developer to add the widget?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. Copy two lines of code from your dashboard and paste them into any page. It works on Wix, Squarespace, Shopify, WordPress, Webflow, and plain HTML.",
+      },
+    },
+    {
+      "@type": "Question",
       name: "Can I embed ClassEasily on Wix, Shopify, or Squarespace?",
       acceptedAnswer: {
         "@type": "Answer",

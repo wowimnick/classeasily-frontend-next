@@ -19,7 +19,7 @@ test.describe('Homepage UI and public buttons', () => {
 
   test('hero copy and primary CTA are visible', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /Booking and CRM software for small businesses/i }),
+      page.getByRole('heading', { name: /Take bookings on your site/i }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: /Get started/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /See pricing/i })).toBeVisible();
