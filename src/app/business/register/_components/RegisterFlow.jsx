@@ -355,10 +355,11 @@ const Shell = styled.div`
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 1080px;
+  max-width: ${(p) => (p.$wide ? "1120px" : "1080px")};
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) auto minmax(0, 1.08fr);
+  grid-template-columns: ${(p) =>
+    p.$wide ? "1fr" : "minmax(0, 0.92fr) auto minmax(0, 1.08fr)"};
   align-items: start;
 
   @media (max-width: 860px) {
@@ -385,10 +386,17 @@ const ColRule = styled.div`
 `;
 
 const Story = styled.div`
-  position: sticky;
+  position: ${(p) => (p.$plain ? "static" : "sticky")};
   top: 8px;
   padding-top: 4px;
   min-width: 0;
+  ${(p) =>
+    p.$plain
+      ? `
+    max-width: 1120px;
+    margin-bottom: 28px;
+  `
+      : ""}
 
   @media (max-width: 860px) {
     position: static;
@@ -439,7 +447,7 @@ const Lead = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 460px;
+  max-width: ${(p) => (p.$wide ? "920px" : "460px")};
 
   p {
     margin: 0;
@@ -838,7 +846,7 @@ const PrimaryBtn = styled(AntButton)`
   }
 `;
 
-function StepIntro({ eyebrow, title, paragraphs, reduceMotion }) {
+function StepIntro({ eyebrow, title, paragraphs, reduceMotion, wide }) {
   const words = String(title).split(" ");
   const bodyDelay = reduceMotion ? 0 : words.length * 0.05 + 0.16;
 
@@ -864,7 +872,7 @@ function StepIntro({ eyebrow, title, paragraphs, reduceMotion }) {
           </motion.span>
         ))}
       </Title>
-      <Lead>
+      <Lead $wide={wide}>
         {paragraphs.map((text, i) => (
           <motion.p
             key={text.slice(0, 48)}
@@ -1201,8 +1209,8 @@ export default function RegisterFlow() {
         </ProgressTrack>
         <Main ref={mainRef}>
           <OnboardAmbient step={step} reduceMotion={reduceMotion} />
-          <Shell>
-            <Story>
+          <Shell $wide={step === "plan"}>
+            <Story $plain={step === "plan"}>
               <StepSlot>
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div
@@ -1218,11 +1226,16 @@ export default function RegisterFlow() {
                       title={copy.title}
                       paragraphs={copy.paragraphs}
                       reduceMotion={reduceMotion}
+                      wide={step === "plan"}
                     />
                   </motion.div>
                 </AnimatePresence>
               </StepSlot>
             </Story>
+            {step === "plan" ? (
+              <PlanPicker planId={planId} onChange={setPlanId} />
+            ) : (
+              <>
             <ColRule aria-hidden />
             <Panel>
               <PanelMeasure>
@@ -1467,10 +1480,6 @@ export default function RegisterFlow() {
                   </FormWrap>
                 )}
 
-                {step === "plan" && (
-                  <PlanPicker planId={planId} onChange={setPlanId} />
-                )}
-
                 {step === "pay" && (
                   <>
                     <InfoCard>
@@ -1683,6 +1692,8 @@ export default function RegisterFlow() {
               </StepSlot>
               </PanelMeasure>
             </Panel>
+              </>
+            )}
           </Shell>
         </Main>
         <Footer>
