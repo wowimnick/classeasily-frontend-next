@@ -1,78 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styled, { ThemeProvider, css } from "styled-components";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Check,
   CreditCard,
   Globe,
   LayoutGrid,
   Puzzle,
   ShieldCheck,
   Smartphone,
+  Star,
   Users,
-  Code2,
-  MousePointerClick,
-  LineChart,
   Palette,
 } from "lucide-react";
-import { PLANS } from "@/lib/subscriptionPlans";
+import PlanCards from "@/components/plans/PlanCards";
 import {
   marketingTheme as t,
   REGISTER_HREF,
   PRICING_HREF,
   SUPPORT_EMAIL,
 } from "./tokens";
-import { ButtonLink } from "./primitives";
-import MarketingHeader from "./MarketingHeader";
+import MarketingHeader, { MarketingSheet } from "./MarketingHeader";
 import MarketingFooter from "./MarketingFooter";
-import LiveWeekChart from "./LiveWeekChart";
-import {
-  GlowRoot,
-  Magnetic,
-  TiltFollow,
-  usePointerFxEnabled,
-  usePointerVars,
-} from "./pointerFx";
-
-const pointerGlow = css`
-  --mx: 50%;
-  --my: 0%;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  &::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(
-      200px circle at var(--mx) var(--my),
-      rgba(252, 64, 86, 0.16),
-      transparent 58%
-    );
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    z-index: 0;
-  }
-  &:hover::after {
-    opacity: 1;
-  }
-  > * {
-    position: relative;
-    z-index: 1;
-  }
-  @media (prefers-reduced-motion: reduce), (pointer: coarse) {
-    &::after {
-      display: none;
-    }
-  }
-`;
+import AnimatedHeadline from "./AnimatedHeadline";
+import AnimatedFaq from "./AnimatedFaq";
+import ImagePlaceholder from "./ImagePlaceholder";
+import TestimonialsClient from "@/app/(homepage)/_components/TestimonialsClient";
+import testimonialStyles from "@/app/(homepage)/_components/Testimonials.module.css";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -91,7 +49,8 @@ const staggerContainer = {
 const Page = styled.div`
   font-family: ${t.fonts.body};
   color: ${t.colors.text};
-  background: #fff;
+  background: #f2f2f4;
+  min-height: 100vh;
 `;
 
 const LandingContainer = styled.div`
@@ -135,10 +94,10 @@ const PillLink = styled(Link)`
           }
         `
       : css`
-          background: rgba(10, 37, 64, 0.04);
+          background: rgba(0, 0, 0, 0.04);
           color: ${t.colors.dark};
           &:hover {
-            background: rgba(10, 37, 64, 0.08);
+            background: rgba(0, 0, 0, 0.08);
             color: ${t.colors.dark};
           }
         `}
@@ -218,52 +177,33 @@ function DiagonalDivider({ fromBg = "#f8fafc", toBg = "#ffffff", flip = false })
 }
 
 const HeroWrapper = styled.section`
-  --mx: 72%;
-  --my: 40%;
-  padding: 120px 0 88px;
+  min-height: calc(100vh - 76px);
+  margin-top: -4.25rem;
+  padding: calc(4.25rem + 56px) 0 112px;
+  display: flex;
+  align-items: center;
   position: relative;
   overflow: hidden;
   background: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%230a2540' fill-opacity='0.06'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23000000' fill-opacity='0.06'/%3E%3C/svg%3E");
   background-size: 24px 24px;
 
   @media (max-width: 640px) {
-    padding: 100px 0 0;
-  }
-`;
-
-const HeroSpotlight = styled.div`
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(
-      560px circle at var(--mx) var(--my),
-      rgba(252, 64, 86, 0.16),
-      transparent 56%
-    ),
-    radial-gradient(
-      280px circle at calc(var(--mx) + 90px) calc(var(--my) + 50px),
-      rgba(10, 37, 64, 0.08),
-      transparent 50%
-    );
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  ${HeroWrapper}:hover & {
-    opacity: 1;
-  }
-  @media (prefers-reduced-motion: reduce), (pointer: coarse) {
-    display: none;
+    min-height: 0;
+    margin-top: -4.25rem;
+    padding: calc(4.25rem + 28px) 0 64px;
+    display: block;
   }
 `;
 
 const HeroGradientStrip = styled.div`
   position: absolute;
-  left: -10%;
-  width: 120%;
-  height: 150px;
-  top: 50%;
+  left: -20%;
+  width: 140%;
+  height: 42vh;
+  min-height: 280px;
+  max-height: 420px;
+  top: 46%;
   transform: translateY(-50%) rotate(150deg);
   z-index: 0;
   overflow: hidden;
@@ -286,47 +226,57 @@ const HeroGradientCanvas = styled.canvas`
   --gradient-color-4: #f5f5f5;
 `;
 
-const HeroGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  align-items: center;
-  position: relative;
-  z-index: 1;
+const HeroContainer = styled.div`
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
 
-  @media (max-width: 968px) {
-    grid-template-columns: 1fr;
-    gap: 40px;
-    text-align: center;
+  @media (max-width: 640px) {
+    padding: 0 20px;
   }
 `;
 
+const HeroGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+`;
+
+const HeroCopy = styled.div`
+  max-width: 920px;
+  width: 100%;
+`;
+
 const HeroH1 = styled.h1`
-  font-size: 50px;
-  margin: 0 0 14px;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
+  font-size: 68px;
+  margin: 0 0 24px;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
   color: ${t.colors.dark};
   font-weight: 800;
 
   @media (max-width: 768px) {
-    font-size: 34px;
+    font-size: 40px;
+    margin-bottom: 18px;
   }
   @media (max-width: 640px) {
-    font-size: 26px;
+    font-size: 32px;
   }
 `;
 
 const HeroP = styled.p`
-  font-size: 16px;
-  margin: 0 0 26px;
+  font-size: 20px;
+  margin: 0 auto 16px;
   color: ${t.colors.text};
-  line-height: 1.65;
-  max-width: 500px;
+  line-height: 1.55;
+  max-width: 720px;
 
-  @media (max-width: 968px) {
-    margin-left: auto;
-    margin-right: auto;
+  @media (max-width: 768px) {
+    font-size: 17px;
   }
 `;
 
@@ -334,261 +284,27 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  justify-content: flex-start;
-
-  @media (max-width: 968px) {
-    justify-content: center;
-  }
-`;
-
-const MOCK_THEMES = [
-  { primary: "#fc4056", fade: "#fff0f3", chrome: "#0A2540" },
-  { primary: "#2563EB", fade: "#EFF6FF", chrome: "#1E3A8A" },
-  { primary: "#0f766e", fade: "#ecfdf5", chrome: "#134e4a" },
-];
-
-const MARCH = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-  23, 24, 25, 26, 27, 28, 29, 30, 31,
-];
-const AVAIL = new Set([5, 6, 7, 12, 13, 14, 19, 20, 21, 26, 27, 28]);
-
-function WidgetCalendarMock({ theme }) {
-  const [hoverDay, setHoverDay] = useState(14);
-  const day = hoverDay;
-  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][(day - 1) % 7];
-
-  return (
-    <div
-      style={{
-        background: theme.fade,
-        borderRadius: 20,
-        padding: 16,
-        boxShadow: t.shadows.lg,
-        border: "1px solid rgba(10,37,64,0.06)",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 14,
-          overflow: "hidden",
-          boxShadow: "0 8px 28px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div
-          style={{
-            background: theme.chrome,
-            color: "#fff",
-            padding: "10px 14px",
-            fontSize: 12,
-            fontWeight: 600,
-            display: "flex",
-            gap: 6,
-            alignItems: "center",
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#fc4056",
-            }}
-          />
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#ffce48",
-            }}
-          />
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#22c55e",
-            }}
-          />
-          <span style={{ marginLeft: 8, opacity: 0.8 }}>yoursite.com</span>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.1fr 0.9fr",
-            gap: 0,
-          }}
-        >
-          <div style={{ padding: 16 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 800,
-                color: t.colors.dark,
-                marginBottom: 10,
-              }}
-            >
-              March 2026
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(7, 1fr)",
-                gap: 4,
-                fontSize: 10,
-                color: t.colors.textLight,
-                marginBottom: 6,
-              }}
-            >
-              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div key={`${d}-${i}`} style={{ textAlign: "center" }}>
-                  {d}
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(7, 1fr)",
-                gap: 4,
-              }}
-            >
-              {MARCH.map((d) => {
-                const on = AVAIL.has(d);
-                const sel = d === day;
-                return (
-                  <div
-                    key={d}
-                    onPointerEnter={() => on && setHoverDay(d)}
-                    style={{
-                      height: 26,
-                      borderRadius: 7,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 11,
-                      fontWeight: on ? 700 : 500,
-                      cursor: on ? "pointer" : "default",
-                      background: sel
-                        ? theme.primary
-                        : on
-                          ? theme.fade
-                          : "transparent",
-                      color: sel ? "#fff" : on ? t.colors.dark : "#cbd5e1",
-                      transform: sel ? "scale(1.08)" : "none",
-                      transition: "transform 0.15s ease, background 0.15s ease",
-                    }}
-                  >
-                    {d}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div
-            style={{
-              padding: 16,
-              borderLeft: "1px solid #f1f5f9",
-              background: "#fafbfc",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: t.colors.dark,
-                marginBottom: 8,
-              }}
-            >
-              {dow}, Mar {day}
-            </div>
-            {["10:00 AM · 4 left", "2:00 PM · 2 left"].map((slot) => (
-              <div
-                key={slot}
-                style={{
-                  fontSize: 12,
-                  padding: "8px 10px",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  background: "#fff",
-                  color: t.colors.dark,
-                  fontWeight: 600,
-                }}
-              >
-                {slot}
-              </div>
-            ))}
-            <div
-              style={{
-                marginTop: 4,
-                background: theme.primary,
-                color: "#fff",
-                borderRadius: 8,
-                padding: "10px 12px",
-                fontSize: 13,
-                fontWeight: 700,
-                textAlign: "center",
-              }}
-            >
-              Reserve · $65
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const ThemeDots = styled.div`
-  display: flex;
-  gap: 8px;
   justify-content: center;
-  margin-top: 18px;
 `;
 
-const ThemeDot = styled.button`
-  width: 7px;
-  height: 7px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: ${(p) => (p.$active ? t.colors.primary : "#CBD5E1")};
-  transform: scale(${(p) => (p.$active ? 1.4 : 1)});
-  cursor: pointer;
-  transition: all 0.35s ease;
-`;
-
-const HeroMobileImageWrap = styled.div`
-  width: 100%;
-  @media (max-width: 640px) {
-    width: 100vw;
-    position: relative;
-    left: 50%;
-    margin-left: -50vw;
+const HeroButtons = styled(ButtonGroup)`
+  a {
+    padding: 14px 28px;
+    font-size: 17px;
   }
 `;
 
-function useIsMobile(bp = 640) {
-  const [v, setV] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${bp}px)`);
-    setV(mq.matches);
-    const fn = (e) => setV(e.matches);
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, [bp]);
-  return v;
-}
+const HeroVisual = styled.div`
+  width: 100%;
+  max-width: 1120px;
+  margin-top: 64px;
+
+  @media (max-width: 768px) {
+    margin-top: 40px;
+  }
+`;
 
 function Hero() {
-  const [idx, setIdx] = useState(0);
-  const isMobile = useIsMobile(640);
-  const fx = usePointerFxEnabled();
-  const heroRef = usePointerVars(!fx);
-
   useEffect(() => {
     const id = "home-hero-gradient-canvas";
     const tmr = setTimeout(() => {
@@ -598,89 +314,63 @@ function Hero() {
           if (!canvas?.getContext) return;
           const gradient = new Gradient();
           gradient.initGradient(`#${id}`);
+          window.dispatchEvent(new Event("resize"));
         })
         .catch(() => {});
     }, 0);
     return () => clearTimeout(tmr);
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(
-      () => setIdx((i) => (i + 1) % MOCK_THEMES.length),
-      7000,
-    );
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <HeroWrapper ref={heroRef}>
-      <HeroSpotlight />
+    <HeroWrapper>
       <HeroGradientStrip>
         <HeroGradientCanvas id="home-hero-gradient-canvas" data-transition-in />
       </HeroGradientStrip>
-      <LandingContainer>
+      <HeroContainer>
         <HeroGrid>
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp}>
-              <HeroH1>Take bookings on your site.</HeroH1>
-            </motion.div>
-            <motion.div variants={fadeUp}>
-              <HeroP>
-                Booking and CRM software for small businesses. Easy to set up,
-                priced for small teams, without the bloat of enterprise tools.
-                Embed a widget — customers book without leaving your brand.
-              </HeroP>
-            </motion.div>
-            <motion.div variants={fadeUp}>
-              <ButtonGroup>
-                <Magnetic>
+          <HeroCopy>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+            >
+              <AnimatedHeadline
+                as={HeroH1}
+                text="The same tools. A better price."
+              />
+              <motion.div variants={fadeUp}>
+                <HeroP>
+                  Scheduling, payments, memberships, and a customer list — the
+                  stack the big platforms charge enterprise rates for. Plans
+                  from $29 a month.
+                </HeroP>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <HeroButtons>
                   <PillLink href={REGISTER_HREF} $variant="primary">
                     Get started <ArrowRight size={16} />
                   </PillLink>
-                </Magnetic>
-                <PillLink href={PRICING_HREF} $variant="secondary">
-                  See pricing
-                </PillLink>
-              </ButtonGroup>
+                  <PillLink href={PRICING_HREF} $variant="secondary">
+                    See pricing
+                  </PillLink>
+                </HeroButtons>
+              </motion.div>
             </motion.div>
-          </motion.div>
-          <div>
-            {isMobile ? (
-              <HeroMobileImageWrap>
-                <Image
-                  src="/widgetmobilephone.webp"
-                  alt="Booking widget on a phone — pick a date and book in seconds"
-                  width={640}
-                  height={1280}
-                  sizes="100vw"
-                  style={{ width: "100%", height: "auto" }}
-                  priority
-                />
-              </HeroMobileImageWrap>
-            ) : (
-              <>
-                <TiltFollow max={8}>
-                  <WidgetCalendarMock theme={MOCK_THEMES[idx]} />
-                </TiltFollow>
-                <ThemeDots>
-                  {MOCK_THEMES.map((_, i) => (
-                    <ThemeDot
-                      key={i}
-                      $active={i === idx}
-                      aria-label={`Theme ${i + 1}`}
-                      onClick={() => setIdx(i)}
-                    />
-                  ))}
-                </ThemeDots>
-              </>
-            )}
-          </div>
+          </HeroCopy>
+          <HeroVisual>
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ImagePlaceholder
+                label="Hero image placeholder"
+                minHeight="560px"
+              />
+            </motion.div>
+          </HeroVisual>
         </HeroGrid>
-      </LandingContainer>
+      </HeroContainer>
     </HeroWrapper>
   );
 }
@@ -699,9 +389,6 @@ const ValuePropsGrid = styled.div`
 `;
 
 const VPItem = styled(motion.div)`
-  ${pointerGlow}
-  padding: 20px 16px;
-  border-radius: 16px;
   h3 {
     font-size: 16px;
     margin: 0 0 12px;
@@ -753,92 +440,6 @@ const FeatureRow = styled.div`
   }
 `;
 
-const ListGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-
-  @media (max-width: 968px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  @media (max-width: 568px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ListColumn = styled(motion.div)`
-  h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 0 0 10px;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 8px;
-    color: ${t.colors.dark};
-  }
-  ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  li {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1.4;
-    color: ${t.colors.text};
-  }
-`;
-
-const Steps = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 40px;
-
-  @media (max-width: 800px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Step = styled(motion.div)`
-  ${pointerGlow}
-  padding: 24px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid ${t.colors.border};
-`;
-
-const Audiences = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 36px;
-
-  @media (max-width: 800px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const AudienceCard = styled(motion.article)`
-  ${pointerGlow}
-  padding: 24px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid ${t.colors.border};
-  h3 {
-    margin: 0 0 8px;
-    color: ${t.colors.dark};
-    font-size: 18px;
-  }
-  p {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.55;
-  }
-`;
-
 const Platforms = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -857,162 +458,16 @@ const PlatformChip = styled.span`
 `;
 
 const PriceGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
   margin-top: 48px;
 
   @media (max-width: 800px) {
-    grid-template-columns: 1fr;
+    margin-top: 32px;
   }
 `;
 
-const PlanCard = styled(motion.article)`
-  ${pointerGlow}
-  border-radius: 18px;
-  padding: 22px 22px 20px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  background: ${(p) =>
-    p.$featured
-      ? "linear-gradient(170deg, #fff 0%, rgba(255,230,160,0.55) 32%, rgba(255,185,120,0.42) 54%, rgba(155,170,255,0.38) 76%, #fff 100%)"
-      : "#fff"};
-  border: ${(p) => (p.$featured ? "none" : "1px solid #E4E4E7")};
-  box-shadow: ${(p) =>
-    p.$featured ? "0 16px 48px rgba(0,0,0,0.13)" : "none"};
-`;
-
-const PlanName = styled.h3`
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: ${t.colors.dark};
-`;
-
-const PlanPrice = styled.div`
-  font-size: 36px;
-  font-weight: 800;
-  color: ${t.colors.dark};
-  letter-spacing: -0.03em;
-  span {
-    font-size: 14px;
-    font-weight: 600;
-    color: ${t.colors.textLight};
-  }
-`;
-
-const FaqList = styled.div`
+const FaqWrap = styled.div`
   max-width: 720px;
   margin: 40px auto 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #fff;
-`;
-
-function FaqItem({ q, a }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ borderBottom: "1px solid #F1F5F9" }}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          padding: "18px 24px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          fontFamily: "inherit",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#0A2540",
-            lineHeight: 1.4,
-          }}
-        >
-          {q}
-        </span>
-        <span
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: "50%",
-            background: open ? "#0A2540" : "#F1F5F9",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 16,
-              lineHeight: 1,
-              color: open ? "#fff" : "#64748B",
-              display: "block",
-              transform: open ? "rotate(45deg)" : "none",
-              transition: "transform 0.2s",
-            }}
-          >
-            +
-          </span>
-        </span>
-      </button>
-      {open && (
-        <div
-          style={{
-            padding: "0 24px 18px",
-            fontSize: 14,
-            color: "#425466",
-            lineHeight: 1.7,
-          }}
-        >
-          {a}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const Quotes = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 36px;
-
-  @media (max-width: 800px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Quote = styled.blockquote`
-  ${pointerGlow}
-  margin: 0;
-  padding: 24px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid ${t.colors.border};
-  p {
-    margin: 0 0 16px;
-    color: ${t.colors.dark};
-    font-size: 16px;
-    line-height: 1.5;
-  }
-  footer {
-    font-size: 13px;
-    color: ${t.colors.textLight};
-    font-weight: 600;
-  }
 `;
 
 const FAQ_ITEMS = [
@@ -1050,39 +505,139 @@ const FAQ_ITEMS = [
   },
 ];
 
-const HOW = [
+const TrustpilotLogo = () => (
+  <svg
+    width="88"
+    height="22"
+    viewBox="0 0 100 24"
+    fill="none"
+    aria-label="Trustpilot"
+  >
+    <path
+      d="M14.006 18.1411L10.88 19.9991L11.77 16.2461L8.887 13.7001L12.689 13.3751L14.006 9.85812L15.322 13.3751L19.124 13.7001L16.241 16.2461L17.131 19.9991L14.006 18.1411Z"
+      fill="#00B67A"
+    />
+    <text
+      x="24"
+      y="18"
+      fontFamily="Arial, sans-serif"
+      fontSize="14"
+      fontWeight="bold"
+      fill="#000"
+    >
+      Trustpilot
+    </text>
+  </svg>
+);
+
+const OWNER_QUOTES = [
   {
-    n: "01",
-    icon: Code2,
-    title: "Embed the widget",
-    body: "Paste one snippet on your site. Match your colors, choose popup or inline.",
+    id: 1,
+    rating: 5,
+    date: "12 March 2025",
+    quote:
+      "Same scheduling, payments, and memberships we had on the expensive platform. The bill is a fraction of what it was.",
+    userName: "Maya Chen",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Studio owner",
   },
   {
-    n: "02",
-    icon: MousePointerClick,
-    title: "Customers book",
-    body: "They pick a time and pay on your website. Confirmations go out automatically.",
+    id: 2,
+    rating: 5,
+    date: "2 July 2025",
+    quote:
+      "We compared feature lists side by side. ClassEasily had what we actually used — at a price that isn't a second rent payment.",
+    userName: "James Ortiz",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Tutor",
   },
   {
-    n: "03",
-    icon: LineChart,
-    title: "You run the business",
-    body: "Capacity, customers, memberships, and payouts live in one dashboard.",
+    id: 3,
+    rating: 5,
+    date: "17 January 2026",
+    quote:
+      "Payments, memberships, and a customer list in one place. I was paying twice as much for the same stack.",
+    userName: "Priya Shah",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Salon owner",
+  },
+  {
+    id: 4,
+    rating: 5,
+    date: "15 August 2025",
+    quote:
+      "Mindbody-class tools without Mindbody prices. Classes, checkout, and CRM — we didn't give anything up.",
+    userName: "Elena Voss",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Yoga studio",
+  },
+  {
+    id: 5,
+    rating: 5,
+    date: "19 February 2026",
+    quote:
+      "I wasn't going to keep paying enterprise rates for a calendar, checkout, and a customer list. This does all three for less.",
+    userName: "Marcus Bell",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Coach",
   },
 ];
 
-export default function SaaSHomePage() {
-  const themeRef = useRef(0);
-  const [, bump] = useState(0);
-  const cycleTheme = useCallback((i) => {
-    themeRef.current = i;
-    bump((n) => n + 1);
-  }, []);
+const FEATURED_OWNER = {
+  quote:
+    "We were paying twice as much for the same scheduling, payments, and memberships. The switch paid for itself the first month.",
+  name: "Maya Chen",
+  title: "Studio owner",
+  avatarUrl:
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
+};
 
+function OwnerReviewCard({ t, starSize = 14 }) {
+  return (
+    <article className={testimonialStyles.card}>
+      <div className={testimonialStyles.cardHeader}>
+        <div className={testimonialStyles.stars}>
+          {Array.from({ length: t.rating }).map((_, i) => (
+            <Star key={i} size={starSize} fill="#00b67a" stroke="none" />
+          ))}
+        </div>
+        <span className={testimonialStyles.date}>{t.date}</span>
+      </div>
+      <p className={testimonialStyles.quote}>{t.quote}</p>
+      <div className={testimonialStyles.cardFooter}>
+        <div className={testimonialStyles.userInfo}>
+          <Image
+            src={t.avatarUrl}
+            alt={t.userName}
+            className={testimonialStyles.avatar}
+            width={36}
+            height={36}
+            sizes="36px"
+          />
+          <div className={testimonialStyles.userDetails}>
+            <span className={testimonialStyles.userName}>{t.userName}</span>
+            <span className={testimonialStyles.userTitle}>{t.userTitle}</span>
+          </div>
+        </div>
+        <div className={testimonialStyles.trustpilot}>
+          <TrustpilotLogo />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export default function SaaSHomePage() {
   return (
     <ThemeProvider theme={t}>
       <Page>
         <MarketingHeader />
+        <MarketingSheet>
         <main>
           <Hero />
 
@@ -1097,7 +652,7 @@ export default function SaaSHomePage() {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <GlowRoot as={VPItem} variants={fadeUp}>
+                <VPItem variants={fadeUp}>
                   <h3>
                     <Puzzle size={20} color="#fc4056" /> Booking on your site
                   </h3>
@@ -1106,8 +661,8 @@ export default function SaaSHomePage() {
                     Squarespace, or a custom site. Customers never leave your
                     brand.
                   </p>
-                </GlowRoot>
-                <GlowRoot as={VPItem} variants={fadeUp}>
+                </VPItem>
+                <VPItem variants={fadeUp}>
                   <h3>
                     <CreditCard size={20} color="#fc4056" /> Apple Pay and cards
                   </h3>
@@ -1115,8 +670,8 @@ export default function SaaSHomePage() {
                     Checkout with Apple Pay, Google Pay, or any major card. We
                     handle payments; you get one payout to your bank.
                   </p>
-                </GlowRoot>
-                <GlowRoot as={VPItem} variants={fadeUp}>
+                </VPItem>
+                <VPItem variants={fadeUp}>
                   <h3>
                     <LayoutGrid size={20} color="#fc4056" /> Your site, your brand
                   </h3>
@@ -1124,8 +679,8 @@ export default function SaaSHomePage() {
                     Match colors and fonts. Popup with your own button, or embed
                     inline. Domain whitelist keeps the embed on your site only.
                   </p>
-                </GlowRoot>
-                <GlowRoot as={VPItem} variants={fadeUp}>
+                </VPItem>
+                <VPItem variants={fadeUp}>
                   <h3>
                     <Users size={20} color="#fc4056" /> Lightweight CRM
                   </h3>
@@ -1133,7 +688,7 @@ export default function SaaSHomePage() {
                     Every booker lands in a customer list. See history, follow
                     up, and run memberships without a second tool.
                   </p>
-                </GlowRoot>
+                </VPItem>
               </ValuePropsGrid>
             </LandingContainer>
           </LandingSection>
@@ -1193,28 +748,26 @@ export default function SaaSHomePage() {
                     justifyContent: "center",
                   }}
                 >
-                  <TiltFollow max={7}>
-                    <div
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      maxWidth: 350,
+                      borderRadius: 16,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <img
+                      src="/methods.jpeg"
+                      alt="Accepted payment methods including Apple Pay, Google Pay, and cards"
                       style={{
-                        position: "relative",
                         width: "100%",
-                        maxWidth: 350,
+                        height: "auto",
+                        display: "block",
                         borderRadius: 16,
-                        overflow: "hidden",
                       }}
-                    >
-                      <img
-                        src="/methods.jpeg"
-                        alt="Accepted payment methods including Apple Pay, Google Pay, and cards"
-                        style={{
-                          width: "100%",
-                          height: "auto",
-                          display: "block",
-                          borderRadius: 16,
-                        }}
-                      />
-                    </div>
-                  </TiltFollow>
+                    />
+                  </div>
                 </motion.div>
               </SplitGrid>
             </LandingContainer>
@@ -1225,22 +778,16 @@ export default function SaaSHomePage() {
           <LandingSection $bg="#fff" id="features">
             <LandingContainer>
               <SplitGrid>
-                <div>
-                  <TiltFollow max={8}>
-                    <WidgetCalendarMock
-                      theme={MOCK_THEMES[themeRef.current % MOCK_THEMES.length]}
-                    />
-                  </TiltFollow>
-                  <ThemeDots>
-                    {MOCK_THEMES.map((_, i) => (
-                      <ThemeDot
-                        key={i}
-                        $active={i === themeRef.current}
-                        onClick={() => cycleTheme(i)}
-                      />
-                    ))}
-                  </ThemeDots>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <ImagePlaceholder
+                    label="Product image placeholder"
+                    minHeight="460px"
+                  />
+                </motion.div>
                 <motion.div
                   variants={fadeUp}
                   initial="hidden"
@@ -1252,7 +799,7 @@ export default function SaaSHomePage() {
                   <Body>
                     Colors, fonts, popup or inline. Pin the widget to one class
                     on Growth and Advanced — useful for landing pages and ads.
-                    Preview themes the way your customers will see them.
+                    Match it to your site so it looks like it belongs there.
                   </Body>
                   <FeatureStack>
                     <FeatureRow>
@@ -1295,238 +842,6 @@ export default function SaaSHomePage() {
             </LandingContainer>
           </LandingSection>
 
-          <DiagonalDivider fromBg="#ffffff" toBg="#f8fafc" />
-
-          <LandingSection $bg="#f8fafc">
-            <LandingContainer>
-              <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                style={{ marginBottom: 32 }}
-              >
-                <Kicker>What you get</Kicker>
-                <Display>One system for bookings and customers</Display>
-                <Body $max="720px">
-                  Widget on your site so visitors book there. Dashboard for
-                  schedule, payments, memberships, and follow-up. No marketplace
-                  listing required.
-                </Body>
-              </motion.div>
-              <ListGrid
-                as={motion.div}
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-              >
-                <ListColumn variants={fadeUp}>
-                  <h4>Widget</h4>
-                  <ul>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Embed on any site
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Popup or inline
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Brand colors & fonts
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Domain whitelist
-                    </li>
-                  </ul>
-                </ListColumn>
-                <ListColumn variants={fadeUp}>
-                  <h4>Scheduling</h4>
-                  <ul>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Sessions and capacity
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> One calendar
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Pin a class (Growth+)
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Automated reminders
-                    </li>
-                  </ul>
-                </ListColumn>
-                <ListColumn variants={fadeUp}>
-                  <h4>Payments</h4>
-                  <ul>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Visa, Mastercard, Amex
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Apple Pay & Google Pay
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Payouts via Stripe Connect
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Promo codes (Growth+)
-                    </li>
-                  </ul>
-                </ListColumn>
-                <ListColumn variants={fadeUp}>
-                  <h4>CRM</h4>
-                  <ul>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Customer list
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Booking history
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Memberships (Growth+)
-                    </li>
-                    <li>
-                      <Check size={14} color="#fc4056" /> Branded emails (Growth+)
-                    </li>
-                  </ul>
-                </ListColumn>
-              </ListGrid>
-            </LandingContainer>
-          </LandingSection>
-
-          <DiagonalDivider fromBg="#f8fafc" toBg="#ffffff" flip />
-
-          <LandingSection $bg="#fff" id="how-it-works">
-            <LandingContainer>
-              <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                style={{ textAlign: "center" }}
-              >
-                <Kicker>How it works</Kicker>
-                <Display>Live in three steps.</Display>
-              </motion.div>
-              <Steps>
-                {HOW.map((s) => (
-                  <GlowRoot
-                    as={Step}
-                    key={s.n}
-                    variants={fadeUp}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 800,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: t.colors.primary,
-                        marginBottom: 10,
-                      }}
-                    >
-                      {s.n}
-                    </div>
-                    <s.icon size={22} color={t.colors.dark} />
-                    <h3
-                      style={{
-                        color: t.colors.dark,
-                        margin: "12px 0 8px",
-                        fontSize: 18,
-                      }}
-                    >
-                      {s.title}
-                    </h3>
-                    <p style={{ margin: 0, lineHeight: 1.55 }}>{s.body}</p>
-                  </GlowRoot>
-                ))}
-              </Steps>
-            </LandingContainer>
-          </LandingSection>
-
-          <LandingSection $bg="#fff">
-            <LandingContainer>
-              <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                style={{ marginBottom: 28 }}
-              >
-                <Kicker>Dashboard</Kicker>
-                <Display>A week of bookings, under your cursor.</Display>
-                <Body $max="560px">
-                  Move across the chart. Saturday fills up. That is the view
-                  from your dashboard — not a marketplace listing.
-                </Body>
-              </motion.div>
-              <LiveWeekChart />
-            </LandingContainer>
-          </LandingSection>
-
-          <LandingSection $bg="#fafbfc">
-            <LandingContainer>
-              <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                style={{ textAlign: "center" }}
-              >
-                <Kicker>Built for small teams</Kicker>
-                <Display>If you take appointments, this fits.</Display>
-                <Body $max="560px" style={{ margin: "0 auto" }}>
-                  We started with local studios and still work closely with
-                  them. The product is for any appointment-based business that
-                  wants bookings without enterprise software.
-                </Body>
-              </motion.div>
-              <Audiences>
-                <GlowRoot
-                  as={AudienceCard}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                >
-                  <h3>Studios & classes</h3>
-                  <p>
-                    Yoga, pottery, fitness, workshops. Capacity, wait-free
-                    booking, and memberships on Growth+.
-                  </p>
-                </GlowRoot>
-                <GlowRoot
-                  as={AudienceCard}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                >
-                  <h3>Tutors & coaches</h3>
-                  <p>
-                    Sessions with a public booking page that still looks like
-                    your brand — not a generic marketplace.
-                  </p>
-                </GlowRoot>
-                <GlowRoot
-                  as={AudienceCard}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                >
-                  <h3>Salons & appointments</h3>
-                  <p>
-                    Collect payment when they book. Keep the customer
-                    relationship on your site and in your list.
-                  </p>
-                </GlowRoot>
-              </Audiences>
-            </LandingContainer>
-          </LandingSection>
-
           <LandingSection $bg="#fff" id="pricing-preview">
             <LandingContainer>
               <motion.div
@@ -1544,7 +859,7 @@ export default function SaaSHomePage() {
                 <p
                   style={{
                     fontSize: 14,
-                    color: "#94a3b8",
+                    color: "#000",
                     maxWidth: 560,
                     margin: "8px 0 0",
                     fontWeight: 500,
@@ -1555,68 +870,9 @@ export default function SaaSHomePage() {
                 </p>
               </motion.div>
               <PriceGrid>
-                {PLANS.map((plan) => (
-                  <GlowRoot as={PlanCard} key={plan.id} $featured={plan.featured}>
-                    {plan.featured && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 16,
-                          right: 16,
-                          fontSize: 11,
-                          fontWeight: 800,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          background: "#fff0f3",
-                          color: t.colors.primary,
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        Most popular
-                      </span>
-                    )}
-                    <PlanName>{plan.name}</PlanName>
-                    <PlanPrice>
-                      ${plan.price}
-                      <span> /mo CAD</span>
-                    </PlanPrice>
-                    <p style={{ fontSize: 14, margin: "8px 0 16px" }}>
-                      {plan.commission}% per booking
-                    </p>
-                    <ul
-                      style={{
-                        listStyle: "none",
-                        padding: 0,
-                        margin: "0 0 20px",
-                        flex: 1,
-                      }}
-                    >
-                      {(plan.features || []).slice(0, 5).map((f) => (
-                        <li
-                          key={f.label}
-                          style={{
-                            display: "flex",
-                            gap: 8,
-                            fontSize: 13,
-                            marginBottom: 8,
-                            color: t.colors.dark,
-                          }}
-                        >
-                          <Check size={14} color={t.colors.primary} />
-                          {f.label}
-                        </li>
-                      ))}
-                    </ul>
-                    <ButtonLink
-                      href={`${REGISTER_HREF}?plan=${plan.id}`}
-                      $variant={plan.featured ? "primary" : "secondary"}
-                      style={{ width: "100%" }}
-                    >
-                      Get started
-                    </ButtonLink>
-                  </GlowRoot>
-                ))}
+                <PlanCards
+                  hrefForPlan={(plan) => `${REGISTER_HREF}?plan=${plan.id}`}
+                />
               </PriceGrid>
               <div style={{ marginTop: 24, textAlign: "center" }}>
                 <GhostLink href={PRICING_HREF}>
@@ -1638,51 +894,111 @@ export default function SaaSHomePage() {
                 <Kicker>FAQ</Kicker>
                 <Display>Common questions</Display>
               </motion.div>
-              <FaqList>
-                {FAQ_ITEMS.map((item) => (
-                  <FaqItem key={item.q} q={item.q} a={item.a} />
-                ))}
-              </FaqList>
+              <FaqWrap>
+                <AnimatedFaq items={FAQ_ITEMS} boxed />
+              </FaqWrap>
             </LandingContainer>
           </LandingSection>
 
-          <LandingSection $bg="#f8fafc">
-            <LandingContainer>
-              <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                style={{ textAlign: "center" }}
-              >
-                <Kicker>Customers</Kicker>
-                <Display>What owners say.</Display>
-              </motion.div>
-              <Quotes>
-                <GlowRoot as={Quote}>
-                  <p>
-                    “We stopped sending people off-site to book. It just lives
-                    on our website now.”
+          <section
+            className={testimonialStyles.section}
+            aria-labelledby="testimonials-title"
+            style={{ background: "#f8fafc", fontFamily: "inherit" }}
+          >
+            <div className={testimonialStyles.container}>
+              <div className={testimonialStyles.grid}>
+                <div className={testimonialStyles.leftCol}>
+                  <h2
+                    id="testimonials-title"
+                    className={testimonialStyles.headline}
+                  >
+                    They kept the tools.
+                    <br />
+                    They{" "}
+                    <span className={testimonialStyles.headlineAccent}>
+                      cut the bill.
+                    </span>
+                  </h2>
+                  <p className={testimonialStyles.subtext}>
+                    Classes, payments, memberships, and a customer list — what
+                    the big platforms charge enterprise rates for, from $29 a
+                    month.
                   </p>
-                  <footer>Maya, studio owner</footer>
-                </GlowRoot>
-                <GlowRoot as={Quote}>
-                  <p>
-                    “Setup was the part I was dreading. It was not that. We were
-                    taking bookings the same day.”
-                  </p>
-                  <footer>James, tutor</footer>
-                </GlowRoot>
-                <GlowRoot as={Quote}>
-                  <p>
-                    “I needed payments, memberships, and a customer list —
-                    without an enterprise contract.”
-                  </p>
-                  <footer>Priya, salon owner</footer>
-                </GlowRoot>
-              </Quotes>
-            </LandingContainer>
-          </LandingSection>
+                  <div className={testimonialStyles.statRow}>
+                    <div className={testimonialStyles.stat}>
+                      <span className={testimonialStyles.statNum}>$29</span>
+                      <span className={testimonialStyles.statLabel}>
+                        Starting / mo
+                      </span>
+                    </div>
+                    <div className={testimonialStyles.stat}>
+                      <span className={testimonialStyles.statNum}>Same stack</span>
+                      <span className={testimonialStyles.statLabel}>
+                        Book, pay, CRM
+                      </span>
+                    </div>
+                    <div className={testimonialStyles.stat}>
+                      <span className={testimonialStyles.statNum}>$0</span>
+                      <span className={testimonialStyles.statLabel}>
+                        Setup fee
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={testimonialStyles.centerCol} aria-hidden="true">
+                  <Image
+                    src="/workshop.jpg"
+                    alt="Workshop in session"
+                    fill
+                    sizes="(max-width: 1023px) 60vw, 35vw"
+                    className={testimonialStyles.centerImage}
+                  />
+                  <div className={testimonialStyles.imageOverlay} />
+                  <div className={testimonialStyles.imageContent}>
+                    <p className={testimonialStyles.imageQuote}>
+                      “{FEATURED_OWNER.quote}”
+                    </p>
+                    <div className={testimonialStyles.imageAuthor}>
+                      <Image
+                        src={FEATURED_OWNER.avatarUrl}
+                        alt={FEATURED_OWNER.name}
+                        className={testimonialStyles.imageAvatar}
+                        width={38}
+                        height={38}
+                        sizes="38px"
+                      />
+                      <div className={testimonialStyles.imageAuthorText}>
+                        <span className={testimonialStyles.imageAuthorName}>
+                          {FEATURED_OWNER.name}
+                        </span>
+                        <span className={testimonialStyles.imageAuthorTitle}>
+                          {FEATURED_OWNER.title}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={testimonialStyles.rightCol}
+                  aria-label="More testimonials"
+                >
+                  {OWNER_QUOTES.map((t) => (
+                    <OwnerReviewCard key={t.id} t={t} />
+                  ))}
+                </div>
+              </div>
+
+              <div className={testimonialStyles.carouselSection}>
+                <TestimonialsClient title="What owners say">
+                  {OWNER_QUOTES.map((t) => (
+                    <OwnerReviewCard key={t.id} t={t} starSize={16} />
+                  ))}
+                </TestimonialsClient>
+              </div>
+            </div>
+          </section>
 
           <LandingSection $bg="#fff" style={{ paddingBottom: 96 }}>
             <LandingContainer>
@@ -1693,11 +1009,9 @@ export default function SaaSHomePage() {
                   bookings the same day.
                 </Body>
                 <ButtonGroup style={{ justifyContent: "center" }}>
-                  <Magnetic>
-                    <PillLink href={REGISTER_HREF} $variant="primary">
-                      Get started <ArrowRight size={16} />
-                    </PillLink>
-                  </Magnetic>
+                  <PillLink href={REGISTER_HREF} $variant="primary">
+                    Get started <ArrowRight size={16} />
+                  </PillLink>
                   <GhostLink href={`mailto:${SUPPORT_EMAIL}`}>Talk to us</GhostLink>
                 </ButtonGroup>
               </div>
@@ -1705,6 +1019,7 @@ export default function SaaSHomePage() {
           </LandingSection>
         </main>
         <MarketingFooter />
+        </MarketingSheet>
       </Page>
     </ThemeProvider>
   );

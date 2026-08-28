@@ -20,7 +20,7 @@ const PostMeta = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-size: 0.95rem;
-  color: #6b7280;
+  color: #000;
 `;
 
 const MetaDetails = styled.span`

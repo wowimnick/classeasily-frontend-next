@@ -65,7 +65,7 @@ const MetaFooter = styled.div`
   align-items: center;
   margin-top: 20px;
   font-size: 13px;
-  color: #6b7280;
+  color: #000;
 `;
 
 const ReadTime = styled.span`

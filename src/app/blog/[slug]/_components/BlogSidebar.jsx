@@ -47,7 +47,7 @@ const RecentPostItem = styled.div`
   }
   span {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: #000;
   }
   &:hover h4 {
     color: #4b5563;

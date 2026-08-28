@@ -12,7 +12,7 @@ test.describe('Gift cards — retired marketplace URLs', () => {
     await dismissCookieBannerIfVisible(page);
     await expect(page).toHaveURL('/');
     await expect(
-      page.getByRole('heading', { name: /Take bookings on your site/i }),
+      page.getByRole('heading', { name: /The same tools/i }),
     ).toBeVisible();
   });
 

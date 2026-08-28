@@ -3,9 +3,9 @@ export const marketingTheme = {
   colors: {
     primary: "#fc4056",
     primaryHover: "#c92e44",
-    dark: "#0A2540",
-    text: "#425466",
-    textLight: "#8792A2",
+    dark: "#000000",
+    text: "#000000",
+    textLight: "#000000",
     bg: "#FFFFFF",
     bgLight: "#F6F9FC",
     border: "#E2E8F0",

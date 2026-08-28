@@ -7,7 +7,7 @@ export default function Loading() {
         alignItems: "center",
         justifyContent: "center",
         fontFamily: "inherit",
-        color: "#425466",
+        color: "#000",
       }}
     >
       Loading…

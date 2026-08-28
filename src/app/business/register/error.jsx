@@ -23,7 +23,7 @@ export default function Error({ error, reset }) {
       }}
     >
       <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Something went wrong</h1>
-      <p style={{ margin: 0, maxWidth: 480, color: "#425466" }}>
+      <p style={{ margin: 0, maxWidth: 480, color: "#000" }}>
         We encountered an error loading the registration page. Please try again.
       </p>
       <button type="button" onClick={reset}>

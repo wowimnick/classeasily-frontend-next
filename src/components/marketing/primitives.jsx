@@ -81,7 +81,7 @@ const variants = {
     background: ${t.colors.dark};
     color: #fff;
     &:hover {
-      background: #14375a;
+      background: #000;
       color: #fff;
     }
   `,

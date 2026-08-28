@@ -81,7 +81,8 @@ test.describe('Business registration', () => {
     await expect(page.getByRole('heading', { name: /Pick a plan/i })).toBeVisible({
       timeout: 30000,
     });
-    await expect(page.getByText(/Advanced · \$89\/mo/i)).toBeVisible();
+    await expect(page.getByText('Advanced', { exact: true })).toBeVisible();
+    await expect(page.getByText(/\$89/)).toBeVisible();
   });
 
   test('happy path: account → business → plan → mocked Stripe pay → skippable onboarding', async ({
@@ -134,7 +135,7 @@ test.describe('Business registration', () => {
     await page.getByLabel('First name').fill('Maya');
     await page.getByLabel('Email').fill('saas-e2e@example.com');
     await page.getByLabel('Password').fill('Password123!');
-    await page.getByRole('button', { name: /Continue/i }).click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
 
     await expect(page.getByRole('heading', { name: /Tell us about the business/i })).toBeVisible({
       timeout: 30000,
@@ -164,7 +165,7 @@ test.describe('Business registration', () => {
       is_active: true,
     };
     await gotoPath(page, '/business/register?step=timezone');
-    await expect(page.getByRole('heading', { name: /When is class time/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Set your timezone/i })).toBeVisible({
       timeout: 20000,
     });
     await page.getByRole('button', { name: /^Skip$/i }).click();

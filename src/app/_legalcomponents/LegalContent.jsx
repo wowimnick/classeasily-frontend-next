@@ -17,7 +17,7 @@ const ContentContainer = styled.main`
 const Title = styled.h1`
   font-size: clamp(2rem, 5vw, 2.8rem);
   font-weight: 800;
-  color: ${(props) => props.theme.token.colorText};
+  color: #000;
   margin-bottom: 1rem;
   text-align: center;
   border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
@@ -26,13 +26,13 @@ const Title = styled.h1`
 
 const LastUpdated = styled.p`
   font-size: 0.9rem;
-  color: ${(props) => props.theme.token.colorTextSecondary};
+  color: #000;
   text-align: center;
   margin-bottom: 3rem;
 `;
 
 const ContentBody = styled.div`
-  color: ${(props) => props.theme.token.colorText};
+  color: #000;
 `;
 
 const Section = styled.section`
@@ -46,7 +46,7 @@ const Section = styled.section`
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
   font-weight: 700;
-  color: ${(props) => props.theme.token.colorText};
+  color: #000;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
@@ -59,7 +59,7 @@ const SectionTitle = styled.h2`
 const SubHeading = styled.h3`
   font-size: 1.2rem;
   font-weight: 600;
-  color: ${(props) => props.theme.token.colorText};
+  color: #000;
   margin-top: 2rem;
   margin-bottom: 1rem;
 
@@ -71,7 +71,7 @@ const SubHeading = styled.h3`
 const Paragraph = styled.p`
   font-size: 1rem;
   line-height: 1.7;
-  color: ${(props) => props.theme.token.colorTextSecondary};
+  color: #000;
   margin-bottom: 1.25rem;
 
   a {
@@ -92,7 +92,7 @@ const List = styled.ul`
   list-style: disc;
   padding-left: 2rem;
   margin-bottom: 1.25rem;
-  color: ${(props) => props.theme.token.colorTextSecondary};
+  color: #000;
 `;
 
 const ListItem = styled.li`
@@ -102,7 +102,7 @@ const ListItem = styled.li`
 
   strong {
     font-weight: 600;
-    color: ${(props) => props.theme.token.colorText};
+    color: #000;
   }
 `;
 

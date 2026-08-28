@@ -19,17 +19,13 @@ test.describe('Homepage UI and public buttons', () => {
 
   test('hero copy and primary CTA are visible', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /Take bookings on your site/i }),
+      page.getByRole('heading', { name: /The same tools/i }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: /Get started/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /See pricing/i })).toBeVisible();
   });
 
-  test('How it works section has three steps, no adventurer toggle', async ({ page }) => {
-    const howItWorks = page.getByText('How it works', { exact: true });
-    await howItWorks.scrollIntoViewIfNeeded();
-    await expect(howItWorks).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Embed the widget/i })).toBeVisible();
+  test('homepage has no adventurer / host marketplace toggle', async ({ page }) => {
     await expect(page.getByRole('button', { name: /for Adventurers/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /for Hosts/i })).toHaveCount(0);
   });
@@ -40,10 +36,11 @@ test.describe('Homepage UI and public buttons', () => {
     await expect(page.getByText('Advanced', { exact: true }).first()).toBeVisible();
   });
 
-  test('header shows Log in and Get started for guests', async ({ page }) => {
+  test('header shows Get started and account menu for guests', async ({ page }) => {
     const header = page.locator('header').first();
-    await expect(header.getByRole('button', { name: /Log in/i })).toBeVisible();
     await expect(header.getByRole('link', { name: /Get started/i })).toBeVisible();
+    await header.getByRole('button', { name: /Account menu/i }).click();
+    await expect(page.getByRole('button', { name: /^Log in$/i })).toBeVisible();
   });
 
   test('mobile viewport still shows main content', async ({ page }) => {

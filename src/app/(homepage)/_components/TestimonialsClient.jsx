@@ -4,7 +4,10 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Play, Pause } from "lucide-react";
 import styles from "./Testimonials.module.css";
 
-export default function TestimonialsClient({ children }) {
+export default function TestimonialsClient({
+  children,
+  title = "What our learners say",
+}) {
   const scrollRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -42,7 +45,7 @@ export default function TestimonialsClient({ children }) {
   return (
     <div>
       <div className={styles.headerRow}>
-        <h3 className={styles.carouselTitle}>What our learners say</h3>
+        <h3 className={styles.carouselTitle}>{title}</h3>
         <div className={styles.controls}>
           <button
             className={`${styles.controlBtn} ${isPlaying ? styles.active : ""}`}
