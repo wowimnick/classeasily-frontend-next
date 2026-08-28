@@ -994,12 +994,11 @@ export const businessService = {
     billing_interval,
     success_url,
     cancel_url,
-    ui_mode,
   } = {}) => {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT,
-        { plan_id, billing_interval, success_url, cancel_url, ui_mode },
+        { plan_id, billing_interval, success_url, cancel_url },
       );
       return {
         success: true,

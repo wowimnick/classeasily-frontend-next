@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,11 +10,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  EmbeddedCheckout,
-  EmbeddedCheckoutProvider,
-} from "@stripe/react-stripe-js";
 import {
   ArrowRight,
   Building2,
@@ -54,10 +48,6 @@ import PlanPicker from "./PlanPicker";
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
 });
-
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "",
-);
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -154,7 +144,8 @@ function stepCopy(step, name, plan) {
         eyebrow: "Pricing that scales with bookings",
         title: "Pick a plan",
         paragraphs: [
-          "A monthly subscription plus a small commission on each paid booking. The monthly fee covers the widget, scheduling, payments, and dashboard. Commission is charged only when a booking is paid.",
+          "A monthly subscription plus a small commission on each paid booking. The monthly fee covers the widget, scheduling, payments, and dashboard.",
+          "Commission is charged only when a booking is paid. You can change plans later from Settings.",
         ],
       };
     case "pay":
@@ -200,25 +191,6 @@ function stepCopy(step, name, plan) {
         paragraphs: [],
       };
   }
-}
-
-function useElementSize() {
-  const ref = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    });
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, size];
 }
 
 function tzLabel(zone) {
@@ -362,6 +334,8 @@ const Main = styled.main`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
   --onboard-pad-x: 28px;
   --onboard-pad-t: 40px;
   --onboard-pad-b: 32px;
@@ -381,12 +355,11 @@ const Shell = styled.div`
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: ${(p) => (p.$wide ? "1120px" : "1080px")};
+  max-width: 1080px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: ${(p) =>
-    p.$wide ? "1fr" : "minmax(0, 0.92fr) auto minmax(0, 1.08fr)"};
-  align-items: stretch;
+  grid-template-columns: minmax(0, 0.92fr) auto minmax(0, 1.08fr);
+  align-items: start;
 
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
@@ -397,6 +370,7 @@ const Shell = styled.div`
 const ColRule = styled.div`
   width: 1px;
   margin: 4px 28px;
+  align-self: stretch;
   background: linear-gradient(
     180deg,
     transparent 0%,
@@ -411,28 +385,27 @@ const ColRule = styled.div`
 `;
 
 const Story = styled.div`
-  position: ${(p) => (p.$plain ? "static" : "sticky")};
+  position: sticky;
   top: 8px;
   padding-top: 4px;
-  ${(p) =>
-    p.$plain
-      ? `
-    max-width: 1120px;
-    margin-bottom: 28px;
-  `
-      : ""}
+  min-width: 0;
 
   @media (max-width: 860px) {
     position: static;
   }
 `;
 
-const Panel = styled(motion.div)`
+const StepSlot = styled.div`
+  position: relative;
+`;
+
+const Panel = styled.div`
   background: #fff;
   border: 1px solid #ebebeb;
   border-radius: 20px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  min-width: 0;
 `;
 
 const PanelMeasure = styled.div`
@@ -459,13 +432,14 @@ const Title = styled.h1`
   letter-spacing: -0.035em;
   line-height: 1.12;
   color: #222;
+  min-height: calc(1.12em * 2);
 `;
 
 const Lead = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: ${(p) => (p.$wide ? "920px" : "460px")};
+  max-width: 460px;
 
   p {
     margin: 0;
@@ -843,7 +817,9 @@ const BackBtn = styled.button`
 const FooterRight = styled.div`
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  min-height: 48px;
 `;
 
 const PrimaryBtn = styled(AntButton)`
@@ -862,7 +838,7 @@ const PrimaryBtn = styled(AntButton)`
   }
 `;
 
-function StepIntro({ eyebrow, title, paragraphs, reduceMotion, wide }) {
+function StepIntro({ eyebrow, title, paragraphs, reduceMotion }) {
   const words = String(title).split(" ");
   const bodyDelay = reduceMotion ? 0 : words.length * 0.05 + 0.16;
 
@@ -888,7 +864,7 @@ function StepIntro({ eyebrow, title, paragraphs, reduceMotion, wide }) {
           </motion.span>
         ))}
       </Title>
-      <Lead $wide={wide}>
+      <Lead>
         {paragraphs.map((text, i) => (
           <motion.p
             key={text.slice(0, 48)}
@@ -913,13 +889,11 @@ export default function RegisterFlow() {
   const { isAuthenticated, isLoading } = useAuthUser();
   const reduceMotion = useReducedMotion();
   const mainRef = useRef(null);
-  const [panelRef, { height: panelHeight }] = useElementSize();
   const [step, setStep] = useState("account");
   const [minStep, setMinStep] = useState("account");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [planId, setPlanId] = useState(searchParams.get("plan") || "growth");
-  const [clientSecret, setClientSecret] = useState(null);
   const [businessName, setBusinessName] = useState("");
   const [timezone, setTimezone] = useState(
     (typeof Intl !== "undefined" &&
@@ -934,7 +908,6 @@ export default function RegisterFlow() {
   const copy = stepCopy(step, businessName, selectedPlan);
   const canBack = stepIndex > Math.max(0, minIndex);
   const current = STEPS[stepIndex];
-  const hideFooterPrimary = step === "pay" && Boolean(clientSecret);
 
   const detectedZone = useMemo(
     () =>
@@ -962,7 +935,6 @@ export default function RegisterFlow() {
   const goBack = useCallback(() => {
     if (!canBack) return;
     setError("");
-    setClientSecret(null);
     setStep(STEPS[stepIndex - 1].id);
   }, [canBack, stepIndex]);
 
@@ -1105,21 +1077,14 @@ export default function RegisterFlow() {
   const startCheckout = async () => {
     setError("");
     setBusy(true);
-    setClientSecret(null);
     try {
       const origin = window.location.origin;
       const result = await businessService.createWidgetSubscriptionCheckout({
         plan_id: planId,
         billing_interval: "month",
-        ui_mode: "embedded",
         success_url: `${origin}${REGISTER_HREF}?step=timezone`,
         cancel_url: `${origin}${REGISTER_HREF}?step=pay&plan=${planId}`,
       });
-      if (result.client_secret) {
-        setClientSecret(result.client_secret);
-        setBusy(false);
-        return;
-      }
       if (result.url) {
         window.location.href = result.url;
         return;
@@ -1236,48 +1201,45 @@ export default function RegisterFlow() {
         </ProgressTrack>
         <Main ref={mainRef}>
           <OnboardAmbient step={step} reduceMotion={reduceMotion} />
-          <Shell $wide={step === "plan"}>
-            <Story $plain={step === "plan"}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={false}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <StepIntro
-                    eyebrow={copy.eyebrow}
-                    title={copy.title}
-                    paragraphs={copy.paragraphs}
-                    reduceMotion={reduceMotion}
-                    wide={step === "plan"}
-                  />
-                </motion.div>
-              </AnimatePresence>
+          <Shell>
+            <Story>
+              <StepSlot>
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, pointerEvents: "none" }}
+                    transition={{ duration: 0.2 }}
+                    style={{ width: "100%" }}
+                  >
+                    <StepIntro
+                      eyebrow={copy.eyebrow}
+                      title={copy.title}
+                      paragraphs={copy.paragraphs}
+                      reduceMotion={reduceMotion}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </StepSlot>
             </Story>
-            {step === "plan" ? (
-              <PlanPicker planId={planId} onChange={setPlanId} />
-            ) : (
-              <>
             <ColRule aria-hidden />
-            <Panel
-              animate={
-                reduceMotion
-                  ? { height: "auto" }
-                  : { height: panelHeight || "auto" }
-              }
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            >
-              <div ref={panelRef}>
-                <PanelMeasure>
+            <Panel>
+              <PanelMeasure>
               {error && <ErrorText role="alert">{error}</ErrorText>}
-              <AnimatePresence mode="wait" initial={false}>
+              <StepSlot>
+              <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div
                   key={step}
                   initial={reduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={reduceMotion ? false : { opacity: 0 }}
-                  transition={{ duration: 0.18 }}
+                  animate={{ opacity: 1, pointerEvents: "auto" }}
+                  exit={
+                    reduceMotion
+                      ? { pointerEvents: "none" }
+                      : { opacity: 0, pointerEvents: "none" }
+                  }
+                  transition={{ duration: 0.2 }}
+                  style={{ width: "100%" }}
                 >
                 {step === "account" && (
                   <FormWrap>
@@ -1505,6 +1467,10 @@ export default function RegisterFlow() {
                   </FormWrap>
                 )}
 
+                {step === "plan" && (
+                  <PlanPicker planId={planId} onChange={setPlanId} />
+                )}
+
                 {step === "pay" && (
                   <>
                     <InfoCard>
@@ -1521,10 +1487,7 @@ export default function RegisterFlow() {
                         </RecapTop>
                         <TextLinkBtn
                           type="button"
-                          onClick={() => {
-                            setClientSecret(null);
-                            setStep("plan");
-                          }}
+                          onClick={() => setStep("plan")}
                           style={{ marginLeft: -10, marginTop: 10 }}
                         >
                           Change plan
@@ -1548,29 +1511,15 @@ export default function RegisterFlow() {
                         </InfoText>
                       </InfoBlock>
                     </InfoCard>
-                    {!clientSecret && (
-                      <>
-                        {IS_DEV && (
-                          <AntButton
-                            type="link"
-                            block
-                            onClick={() => setStep("timezone")}
-                            style={{ marginTop: 4 }}
-                          >
-                            Skip payment (dev)
-                          </AntButton>
-                        )}
-                      </>
-                    )}
-                    {clientSecret && (
-                      <div style={{ marginTop: 16 }}>
-                        <EmbeddedCheckoutProvider
-                          stripe={stripePromise}
-                          options={{ clientSecret }}
-                        >
-                          <EmbeddedCheckout />
-                        </EmbeddedCheckoutProvider>
-                      </div>
+                    {IS_DEV && (
+                      <AntButton
+                        type="link"
+                        block
+                        onClick={() => setStep("timezone")}
+                        style={{ marginTop: 4 }}
+                      >
+                        Skip payment (dev)
+                      </AntButton>
                     )}
                   </>
                 )}
@@ -1731,11 +1680,9 @@ export default function RegisterFlow() {
                 )}
                 </motion.div>
               </AnimatePresence>
-                </PanelMeasure>
-              </div>
+              </StepSlot>
+              </PanelMeasure>
             </Panel>
-              </>
-            )}
           </Shell>
         </Main>
         <Footer>
@@ -1755,18 +1702,16 @@ export default function RegisterFlow() {
                 Skip for now
               </TextLinkBtn>
             )}
-            {!hideFooterPrimary && (
-              <PrimaryBtn
-                type="primary"
-                htmlType={primary.htmlType || "button"}
-                form={primary.form}
-                loading={busy}
-                onClick={primary.onClick}
-                aria-label={primary.label}
-              >
-                {primary.label} <ArrowRight size={16} aria-hidden />
-              </PrimaryBtn>
-            )}
+            <PrimaryBtn
+              type="primary"
+              htmlType={primary.htmlType || "button"}
+              form={primary.form}
+              loading={busy}
+              onClick={primary.onClick}
+              aria-label={primary.label}
+            >
+              {primary.label} <ArrowRight size={16} aria-hidden />
+            </PrimaryBtn>
           </FooterRight>
         </Footer>
       </Page>

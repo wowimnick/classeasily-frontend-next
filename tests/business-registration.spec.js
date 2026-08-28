@@ -120,7 +120,10 @@ test.describe('Business registration', () => {
       await fulfillJson(route, { id: 1, businessName: 'Clay Studio' });
     });
     await page.route(apiIncludes('/widget-subscription/checkout'), (route) =>
-      fulfillJson(route, { client_secret: 'cs_test_mocked_embedded_checkout' }),
+      fulfillJson(route, {
+        checkout_url: 'https://checkout.stripe.com/c/pay/cs_test_hosted',
+        url: 'https://checkout.stripe.com/c/pay/cs_test_hosted',
+      }),
     );
     await page.route(apiIncludes('/my-business/profile'), (route) =>
       fulfillJson(route, { ok: true }),
@@ -153,11 +156,20 @@ test.describe('Business registration', () => {
     await page.getByRole('button', { name: /Continue with Growth/i }).click();
 
     await expect(page.getByRole('heading', { name: /Activate ClassEasily/i })).toBeVisible();
+    await page.route('https://checkout.stripe.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<html><body>Stripe Checkout</body></html>',
+      });
+    });
     const checkoutWait = page.waitForRequest((req) =>
       req.url().includes('/widget-subscription/checkout/'),
     );
+    const checkoutRedirect = page.waitForURL(/checkout\.stripe\.com/);
     await page.getByRole('button', { name: /Continue to payment/i }).click();
     await checkoutWait;
+    await checkoutRedirect;
 
     onboarding = {
       ...onboarding,
