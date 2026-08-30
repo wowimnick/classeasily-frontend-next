@@ -7,11 +7,11 @@ import { PLANS } from "@/lib/subscriptionPlans";
 
 export const PLAN_BLURB = {
   basic:
-    "Take bookings on your site. Scheduling, payments, and a customer list — ready to embed.",
+    "Start taking bookings and payments on your website with client management built in.",
   growth:
-    "Brand the emails, add memberships, and keep more of each booking as you grow.",
+    "Add branded emails and memberships while keeping more from every booking.",
   advanced:
-    "Lowest commission when volume is already high. Same tools as Growth, better take-home.",
+    "Lower your booking rate as volume grows, with every Growth feature included.",
 };
 
 const TRAY_LABEL = {
@@ -197,6 +197,7 @@ export default function PlanCards({
   onSelect,
   hrefForPlan,
   renderCta,
+  suggestedId,
 }) {
   const selectable = typeof onSelect === "function";
 
@@ -204,10 +205,11 @@ export default function PlanCards({
     <Grid role={selectable ? "radiogroup" : undefined} aria-label="Plans">
       {PLANS.map((p) => {
         const selected = selectable ? selectedId === p.id : p.featured;
+        const suggested = suggestedId ? p.id === suggestedId : p.featured;
         const features = trayFeatures(p).slice(0, 6);
         return (
-          <Card key={p.id} $on={selected} $best={p.featured}>
-            {p.featured ? <BestValue>Best value</BestValue> : null}
+          <Card key={p.id} $on={selected} $best={suggested}>
+            {suggested ? <BestValue>Best value</BestValue> : null}
             <Top>
               <Name>{p.name}</Name>
               <Desc>{PLAN_BLURB[p.id]}</Desc>

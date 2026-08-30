@@ -3,16 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
-import debounce from "lodash/debounce";
-import { Menu } from "lucide-react";
+import { ArrowRight, LogIn, Menu, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuthModal } from "@/context/AuthContext";
 import { marketingTheme as t, REGISTER_HREF, PRICING_HREF } from "./tokens";
 
 const BANNER_OFFSET = 58;
+const DOCK_TOP_DESKTOP = 14;
+const DOCK_TOP_MOBILE = 10;
 
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
@@ -99,15 +100,29 @@ const PromoDesc = styled.span`
   color: #fff;
 `;
 
+const glassSurface = css`
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border-color: rgba(255, 255, 255, 0.68);
+  box-shadow:
+    0 12px 40px rgba(15, 18, 30, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+`;
+
 const HeaderBar = styled.header`
-  background-color: ${(p) =>
-    p.$isScrolled ? "rgba(255, 255, 255, 0.95)" : "transparent"};
-  box-shadow: ${(p) => (p.$isScrolled ? "0 2px 10px rgba(0, 0, 0, 0.1)" : "none")};
-  backdrop-filter: ${(p) => (p.$isScrolled ? "blur(8px)" : "none")};
-  -webkit-backdrop-filter: ${(p) => (p.$isScrolled ? "blur(8px)" : "none")};
-  padding: ${(p) => (p.$isScrolled ? "0.3rem 2rem" : "0.5rem 3rem")};
-  position: ${(p) => (p.$isScrolled ? "fixed" : "absolute")};
-  top: ${(p) => (p.$isScrolled ? "0" : `${BANNER_OFFSET}px`)};
+  background: rgba(255, 255, 255, 0);
+  border: 1px solid transparent;
+  box-shadow:
+    0 12px 40px rgba(15, 18, 30, 0),
+    0 0 0 1px rgba(255, 255, 255, 0),
+    inset 0 1px 0 rgba(255, 255, 255, 0);
+  backdrop-filter: blur(0) saturate(100%);
+  -webkit-backdrop-filter: blur(0) saturate(100%);
+  padding: ${(p) => (p.$isScrolled ? "0.35rem 1.15rem" : "0.5rem 3rem")};
+  position: fixed;
+  top: max(${(p) => p.$top}px, env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
   z-index: 999;
@@ -117,27 +132,65 @@ const HeaderBar = styled.header`
   color: #000;
   text-align: center;
   border-radius: 0;
+  box-sizing: border-box;
   transition:
-    background-color 0.3s ease,
-    padding 0.3s ease,
-    box-shadow 0.3s ease;
+    background 0.35s ease,
+    padding 0.35s ease,
+    box-shadow 0.35s ease,
+    border-radius 0.35s ease,
+    border-color 0.35s ease,
+    backdrop-filter 0.35s ease,
+    -webkit-backdrop-filter 0.35s ease;
 
-  @media (min-width: 757px) {
-    ${(p) =>
-      p.$isScrolled &&
-      `
-      backdrop-filter: blur(12px) saturate(180%);
-      -webkit-backdrop-filter: blur(12px) saturate(180%);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  ${(p) =>
+    p.$contained &&
+    css`
+      left: 20px;
+      right: 20px;
+      width: auto;
+      max-width: 1140px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 20px;
+      padding-right: 20px;
     `}
-  }
+
+  ${(p) =>
+    p.$isScrolled &&
+    css`
+      border-radius: 22px;
+      ${glassSurface}
+    `}
 
   @media (max-width: 756px) {
-    padding: ${(p) =>
-      p.$isScrolled
-        ? "0.3rem 1rem"
-        : "calc(10px + env(safe-area-inset-top, 0px)) 1rem 10px"};
+    padding: ${(p) => (p.$isScrolled ? "0.35rem 0.7rem" : "10px 1rem")};
+    overflow: hidden;
+
+    ${(p) =>
+      p.$contained &&
+      css`
+        left: 12px;
+        right: 12px;
+        padding-left: 14px;
+        padding-right: 14px;
+      `}
+
+    ${(p) =>
+      p.$isScrolled &&
+      css`
+        border-radius: 20px;
+      `}
+
+    ${(p) =>
+      p.$menuOpen &&
+      css`
+        left: 12px;
+        right: 12px;
+        width: auto;
+        ${glassSurface}
+        border-radius: 24px;
+        overflow: hidden;
+      `}
   }
 `;
 
@@ -278,6 +331,10 @@ const GuestMenuDropdown = styled(motion.div)`
   border: 1px solid rgba(0, 0, 0, 0.04);
   overflow: hidden;
   text-align: left;
+
+  @media (max-width: 756px) {
+    display: none;
+  }
 `;
 
 const GuestMenuItem = styled.button`
@@ -308,7 +365,173 @@ const GuestMenuLink = styled(Link)`
   }
 `;
 
-export default function MarketingHeader() {
+const MobileBackdrop = styled(motion.div)`
+  display: none;
+
+  @media (max-width: 756px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+    background: rgba(15, 18, 30, 0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+`;
+
+const MobilePanel = styled(motion.div)`
+  display: none;
+
+  @media (max-width: 756px) {
+    display: block;
+    grid-column: 1 / -1;
+    overflow: hidden;
+    text-align: left;
+  }
+`;
+
+const MobilePanelInner = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px 14px;
+`;
+
+const MobileNavLink = styled(motion(Link))`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px;
+  border-radius: 16px;
+  color: #111;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  background: transparent;
+  transition: background 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(0, 0, 0, 0.045);
+    color: #111;
+  }
+`;
+
+const MobileNavMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  color: #111;
+`;
+
+const MobileRule = styled(motion.div)`
+  height: 1px;
+  margin: 10px 8px 12px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.08) 12%,
+    rgba(0, 0, 0, 0.08) 88%,
+    transparent
+  );
+`;
+
+const MobilePrimary = styled(motion(Link))`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: ${t.colors.primary};
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.98rem;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(252, 64, 86, 0.22);
+
+  &:hover,
+  &:focus-visible {
+    color: #fff;
+    background: ${t.colors.primaryHover};
+  }
+`;
+
+const MobileSecondary = styled(motion.button)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  color: #111;
+  font-weight: 650;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+`;
+
+const MenuIconSlot = styled.span`
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const MenuIconLayer = styled(motion.span)`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const panelEase = [0.22, 1, 0.36, 1];
+
+const mobilePanelVariants = {
+  hidden: { height: 0, opacity: 0 },
+  visible: {
+    height: "auto",
+    opacity: 1,
+    transition: { duration: 0.46, ease: panelEase },
+  },
+  exit: {
+    height: 0,
+    opacity: 0,
+    transition: { duration: 0.28, ease: [0.4, 0, 1, 1] },
+  },
+};
+
+const mobileListVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.055, delayChildren: 0.08 },
+  },
+};
+
+const mobileItemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.38, ease: panelEase },
+  },
+};
+
+export default function MarketingHeader({ contained = true }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated } = useAuthUser();
@@ -316,18 +539,45 @@ export default function MarketingHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [headerTop, setHeaderTop] = useState(BANNER_OFFSET);
+  const [isMobile, setIsMobile] = useState(false);
   const menuTriggerRef = useRef(null);
+  const headerRef = useRef(null);
+  const didMountRef = useRef(false);
+  const dockTop = isMobile ? DOCK_TOP_MOBILE : DOCK_TOP_DESKTOP;
 
   const hasBusiness = Boolean(user?.has_business);
   const primaryHref = hasBusiness ? "/business/dashboard" : REGISTER_HREF;
   const primaryLabel = hasBusiness ? "Dashboard" : "Get started";
 
   useEffect(() => {
-    const check = () => setIsScrolled(window.pageYOffset >= BANNER_OFFSET);
-    check();
-    const handleScroll = debounce(check, 5);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    let raf = 0;
+    const update = () => {
+      const y = window.scrollY || window.pageYOffset;
+      setHeaderTop(Math.max(dockTop, BANNER_OFFSET - y));
+      setIsScrolled(y >= BANNER_OFFSET - dockTop);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        update();
+      });
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [dockTop]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 756px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -335,12 +585,18 @@ export default function MarketingHeader() {
   }, [pathname]);
 
   useEffect(() => {
-    if (isAuthenticated) return;
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    setIsMenuOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (isAuthenticated && !isMobile) return;
     const handleClickOutside = (event) => {
-      if (
-        menuTriggerRef.current &&
-        !menuTriggerRef.current.contains(event.target)
-      ) {
+      const root = isMobile ? headerRef.current : menuTriggerRef.current;
+      if (root && !root.contains(event.target)) {
         setIsMenuOpen(false);
       }
     };
@@ -348,7 +604,18 @@ export default function MarketingHeader() {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMenuOpen, isAuthenticated]);
+  }, [isMenuOpen, isAuthenticated, isMobile]);
+
+  useEffect(() => {
+    if (!(isMenuOpen && isMobile)) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMenuOpen, isMobile]);
+
+  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <>
@@ -359,7 +626,25 @@ export default function MarketingHeader() {
           <PromoDesc>No fee per booking.</PromoDesc>
         </PromoInner>
       </PromoBanner>
-      <HeaderBar $isScrolled={isScrolled}>
+      <AnimatePresence>
+        {isMenuOpen && isMobile && (
+          <MobileBackdrop
+            key="header-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28 }}
+            onClick={closeMenu}
+          />
+        )}
+      </AnimatePresence>
+      <HeaderBar
+        ref={headerRef}
+        $isScrolled={isScrolled}
+        $contained={contained}
+        $menuOpen={isMenuOpen && isMobile}
+        $top={headerTop}
+      >
           <LogoLink href="/" aria-label="ClassEasily home">
             <LogoContainer $isScrolled={isScrolled}>
               <LogoIcon
@@ -384,26 +669,51 @@ export default function MarketingHeader() {
               <RoundedButton
                 type="button"
                 ref={menuTriggerRef}
-                aria-label="Account menu"
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMenuOpen}
                 onClick={() => setIsMenuOpen((v) => !v)}
+                whileTap={{ scale: 0.96 }}
               >
-                <Menu size={18} strokeWidth={2.5} color="#000" />
+                <MenuIconSlot>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isMenuOpen && isMobile ? (
+                      <MenuIconLayer
+                        key="close"
+                        initial={{ opacity: 0, rotate: -80, scale: 0.6 }}
+                        animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                        exit={{ opacity: 0, rotate: 80, scale: 0.6 }}
+                        transition={{ duration: 0.22, ease: panelEase }}
+                      >
+                        <X size={18} strokeWidth={2.5} color="#000" />
+                      </MenuIconLayer>
+                    ) : (
+                      <MenuIconLayer
+                        key="menu"
+                        initial={{ opacity: 0, rotate: 80, scale: 0.6 }}
+                        animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                        exit={{ opacity: 0, rotate: -80, scale: 0.6 }}
+                        transition={{ duration: 0.22, ease: panelEase }}
+                      >
+                        <Menu size={18} strokeWidth={2.5} color="#000" />
+                      </MenuIconLayer>
+                    )}
+                  </AnimatePresence>
+                </MenuIconSlot>
                 <GuestUserIcon color="#000" size={28} />
               </RoundedButton>
-              {isAuthenticated && (
+              {isAuthenticated && !isMobile && (
                 <CustomUserMenu
                   isOpen={isMenuOpen}
-                  onClose={() => setIsMenuOpen(false)}
+                  onClose={closeMenu}
                   onNavigate={(p) => router.push(p)}
                   onShowSettings={() => {
-                    setIsMenuOpen(false);
+                    closeMenu();
                     setIsSettingsOpen(true);
                   }}
                   triggerRef={menuTriggerRef}
                 />
               )}
-              {!isAuthenticated && (
+              {!isAuthenticated && !isMobile && (
                 <AnimatePresence>
                   {isMenuOpen && (
                     <GuestMenuDropdown
@@ -416,7 +726,7 @@ export default function MarketingHeader() {
                         $bold
                         type="button"
                         onClick={() => {
-                          setIsMenuOpen(false);
+                          closeMenu();
                           openLoginModal();
                         }}
                       >
@@ -424,7 +734,7 @@ export default function MarketingHeader() {
                       </GuestMenuItem>
                       <GuestMenuLink
                         href={REGISTER_HREF}
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={closeMenu}
                       >
                         Get started
                       </GuestMenuLink>
@@ -434,6 +744,80 @@ export default function MarketingHeader() {
               )}
             </AuthContainer>
           </Selection>
+          <AnimatePresence initial={false}>
+            {isMenuOpen && isMobile && (
+              <MobilePanel
+                key="mobile-panel"
+                variants={mobilePanelVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <MobilePanelInner
+                  variants={mobileListVariants}
+                  initial="hidden"
+                  animate="visible"
+                  aria-label="Site"
+                >
+                  <MobileNavLink
+                    href="/#features"
+                    variants={mobileItemVariants}
+                    onClick={closeMenu}
+                  >
+                    Product
+                    <MobileNavMeta>
+                      <ArrowRight size={14} />
+                    </MobileNavMeta>
+                  </MobileNavLink>
+                  <MobileNavLink
+                    href={PRICING_HREF}
+                    variants={mobileItemVariants}
+                    aria-current={pathname === PRICING_HREF ? "page" : undefined}
+                    onClick={closeMenu}
+                  >
+                    Pricing
+                    <MobileNavMeta>
+                      <ArrowRight size={14} />
+                    </MobileNavMeta>
+                  </MobileNavLink>
+                  <MobileRule variants={mobileItemVariants} />
+                  <MobilePrimary
+                    href={primaryHref}
+                    variants={mobileItemVariants}
+                    onClick={closeMenu}
+                  >
+                    {primaryLabel}
+                    <ArrowRight size={16} />
+                  </MobilePrimary>
+                  {!isAuthenticated && (
+                    <MobileSecondary
+                      type="button"
+                      variants={mobileItemVariants}
+                      onClick={() => {
+                        closeMenu();
+                        openLoginModal();
+                      }}
+                    >
+                      <LogIn size={16} />
+                      Log in
+                    </MobileSecondary>
+                  )}
+                  {isAuthenticated && (
+                    <MobileSecondary
+                      type="button"
+                      variants={mobileItemVariants}
+                      onClick={() => {
+                        closeMenu();
+                        setIsSettingsOpen(true);
+                      }}
+                    >
+                      Account settings
+                    </MobileSecondary>
+                  )}
+                </MobilePanelInner>
+              </MobilePanel>
+            )}
+          </AnimatePresence>
       </HeaderBar>
       <SettingsModal
         open={isSettingsOpen}

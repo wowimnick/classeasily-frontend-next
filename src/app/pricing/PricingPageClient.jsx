@@ -1,211 +1,238 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Check, Minus } from "lucide-react";
-import { WIDGET_PLAN_COMPARISON_ROWS } from "@/lib/subscriptionPlans";
+import { ArrowRight } from "lucide-react";
 import PlanCards, { PlanCtaButton } from "@/components/plans/PlanCards";
-import { SubscriptionProvider, useSubscription } from "@/context/SubscriptionContext";
+import {
+  SubscriptionProvider,
+  useSubscription,
+} from "@/context/SubscriptionContext";
 import {
   marketingTheme as t,
   REGISTER_HREF,
   SUPPORT_EMAIL,
 } from "@/components/marketing/tokens";
-import MarketingHeader, { MarketingSheet } from "@/components/marketing/MarketingHeader";
+import MarketingHeader, {
+  MarketingSheet,
+} from "@/components/marketing/MarketingHeader";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
-import AnimatedHeadline from "@/components/marketing/AnimatedHeadline";
 import AnimatedFaq from "@/components/marketing/AnimatedFaq";
+import PricingPlayground from "./_components/PricingPlayground";
+import PlanComparison from "./_components/PlanComparison";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
+const fade = {
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
   },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 const Page = styled.div`
   font-family: ${t.fonts.body};
   background: #f2f2f4;
-  color: #000;
+  color: #111;
   min-height: 100vh;
 `;
 
-const Hero = styled.section`
-  padding: 40px 24px 48px;
-  text-align: center;
-  background: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23000000' fill-opacity='0.06'/%3E%3C/svg%3E");
-  background-size: 24px 24px;
-`;
-
-const Kicker = styled.p`
-  color: ${t.colors.primary};
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 10px;
-`;
-
-const Display = styled.h2`
-  font-size: 40px;
-  margin: 0 0 16px;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  color: #000;
-  font-weight: 800;
-
-  @media (max-width: 768px) {
-    font-size: 28px;
-  }
-`;
-
-const Lead = styled.p`
-  font-size: 18px;
-  line-height: 1.6;
-  color: #000;
-  margin: 0 auto;
-  max-width: 560px;
-`;
-
 const Container = styled.div`
-  max-width: 1120px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
   width: 100%;
 `;
 
 const Section = styled.section`
-  padding: ${(p) => p.$pad || "72px 0"};
   background: ${(p) => p.$bg || "#fff"};
+  padding: ${(p) => `${p.$top ?? 72}px 0 ${p.$bottom ?? 72}px`};
+
+  @media (max-width: 768px) {
+    padding: ${(p) => `${p.$topSm ?? 48}px 0 ${p.$bottomSm ?? 48}px`};
+  }
 `;
 
-const PlansWrap = styled.div`
-  margin-top: 8px;
-`;
-
-const TableWrap = styled.div`
-  overflow-x: auto;
-  margin-top: 32px;
-  border: 1px solid ${t.colors.border};
-  border-radius: 16px;
+const Hero = styled.section`
   background: #fff;
-`;
+  margin-top: -4.25rem;
+  padding: calc(4.25rem + 52px) 0 72px;
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  min-width: 560px;
-  th,
-  td {
-    padding: 14px 16px;
-    text-align: left;
-    border-bottom: 1px solid ${t.colors.border};
-    color: #000;
-  }
-  th {
-    background: ${t.colors.bgLight};
-    font-weight: 700;
-  }
-  td:not(:first-child),
-  th:not(:first-child) {
-    text-align: center;
-  }
-  tr:last-child td {
-    border-bottom: none;
+  @media (max-width: 768px) {
+    padding: calc(4.25rem + 36px) 0 52px;
   }
 `;
 
-const Included = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 32px;
-  @media (max-width: 800px) {
-    grid-template-columns: 1fr;
+const PlansInHero = styled.div`
+  margin-top: 56px;
+  padding-top: 8px;
+
+  @media (max-width: 768px) {
+    margin-top: 40px;
   }
 `;
 
-const IncludedCard = styled(motion.div)`
-  background: #fff;
-  border: 1px solid ${t.colors.border};
-  border-radius: 16px;
-  padding: 20px;
-  h3 {
-    margin: 0 0 8px;
-    font-size: 16px;
-    color: #000;
+const SectionHead = styled.div`
+  text-align: center;
+  margin-bottom: 28px;
+`;
+
+const QuietTitle = styled.h2`
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: #111;
+`;
+
+const QuietLead = styled.p`
+  margin: 0 auto;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.58);
+  max-width: 36em;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-  p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #000;
+`;
+
+const Footnote = styled.p`
+  margin: 20px auto 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.48);
+  text-align: center;
+  max-width: 36em;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 `;
 
 const FaqWrap = styled.div`
-  max-width: 760px;
-  margin: 32px auto 0;
+  max-width: 720px;
+  margin: 0 auto;
 `;
 
-const HeroH1 = styled.h1`
-  font-family: ${t.fonts.body};
-  font-size: clamp(36px, 5vw, 56px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  color: #000;
-  margin: 0 0 16px;
+const TableCta = styled(PlanCtaButton)`
+  height: 40px;
+  font-size: 13px;
+  max-width: 150px;
+  margin: 0 auto;
+`;
+
+const Close = styled.div`
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+`;
+
+const CloseTitle = styled.h2`
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+`;
+
+const CloseCopy = styled.p`
+  margin: 0 auto 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.58);
+  max-width: 34em;
+`;
+
+const Actions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+`;
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: ${t.colors.primary};
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: #fff;
+    background: ${t.colors.primaryHover};
+  }
+`;
+
+const GhostLink = styled.a`
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+
+  &:hover {
+    color: ${t.colors.primary};
+  }
 `;
 
 const FAQS = [
   {
-    q: "Can I embed on Wix, Shopify, or Squarespace?",
-    a: "Yes. The booking widget is a snippet you paste on Wix, Shopify, Squarespace, WordPress, or a custom site. Customers book without leaving your brand.",
+    q: "What do I pay each month?",
+    a: "Your plan fee ($29, $49, or $89 CAD) plus a percentage of bookings you actually collected — 4% on Basic, 3% on Growth, 2% on Advanced. If nobody books, you pay only the plan fee.",
   },
   {
-    q: "Is there a setup fee?",
-    a: "No. You pick a monthly plan and a small per-booking commission. Stripe’s card processing fees are separate and paid to Stripe.",
+    q: "How is the commission different from Stripe?",
+    a: "Two separate charges. Our commission is for the booking software. Stripe’s processing fee is what Stripe charges to move the card payment, billed by Stripe.",
+  },
+  {
+    q: "What does the first-three-months offer include?",
+    a: "You pay the plan fee and no per-booking commission. You keep every feature on the plan you picked — it is not a limited trial.",
   },
   {
     q: "Can I change plans later?",
-    a: "Yes. Upgrade or downgrade any time from billing in your dashboard. Changes apply to the current or next billing period depending on the change.",
+    a: "Yes. Upgrade or downgrade any time from billing in your dashboard. Changes apply to the current or next billing period depending on the direction of the change.",
   },
   {
-    q: "What is the commission vs Stripe processing?",
-    a: "The ClassEasily commission (2–4% depending on plan) is our per-booking fee. Stripe processing is charged by Stripe on the card payment and is not the same thing.",
+    q: "Is there a setup fee or a contract?",
+    a: "No. Plans are billed monthly and you can cancel from your dashboard.",
   },
   {
-    q: "Do my customers book on my site or on ClassEasily?",
-    a: "On your site. The widget lives on your pages. You manage bookings, customers, and payouts from the ClassEasily dashboard.",
+    q: "When do I get paid?",
+    a: "Payouts run through Stripe Connect roughly 24–48 hours after a session is completed, to the bank account you connect during onboarding.",
   },
   {
-    q: "How long does setup take?",
-    a: "Create an account, pick a plan, embed the widget — you can take bookings the same day.",
+    q: "Can I embed on Wix, Shopify, or Squarespace?",
+    a: "Yes. The booking widget is a snippet you paste on Wix, Shopify, Squarespace, WordPress, Webflow, or a custom site. Customers book without leaving your brand.",
   },
 ];
 
 function PlanCta({ plan, Cta, dark }) {
   const { hasWidgetAccess, loading } = useSubscription();
   const Button = Cta || PlanCtaButton;
+
   if (!loading && hasWidgetAccess) {
     return (
-      <Button as={Link} href="/business/dashboard/settings?tab=billing" $dark={dark}>
+      <Button
+        as={Link}
+        href="/business/dashboard/settings?tab=billing"
+        $dark={dark}
+      >
         Manage plan
       </Button>
     );
   }
+
   return (
     <Button as={Link} href={`${REGISTER_HREF}?plan=${plan.id}`} $dark={dark}>
       {plan.featured ? "Get started" : `Choose ${plan.name}`}
@@ -213,162 +240,83 @@ function PlanCta({ plan, Cta, dark }) {
   );
 }
 
-function Cell({ row, planId }) {
-  if (row.valueType === "text") {
-    return row.text?.[planId] || "—";
-  }
-  if (row.plans?.[planId]) {
-    return <Check size={18} color="#fc4056" aria-label="Included" />;
-  }
-  return <Minus size={16} color="#000" aria-label="Not included" />;
-}
-
 function PricingInner() {
-  const rows = useMemo(
-    () => WIDGET_PLAN_COMPARISON_ROWS.filter((row) => row.id !== "marketplace"),
-    [],
-  );
-
   return (
     <Page>
       <MarketingHeader />
       <MarketingSheet>
-      <main>
-        <Hero>
-          <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-            <motion.div variants={fadeUp}>
-              <Kicker>Pricing</Kicker>
-            </motion.div>
-            <AnimatedHeadline as={HeroH1} text="Priced for small teams." />
-            <motion.div variants={fadeUp}>
-              <Lead>
-                A flat monthly fee plus a small commission per booking. No setup
-                fee. Cancel anytime.
-              </Lead>
-            </motion.div>
-          </motion.div>
-        </Hero>
+        <main>
+          <Hero>
+            <Container>
+              <motion.div initial="hidden" animate="visible" variants={fade}>
+                <PricingPlayground />
+              </motion.div>
+              <PlansInHero id="plans">
+                <PlanCards
+                  renderCta={(plan, { Cta, dark }) => (
+                    <PlanCta plan={plan} Cta={Cta} dark={dark} />
+                  )}
+                />
+                <Footnote>
+                  Billed monthly in CAD. Change or cancel any time.{" "}
+                  <Link href="/fees">Full fee breakdown</Link>.
+                </Footnote>
+              </PlansInHero>
+            </Container>
+          </Hero>
 
-        <Section $pad="24px 0 72px">
-          <Container>
-            <PlansWrap>
-              <PlanCards
-                renderCta={(plan, { Cta, dark }) => (
-                  <PlanCta plan={plan} Cta={Cta} dark={dark} />
+          <Section $bg="#fafbfc" $top={64} $bottom={72} id="compare">
+            <Container>
+              <SectionHead>
+                <QuietTitle>What’s on each plan</QuietTitle>
+                <QuietLead>
+                  Tap the plus next to a row if you want the longer explanation.
+                </QuietLead>
+              </SectionHead>
+              <PlanComparison
+                renderCta={(plan) => (
+                  <PlanCta plan={plan} Cta={TableCta} dark={plan.featured} />
                 )}
               />
-            </PlansWrap>
-          </Container>
-        </Section>
+            </Container>
+          </Section>
 
-        <Section $bg={t.colors.bgLight}>
-          <Container>
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              <Kicker>Compare</Kicker>
-              <Display>What’s on each plan</Display>
-            </motion.div>
-            <TableWrap>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Feature</th>
-                    <th>Basic</th>
-                    <th>Growth</th>
-                    <th>Advanced</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.label}</td>
-                      {["basic", "growth", "advanced"].map((id) => (
-                        <td key={id}>
-                          <Cell row={row} planId={id} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </TableWrap>
-          </Container>
-        </Section>
+          <Section $top={64} $bottom={56}>
+            <Container>
+              <SectionHead>
+                <QuietTitle>Questions</QuietTitle>
+                <QuietLead>
+                  If yours is not here, email{" "}
+                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+                </QuietLead>
+              </SectionHead>
+              <FaqWrap>
+                <AnimatedFaq items={FAQS} boxed />
+              </FaqWrap>
+            </Container>
+          </Section>
 
-        <Section>
-          <Container>
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              style={{ textAlign: "center" }}
-            >
-              <Kicker>Every plan</Kicker>
-              <Display>Included from day one</Display>
-            </motion.div>
-            <Included
-              as={motion.div}
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              <IncludedCard variants={fadeUp}>
-                <h3>Widget on your site</h3>
-                <p>
-                  Embed on Wix, Shopify, Squarespace, WordPress, or a custom
-                  site. Customers book without leaving your brand.
-                </p>
-              </IncludedCard>
-              <IncludedCard variants={fadeUp}>
-                <h3>Payments to your bank</h3>
-                <p>
-                  Apple Pay, Google Pay, and cards through Stripe. ClassEasily
-                  commission is separate from Stripe processing.
-                </p>
-              </IncludedCard>
-              <IncludedCard variants={fadeUp}>
-                <h3>Customer list</h3>
-                <p>
-                  Every booker lands in your dashboard. Follow up, run
-                  memberships, and see history in one place.
-                </p>
-              </IncludedCard>
-            </Included>
-          </Container>
-        </Section>
-
-        <Section $bg={t.colors.bgLight}>
-          <Container>
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              style={{ textAlign: "center" }}
-            >
-              <Kicker>FAQ</Kicker>
-              <Display>Questions</Display>
-            </motion.div>
-            <FaqWrap>
-              <AnimatedFaq items={FAQS} boxed />
-            </FaqWrap>
-            <p style={{ marginTop: 28, textAlign: "center", color: "#000" }}>
-              Still deciding?{" "}
-              <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: t.colors.primary }}>
-                Talk to us
-              </a>
-              .
-            </p>
-          </Container>
-        </Section>
-      </main>
-      <MarketingFooter />
+          <Section $top={8} $bottom={88} $topSm={8} $bottomSm={56}>
+            <Container>
+              <Close>
+                <CloseTitle>Start on any plan. Switch later.</CloseTitle>
+                <CloseCopy>
+                  Create an account, connect payouts, and paste the widget on
+                  your site. The first three months have no booking commission.
+                </CloseCopy>
+                <Actions>
+                  <PrimaryLink href={REGISTER_HREF}>
+                    Get started <ArrowRight size={16} />
+                  </PrimaryLink>
+                  <GhostLink href={`mailto:${SUPPORT_EMAIL}`}>
+                    Talk to our team
+                  </GhostLink>
+                </Actions>
+              </Close>
+            </Container>
+          </Section>
+        </main>
+        <MarketingFooter />
       </MarketingSheet>
     </Page>
   );

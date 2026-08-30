@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styled, { ThemeProvider, css } from "styled-components";
@@ -8,14 +8,11 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   CreditCard,
-  Globe,
   LayoutGrid,
   Puzzle,
   ShieldCheck,
-  Smartphone,
   Star,
   Users,
-  Palette,
 } from "lucide-react";
 import PlanCards from "@/components/plans/PlanCards";
 import {
@@ -28,7 +25,6 @@ import MarketingHeader, { MarketingSheet } from "./MarketingHeader";
 import MarketingFooter from "./MarketingFooter";
 import AnimatedHeadline from "./AnimatedHeadline";
 import AnimatedFaq from "./AnimatedFaq";
-import ImagePlaceholder from "./ImagePlaceholder";
 import TestimonialsClient from "@/app/(homepage)/_components/TestimonialsClient";
 import testimonialStyles from "@/app/(homepage)/_components/Testimonials.module.css";
 
@@ -60,13 +56,67 @@ const LandingContainer = styled.div`
   width: 100%;
 `;
 
+const SLANT = 48;
+const HERO_SLANT = 36;
+const HERO_PAD_BOTTOM = 36;
+const HERO_PAD_BOTTOM_SM = 32;
+
+function slantClip(flip, height) {
+  return flip
+    ? `polygon(0 0, 100% 0, 100% calc(100% - ${height}px), 0 100%)`
+    : `polygon(0 0, 100% 0, 100% 100%, 0 calc(100% - ${height}px))`;
+}
+
+const slantedBottom = (height, flip, layer) => css`
+  clip-path: ${slantClip(flip, height)};
+  margin-bottom: -${height}px;
+  z-index: ${layer};
+`;
+
+const SlantEdgeSvg = styled.svg`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: ${(p) => p.$height}px;
+  display: block;
+  pointer-events: none;
+  z-index: 3;
+  transform: ${(p) => (p.$flip ? "scaleX(-1)" : "none")};
+`;
+
+function SlantEdge({ flip = false, height = SLANT }) {
+  return (
+    <SlantEdgeSvg
+      viewBox={`0 0 1440 ${height}`}
+      preserveAspectRatio="none"
+      $height={height}
+      $flip={flip}
+      aria-hidden
+    >
+      <line
+        x1="0"
+        y1="1"
+        x2="1440"
+        y2={height - 1}
+        stroke="rgba(252,64,86,0.14)"
+        strokeWidth="1.7"
+        vectorEffect="non-scaling-stroke"
+      />
+    </SlantEdgeSvg>
+  );
+}
+
 const LandingSection = styled.section`
-  padding: 72px 0;
+  padding: ${(p) => `${p.$padTop ?? 72}px 0 ${(p.$padBottom ?? 72) + (p.$slant || 0)}px`};
   background: ${(p) => p.$bg || "transparent"};
   position: relative;
+  ${(p) => p.$slant && slantedBottom(p.$slant, p.$flip, p.$layer || 1)}
 
   @media (max-width: 768px) {
-    padding: 64px 0;
+    padding: ${(p) =>
+      `${p.$padTop ?? 64}px 0 ${(p.$padBottom ?? 64) + (p.$slant || 0)}px`};
   }
 `;
 
@@ -145,69 +195,57 @@ const Body = styled.p`
   max-width: ${(p) => p.$max || "none"};
 `;
 
-function DiagonalDivider({ fromBg = "#f8fafc", toBg = "#ffffff", flip = false }) {
-  return (
-    <div
-      style={{
-        lineHeight: 0,
-        background: toBg,
-        display: "block",
-        overflow: "hidden",
-      }}
-    >
-      <svg
-        viewBox="0 0 1440 52"
-        preserveAspectRatio="none"
-        width="100%"
-        height="52"
-        style={{ display: "block", transform: flip ? "scaleX(-1)" : "none" }}
-      >
-        <path d="M0,0 L1440,0 L0,52 Z" fill={fromBg} />
-        <line
-          x1="0"
-          y1="0"
-          x2="1440"
-          y2="52"
-          stroke="rgba(252,64,86,0.14)"
-          strokeWidth="1.7"
-        />
-      </svg>
-    </div>
-  );
-}
-
 const HeroWrapper = styled.section`
-  min-height: calc(100vh - 76px);
   margin-top: -4.25rem;
-  padding: calc(4.25rem + 56px) 0 112px;
+  margin-bottom: -${HERO_SLANT}px;
+  padding: calc(4.25rem + 28px) 0 ${HERO_PAD_BOTTOM + HERO_SLANT}px;
   display: flex;
   align-items: center;
   position: relative;
   overflow: hidden;
+  z-index: 5;
+  clip-path: ${slantClip(false, HERO_SLANT)};
   background: #fff;
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23000000' fill-opacity='0.06'/%3E%3C/svg%3E");
   background-size: 24px 24px;
 
+  @media (max-width: 968px) {
+    align-items: flex-start;
+  }
+
   @media (max-width: 640px) {
-    min-height: 0;
     margin-top: -4.25rem;
-    padding: calc(4.25rem + 28px) 0 64px;
+    padding: calc(4.25rem + 20px) 0 ${HERO_PAD_BOTTOM_SM + HERO_SLANT}px;
     display: block;
   }
 `;
 
+const HeroGradientLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: radial-gradient(
+    ellipse 120% 110% at 32% 48%,
+    #000 58%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 120% 110% at 32% 48%,
+    #000 58%,
+    transparent 100%
+  );
+`;
+
 const HeroGradientStrip = styled.div`
   position: absolute;
-  left: -20%;
-  width: 140%;
-  height: 42vh;
-  min-height: 280px;
-  max-height: 420px;
-  top: 46%;
+  left: -32%;
+  width: 164%;
+  height: 72vh;
+  min-height: 420px;
+  top: 58%;
   transform: translateY(-50%) rotate(150deg);
-  z-index: 0;
-  overflow: hidden;
-  border-radius: 4px;
 
   @media (max-width: 640px) {
     display: none;
@@ -219,6 +257,7 @@ const HeroGradientCanvas = styled.canvas`
   inset: 0;
   width: 100%;
   height: 100%;
+  max-width: none;
   display: block;
   --gradient-color-1: #f5f5f5;
   --gradient-color-2: #fc4056;
@@ -227,33 +266,43 @@ const HeroGradientCanvas = styled.canvas`
 `;
 
 const HeroContainer = styled.div`
-  max-width: 1280px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 20px;
   width: 100%;
-
-  @media (max-width: 640px) {
-    padding: 0 20px;
-  }
 `;
 
 const HeroGrid = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(380px, 1.2fr) minmax(0, 1fr);
   align-items: center;
-  text-align: center;
+  gap: 28px 40px;
   position: relative;
   z-index: 1;
+  width: 100%;
+
+  @media (max-width: 968px) {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    text-align: center;
+  }
 `;
 
 const HeroCopy = styled.div`
-  max-width: 920px;
+  max-width: 680px;
   width: 100%;
+  position: relative;
+  z-index: 2;
+
+  @media (max-width: 968px) {
+    max-width: 720px;
+    margin: 0 auto;
+  }
 `;
 
 const HeroH1 = styled.h1`
-  font-size: 68px;
-  margin: 0 0 24px;
+  font-size: clamp(40px, 4.4vw, 56px);
+  margin: 0 0 18px;
   letter-spacing: -0.045em;
   line-height: 1.08;
   color: ${t.colors.dark};
@@ -261,7 +310,7 @@ const HeroH1 = styled.h1`
 
   @media (max-width: 768px) {
     font-size: 40px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
   @media (max-width: 640px) {
     font-size: 32px;
@@ -270,10 +319,16 @@ const HeroH1 = styled.h1`
 
 const HeroP = styled.p`
   font-size: 20px;
-  margin: 0 auto 16px;
+  margin: 0 0 24px;
   color: ${t.colors.text};
   line-height: 1.55;
-  max-width: 720px;
+  max-width: 640px;
+
+  @media (max-width: 968px) {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 560px;
+  }
 
   @media (max-width: 768px) {
     font-size: 17px;
@@ -288,44 +343,135 @@ const ButtonGroup = styled.div`
 `;
 
 const HeroButtons = styled(ButtonGroup)`
+  justify-content: flex-start;
+
   a {
     padding: 14px 28px;
     font-size: 17px;
   }
+
+  @media (max-width: 968px) {
+    justify-content: center;
+  }
+`;
+
+const HeroTrust = styled.p`
+  margin: 14px 0 0;
+  color: ${t.colors.text};
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+
+  @media (max-width: 968px) {
+    text-align: center;
+  }
 `;
 
 const HeroVisual = styled.div`
-  width: 100%;
-  max-width: 1120px;
-  margin-top: 64px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  align-self: end;
+  min-width: 0;
+  overflow: visible;
+  /* Sit the shot on the slant: cancel hero padding, then lift so the
+     image center (≈70% across the viewport) lands on the clip line. */
+  margin-bottom: calc(
+    -${HERO_PAD_BOTTOM + HERO_SLANT}px + var(--shot-lift, ${HERO_SLANT * 0.3}px)
+  );
 
-  @media (max-width: 768px) {
-    margin-top: 40px;
+  > div {
+    flex-shrink: 0;
+    width: max-content;
+    max-width: none;
+  }
+
+  @media (max-width: 968px) {
+    justify-content: center;
+    margin-bottom: calc(
+      -${HERO_PAD_BOTTOM_SM + HERO_SLANT}px + var(--shot-lift, ${HERO_SLANT * 0.5}px)
+    );
+  }
+`;
+
+const HeroShot = styled.div`
+  width: min(46vw, 682px);
+  max-width: none;
+  transform: rotate(atan(calc(-1 * ${HERO_SLANT}px / 100vw)));
+  transform-origin: bottom center;
+
+  img {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    display: block;
+  }
+
+  @media (max-width: 968px) {
+    width: min(50vw, 525px);
   }
 `;
 
 function Hero() {
+  const visualRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const visual = visualRef.current;
+    const hero = visual?.closest("[data-home-hero]");
+    if (!visual || !hero) return;
+
+    const sync = () => {
+      const hr = hero.getBoundingClientRect();
+      const shot = visual.querySelector("[data-hero-shot]");
+      const vr = (shot || visual).getBoundingClientRect();
+      if (!hr.width) return;
+      const t = (vr.left + vr.width / 2 - hr.left) / hr.width;
+      visual.style.setProperty("--shot-lift", `${HERO_SLANT * (1 - t)}px`);
+    };
+
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(hero);
+    ro.observe(visual);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     const id = "home-hero-gradient-canvas";
+    let gradient = null;
+    let cancelled = false;
     const tmr = setTimeout(() => {
-      import("stripe-gradient")
-        .then(({ Gradient }) => {
+      import("./HomeHeroGradient")
+        .then(({ default: HomeHeroGradient }) => {
+          if (cancelled) return;
           const canvas = document.getElementById(id);
           if (!canvas?.getContext) return;
-          const gradient = new Gradient();
+          gradient = new HomeHeroGradient();
           gradient.initGradient(`#${id}`);
           window.dispatchEvent(new Event("resize"));
         })
         .catch(() => {});
     }, 0);
-    return () => clearTimeout(tmr);
+    return () => {
+      cancelled = true;
+      clearTimeout(tmr);
+      try {
+        gradient?.disconnect?.();
+      } catch {
+        /* ignore */
+      }
+    };
   }, []);
 
   return (
-    <HeroWrapper>
-      <HeroGradientStrip>
-        <HeroGradientCanvas id="home-hero-gradient-canvas" data-transition-in />
-      </HeroGradientStrip>
+    <HeroWrapper data-home-hero>
+      <HeroGradientLayer>
+        <HeroGradientStrip>
+          <HeroGradientCanvas id="home-hero-gradient-canvas" data-transition-in />
+        </HeroGradientStrip>
+      </HeroGradientLayer>
+      <SlantEdge height={HERO_SLANT} />
       <HeroContainer>
         <HeroGrid>
           <HeroCopy>
@@ -336,37 +482,47 @@ function Hero() {
             >
               <AnimatedHeadline
                 as={HeroH1}
-                text="The same tools. A better price."
+                text="Your schedule, payments, and clients. All in one place."
               />
               <motion.div variants={fadeUp}>
                 <HeroP>
-                  Scheduling, payments, memberships, and a customer list — the
-                  stack the big platforms charge enterprise rates for. Plans
-                  from $29 a month.
+                  Let customers book and pay directly on your website. Manage
+                  appointments, memberships, and client relationships from one
+                  straightforward dashboard.
                 </HeroP>
               </motion.div>
               <motion.div variants={fadeUp}>
                 <HeroButtons>
                   <PillLink href={REGISTER_HREF} $variant="primary">
-                    Get started <ArrowRight size={16} />
+                    Start taking bookings <ArrowRight size={16} />
                   </PillLink>
-                  <PillLink href={PRICING_HREF} $variant="secondary">
-                    See pricing
+                  <PillLink href="/#features" $variant="secondary">
+                    See how it works
                   </PillLink>
                 </HeroButtons>
+                <HeroTrust>
+                  From $29/month · No setup fee · First 3 months with no booking
+                  fees
+                </HeroTrust>
               </motion.div>
             </motion.div>
           </HeroCopy>
-          <HeroVisual>
+          <HeroVisual ref={visualRef}>
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
-              <ImagePlaceholder
-                label="Hero image placeholder"
-                minHeight="560px"
-              />
+              <HeroShot data-hero-shot>
+                <Image
+                  src="/Frame 1597880366 2.webp"
+                  alt="ClassEasily dashboard"
+                  width={5056}
+                  height={3392}
+                  priority
+                  sizes="(max-width: 968px) 50vw, 682px"
+                />
+              </HeroShot>
             </motion.div>
           </HeroVisual>
         </HeroGrid>
@@ -378,7 +534,7 @@ function Hero() {
 const ValuePropsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
+  gap: 0;
 
   @media (max-width: 968px) {
     grid-template-columns: repeat(2, 1fr);
@@ -389,6 +545,55 @@ const ValuePropsGrid = styled.div`
 `;
 
 const VPItem = styled(motion.div)`
+  padding: 0 36px;
+
+  &:first-child {
+    padding-left: 0;
+  }
+  &:last-child {
+    padding-right: 0;
+  }
+  &:not(:first-child) {
+    border-left: 1px solid ${t.colors.border};
+  }
+
+  @media (max-width: 968px) {
+    padding: 0 32px;
+
+    &:nth-child(odd) {
+      padding-left: 0;
+      border-left: none;
+    }
+    &:nth-child(even) {
+      padding-right: 0;
+      border-left: 1px solid ${t.colors.border};
+    }
+    &:nth-child(n + 3) {
+      margin-top: 36px;
+      padding-top: 36px;
+      border-top: 1px solid ${t.colors.border};
+    }
+  }
+
+  @media (max-width: 568px) {
+    padding: 0;
+    border-left: none;
+
+    &:nth-child(even) {
+      border-left: none;
+    }
+    &:nth-child(n + 3) {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    &:not(:first-child) {
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid ${t.colors.border};
+    }
+  }
+
   h3 {
     font-size: 16px;
     margin: 0 0 12px;
@@ -408,11 +613,45 @@ const VPItem = styled(motion.div)`
 const SplitGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: 72px;
   align-items: center;
+  position: relative;
+
+  @media (min-width: 969px) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: ${t.colors.border};
+    }
+  }
 
   @media (max-width: 968px) {
     grid-template-columns: 1fr;
+    gap: 40px;
+  }
+`;
+
+const PaymentsVisual = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: min(100%, 357px);
+    max-width: none;
+    height: auto;
+    display: block;
+  }
+
+  @media (max-width: 968px) {
+    img {
+      width: min(100%, 272px);
+      margin-inline: auto;
+    }
   }
 `;
 
@@ -440,21 +679,117 @@ const FeatureRow = styled.div`
   }
 `;
 
-const Platforms = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 20px;
+const BrandMasthead = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 28px 72px;
+  align-items: end;
+  padding-bottom: 36px;
+  border-bottom: 1px solid ${t.colors.border};
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-bottom: 28px;
+  }
 `;
 
-const PlatformChip = styled.span`
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid ${t.colors.border};
-  font-size: 13px;
+const BrandDisplay = styled(Display)`
+  margin: 0;
+  max-width: 13ch;
+  font-size: 46px;
+
+  @media (max-width: 768px) {
+    max-width: none;
+    font-size: 30px;
+  }
+`;
+
+const BrandLead = styled(Body)`
+  max-width: 38ch;
+  padding-bottom: 2px;
+`;
+
+const BrandSpecs = styled.ol`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    margin-top: 28px;
+  }
+`;
+
+const BrandSpec = styled.li`
+  margin: 0;
+  padding: 0 36px;
+
+  &:first-child {
+    padding-left: 0;
+  }
+
+  &:last-child {
+    padding-right: 0;
+  }
+
+  &:not(:first-child) {
+    border-left: 1px solid ${t.colors.border};
+  }
+
+  @media (max-width: 768px) {
+    padding: 0;
+
+    &:not(:first-child) {
+      border-left: none;
+      padding-top: 24px;
+      border-top: 1px solid ${t.colors.border};
+    }
+  }
+`;
+
+const BrandSpecIndex = styled.span`
+  display: block;
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: ${t.colors.primary};
+  margin: 0 0 12px;
+`;
+
+const BrandSpecTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
   color: ${t.colors.dark};
+  margin: 0 0 8px;
+`;
+
+const BrandSpecCopy = styled.p`
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: ${t.colors.text};
+`;
+
+const BrandPlatforms = styled.p`
+  margin: 36px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: ${t.colors.dark};
+
+  em {
+    font-style: normal;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.45);
+    margin-right: 10px;
+  }
 `;
 
 const PriceGrid = styled.div`
@@ -641,9 +976,16 @@ export default function SaaSHomePage() {
         <main>
           <Hero />
 
-          <DiagonalDivider fromBg="#fafbfc" toBg="#fafbfc" />
-
-          <LandingSection $bg="#fafbfc">
+          <LandingSection
+            $bg="#fafbfc"
+            id="features"
+            $padTop={96}
+            $padBottom={56}
+            $slant={SLANT}
+            $flip
+            $layer={4}
+          >
+            <SlantEdge flip height={SLANT} />
             <LandingContainer>
               <ValuePropsGrid
                 as={motion.div}
@@ -654,48 +996,49 @@ export default function SaaSHomePage() {
               >
                 <VPItem variants={fadeUp}>
                   <h3>
-                    <Puzzle size={20} color="#fc4056" /> Booking on your site
+                    <Puzzle size={20} color="#fc4056" /> Keep customers on your
+                    website
                   </h3>
                   <p>
-                    Add a booking button or inline calendar to Wix, Shopify,
-                    Squarespace, or a custom site. Customers never leave your
-                    brand.
+                    Accept bookings through a calendar that matches your brand
+                    — without redirects or marketplace profiles.
                   </p>
                 </VPItem>
                 <VPItem variants={fadeUp}>
                   <h3>
-                    <CreditCard size={20} color="#fc4056" /> Apple Pay and cards
+                    <CreditCard size={20} color="#fc4056" /> Make checkout
+                    effortless
                   </h3>
                   <p>
-                    Checkout with Apple Pay, Google Pay, or any major card. We
-                    handle payments; you get one payout to your bank.
+                    Let customers pay with Apple Pay, Google Pay, or any major
+                    card through secure Stripe checkout.
                   </p>
                 </VPItem>
                 <VPItem variants={fadeUp}>
                   <h3>
-                    <LayoutGrid size={20} color="#fc4056" /> Your site, your brand
+                    <Users size={20} color="#fc4056" /> Know every client
                   </h3>
                   <p>
-                    Match colors and fonts. Popup with your own button, or embed
-                    inline. Domain whitelist keeps the embed on your site only.
+                    Automatically build a client history from every booking,
+                    payment, and membership.
                   </p>
                 </VPItem>
                 <VPItem variants={fadeUp}>
                   <h3>
-                    <Users size={20} color="#fc4056" /> Lightweight CRM
+                    <LayoutGrid size={20} color="#fc4056" /> Run it from one
+                    dashboard
                   </h3>
                   <p>
-                    Every booker lands in a customer list. See history, follow
-                    up, and run memberships without a second tool.
+                    Manage availability, bookings, payouts, memberships, and
+                    client relationships without stitching together more tools.
                   </p>
                 </VPItem>
               </ValuePropsGrid>
             </LandingContainer>
           </LandingSection>
 
-          <DiagonalDivider fromBg="#fafbfc" toBg="#ffffff" flip />
-
-          <LandingSection $bg="#fff">
+          <LandingSection $bg="#fff" $slant={SLANT} $flip $layer={3}>
+            <SlantEdge flip height={SLANT} />
             <LandingContainer>
               <SplitGrid>
                 <motion.div
@@ -704,13 +1047,13 @@ export default function SaaSHomePage() {
                   whileInView="visible"
                   viewport={{ once: true }}
                 >
-                  <Kicker>Payments guests trust</Kicker>
-                  <Display>Frictionless, secure checkout</Display>
+                  <Kicker>Payments built into every booking</Kicker>
+                  <Display>Make it easy to book — and easier to get paid.</Display>
                   <Body>
-                    Accept Apple Pay, Google Pay, and all major credit cards.
-                    Stripe handles security and compliance. You get a unified
-                    payout to your bank. Whitelist your domains, embed the
-                    snippet, and start taking money the same day.
+                    Customers can reserve and pay in one smooth checkout with
+                    Apple Pay, Google Pay, or any major card. Stripe handles
+                    payment security while ClassEasily keeps bookings,
+                    customers, and payouts organized in one place.
                   </Body>
                   <div style={{ marginTop: 24 }}>
                     <GhostLink href="/business/help/">
@@ -742,51 +1085,102 @@ export default function SaaSHomePage() {
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
                 >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      maxWidth: 350,
-                      borderRadius: 16,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <img
-                      src="/methods.jpeg"
-                      alt="Accepted payment methods including Apple Pay, Google Pay, and cards"
-                      style={{
-                        width: "100%",
-                        height: "auto",
-                        display: "block",
-                        borderRadius: 16,
-                      }}
+                  <PaymentsVisual>
+                    <Image
+                      src="/payments-apple-pay.webp"
+                      alt="Apple Pay checkout on a phone"
+                      width={1661}
+                      height={2544}
+                      sizes="(max-width: 968px) 272px, 357px"
                     />
-                  </div>
+                  </PaymentsVisual>
                 </motion.div>
               </SplitGrid>
             </LandingContainer>
           </LandingSection>
 
-          <DiagonalDivider fromBg="#ffffff" toBg="#ffffff" flip />
+          <LandingSection $bg="#fff" $slant={SLANT} $layer={2}>
+            <SlantEdge height={SLANT} />
+            <LandingContainer>
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
+                <BrandMasthead>
+                  <motion.div variants={fadeUp}>
+                    <Kicker>Your business stays front and center</Kicker>
+                    <BrandDisplay>
+                      Booking that feels like part of your website.
+                    </BrandDisplay>
+                  </motion.div>
+                  <motion.div variants={fadeUp}>
+                    <BrandLead>
+                      Match your colors and fonts, open booking from your own
+                      button, or embed the full calendar on any page. Customers
+                      remain inside your brand from discovery through checkout.
+                    </BrandLead>
+                  </motion.div>
+                </BrandMasthead>
+                <BrandSpecs>
+                  <BrandSpec as={motion.li} variants={fadeUp}>
+                    <BrandSpecIndex>01</BrandSpecIndex>
+                    <BrandSpecTitle>Colors and fonts</BrandSpecTitle>
+                    <BrandSpecCopy>
+                      Match the widget to your site so it doesn’t look like a
+                      third-party checkout.
+                    </BrandSpecCopy>
+                  </BrandSpec>
+                  <BrandSpec as={motion.li} variants={fadeUp}>
+                    <BrandSpecIndex>02</BrandSpecIndex>
+                    <BrandSpecTitle>Popup or inline</BrandSpecTitle>
+                    <BrandSpecCopy>
+                      Trigger from your own button, or drop a calendar onto a
+                      dedicated booking page.
+                    </BrandSpecCopy>
+                  </BrandSpec>
+                  <BrandSpec as={motion.li} variants={fadeUp}>
+                    <BrandSpecIndex>03</BrandSpecIndex>
+                    <BrandSpecTitle>Domain whitelist</BrandSpecTitle>
+                    <BrandSpecCopy>
+                      The embed only loads on sites you approve — not on
+                      random pages that copy your snippet.
+                    </BrandSpecCopy>
+                  </BrandSpec>
+                </BrandSpecs>
+                <motion.div variants={fadeUp}>
+                  <BrandPlatforms>
+                    <em>Works on</em>
+                    Wix, Shopify, Squarespace, WordPress, Webflow, and custom
+                    sites
+                  </BrandPlatforms>
+                </motion.div>
+              </motion.div>
+            </LandingContainer>
+          </LandingSection>
 
-          <LandingSection $bg="#fff" id="features">
+          <LandingSection $bg="#fafbfc" $slant={SLANT} $flip $layer={1}>
+            <SlantEdge flip height={SLANT} />
             <LandingContainer>
               <SplitGrid>
                 <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="visible"
                   viewport={{ once: true }}
                 >
-                  <ImagePlaceholder
-                    label="Product image placeholder"
-                    minHeight="460px"
-                  />
+                  <Kicker>Client management included</Kicker>
+                  <Display>
+                    Every booking builds a stronger client relationship.
+                  </Display>
+                  <Body>
+                    Every customer, booking, payment, and membership contributes
+                    to one organized client record. See history at a glance,
+                    follow up personally, and give clients more reasons to
+                    return.
+                  </Body>
                 </motion.div>
                 <motion.div
                   variants={fadeUp}
@@ -794,55 +1188,44 @@ export default function SaaSHomePage() {
                   whileInView="visible"
                   viewport={{ once: true }}
                 >
-                  <Kicker>Looks like you</Kicker>
-                  <Display>Brand it in a few clicks</Display>
-                  <Body>
-                    Colors, fonts, popup or inline. Pin the widget to one class
-                    on Growth and Advanced — useful for landing pages and ads.
-                    Match it to your site so it looks like it belongs there.
-                  </Body>
-                  <FeatureStack>
+                  <FeatureStack style={{ marginTop: 0 }}>
                     <FeatureRow>
                       <h4>
-                        <Palette size={20} color="#fc4056" /> Colors and fonts
+                        <Users size={20} color="#fc4056" /> Client history in one
+                        place
                       </h4>
                       <p>
-                        Match the widget to your site so it doesn’t look like a
-                        third-party checkout.
+                        Quickly understand who booked, what they purchased, and
+                        when they last visited.
                       </p>
                     </FeatureRow>
                     <FeatureRow>
                       <h4>
-                        <Smartphone size={20} color="#fc4056" /> Popup or inline
+                        <LayoutGrid size={20} color="#fc4056" /> Memberships
+                        built in
                       </h4>
                       <p>
-                        Trigger from your own button, or drop a calendar onto a
-                        dedicated booking page.
+                        Offer recurring plans and manage member access without a
+                        separate subscription tool.
                       </p>
                     </FeatureRow>
                     <FeatureRow>
                       <h4>
-                        <Globe size={20} color="#fc4056" /> Domain whitelist
+                        <CreditCard size={20} color="#fc4056" /> Bookings and
+                        payments connected
                       </h4>
                       <p>
-                        The embed only loads on sites you approve — not on
-                        random pages that copy your snippet.
+                        Keep customer activity tied to the transactions and
+                        payouts behind it.
                       </p>
                     </FeatureRow>
                   </FeatureStack>
-                  <Platforms>
-                    {["Wix", "Shopify", "Squarespace", "WordPress", "Webflow", "Custom"].map(
-                      (name) => (
-                        <PlatformChip key={name}>{name}</PlatformChip>
-                      ),
-                    )}
-                  </Platforms>
                 </motion.div>
               </SplitGrid>
             </LandingContainer>
           </LandingSection>
 
-          <LandingSection $bg="#fff" id="pricing-preview">
+          <LandingSection $bg="#fff" id="pricing-preview" $padTop={120}>
             <LandingContainer>
               <motion.div
                 variants={fadeUp}
@@ -850,11 +1233,12 @@ export default function SaaSHomePage() {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <Kicker>Pricing</Kicker>
-                <Display>Simple, commission-based plans</Display>
+                <Kicker>Pricing that grows with you</Kicker>
+                <Display>Start lean. Upgrade when business picks up.</Display>
                 <Body $max="560px">
-                  A flat monthly fee plus a small commission per booking — no
-                  setup fee, no hidden processor to bolt on.
+                  Plans begin at $29 per month with no setup fee. Choose the
+                  booking rate that fits your volume, and change plans as you
+                  grow.
                 </Body>
                 <p
                   style={{
@@ -912,16 +1296,16 @@ export default function SaaSHomePage() {
                     id="testimonials-title"
                     className={testimonialStyles.headline}
                   >
-                    They kept the tools.
+                    More time for clients.
                     <br />
-                    They{" "}
+                    Less{" "}
                     <span className={testimonialStyles.headlineAccent}>
-                      cut the bill.
+                      software to manage.
                     </span>
                   </h2>
                   <p className={testimonialStyles.subtext}>
-                    Classes, payments, memberships, and a customer list — what
-                    the big platforms charge enterprise rates for, from $29 a
+                    Scheduling, payments, memberships, and client management
+                    come together in one straightforward platform, from $29 a
                     month.
                   </p>
                   <div className={testimonialStyles.statRow}>
@@ -1003,16 +1387,18 @@ export default function SaaSHomePage() {
           <LandingSection $bg="#fff" style={{ paddingBottom: 96 }}>
             <LandingContainer>
               <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto" }}>
-                <Display>Ready when you are.</Display>
+                <Display>Ready to make booking easier?</Display>
                 <Body $max="520px" style={{ margin: "0 auto 28px" }}>
-                  Create an account, pick a plan, embed the widget. You can take
-                  bookings the same day.
+                  Create your account, add your schedule, and publish booking on
+                  your website. You can be ready to accept customers today.
                 </Body>
                 <ButtonGroup style={{ justifyContent: "center" }}>
                   <PillLink href={REGISTER_HREF} $variant="primary">
-                    Get started <ArrowRight size={16} />
+                    Start taking bookings <ArrowRight size={16} />
                   </PillLink>
-                  <GhostLink href={`mailto:${SUPPORT_EMAIL}`}>Talk to us</GhostLink>
+                  <GhostLink href={`mailto:${SUPPORT_EMAIL}`}>
+                    Talk to our team
+                  </GhostLink>
                 </ButtonGroup>
               </div>
             </LandingContainer>

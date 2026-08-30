@@ -144,8 +144,7 @@ function stepCopy(step, name, plan) {
         eyebrow: "Pricing that scales with bookings",
         title: "Pick a plan",
         paragraphs: [
-          "A monthly subscription plus a small commission on each paid booking. The monthly fee covers the widget, scheduling, payments, and dashboard.",
-          "Commission is charged only when a booking is paid. You can change plans later from Settings.",
+          "Estimate a typical month. We’ll mark the lowest-cost plan — you can still choose any of the three.",
         ],
       };
     case "pay":
@@ -394,7 +393,7 @@ const Story = styled.div`
     p.$plain
       ? `
     max-width: 1120px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   `
       : ""}
 
@@ -440,14 +439,14 @@ const Title = styled.h1`
   letter-spacing: -0.035em;
   line-height: 1.12;
   color: #222;
-  min-height: calc(1.12em * 2);
+  min-height: ${(p) => (p.$compact ? "0" : "calc(1.12em * 2)")};
 `;
 
 const Lead = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: ${(p) => (p.$wide ? "920px" : "460px")};
+  max-width: ${(p) => (p.$wide ? "36em" : "460px")};
 
   p {
     margin: 0;
@@ -859,7 +858,7 @@ function StepIntro({ eyebrow, title, paragraphs, reduceMotion, wide }) {
       >
         <Eyebrow>{eyebrow}</Eyebrow>
       </motion.div>
-      <Title>
+      <Title $compact={wide}>
         {words.map((word, i) => (
           <motion.span
             key={`${word}-${i}`}

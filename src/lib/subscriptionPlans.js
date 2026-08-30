@@ -209,6 +209,25 @@ export function getPlanById(id) {
   return PLANS.find((p) => p.id === (id || "").toLowerCase());
 }
 
+/** Monthly ClassEasily cost: plan fee + commission on collected bookings. */
+export function planCostForVolume(plan, monthlyVolume) {
+  const volume = Number(monthlyVolume) || 0;
+  const commission = (volume * plan.commission) / 100;
+  return {
+    commission,
+    total: plan.price + commission,
+  };
+}
+
+/** Plan with the lowest all-in monthly cost at this booking volume. */
+export function lowestCostPlan(monthlyVolume) {
+  return PLANS.reduce((best, plan) => {
+    const next = planCostForVolume(plan, monthlyVolume).total;
+    const current = planCostForVolume(best, monthlyVolume).total;
+    return next < current ? plan : best;
+  });
+}
+
 /**
  * Plan order for upgrade/downgrade comparison.
  */
