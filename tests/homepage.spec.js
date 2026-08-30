@@ -46,5 +46,22 @@ test.describe('Homepage UI and public buttons', () => {
   test('mobile viewport still shows main content', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByRole('main')).toBeVisible();
+    const heroCta = page.getByRole('link', { name: /Start taking bookings/i }).first();
+    await expect(heroCta).toBeVisible();
+    const box = await heroCta.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box.y + box.height).toBeLessThan(844);
+    const noOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    );
+    expect(noOverflow).toBe(true);
+  });
+
+  test('desktop layout still shows plan names in a grid', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(page.getByText('Basic', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Growth', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Advanced', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /See pricing/i }).first()).toBeVisible();
   });
 });

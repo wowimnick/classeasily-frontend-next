@@ -9,11 +9,13 @@ import { ArrowRight, LogIn, Menu, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuthModal } from "@/context/AuthContext";
-import { marketingTheme as t, REGISTER_HREF, PRICING_HREF } from "./tokens";
+import { marketingTheme as t, REGISTER_HREF, PRICING_HREF, BP } from "./tokens";
 
 const BANNER_OFFSET = 58;
+const BANNER_OFFSET_MOBILE = 36;
 const DOCK_TOP_DESKTOP = 14;
 const DOCK_TOP_MOBILE = 10;
+const MOBILE_MQ = `(max-width: ${BP.mobile}px)`;
 
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
@@ -53,15 +55,15 @@ const PromoBanner = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 90;
-  padding: 18px 24px 14px;
+  padding: 12px 24px 34px;
   min-height: 76px;
   box-shadow:
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
     0 4px 12px rgba(0, 0, 0, 0.12);
 
-  @media (max-width: 768px) {
-    padding: 14px 16px 12px;
-    min-height: 64px;
+  @media (max-width: ${BP.mobile}px) {
+    padding: 6px 16px 20px;
+    min-height: 40px;
   }
 `;
 
@@ -69,35 +71,47 @@ const PromoInner = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
+  flex-wrap: nowrap;
+  gap: 8px;
   width: 100%;
   max-width: 1200px;
   text-align: center;
   font-family: ${t.fonts.body};
   font-size: clamp(13px, 0.8vw + 11px, 15px);
-  line-height: 1.35;
-  transform: translate3d(0, -11px, 0);
+  line-height: 1.2;
+  color: #fff;
+
+  @media (max-width: ${BP.mobile}px) {
+    gap: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
-const PromoStrong = styled.strong`
-  font-weight: 700;
+const PromoCopy = styled.p`
+  margin: 0;
+  font-weight: 650;
   letter-spacing: -0.2px;
   color: #fff;
 `;
 
-const PromoSep = styled.span`
-  opacity: 0.45;
-  font-weight: 300;
-  @media (max-width: 560px) {
-    display: none;
-  }
+const PromoUnderline = styled.span`
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.88);
 `;
 
-const PromoDesc = styled.span`
-  opacity: 0.95;
-  font-weight: 400;
-  color: #fff;
+const PromoRest = styled.span`
+  font-weight: 500;
+  opacity: 0.92;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: none;
+  }
 `;
 
 const glassSurface = css`
@@ -111,6 +125,10 @@ const glassSurface = css`
     inset 0 1px 0 rgba(255, 255, 255, 0.88);
 `;
 
+const HeaderCluster = styled.div`
+  position: relative;
+`;
+
 const HeaderBar = styled.header`
   background: rgba(255, 255, 255, 0);
   border: 1px solid transparent;
@@ -121,8 +139,11 @@ const HeaderBar = styled.header`
   backdrop-filter: blur(0) saturate(100%);
   -webkit-backdrop-filter: blur(0) saturate(100%);
   padding: ${(p) => (p.$isScrolled ? "0.35rem 1.15rem" : "0.5rem 3rem")};
-  position: fixed;
-  top: max(${(p) => p.$top}px, env(safe-area-inset-top, 0px));
+  position: ${(p) => (p.$isScrolled ? "fixed" : "absolute")};
+  top: max(
+    ${(p) => (p.$isScrolled ? DOCK_TOP_DESKTOP : BANNER_OFFSET)}px,
+    env(safe-area-inset-top, 0px)
+  );
   left: 0;
   right: 0;
   z-index: 999;
@@ -162,7 +183,11 @@ const HeaderBar = styled.header`
       ${glassSurface}
     `}
 
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
+    top: max(
+      ${(p) => (p.$isScrolled ? DOCK_TOP_MOBILE : BANNER_OFFSET_MOBILE)}px,
+      env(safe-area-inset-top, 0px)
+    );
     padding: ${(p) => (p.$isScrolled ? "0.35rem 0.7rem" : "10px 1rem")};
     overflow: hidden;
 
@@ -237,7 +262,7 @@ const LogoContainer = styled.div`
     height: ${(p) => (p.$isScrolled ? "2.5rem" : "3rem")};
     transition: all 0.3s ease;
   }
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     & > svg {
       width: 2.25rem;
       height: 2.25rem;
@@ -253,7 +278,7 @@ const Title = styled.p`
     ${(p) => (p.$isScrolled ? "0.2rem" : "0.4rem")} 0.15rem;
   color: #fb2243;
   transition: all 0.3s ease;
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     display: none;
   }
 `;
@@ -282,7 +307,7 @@ const HeaderNavLink = styled(Link)`
     color: #000;
     background-color: rgba(0, 0, 0, 0.06);
   }
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     display: none;
   }
 `;
@@ -310,7 +335,7 @@ const RoundedButton = styled(motion.button)`
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     height: 40px;
     padding: 4px 6px 4px 10px;
     margin-left: 0.25rem;
@@ -332,7 +357,7 @@ const GuestMenuDropdown = styled(motion.div)`
   overflow: hidden;
   text-align: left;
 
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     display: none;
   }
 `;
@@ -368,7 +393,7 @@ const GuestMenuLink = styled(Link)`
 const MobileBackdrop = styled(motion.div)`
   display: none;
 
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     display: block;
     position: fixed;
     inset: 0;
@@ -382,7 +407,7 @@ const MobileBackdrop = styled(motion.div)`
 const MobilePanel = styled(motion.div)`
   display: none;
 
-  @media (max-width: 756px) {
+  @media (max-width: ${BP.mobile}px) {
     display: block;
     grid-column: 1 / -1;
     overflow: hidden;
@@ -539,11 +564,11 @@ export default function MarketingHeader({ contained = true }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [headerTop, setHeaderTop] = useState(BANNER_OFFSET);
   const [isMobile, setIsMobile] = useState(false);
   const menuTriggerRef = useRef(null);
   const headerRef = useRef(null);
   const didMountRef = useRef(false);
+  const bannerOffset = isMobile ? BANNER_OFFSET_MOBILE : BANNER_OFFSET;
   const dockTop = isMobile ? DOCK_TOP_MOBILE : DOCK_TOP_DESKTOP;
 
   const hasBusiness = Boolean(user?.has_business);
@@ -554,8 +579,7 @@ export default function MarketingHeader({ contained = true }) {
     let raf = 0;
     const update = () => {
       const y = window.scrollY || window.pageYOffset;
-      setHeaderTop(Math.max(dockTop, BANNER_OFFSET - y));
-      setIsScrolled(y >= BANNER_OFFSET - dockTop);
+      setIsScrolled(y >= bannerOffset - dockTop);
     };
     const onScroll = () => {
       if (raf) return;
@@ -570,10 +594,10 @@ export default function MarketingHeader({ contained = true }) {
       window.removeEventListener("scroll", onScroll);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [dockTop]);
+  }, [dockTop, bannerOffset]);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 756px)");
+    const mq = window.matchMedia(MOBILE_MQ);
     const sync = () => setIsMobile(mq.matches);
     sync();
     mq.addEventListener("change", sync);
@@ -607,11 +631,14 @@ export default function MarketingHeader({ contained = true }) {
   }, [isMenuOpen, isAuthenticated, isMobile]);
 
   useEffect(() => {
-    if (!(isMenuOpen && isMobile)) return undefined;
+    const open = isMenuOpen && isMobile;
+    document.documentElement.dataset.marketingMenu = open ? "open" : "";
+    if (!open) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
+      document.documentElement.dataset.marketingMenu = "";
     };
   }, [isMenuOpen, isMobile]);
 
@@ -619,11 +646,14 @@ export default function MarketingHeader({ contained = true }) {
 
   return (
     <>
-      <PromoBanner role="note" aria-label="First three months, no per-booking fee">
+      <HeaderCluster>
+      <PromoBanner role="note" aria-label="First three months: no fee per booking, just a flat monthly plan">
         <PromoInner>
-          <PromoStrong>First 3 months: a flat monthly subscription.</PromoStrong>
-          <PromoSep aria-hidden>|</PromoSep>
-          <PromoDesc>No fee per booking.</PromoDesc>
+          <PromoCopy>
+            First 3 months:{" "}
+            <PromoUnderline>no fee per booking</PromoUnderline>
+            <PromoRest> — just a flat monthly plan.</PromoRest>
+          </PromoCopy>
         </PromoInner>
       </PromoBanner>
       <AnimatePresence>
@@ -643,7 +673,6 @@ export default function MarketingHeader({ contained = true }) {
         $isScrolled={isScrolled}
         $contained={contained}
         $menuOpen={isMenuOpen && isMobile}
-        $top={headerTop}
       >
           <LogoLink href="/" aria-label="ClassEasily home">
             <LogoContainer $isScrolled={isScrolled}>
@@ -819,6 +848,7 @@ export default function MarketingHeader({ contained = true }) {
             )}
           </AnimatePresence>
       </HeaderBar>
+      </HeaderCluster>
       <SettingsModal
         open={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

@@ -16,6 +16,7 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  HelpCircle,
 } from "lucide-react";
 import {
   ConfigProvider,
@@ -39,11 +40,14 @@ import {
   marketingTheme as t,
   REGISTER_HREF,
   SUPPORT_EMAIL,
+  BP,
 } from "@/components/marketing/tokens";
 import dynamic from "next/dynamic";
 import OnboardAmbient from "./OnboardAmbient";
+import OnboardSurvey, { SURVEY_STEPS } from "./OnboardSurvey";
 import PayoutFlowScene from "./PayoutFlowScene";
 import PlanPicker from "./PlanPicker";
+import StepTitleReveal from "./StepTitleReveal";
 
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
@@ -61,13 +65,15 @@ const STEPS = [
   { id: "preview", label: "Widget", skippable: true },
 ];
 
+const SURVEY_PENDING_KEY = "ce-onboard-survey";
+
 const antdTheme = {
   token: {
     colorPrimary: "#fc4056",
     colorText: "#222222",
     colorTextBase: "#222222",
     colorTextHeading: "#222222",
-    colorTextSecondary: "#6A6A6A",
+    colorTextSecondary: "#111111",
     colorTextLabel: "#222222",
     colorLink: "#fc4056",
     colorBorder: "#DDDDDD",
@@ -99,8 +105,6 @@ const antdTheme = {
     },
   },
 };
-
-const spring = { type: "spring", stiffness: 380, damping: 28 };
 
 const TIMEZONES = (() => {
   try {
@@ -163,6 +167,30 @@ function stepCopy(step, name, plan) {
         paragraphs: [
           "The calendar, widget times, and reminder emails all use this timezone. A mismatch shows the wrong local time on confirmations.",
           "We’ve pre-selected it from this browser. If you operate in more than one city, pick your primary location; you can still set exceptions on individual listings. Change this anytime in Settings.",
+        ],
+      };
+    case "about-industry":
+      return {
+        eyebrow: "Optional — 1 of 3",
+        title: "One more thing",
+        paragraphs: [
+          "What do you sell? Tap one to continue. We’ll use this to seed your first listing.",
+        ],
+      };
+    case "about-booking":
+      return {
+        eyebrow: "Optional — 2 of 3",
+        title: "How do you take bookings today?",
+        paragraphs: [
+          "The system you use now — or the one you plan to replace.",
+        ],
+      };
+    case "about-attribution":
+      return {
+        eyebrow: "Optional — 3 of 3",
+        title: "How did you find ClassEasily?",
+        paragraphs: [
+          "One tap. Helps us spend marketing in the right places.",
         ],
       };
     case "connect":
@@ -228,10 +256,10 @@ const Top = styled.header`
   padding: 0 28px;
   background: #fff;
 
-  @media (max-width: 640px) {
-    height: 64px;
+  @media (max-width: ${BP.phone}px) {
+    height: 56px;
     padding: 0 16px;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto 1fr auto;
   }
 `;
 
@@ -246,18 +274,48 @@ const Brand = styled(Link)`
   flex-shrink: 0;
 `;
 
+const BrandName = styled.span`
+  @media (max-width: ${BP.phone}px) {
+    display: none;
+  }
+`;
+
 const StepMeta = styled.p`
   margin: 0;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #6a6a6a;
+  color: #111;
   text-align: center;
 
-  @media (max-width: 640px) {
+  @media (max-width: ${BP.mobile}px) {
     display: none;
   }
+`;
+
+const StepDots = styled.ol`
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: ${(p) => (p.$hide ? "none" : "flex")};
+  }
+`;
+
+const StepDot = styled.li`
+  width: ${(p) => (p.$on ? "16px" : "7px")};
+  height: 7px;
+  border-radius: 99px;
+  background: ${(p) => (p.$on ? t.colors.primary : "#e4e4e4")};
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
 `;
 
 const TopActions = styled.div`
@@ -310,8 +368,26 @@ const Questions = styled.a`
     text-underline-offset: 3px;
   }
 
-  @media (max-width: 640px) {
+  .q-icon {
     display: none;
+  }
+
+  @media (max-width: ${BP.phone}px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    text-decoration: none;
+
+    .q-label {
+      display: none;
+    }
+
+    .q-icon {
+      display: block;
+    }
   }
 `;
 
@@ -319,6 +395,7 @@ const ProgressTrack = styled.div`
   height: 4px;
   background: #ebebeb;
   flex-shrink: 0;
+  opacity: ${(p) => (p.$hide ? 0 : 1)};
 `;
 
 const ProgressFill = styled.div`
@@ -393,7 +470,7 @@ const Story = styled.div`
     p.$plain
       ? `
     max-width: 1120px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   `
       : ""}
 
@@ -406,6 +483,10 @@ const StepSlot = styled.div`
   position: relative;
 `;
 
+const ContentSlot = styled.div`
+  min-width: 0;
+`;
+
 const Panel = styled.div`
   background: #fff;
   border: 1px solid #ebebeb;
@@ -413,46 +494,91 @@ const Panel = styled.div`
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   min-width: 0;
+
+  @media (max-width: ${BP.mobile}px) {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+  }
 `;
 
 const PanelMeasure = styled.div`
   padding: 28px;
 
-  @media (max-width: 640px) {
-    padding: 20px;
+  @media (max-width: ${BP.phone}px) {
+    padding: 0;
   }
 `;
 
 const Eyebrow = styled.p`
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: ${t.colors.primary};
-`;
-
-const Title = styled.h1`
-  margin: 0 0 16px;
-  font-size: clamp(30px, 4.2vw, 44px);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.12;
-  color: #222;
-  min-height: ${(p) => (p.$compact ? "0" : "calc(1.12em * 2)")};
+  color: #111;
+  min-height: 1.15em;
+  opacity: ${(p) => (p.$on ? 1 : 0)};
+  transition: opacity 0.35s ease;
 `;
 
 const Lead = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-width: ${(p) => (p.$wide ? "36em" : "460px")};
+  gap: 6px;
+  max-width: ${(p) => (p.$wide ? "40em" : "460px")};
 
   p {
     margin: 0;
-    font-size: 16px;
-    line-height: 1.65;
-    color: #6a6a6a;
+    font-size: 15px;
+    line-height: 1.45;
+    color: #111;
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    max-width: none;
+    gap: 4px;
+
+    p {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  }
+`;
+
+const LeadRest = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: none;
+  }
+`;
+
+const Why = styled.details`
+  display: none;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: block;
+  }
+
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  p {
+    margin: 8px 0 0;
   }
 `;
 
@@ -468,7 +594,7 @@ const FormWrap = styled.div`
   }
 
   .ant-form-item-extra {
-    color: #6a6a6a;
+    color: #111;
     font-size: 13px;
     line-height: 1.45;
     padding-top: 4px;
@@ -491,6 +617,20 @@ const FormWrap = styled.div`
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    .ant-form-item-label > label {
+      font-size: 13px;
+    }
+
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-input-affix-wrapper input,
+    .ant-select-selector,
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -534,7 +674,7 @@ const Divider = styled.div`
   align-items: center;
   gap: 12px;
   margin: 8px 0 16px;
-  color: #6a6a6a;
+  color: #111;
   font-size: 13px;
   font-weight: 600;
 
@@ -566,7 +706,7 @@ const Note = styled.aside`
 
   p {
     margin: 0;
-    color: #6a6a6a;
+    color: #111;
   }
 `;
 
@@ -609,7 +749,7 @@ const InfoText = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 const RecapTop = styled.div`
@@ -634,7 +774,7 @@ const RecapMeta = styled.p`
   margin: 8px 0 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 const SampleKicker = styled.div`
@@ -642,7 +782,7 @@ const SampleKicker = styled.div`
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6a6a6a;
+  color: #111;
   margin-bottom: 6px;
 `;
 
@@ -657,7 +797,7 @@ const SampleSub = styled.p`
   margin: 8px 0 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 const UsesList = styled.ul`
@@ -689,6 +829,12 @@ const WidgetMock = styled.div`
   overflow: hidden;
   margin-bottom: 20px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+
+  @media (max-width: ${BP.mobile}px) {
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 `;
 
 const WidgetBar = styled.div`
@@ -711,7 +857,7 @@ const WidgetClass = styled.div`
 const WidgetMeta = styled.p`
   margin: 6px 0 14px;
   font-size: 14px;
-  color: #6a6a6a;
+  color: #111;
   line-height: 1.5;
 `;
 
@@ -778,7 +924,7 @@ const NextItem = styled.li`
   span {
     font-size: 13px;
     line-height: 1.5;
-    color: #6a6a6a;
+    color: #111;
   }
 `;
 
@@ -792,9 +938,12 @@ const Footer = styled.footer`
   padding: 14px 28px 18px;
   background: #fff;
   border-top: 1px solid #ebebeb;
+  opacity: ${(p) => (p.$hidden ? 0 : 1)};
+  pointer-events: ${(p) => (p.$hidden ? "none" : "auto")};
+  transition: opacity 0.35s ease;
 
-  @media (max-width: 640px) {
-    padding: 12px 16px 16px;
+  @media (max-width: ${BP.phone}px) {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px));
   }
 `;
 
@@ -827,6 +976,18 @@ const FooterRight = styled.div`
   justify-content: flex-end;
   gap: 8px;
   min-height: 48px;
+  min-width: 0;
+
+  @media (max-width: ${BP.phone}px) {
+    flex: 1;
+    ${(p) =>
+      p.$stack
+        ? `
+      flex-direction: column-reverse;
+      align-items: stretch;
+    `
+        : ""}
+  }
 `;
 
 const PrimaryBtn = styled(AntButton)`
@@ -838,53 +999,62 @@ const PrimaryBtn = styled(AntButton)`
     font-size: 16px;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: ${BP.phone}px) {
     && {
+      width: 100%;
       padding: 0 20px;
     }
   }
 `;
 
-function StepIntro({ eyebrow, title, paragraphs, reduceMotion, wide }) {
-  const words = String(title).split(" ");
-  const bodyDelay = reduceMotion ? 0 : words.length * 0.05 + 0.16;
-
+function StepIntro({
+  eyebrow,
+  title,
+  paragraphs,
+  reduceMotion,
+  wide,
+  stepKey,
+  onSettled,
+  showRest,
+}) {
   return (
     <>
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={reduceMotion ? false : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <Eyebrow $on={reduceMotion || showRest}>{eyebrow}</Eyebrow>
+      <StepTitleReveal
+        title={title}
+        stepKey={stepKey}
+        reduceMotion={reduceMotion}
+        onSettled={onSettled}
+        align="left"
+      />
+      <Lead
+        $wide={wide}
+        as={motion.div}
+        initial={false}
+        animate={
+          reduceMotion || showRest
+            ? { opacity: 1, y: 0 }
+            : { opacity: 0, y: 12 }
+        }
+        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+        style={{ pointerEvents: showRest || reduceMotion ? "auto" : "none" }}
       >
-        <Eyebrow>{eyebrow}</Eyebrow>
-      </motion.div>
-      <Title $compact={wide}>
-        {words.map((word, i) => (
-          <motion.span
-            key={`${word}-${i}`}
-            initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-            animate={reduceMotion ? false : { opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: reduceMotion ? 0 : i * 0.05 }}
-            style={{ display: "inline-block", marginRight: "0.22em" }}
-          >
-            {word}
-          </motion.span>
-        ))}
-      </Title>
-      <Lead $wide={wide}>
-        {paragraphs.map((text, i) => (
-          <motion.p
-            key={text.slice(0, 48)}
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            animate={reduceMotion ? false : { opacity: 1, y: 0 }}
-            transition={{
-              delay: bodyDelay + i * 0.12,
-              duration: 0.4,
-            }}
-          >
-            {text}
-          </motion.p>
-        ))}
+        {paragraphs[0] ? <p>{paragraphs[0]}</p> : null}
+        {paragraphs.length > 1 ? (
+          <>
+            <LeadRest>
+              {paragraphs.slice(1).map((text) => (
+                <p key={text.slice(0, 48)}>{text}</p>
+              ))}
+            </LeadRest>
+            <Why>
+              <summary>Why this matters</summary>
+              {paragraphs.slice(1).map((text) => (
+                <p key={text.slice(0, 48)}>{text}</p>
+              ))}
+            </Why>
+          </>
+        ) : null}
       </Lead>
     </>
   );
@@ -908,13 +1078,24 @@ export default function RegisterFlow() {
       "America/Toronto",
   );
   const [mode, setMode] = useState("signup");
+  const [survey, setSurvey] = useState({});
+  const [monthlyVolume, setMonthlyVolume] = useState(2500);
+  const [phase, setPhase] = useState("flow");
+  const [contentVisible, setContentVisible] = useState(false);
 
+  const isSurvey = phase === "survey";
+  const isLoadingPhase = phase === "loading";
+  const aboutIndex = SURVEY_STEPS.findIndex((s) => s.id === step);
   const stepIndex = STEPS.findIndex((s) => s.id === step);
   const minIndex = STEPS.findIndex((s) => s.id === minStep);
   const selectedPlan = PLANS.find((p) => p.id === planId);
   const copy = stepCopy(step, businessName, selectedPlan);
-  const canBack = stepIndex > Math.max(0, minIndex);
+  const canBack = isSurvey
+    ? aboutIndex > 0
+    : !isLoadingPhase && stepIndex > Math.max(0, minIndex);
   const current = STEPS[stepIndex];
+  const introKey = isLoadingPhase ? "loading" : step;
+  const wide = step === "plan" || isSurvey;
 
   const detectedZone = useMemo(
     () =>
@@ -924,34 +1105,136 @@ export default function RegisterFlow() {
     [],
   );
 
-  const goDashboard = useCallback(async () => {
+  const persistSurvey = useCallback(
+    async (nextSurvey = survey) => {
+      const payload = { ...nextSurvey };
+      if (monthlyVolume) payload.estimated_monthly_volume = monthlyVolume;
+      const hasAnswers = Object.values(payload).some(
+        (v) => v !== "" && v !== null && v !== undefined,
+      );
+      if (!hasAnswers) return;
+      await businessService.updateMyBusinessProfile({
+        onboarding_survey: payload,
+      });
+    },
+    [monthlyVolume, survey],
+  );
+
+  const leaveToDashboard = useCallback(async () => {
+    setBusy(true);
+    try {
+      sessionStorage.removeItem(SURVEY_PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+    await persistSurvey();
     await businessService.completeOnboarding();
     router.replace("/business/dashboard");
-  }, [router]);
+  }, [persistSurvey, router]);
 
-  const skip = useCallback(() => {
+  const beginPostOnboarding = useCallback(() => {
+    try {
+      sessionStorage.setItem(SURVEY_PENDING_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setError("");
+    setContentVisible(false);
+    setPhase("loading");
+  }, []);
+
+  const skip = useCallback(async () => {
+    if (isSurvey) {
+      setBusy(true);
+      await leaveToDashboard();
+      return;
+    }
     const next = STEPS[stepIndex + 1];
     if (!next) {
-      goDashboard();
+      beginPostOnboarding();
       return;
     }
     setError("");
     setStep(next.id);
-  }, [goDashboard, stepIndex]);
+  }, [beginPostOnboarding, isSurvey, leaveToDashboard, stepIndex]);
+
+  const pickSurvey = useCallback(
+    async (id) => {
+      const currentAbout = SURVEY_STEPS[aboutIndex];
+      if (!currentAbout) return;
+      const nextSurvey = { ...survey, [currentAbout.key]: id };
+      setSurvey(nextSurvey);
+      persistSurvey(nextSurvey);
+      const nextAbout = SURVEY_STEPS[aboutIndex + 1];
+      setError("");
+      if (!nextAbout) {
+        setBusy(true);
+        await persistSurvey(nextSurvey);
+        await businessService.completeOnboarding();
+        try {
+          sessionStorage.removeItem(SURVEY_PENDING_KEY);
+        } catch {
+          /* ignore */
+        }
+        router.replace("/business/dashboard");
+        return;
+      }
+      setStep(nextAbout.id);
+    },
+    [aboutIndex, persistSurvey, router, survey],
+  );
 
   const goBack = useCallback(() => {
     if (!canBack) return;
     setError("");
+    if (isSurvey) {
+      setStep(SURVEY_STEPS[aboutIndex - 1].id);
+      return;
+    }
     setStep(STEPS[stepIndex - 1].id);
-  }, [canBack, stepIndex]);
+  }, [aboutIndex, canBack, isSurvey, stepIndex]);
+
+  useEffect(() => {
+    setContentVisible(Boolean(reduceMotion) && !isLoadingPhase);
+  }, [introKey, isLoadingPhase, reduceMotion]);
+
+  const onTitleSettled = useCallback(() => {
+    if (phase === "loading") {
+      setStep("about-industry");
+      setPhase("survey");
+      return;
+    }
+    setContentVisible(true);
+  }, [phase]);
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
   }, [step]);
 
   useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return undefined;
+    const onFocus = (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches("input, textarea, select, .ant-select-selector")) {
+        return;
+      }
+      window.setTimeout(() => {
+        target.scrollIntoView({ block: "center", behavior: "smooth" });
+      }, 280);
+    };
+    main.addEventListener("focusin", onFocus);
+    return () => main.removeEventListener("focusin", onFocus);
+  }, []);
+
+  useEffect(() => {
     const qStep = searchParams.get("step");
-    if (qStep && STEPS.some((s) => s.id === qStep)) {
+    if (qStep === "about" || qStep?.startsWith("about-")) {
+      setPhase("survey");
+      setStep(qStep === "about" ? "about-industry" : qStep);
+    } else if (qStep && STEPS.some((s) => s.id === qStep)) {
+      setPhase("flow");
       setStep(qStep);
     }
     const qPlan = searchParams.get("plan");
@@ -972,6 +1255,12 @@ export default function RegisterFlow() {
       const d = state.data || {};
       if (d.business_name) setBusinessName(d.business_name);
       if (d.timezone) setTimezone(d.timezone);
+      if (d.onboarding_survey && typeof d.onboarding_survey === "object") {
+        setSurvey(d.onboarding_survey);
+        if (d.onboarding_survey.estimated_monthly_volume) {
+          setMonthlyVolume(d.onboarding_survey.estimated_monthly_volume);
+        }
+      }
       if (d.has_paid_subscription && d.onboarding_completed) {
         router.replace("/business/dashboard");
         return;
@@ -979,7 +1268,24 @@ export default function RegisterFlow() {
       if (d.has_paid_subscription) {
         setMinStep("timezone");
         const qStep = searchParams.get("step");
+        let pending = false;
+        try {
+          pending = sessionStorage.getItem(SURVEY_PENDING_KEY) === "1";
+        } catch {
+          pending = false;
+        }
+        if (qStep === "about" || qStep?.startsWith("about-")) {
+          setPhase("survey");
+          setStep(qStep === "about" ? "about-industry" : qStep);
+          return;
+        }
+        if (pending && !qStep) {
+          setPhase("survey");
+          setStep("about-industry");
+          return;
+        }
         if (!qStep || ["account", "business", "plan", "pay"].includes(qStep)) {
+          setPhase("flow");
           setStep("timezone");
         }
         return;
@@ -1165,10 +1471,14 @@ export default function RegisterFlow() {
         };
       case "timezone":
         return { label: "Save timezone", onClick: saveTimezone };
+      case "about-industry":
+      case "about-booking":
+      case "about-attribution":
+        return { label: "Skip", onClick: skip };
       case "connect":
         return { label: "Connect Stripe", onClick: startConnect };
       case "preview":
-        return { label: "Go to dashboard", onClick: goDashboard };
+        return { label: "Go to dashboard", onClick: beginPostOnboarding };
       default:
         return { label: "Continue" };
     }
@@ -1185,57 +1495,135 @@ export default function RegisterFlow() {
               restingColor={t.colors.accent}
               activeColor={t.colors.accent}
             />
-            ClassEasily
+            <BrandName>ClassEasily</BrandName>
           </Brand>
           <StepMeta>
-            Step {stepIndex + 1} of {STEPS.length} · {current?.label}
+            {isLoadingPhase
+              ? ""
+              : isSurvey
+                ? `Optional · ${aboutIndex + 1} of ${SURVEY_STEPS.length}`
+                : `Step ${stepIndex + 1} of ${STEPS.length} · ${current?.label}`}
           </StepMeta>
+          <StepDots
+            $hide={isLoadingPhase}
+            aria-label={
+              isSurvey
+                ? `Question ${aboutIndex + 1} of ${SURVEY_STEPS.length}`
+                : `Step ${stepIndex + 1} of ${STEPS.length}`
+            }
+          >
+            {(isSurvey ? SURVEY_STEPS : STEPS).map((s, i) => (
+              <StepDot
+                key={s.id}
+                $on={i === (isSurvey ? aboutIndex : stepIndex)}
+                aria-current={
+                  i === (isSurvey ? aboutIndex : stepIndex) ? "step" : undefined
+                }
+              />
+            ))}
+          </StepDots>
           <TopActions>
-            {current?.skippable ? (
+            {!isLoadingPhase && (isSurvey || current?.skippable) ? (
               <TextLinkBtn type="button" onClick={skip}>
-                {IS_DEV && !["timezone", "connect", "preview"].includes(step)
+                {IS_DEV &&
+                !isSurvey &&
+                !["timezone", "connect", "preview"].includes(step)
                   ? "Skip (dev)"
                   : "Skip"}
               </TextLinkBtn>
             ) : (
               <span />
             )}
-            <Questions href={`mailto:${SUPPORT_EMAIL}`}>Questions?</Questions>
+            <Questions href={`mailto:${SUPPORT_EMAIL}`} aria-label="Questions">
+              <span className="q-label">Questions?</span>
+              <HelpCircle className="q-icon" size={20} strokeWidth={2.2} />
+            </Questions>
           </TopActions>
         </Top>
-        <ProgressTrack>
-          <ProgressFill $pct={((stepIndex + 1) / STEPS.length) * 100} />
+        <ProgressTrack $hide={isLoadingPhase || isSurvey}>
+          <ProgressFill
+            $pct={
+              isSurvey
+                ? ((aboutIndex + 1) / SURVEY_STEPS.length) * 100
+                : ((Math.max(stepIndex, 0) + 1) / STEPS.length) * 100
+            }
+          />
         </ProgressTrack>
         <Main ref={mainRef}>
-          <OnboardAmbient step={step} reduceMotion={reduceMotion} />
-          <Shell $wide={step === "plan"}>
-            <Story $plain={step === "plan"}>
+          <OnboardAmbient
+            step={isLoadingPhase ? "loading" : step}
+            reduceMotion={reduceMotion}
+          />
+          {isLoadingPhase ? (
+            <StepTitleReveal
+              title="Loading"
+              stepKey="loading"
+              reduceMotion={reduceMotion}
+              stayCenter
+              onSettled={onTitleSettled}
+            />
+          ) : (
+          <Shell $wide={wide}>
+            <Story $plain={wide}>
               <StepSlot>
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
-                    key={step}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, pointerEvents: "none" }}
-                    transition={{ duration: 0.2 }}
-                    style={{ width: "100%" }}
-                  >
-                    <StepIntro
-                      eyebrow={copy.eyebrow}
-                      title={copy.title}
-                      paragraphs={copy.paragraphs}
-                      reduceMotion={reduceMotion}
-                      wide={step === "plan"}
-                    />
-                  </motion.div>
-                </AnimatePresence>
+                <StepIntro
+                  key={introKey}
+                  stepKey={introKey}
+                  eyebrow={copy.eyebrow}
+                  title={copy.title}
+                  paragraphs={copy.paragraphs}
+                  reduceMotion={reduceMotion}
+                  wide={wide}
+                  showRest={contentVisible}
+                  onSettled={onTitleSettled}
+                />
               </StepSlot>
             </Story>
-            {step === "plan" ? (
-              <PlanPicker planId={planId} onChange={setPlanId} />
+            {wide ? (
+              <ContentSlot
+                as={motion.div}
+                initial={false}
+                animate={
+                  contentVisible || reduceMotion
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 18 }
+                }
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  pointerEvents:
+                    contentVisible || reduceMotion ? "auto" : "none",
+                }}
+              >
+                {step === "plan" ? (
+                  <PlanPicker
+                    planId={planId}
+                    onChange={setPlanId}
+                    onVolumeChange={setMonthlyVolume}
+                  />
+                ) : (
+                  <OnboardSurvey
+                    stepId={step}
+                    value={survey[SURVEY_STEPS[aboutIndex]?.key]}
+                    onSelect={pickSurvey}
+                  />
+                )}
+              </ContentSlot>
             ) : (
               <>
             <ColRule aria-hidden />
+            <ContentSlot
+              as={motion.div}
+              initial={false}
+              animate={
+                contentVisible || reduceMotion
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: 18 }
+              }
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                pointerEvents: contentVisible || reduceMotion ? "auto" : "none",
+              }}
+            >
             <Panel>
               <PanelMeasure>
               {error && <ErrorText role="alert">{error}</ErrorText>}
@@ -1691,11 +2079,16 @@ export default function RegisterFlow() {
               </StepSlot>
               </PanelMeasure>
             </Panel>
+            </ContentSlot>
               </>
             )}
           </Shell>
+          )}
         </Main>
-        <Footer>
+        <Footer
+          $hidden={isLoadingPhase || !contentVisible}
+          aria-hidden={isLoadingPhase || !contentVisible}
+        >
           <BackBtn
             type="button"
             onClick={goBack}
@@ -1706,7 +2099,7 @@ export default function RegisterFlow() {
             <ChevronLeft size={18} />
             Back
           </BackBtn>
-          <FooterRight>
+          <FooterRight $stack={step === "connect"}>
             {step === "connect" && (
               <TextLinkBtn type="button" onClick={() => setStep("preview")}>
                 Skip for now

@@ -90,6 +90,10 @@ const Stage = styled.div`
   @media (max-width: 640px) {
     height: 220px;
   }
+
+  @media (max-width: 768px) and (max-height: 700px) {
+    display: none;
+  }
 `;
 
 const SvgLayer = styled.svg`
@@ -136,7 +140,7 @@ const Listing = styled.div`
 
 const Meta = styled.div`
   font-size: 10px;
-  color: #8a8a8a;
+  color: #111;
   margin: 3px 0 10px;
 `;
 
@@ -229,7 +233,7 @@ const BankKicker = styled.div`
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #9a9a9a;
+  color: #111;
 `;
 
 const BankAmt = styled.div`
@@ -267,7 +271,7 @@ const Body = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 function CheckDraw({ show }) {

@@ -85,4 +85,18 @@ test.describe('Public pages and navigation', () => {
     await expect(page.getByRole('heading', { name: /Compare plans/i })).toBeVisible();
     await expect(page.getByText(/Can I embed/i).first()).toBeVisible();
   });
+
+  test('pricing page is usable on a phone without a sideways table', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoPath(page, '/pricing');
+    await dismissCookieBannerIfVisible(page);
+    await expect(page.getByRole('slider')).toBeVisible();
+    await expect(page.locator('[data-mobile-plan-compare]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Growth' }).first()).toBeVisible();
+    await expect(page.getByText('Taking bookings')).toBeVisible();
+    const noOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    );
+    expect(noOverflow).toBe(true);
+  });
 });

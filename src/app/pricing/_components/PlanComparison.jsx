@@ -4,61 +4,21 @@ import { useId, useState } from "react";
 import styled from "styled-components";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Plus } from "lucide-react";
-import { PLANS, WIDGET_PLAN_COMPARISON_ROWS } from "@/lib/subscriptionPlans";
+import { PLANS } from "@/lib/subscriptionPlans";
+import { groupCompareRows } from "./MobilePlanCompare";
+import { BP } from "@/components/marketing/tokens";
 
 /** Header sits below the fixed marketing header while the table scrolls. */
 const STUCK_TOP = 80;
 const STUCK_TOP_SM = 68;
 
-const GROUPS = [
-  {
-    id: "core",
-    label: "Taking bookings",
-    rows: [
-      "widget_site",
-      "scheduling",
-      "payments",
-      "embed_modes",
-      "dashboard_payout",
-    ],
-  },
-  {
-    id: "brand",
-    label: "Staying on brand",
-    rows: ["brand", "domain_whitelist", "booking_emails", "pin_class"],
-  },
-  {
-    id: "grow",
-    label: "Growing repeat business",
-    rows: ["crm", "memberships", "promos", "reminders", "widget_analytics"],
-  },
-];
-
-/** Group the shared matrix, keeping any row the groups above don't name. */
 function groupRows() {
-  const byId = new Map(
-    WIDGET_PLAN_COMPARISON_ROWS.filter(
-      (r) => r.id !== "marketplace" && r.id !== "commission",
-    ).map((r) => [r.id, r]),
-  );
-
-  const groups = GROUPS.map((g) => ({
-    ...g,
-    items: g.rows.map((id) => byId.get(id)).filter(Boolean),
-  }));
-  groups.forEach((g) => g.rows.forEach((id) => byId.delete(id)));
-
-  const leftover = [...byId.values()];
-  return leftover.length
-    ? [...groups, { id: "more", label: "Also included", items: leftover }]
-    : groups;
+  return groupCompareRows();
 }
 
-const Scroller = styled.div`
-  /* Only trap scrolling on narrow screens, so expanded detail can breathe. */
-  @media (max-width: 900px) {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+const DesktopOnly = styled.div`
+  @media (max-width: ${BP.mobile}px) {
+    display: none;
   }
 `;
 
@@ -67,10 +27,6 @@ const Table = styled.table`
   border-collapse: separate;
   border-spacing: 0;
   text-align: left;
-
-  @media (max-width: 900px) {
-    min-width: 620px;
-  }
 `;
 
 const cellBase = `
@@ -293,13 +249,6 @@ const Hidden = styled.span`
 
 const ScrollHint = styled.p`
   display: none;
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: #6b7280;
-
-  @media (max-width: 900px) {
-    display: block;
-  }
 `;
 
 function Value({ row, planId }) {
@@ -370,9 +319,9 @@ export default function PlanComparison({ renderCta }) {
   const groups = groupRows();
 
   return (
-    <>
+    <DesktopOnly>
       <ScrollHint>Scroll sideways to compare all three plans.</ScrollHint>
-      <Scroller>
+      <div>
         <Table>
           <caption>
             <Hidden>Feature comparison across ClassEasily plans</Hidden>
@@ -418,7 +367,7 @@ export default function PlanComparison({ renderCta }) {
             </tfoot>
           ) : null}
         </Table>
-      </Scroller>
-    </>
+      </div>
+    </DesktopOnly>
   );
 }

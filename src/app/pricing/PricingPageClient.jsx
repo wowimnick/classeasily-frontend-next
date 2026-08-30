@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { motion } from "framer-motion";
@@ -13,14 +14,18 @@ import {
   marketingTheme as t,
   REGISTER_HREF,
   SUPPORT_EMAIL,
+  BP,
 } from "@/components/marketing/tokens";
 import MarketingHeader, {
   MarketingSheet,
 } from "@/components/marketing/MarketingHeader";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
+import MobileStickyCta from "@/components/marketing/MobileStickyCta";
 import AnimatedFaq from "@/components/marketing/AnimatedFaq";
 import PricingPlayground from "./_components/PricingPlayground";
 import PlanComparison from "./_components/PlanComparison";
+import MobilePlanCompare from "./_components/MobilePlanCompare";
+import { PLANS } from "@/lib/subscriptionPlans";
 
 const fade = {
   hidden: { opacity: 0, y: 16 },
@@ -99,6 +104,10 @@ const QuietLead = styled.p`
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    display: ${(p) => (p.$mobileHide ? "none" : "block")};
+  }
 `;
 
 const Footnote = styled.p`
@@ -155,6 +164,12 @@ const Actions = styled.div`
   justify-content: center;
   gap: 22px;
   flex-wrap: wrap;
+
+  @media (max-width: ${BP.mobile}px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
 `;
 
 const PrimaryLink = styled(Link)`
@@ -173,6 +188,12 @@ const PrimaryLink = styled(Link)`
     color: #fff;
     background: ${t.colors.primaryHover};
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
 `;
 
 const GhostLink = styled.a`
@@ -183,6 +204,14 @@ const GhostLink = styled.a`
 
   &:hover {
     color: ${t.colors.primary};
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    width: 100%;
   }
 `;
 
@@ -241,6 +270,9 @@ function PlanCta({ plan, Cta, dark }) {
 }
 
 function PricingInner() {
+  const [planId, setPlanId] = useState("growth");
+  const selected = PLANS.find((p) => p.id === planId) || PLANS[1];
+
   return (
     <Page>
       <MarketingHeader />
@@ -249,10 +281,12 @@ function PricingInner() {
           <Hero>
             <Container>
               <motion.div initial="hidden" animate="visible" variants={fade}>
-                <PricingPlayground />
+                <PricingPlayground planId={planId} onPlanChange={setPlanId} />
               </motion.div>
+              <span id="mobile-hero-end" aria-hidden />
               <PlansInHero id="plans">
                 <PlanCards
+                  layout="snap"
                   renderCta={(plan, { Cta, dark }) => (
                     <PlanCta plan={plan} Cta={Cta} dark={dark} />
                   )}
@@ -269,13 +303,20 @@ function PricingInner() {
             <Container>
               <SectionHead>
                 <QuietTitle>What’s on each plan</QuietTitle>
-                <QuietLead>
+                <QuietLead $mobileHide>
                   Tap the plus next to a row if you want the longer explanation.
                 </QuietLead>
               </SectionHead>
               <PlanComparison
                 renderCta={(plan) => (
                   <PlanCta plan={plan} Cta={TableCta} dark={plan.featured} />
+                )}
+              />
+              <MobilePlanCompare
+                planId={planId}
+                onPlanChange={setPlanId}
+                renderCta={(plan) => (
+                  <PlanCta plan={plan} Cta={PlanCtaButton} dark={plan.featured} />
                 )}
               />
             </Container>
@@ -318,6 +359,11 @@ function PricingInner() {
         </main>
         <MarketingFooter />
       </MarketingSheet>
+      <MobileStickyCta
+        href={`${REGISTER_HREF}?plan=${selected.id}`}
+        label={selected.name}
+        teaser={`$${selected.price}/mo · ${selected.commission}% per booking`}
+      />
     </Page>
   );
 }

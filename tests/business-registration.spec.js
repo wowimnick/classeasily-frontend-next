@@ -49,6 +49,28 @@ test.describe('Business registration', () => {
     await expect(page.getByRole('button', { name: /Log in/i })).toBeVisible();
   });
 
+  test('account step fits a phone viewport without horizontal overflow', async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoPath(page, '/business/register');
+    await dismissCookieBannerIfVisible(page);
+    const heading = page.getByRole('heading', { name: /Start with your account/i });
+    await expect(heading).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('button', { name: /Sign up/i })).toBeVisible({
+      timeout: 15000,
+    });
+    const box = await heading.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box.y).toBeLessThan(280);
+    await expect(page.getByRole('button', { name: /Sign up/i })).toBeVisible();
+    const signup = await page.getByRole('button', { name: /Sign up/i }).boundingBox();
+    expect(signup.y).toBeLessThan(844);
+    const noOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    );
+    expect(noOverflow).toBe(true);
+  });
+
   test('plan query is honored on the plan step after a mocked account', async ({ page }) => {
     test.setTimeout(90000);
     const user = mockUser();
@@ -180,11 +202,20 @@ test.describe('Business registration', () => {
     await expect(page.getByRole('heading', { name: /Set your timezone/i })).toBeVisible({
       timeout: 20000,
     });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('button', { name: /^Skip$/i }).click();
     await expect(page.getByRole('heading', { name: /Get paid for bookings/i })).toBeVisible();
     await page.getByRole('button', { name: /Skip for now/i }).click();
     await expect(page.getByText(/is ready to embed/i)).toBeVisible();
     await page.getByRole('button', { name: /Go to dashboard/i }).click();
+    await expect(page.getByRole('heading', { name: /One more thing/i })).toBeVisible({
+      timeout: 20000,
+    });
+    await page.getByRole('radio', { name: 'Arts & crafts' }).click();
+    await expect(page.getByRole('heading', { name: /How do you take bookings/i })).toBeVisible();
+    await page.getByRole('radio', { name: 'Calendly' }).click();
+    await expect(page.getByRole('heading', { name: /How did you find ClassEasily/i })).toBeVisible();
+    await page.getByRole('radio', { name: 'Google' }).click();
     await expect(page).toHaveURL(/\/business\/dashboard/, { timeout: 30000 });
   });
 

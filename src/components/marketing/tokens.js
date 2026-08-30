@@ -1,4 +1,14 @@
 /** Marketing-site design tokens. Keep Proxima Soft via --font-proxima-soft. */
+export const BP = {
+  phone: 640,
+  mobile: 768,
+};
+
+export const mq = {
+  phone: `@media (max-width: ${BP.phone}px)`,
+  mobile: `@media (max-width: ${BP.mobile}px)`,
+};
+
 export const marketingTheme = {
   colors: {
     primary: "#fc4056",
@@ -27,6 +37,15 @@ export const marketingTheme = {
     xl: "24px",
   },
   headerHeight: 72,
+  breakpoints: BP,
+  spacing: {
+    pageX: 20,
+    sectionY: 48,
+    tap: 48,
+  },
+  safeArea: {
+    bottom: "env(safe-area-inset-bottom, 0px)",
+  },
 };
 
 export const SUPPORT_EMAIL = "support@classeasily.com";

@@ -20,9 +20,11 @@ import {
   REGISTER_HREF,
   PRICING_HREF,
   SUPPORT_EMAIL,
+  BP,
 } from "./tokens";
 import MarketingHeader, { MarketingSheet } from "./MarketingHeader";
 import MarketingFooter from "./MarketingFooter";
+import MobileStickyCta from "./MobileStickyCta";
 import AnimatedHeadline from "./AnimatedHeadline";
 import AnimatedFaq from "./AnimatedFaq";
 import TestimonialsClient from "@/app/(homepage)/_components/TestimonialsClient";
@@ -151,6 +153,10 @@ const PillLink = styled(Link)`
             color: ${t.colors.dark};
           }
         `}
+
+  @media (max-width: ${BP.mobile}px) {
+    min-height: 48px;
+  }
 `;
 
 const GhostLink = styled.a`
@@ -213,9 +219,9 @@ const HeroWrapper = styled.section`
     align-items: flex-start;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: ${BP.mobile}px) {
     margin-top: -4.25rem;
-    padding: calc(4.25rem + 20px) 0 ${HERO_PAD_BOTTOM_SM + HERO_SLANT}px;
+    padding: calc(4.25rem + 16px) 0 ${HERO_PAD_BOTTOM_SM + HERO_SLANT}px;
     display: block;
   }
 `;
@@ -247,7 +253,7 @@ const HeroGradientStrip = styled.div`
   top: 58%;
   transform: translateY(-50%) rotate(150deg);
 
-  @media (max-width: 640px) {
+  @media (max-width: ${BP.mobile}px) {
     display: none;
   }
 `;
@@ -263,6 +269,28 @@ const HeroGradientCanvas = styled.canvas`
   --gradient-color-2: #fc4056;
   --gradient-color-3: #ffffff;
   --gradient-color-4: #f5f5f5;
+`;
+
+const HeroMobileWash = styled.div`
+  display: none;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        ellipse 90% 70% at 12% 18%,
+        rgba(252, 64, 86, 0.2),
+        transparent 62%
+      ),
+      radial-gradient(
+        ellipse 70% 60% at 88% 8%,
+        rgba(252, 64, 86, 0.08),
+        transparent 55%
+      );
+    pointer-events: none;
+  }
 `;
 
 const HeroContainer = styled.div`
@@ -286,6 +314,11 @@ const HeroGrid = styled.div`
     gap: 28px;
     text-align: center;
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    gap: 20px;
+    text-align: left;
+  }
 `;
 
 const HeroCopy = styled.div`
@@ -297,6 +330,11 @@ const HeroCopy = styled.div`
   @media (max-width: 968px) {
     max-width: 720px;
     margin: 0 auto;
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    max-width: none;
+    margin: 0;
   }
 `;
 
@@ -333,6 +371,13 @@ const HeroP = styled.p`
   @media (max-width: 768px) {
     font-size: 17px;
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    font-size: 16px;
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+  }
 `;
 
 const ButtonGroup = styled.div`
@@ -340,6 +385,16 @@ const ButtonGroup = styled.div`
   gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
+
+  @media (max-width: ${BP.mobile}px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    a {
+      width: 100%;
+    }
+  }
 `;
 
 const HeroButtons = styled(ButtonGroup)`
@@ -353,6 +408,10 @@ const HeroButtons = styled(ButtonGroup)`
   @media (max-width: 968px) {
     justify-content: center;
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    justify-content: stretch;
+  }
 `;
 
 const HeroTrust = styled.p`
@@ -364,6 +423,10 @@ const HeroTrust = styled.p`
 
   @media (max-width: 968px) {
     text-align: center;
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    text-align: left;
   }
 `;
 
@@ -393,6 +456,22 @@ const HeroVisual = styled.div`
       -${HERO_PAD_BOTTOM_SM + HERO_SLANT}px + var(--shot-lift, ${HERO_SLANT * 0.5}px)
     );
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: calc(-${HERO_PAD_BOTTOM_SM + HERO_SLANT}px);
+    height: 220px;
+    overflow: hidden;
+    justify-content: flex-end;
+    align-items: flex-end;
+
+    > div {
+      width: 100%;
+      max-width: none;
+    }
+  }
 `;
 
 const HeroShot = styled.div`
@@ -410,6 +489,20 @@ const HeroShot = styled.div`
 
   @media (max-width: 968px) {
     width: min(50vw, 525px);
+  }
+
+  @media (max-width: ${BP.mobile}px) {
+    width: 118%;
+    max-width: none;
+    transform: rotate(-4deg) translate(8%, 18%);
+    transform-origin: bottom right;
+
+    img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      object-position: left top;
+    }
   }
 `;
 
@@ -467,6 +560,7 @@ function Hero() {
   return (
     <HeroWrapper data-home-hero>
       <HeroGradientLayer>
+        <HeroMobileWash />
         <HeroGradientStrip>
           <HeroGradientCanvas id="home-hero-gradient-canvas" data-transition-in />
         </HeroGradientStrip>
@@ -496,8 +590,8 @@ function Hero() {
                   <PillLink href={REGISTER_HREF} $variant="primary">
                     Start taking bookings <ArrowRight size={16} />
                   </PillLink>
-                  <PillLink href="/#features" $variant="secondary">
-                    See how it works
+                  <PillLink href={PRICING_HREF} $variant="secondary">
+                    See pricing
                   </PillLink>
                 </HeroButtons>
                 <HeroTrust>
@@ -527,6 +621,7 @@ function Hero() {
           </HeroVisual>
         </HeroGrid>
       </HeroContainer>
+      <span id="mobile-hero-end" aria-hidden />
     </HeroWrapper>
   );
 }
@@ -539,8 +634,20 @@ const ValuePropsGrid = styled.div`
   @media (max-width: 968px) {
     grid-template-columns: repeat(2, 1fr);
   }
-  @media (max-width: 568px) {
-    grid-template-columns: 1fr;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    margin: 0 -20px;
+    padding: 4px 20px 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 `;
 
@@ -575,22 +682,38 @@ const VPItem = styled(motion.div)`
     }
   }
 
-  @media (max-width: 568px) {
-    padding: 0;
-    border-left: none;
+  @media (max-width: ${BP.mobile}px) {
+    flex: 0 0 min(78vw, 280px);
+    scroll-snap-align: start;
+    padding: 20px 18px;
+    margin: 0;
+    background: #fff;
+    border: 1px solid ${t.colors.border};
+    border-radius: 16px;
+    border-left: 1px solid ${t.colors.border};
 
-    &:nth-child(even) {
-      border-left: none;
-    }
-    &:nth-child(n + 3) {
-      margin-top: 0;
-      padding-top: 0;
-      border-top: none;
-    }
+    &:first-child,
+    &:last-child,
+    &:nth-child(odd),
+    &:nth-child(even),
+    &:nth-child(n + 3),
     &:not(:first-child) {
-      margin-top: 28px;
-      padding-top: 28px;
+      padding: 20px 18px;
+      margin-top: 0;
+      padding-top: 20px;
       border-top: 1px solid ${t.colors.border};
+      border-left: 1px solid ${t.colors.border};
+    }
+
+    h3 {
+      margin-bottom: 8px;
+    }
+
+    p {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
   }
 
@@ -633,6 +756,11 @@ const SplitGrid = styled.div`
     grid-template-columns: 1fr;
     gap: 40px;
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    gap: 24px;
+    text-align: left;
+  }
 `;
 
 const PaymentsVisual = styled.div`
@@ -653,6 +781,12 @@ const PaymentsVisual = styled.div`
       margin-inline: auto;
     }
   }
+
+  @media (max-width: ${BP.mobile}px) {
+    img {
+      width: min(100%, 220px);
+    }
+  }
 `;
 
 const FeatureStack = styled.div`
@@ -660,6 +794,11 @@ const FeatureStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  @media (max-width: ${BP.mobile}px) {
+    margin-top: 24px;
+    gap: 20px;
+  }
 `;
 
 const FeatureRow = styled.div`
@@ -803,6 +942,10 @@ const PriceGrid = styled.div`
 const FaqWrap = styled.div`
   max-width: 720px;
   margin: 40px auto 0;
+
+  @media (max-width: ${BP.mobile}px) {
+    margin-top: 24px;
+  }
 `;
 
 const FAQ_ITEMS = [
@@ -1255,6 +1398,7 @@ export default function SaaSHomePage() {
               </motion.div>
               <PriceGrid>
                 <PlanCards
+                  layout="snap"
                   hrefForPlan={(plan) => `${REGISTER_HREF}?plan=${plan.id}`}
                 />
               </PriceGrid>
@@ -1406,6 +1550,11 @@ export default function SaaSHomePage() {
         </main>
         <MarketingFooter />
         </MarketingSheet>
+        <MobileStickyCta
+          href={REGISTER_HREF}
+          label="Start taking bookings"
+          teaser="From $29/mo · first 3 months, no booking fee"
+        />
       </Page>
     </ThemeProvider>
   );

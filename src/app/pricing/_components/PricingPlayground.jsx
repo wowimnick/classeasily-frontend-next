@@ -5,6 +5,8 @@ import Image from "next/image";
 import styled from "styled-components";
 import NumberFlow from "@number-flow/react";
 import { PLANS } from "@/lib/subscriptionPlans";
+import PlanSegmented from "@/components/plans/PlanSegmented";
+import { BP } from "@/components/marketing/tokens";
 
 const MIN = 500;
 const MAX = 10000;
@@ -150,6 +152,19 @@ const Plans = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 22px;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: none;
+  }
+`;
+
+const MobilePlans = styled.div`
+  display: none;
+  margin-top: 22px;
+
+  @media (max-width: ${BP.mobile}px) {
+    display: block;
+  }
 `;
 
 const PlanChip = styled.button`
@@ -195,9 +210,8 @@ const Visual = styled.div`
     0 16px 40px rgba(15, 18, 30, 0.1),
     0 0 0 1px rgba(0, 0, 0, 0.04);
 
-  @media (max-width: 900px) {
-    max-width: 420px;
-    margin: 0 auto;
+  @media (max-width: ${BP.mobile}px) {
+    display: none;
   }
 `;
 
@@ -206,10 +220,10 @@ const Shot = styled(Image)`
   object-position: center 20%;
 `;
 
-export default function PricingPlayground() {
+export default function PricingPlayground({ planId, onPlanChange }) {
   const sliderId = useId();
   const [volume, setVolume] = useState(2500);
-  const [picked, setPicked] = useState(null);
+  const [picked, setPicked] = useState(planId || null);
   const pct = ((volume - MIN) / (MAX - MIN)) * 100;
 
   const rows = useMemo(
@@ -223,9 +237,15 @@ export default function PricingPlayground() {
   );
   const cheapest = rows.reduce((a, b) => (a.total <= b.total ? a : b));
   const cheapestId = cheapest.plan.id;
+  const activeId = planId || picked || cheapestId;
   const active =
-    rows.find((r) => r.plan.id === (picked || cheapestId)) ?? rows[1];
+    rows.find((r) => r.plan.id === activeId) ?? rows[1];
   const isBest = active.plan.id === cheapestId;
+
+  const pick = (id) => {
+    setPicked(id);
+    onPlanChange?.(id);
+  };
 
   return (
     <Grid>
@@ -288,13 +308,16 @@ export default function PricingPlayground() {
               key={plan.id}
               type="button"
               $on={plan.id === active.plan.id}
-              onClick={() => setPicked(plan.id)}
+              onClick={() => pick(plan.id)}
             >
               {plan.name} · {money(Math.round(total))}
               {plan.id === cheapestId ? " · best value" : ""}
             </PlanChip>
           ))}
         </Plans>
+        <MobilePlans>
+          <PlanSegmented value={active.plan.id} onChange={pick} />
+        </MobilePlans>
 
         <Fine>
           The first three months include no commission — you pay the plan fee

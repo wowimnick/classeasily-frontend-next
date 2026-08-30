@@ -11,6 +11,10 @@ const TINT = {
   plan: "#c4b5fd",
   pay: "#34d399",
   timezone: "#60a5fa",
+  loading: "#a78bfa",
+  "about-industry": "#fb7185",
+  "about-booking": "#60a5fa",
+  "about-attribution": "#c4b5fd",
   connect: "#34d399",
   preview: "#a78bfa",
 };
@@ -29,7 +33,6 @@ const Fill = styled.div`
   top: calc(-1 * var(--onboard-pad-t, 40px));
   left: calc(-1 * var(--onboard-pad-x, 28px));
   width: calc(100% + 2 * var(--onboard-pad-x, 28px));
-  height: 100vh;
   height: calc(100cqh + var(--onboard-pad-t, 40px) + var(--onboard-pad-b, 32px));
   overflow: hidden;
 `;
@@ -57,10 +60,10 @@ const Field = styled.div`
   );
 
   @media (max-width: 860px) {
-    width: 140vw;
-    left: -48%;
-    bottom: -12%;
-    opacity: 0.65;
+    width: 100%;
+    left: 0;
+    bottom: -8%;
+    opacity: 0.45;
   }
 `;
 

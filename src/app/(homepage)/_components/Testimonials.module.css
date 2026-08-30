@@ -3,7 +3,14 @@
 .section {
   padding: 6rem 0;
   overflow: hidden;
-  font-family: 'DM Sans', 'Outfit', system-ui, sans-serif;
+  border-radius: 24px;
+  font-family: var(--font-proxima-soft), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (max-width: 768px) {
+  .section {
+    border-radius: 18px;
+  }
 }
 
 .container {
@@ -39,23 +46,23 @@
   }
 
   .leftCol {
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .headline {
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .subtext {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .statRow {
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 }
@@ -76,14 +83,14 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #c81e1e;
+  color: #fc4056;
 }
 
 .eyebrowDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #c81e1e;
+  background: #fc4056;
   display: inline-block;
 }
 
@@ -98,7 +105,7 @@
 }
 
 .headlineAccent {
-  color: #c81e1e;
+  color: #fc4056;
 }
 
 .subtext {
@@ -370,11 +377,11 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    border: 1px solid #c81e1e;
+    border: 1px solid #fc4056;
     background: transparent;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #c81e1e;
+    color: #fc4056;
   }
 
   .controlBtn:hover {
@@ -382,7 +389,7 @@
   }
 
   .controlBtn.active {
-    background-color: #c81e1e;
+    background-color: #fc4056;
     color: white;
   }
 

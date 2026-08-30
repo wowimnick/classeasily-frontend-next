@@ -56,7 +56,7 @@ const Label = styled.label`
   margin: 0 0 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 const Volume = styled.p`
@@ -164,7 +164,7 @@ const SuggestKicker = styled.p`
   margin: 0 0 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #6a6a6a;
+  color: #111;
 `;
 
 const SuggestName = styled.p`
@@ -189,7 +189,7 @@ const SuggestMath = styled.p`
   margin: 8px 0 0;
   font-size: 13px;
   line-height: 1.45;
-  color: #6a6a6a;
+  color: #111;
   font-variant-numeric: tabular-nums;
 `;
 
@@ -199,10 +199,10 @@ const CardsLabel = styled.p`
   margin: 0 0 4px;
   font-size: 13px;
   font-weight: 600;
-  color: #6a6a6a;
+  color: #111;
 `;
 
-export default function PlanPicker({ planId, onChange }) {
+export default function PlanPicker({ planId, onChange, onVolumeChange }) {
   const sliderId = useId();
   const [volume, setVolume] = useState(2500);
   const suggested = lowestCostPlan(volume);
@@ -212,6 +212,7 @@ export default function PlanPicker({ planId, onChange }) {
   const onSlide = (next) => {
     setVolume(next);
     onChange(lowestCostPlan(next).id);
+    onVolumeChange?.(next);
   };
 
   return (
@@ -255,7 +256,7 @@ export default function PlanPicker({ planId, onChange }) {
               }}
               locales="en-CA"
             />
-            <span style={{ fontSize: 15, fontWeight: 500, color: "#6a6a6a" }}>
+            <span style={{ fontSize: 15, fontWeight: 500, color: "#111" }}>
               {" "}
               /mo
             </span>
@@ -270,6 +271,7 @@ export default function PlanPicker({ planId, onChange }) {
       <Cards>
         <CardsLabel>Select a plan</CardsLabel>
         <PlanCards
+          layout="snap"
           selectedId={planId}
           onSelect={onChange}
           suggestedId={suggested.id}
