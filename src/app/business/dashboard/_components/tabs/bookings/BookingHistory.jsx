@@ -44,7 +44,7 @@ import DesktopBookingHistory from "./DesktopBookingHistory";
 import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import BookingDemoToggle from "./BookingDemoToggle";
-import { isBookingDemoEnabled } from "@/lib/devEnv";
+import { isBookingDemoEnabled, fallbackToDemo } from "@/lib/devEnv";
 import { fetchFixtureBookings } from "./__fixtures__/bookingFixtures";
 import { LordIcon } from "@/services/ReactUtils";
 import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
@@ -549,9 +549,12 @@ const BookingHistory = forwardRef((props, ref) => {
         const cleanParams = Object.fromEntries(
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
-        const result = isBookingDemoEnabled()
-          ? fetchFixtureBookings(cleanParams)
-          : await bookingService.fetchBusinessBookings(cleanParams);
+        const result = fallbackToDemo(
+          isBookingDemoEnabled()
+            ? fetchFixtureBookings(cleanParams)
+            : await bookingService.fetchBusinessBookings(cleanParams),
+          () => fetchFixtureBookings(cleanParams),
+        );
 
         if (result.success && result.data) {
           setBookings(result.data.results || []);

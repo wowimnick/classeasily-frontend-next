@@ -18,7 +18,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useAuth } from "@/lib/auth-client";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { businessService } from "@/services/apiService";
-import { isBookingDemoEnabled } from "@/lib/devEnv";
+import { isBookingDemoEnabled, fallbackToDemo } from "@/lib/devEnv";
 import BookingDemoToggle from "../bookings/BookingDemoToggle";
 import { fetchOverviewFixtures } from "./__fixtures__/overviewFixtures";
 import { dash, classColorAt } from "../../shared/dashboardTokens";
@@ -194,13 +194,21 @@ const Overview = forwardRef((props, ref) => {
     setLoading(true);
     setError(null);
     try {
-      const response = isBookingDemoEnabled()
-        ? fetchOverviewFixtures()
-        : await businessService.fetchMyBusinessOverview();
+      let response;
+      try {
+        response = isBookingDemoEnabled()
+          ? fetchOverviewFixtures()
+          : await businessService.fetchMyBusinessOverview();
+      } catch {
+        response = { success: false };
+      }
+      response = fallbackToDemo(response, fetchOverviewFixtures);
       if (response.success && response.data) setOverviewData(response.data);
       else setError(response.error || "Failed to fetch overview data.");
     } catch {
-      setError("An unexpected error occurred.");
+      const demo = fallbackToDemo({ success: false }, fetchOverviewFixtures);
+      if (demo?.success && demo.data) setOverviewData(demo.data);
+      else setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }

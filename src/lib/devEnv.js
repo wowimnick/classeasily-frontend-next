@@ -16,6 +16,16 @@ export function isNonProductionHost() {
 }
 
 export const BOOKING_DEMO_STORAGE_KEY = "ce.bookings.demoData";
+export const DEMO_CHANGE_EVENT = "ce-demo-data-change";
+
+function emitDemoChange() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(DEMO_CHANGE_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
 
 export function isBookingDemoEnabled() {
   if (!isNonProductionHost()) return false;
@@ -34,5 +44,18 @@ export function setBookingDemoEnabled(on) {
     else window.localStorage.removeItem(BOOKING_DEMO_STORAGE_KEY);
   } catch {
     /* ignore */
+  }
+  emitDemoChange();
+}
+
+/** Non-prod: if the live request failed, turn demo on and return fixtures. */
+export function fallbackToDemo(result, loadFixtures) {
+  if (result?.success && result.data != null) return result;
+  if (!isNonProductionHost()) return result;
+  setBookingDemoEnabled(true);
+  try {
+    return loadFixtures();
+  } catch {
+    return result;
   }
 }

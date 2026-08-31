@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { businessClassService, businessService, businessStaffService, scheduleService } from "@/services/apiService";
-import { isBookingDemoEnabled } from "@/lib/devEnv";
+import { isBookingDemoEnabled, fallbackToDemo } from "@/lib/devEnv";
 import BookingDemoToggle from "../../bookings/BookingDemoToggle";
 import {
   fetchFixtureClasses,
@@ -2767,9 +2767,12 @@ export default function ScheduleCalendarView({
       return;
     }
     try {
-      const result = isBookingDemoEnabled()
-        ? fetchFixtureClasses()
-        : await businessClassService.fetchBusinessClasses();
+      const result = fallbackToDemo(
+        isBookingDemoEnabled()
+          ? fetchFixtureClasses()
+          : await businessClassService.fetchBusinessClasses(),
+        fetchFixtureClasses,
+      );
       if (result.success && Array.isArray(result.data)) {
         const processed = result.data.map(cls => ({
           ...cls,
@@ -2803,19 +2806,28 @@ export default function ScheduleCalendarView({
       const end = currentDate.add(45, "day").format("YYYY-MM-DD");
       const promises = classList.map(async (cls) => {
         const optionId = cls.option?.optionId || cls.options?.[0]?.optionId;
-        const result = isBookingDemoEnabled()
-          ? fetchFixtureInstances({
+        const result = fallbackToDemo(
+          isBookingDemoEnabled()
+            ? fetchFixtureInstances({
+                classId: cls.classId,
+                start_date: start,
+                end_date: end,
+                assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
+              })
+            : await scheduleService.getScheduleInstances({
+                classId: cls.classId,
+                start_date: start,
+                end_date: end,
+                assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
+              }),
+          () =>
+            fetchFixtureInstances({
               classId: cls.classId,
               start_date: start,
               end_date: end,
               assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
-            })
-          : await scheduleService.getScheduleInstances({
-          classId: cls.classId,
-          start_date: start,
-          end_date: end,
-          assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
-        });
+            }),
+        );
         if (!result.success) return [];
         const rows = Array.isArray(result.data) ? result.data : result.data?.results || [];
         return rows

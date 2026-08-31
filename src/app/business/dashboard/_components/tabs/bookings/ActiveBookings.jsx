@@ -38,7 +38,7 @@ import MobileActiveBookings from "./MobileActiveBookings";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import BookingDemoToggle from "./BookingDemoToggle";
-import { isBookingDemoEnabled } from "@/lib/devEnv";
+import { isBookingDemoEnabled, fallbackToDemo } from "@/lib/devEnv";
 import {
   fetchFixtureBookings,
   patchFixtureBooking,
@@ -523,9 +523,12 @@ const ActiveBookings = ({
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
 
-        const result = isBookingDemoEnabled()
-          ? fetchFixtureBookings(cleanParams)
-          : await bookingService.fetchBusinessBookings(cleanParams);
+        const result = fallbackToDemo(
+          isBookingDemoEnabled()
+            ? fetchFixtureBookings(cleanParams)
+            : await bookingService.fetchBusinessBookings(cleanParams),
+          () => fetchFixtureBookings(cleanParams),
+        );
 
         if (result.success && result.data) {
           setBookings(result.data.results || []);
