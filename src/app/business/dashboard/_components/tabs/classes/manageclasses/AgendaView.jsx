@@ -4,8 +4,8 @@ import React, { useMemo } from "react";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import { Plus, CalendarDays } from "lucide-react";
-import { CapacityMeter } from "../../shared/charts";
-import { dash } from "../../shared/dashboardTokens";
+import { CapacityMeter } from "../../../shared/charts";
+import { dash } from "../../../shared/dashboardTokens";
 
 const PERIODS = [
   { key: "morning", label: "Morning", start: 0, end: 12 },
