@@ -49,6 +49,15 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { businessClassService, businessService, businessStaffService, scheduleService } from "@/services/apiService";
+import { isBookingDemoEnabled } from "@/lib/devEnv";
+import BookingDemoToggle from "../../bookings/BookingDemoToggle";
+import {
+  fetchFixtureClasses,
+  fetchFixtureInstances,
+  fetchFixtureInstance,
+  DEMO_BUSINESS_HOURS,
+  DEMO_STAFF,
+} from "./__fixtures__/calendarFixtures";
 import SessionRosterDrawer from "./SessionRosterDrawer";
 import AgendaView from "./AgendaView";
 import DashboardDrawer from "../../../shared/DashboardDrawer";
@@ -2653,6 +2662,7 @@ export default function ScheduleCalendarView({
   const [allSchedules, setAllSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [demoEpoch, setDemoEpoch] = useState(0);
 
   // Filters
   const [visibleClassIds, setVisibleClassIds] = useState(new Set());
@@ -2694,6 +2704,13 @@ export default function ScheduleCalendarView({
     let cancelled = false;
     (async () => {
       try {
+        if (isBookingDemoEnabled()) {
+          if (!cancelled) {
+            setBusinessHours(DEMO_BUSINESS_HOURS);
+            setBusinessName("Studio North");
+          }
+          return;
+        }
         const res = await businessService.getMyBusinessProfile();
         if (!cancelled && res.success) {
           if (Array.isArray(res.data?.businessHours)) setBusinessHours(res.data.businessHours);
@@ -2704,7 +2721,7 @@ export default function ScheduleCalendarView({
       }
     })();
     return () => { cancelled = true; };
-  }, [refreshKey]);
+  }, [refreshKey, demoEpoch]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 1024);
@@ -2731,7 +2748,7 @@ export default function ScheduleCalendarView({
 
   // ── Load classes ─────────────────────────────────────────────────────────────
   const loadClasses = useCallback(async () => {
-    if (prefetchedClasses != null) {
+    if (prefetchedClasses != null && !isBookingDemoEnabled()) {
       const processed = prefetchedClasses.map((cls) => ({
         ...cls,
         option: cls.option ?? cls.options?.[0] ?? null,
@@ -2750,7 +2767,9 @@ export default function ScheduleCalendarView({
       return;
     }
     try {
-      const result = await businessClassService.fetchBusinessClasses();
+      const result = isBookingDemoEnabled()
+        ? fetchFixtureClasses()
+        : await businessClassService.fetchBusinessClasses();
       if (result.success && Array.isArray(result.data)) {
         const processed = result.data.map(cls => ({
           ...cls,
@@ -2773,7 +2792,7 @@ export default function ScheduleCalendarView({
     } catch (err) {
       console.error(err);
     }
-  }, [initialClassId, prefetchedClasses]);
+  }, [initialClassId, prefetchedClasses, demoEpoch]);
 
   // ── Load sessions (materialized ScheduleInstance rows) ─────────────────────
   const loadSchedules = useCallback(async (classList) => {
@@ -2784,7 +2803,14 @@ export default function ScheduleCalendarView({
       const end = currentDate.add(45, "day").format("YYYY-MM-DD");
       const promises = classList.map(async (cls) => {
         const optionId = cls.option?.optionId || cls.options?.[0]?.optionId;
-        const result = await scheduleService.getScheduleInstances({
+        const result = isBookingDemoEnabled()
+          ? fetchFixtureInstances({
+              classId: cls.classId,
+              start_date: start,
+              end_date: end,
+              assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
+            })
+          : await scheduleService.getScheduleInstances({
           classId: cls.classId,
           start_date: start,
           end_date: end,
@@ -2820,16 +2846,20 @@ export default function ScheduleCalendarView({
     } finally {
       setLoading(false);
     }
-  }, [currentDate, staffFilter]);
+  }, [currentDate, staffFilter, demoEpoch]);
 
   useEffect(() => { loadClasses(); }, [loadClasses]);
 
   useEffect(() => {
+    if (isBookingDemoEnabled()) {
+      setStaffList(DEMO_STAFF);
+      return;
+    }
     businessStaffService.getStaff().then((res) => {
       const rows = res.data || [];
       setStaffList(Array.isArray(rows) ? rows : []);
     });
-  }, []);
+  }, [demoEpoch]);
 
   useEffect(() => {
     if (classes.length > 0) {
@@ -2869,7 +2899,9 @@ export default function ScheduleCalendarView({
 
       let meta = instanceDeepLinkMetaRef.current;
       if (!meta || meta.forInstance !== initialInstanceId) {
-        const res = await scheduleService.fetchInstance(initialInstanceId);
+        const res = isBookingDemoEnabled()
+          ? fetchFixtureInstance(initialInstanceId)
+          : await scheduleService.fetchInstance(initialInstanceId);
         if (isStale()) return;
         if (!res.success || !res.data) {
           failAndStrip(
@@ -3256,6 +3288,7 @@ export default function ScheduleCalendarView({
             </TopBarCenter>
 
             <TopBarRight>
+              <BookingDemoToggle onChange={() => { setDemoEpoch((n) => n + 1); setRefreshKey((k) => k + 1); }} />
               <IconBtn onClick={() => setMobileFiltersOpen(true)}>
                 <SlidersHorizontal size={15} />
                 <span style={{ fontSize: 13, fontWeight: 600, marginLeft: 4 }}>Filters</span>

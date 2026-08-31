@@ -18,6 +18,9 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useAuth } from "@/lib/auth-client";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { businessService } from "@/services/apiService";
+import { isBookingDemoEnabled } from "@/lib/devEnv";
+import BookingDemoToggle from "../bookings/BookingDemoToggle";
+import { fetchOverviewFixtures } from "./__fixtures__/overviewFixtures";
 import { dash, classColorAt } from "../../shared/dashboardTokens";
 import {
   Sparkline,
@@ -185,12 +188,15 @@ const Overview = forwardRef((props, ref) => {
   const [error, setError] = useState(null);
   const [showNet, setShowNet] = useState(false);
   const [txBookingId, setTxBookingId] = useState(null);
+  const [demoEpoch, setDemoEpoch] = useState(0);
 
   const fetchOverviewData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await businessService.fetchMyBusinessOverview();
+      const response = isBookingDemoEnabled()
+        ? fetchOverviewFixtures()
+        : await businessService.fetchMyBusinessOverview();
       if (response.success && response.data) setOverviewData(response.data);
       else setError(response.error || "Failed to fetch overview data.");
     } catch {
@@ -198,7 +204,7 @@ const Overview = forwardRef((props, ref) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [demoEpoch]);
 
   useEffect(() => {
     fetchOverviewData();
@@ -246,9 +252,12 @@ const Overview = forwardRef((props, ref) => {
   return (
     <Page>
       <DashboardBreadcrumb title="Reports" />
-      <Header>
-        <Greeting>Welcome back, {userFirstName}</Greeting>
-        <Sub>{dayjs().format("dddd, MMMM D")}</Sub>
+      <Header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+        <div>
+          <Greeting>Welcome back, {userFirstName}</Greeting>
+          <Sub>{dayjs().format("dddd, MMMM D")}</Sub>
+        </div>
+        <BookingDemoToggle onChange={() => setDemoEpoch((n) => n + 1)} />
       </Header>
       <div ref={overviewTitleRef} />
 

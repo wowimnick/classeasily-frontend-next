@@ -8,7 +8,12 @@ import {
   businessStaffService,
   scheduleService,
 } from "@/services/apiService";
-import message from "@/lib/message";
+import { isBookingDemoEnabled } from "@/lib/devEnv";
+import {
+  fetchFixtureRoster,
+  DEMO_STAFF,
+  patchFixtureRosterAttendance,
+} from "./__fixtures__/calendarFixtures";
 import styled from "styled-components";
 import DashboardDrawer from "../../../shared/DashboardDrawer";
 import { confirmDestructive } from "../../../shared/confirmDestructive";
@@ -43,7 +48,9 @@ export default function SessionRosterDrawer({
   const load = useCallback(async () => {
     if (!session?.id) return;
     setLoading(true);
-    const res = await bookingService.fetchBusinessBookings({
+    const res = isBookingDemoEnabled()
+      ? fetchFixtureRoster(session.id)
+      : await bookingService.fetchBusinessBookings({
       instance_id: session.id,
       page_size: 100,
     });
@@ -56,13 +63,24 @@ export default function SessionRosterDrawer({
     if (!open) return;
     load();
     setStaffId(session?.assigned_staff_id || null);
-    businessStaffService.getStaff().then((res) => {
-      const rows = res.data || [];
-      setStaff(Array.isArray(rows) ? rows.filter((s) => s.status === "accepted" || !s.status) : []);
-    });
+    if (isBookingDemoEnabled()) {
+      setStaff(DEMO_STAFF);
+    } else {
+      businessStaffService.getStaff().then((res) => {
+        const rows = res.data || [];
+        setStaff(Array.isArray(rows) ? rows.filter((s) => s.status === "accepted" || !s.status) : []);
+      });
+    }
   }, [open, load, session?.assigned_staff_id]);
 
   const mark = async (bookingId, attendance) => {
+    if (isBookingDemoEnabled()) {
+      patchFixtureRosterAttendance(session.id, bookingId, attendance);
+      message.success(attendance === "attended" ? "Marked attended" : "Marked no-show");
+      load();
+      onChanged?.();
+      return;
+    }
     const res = await bookingService.markAttendance(bookingId, attendance);
     if (res.success) {
       message.success(attendance === "attended" ? "Marked attended" : "Marked no-show");
