@@ -16,7 +16,6 @@ const TINT = {
   "about-booking": "#60a5fa",
   "about-attribution": "#c4b5fd",
   connect: "#34d399",
-  preview: "#a78bfa",
 };
 
 const Ambient = styled.div`

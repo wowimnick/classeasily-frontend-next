@@ -428,7 +428,7 @@ export default function FooterClient({ collections = [] }) {
             <NavCol>
               <NavTitle>Support</NavTitle>
               <NavList>
-                <li><NavLink href="/my-tickets">Contact us</NavLink></li>
+                <li><NavLink href="/business/help">Contact us</NavLink></li>
                 <li><NavLink href="/fees">Fees & Charges</NavLink></li>
                 <li><NavLink href="/terms-of-service">Trust & Safety</NavLink></li>
                 <li><NavLink href="/copyright-policy">Copyright Policy</NavLink></li>

@@ -21,7 +21,7 @@ test.describe('Critical user flows', () => {
   test('flow: Home -> Get started -> register', async ({ page }) => {
     await page.getByRole('link', { name: /Get started/i }).first().click();
     await expect(page).toHaveURL(/\/business\/register/);
-    await expect(page.getByRole('heading', { name: /Start with your account/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Create your account/i })).toBeVisible({
       timeout: 30000,
     });
   });

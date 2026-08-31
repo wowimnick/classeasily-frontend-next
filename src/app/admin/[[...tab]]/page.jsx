@@ -43,28 +43,12 @@ const BusinessManagement = dynamic(
   () => import("../_components/businessmanagement/BusinessManagement"),
   { ssr: false }
 );
-const UserAccessControl = dynamic(
-  () => import("../_components/businessmanagement/UserAccessControl"),
-  { ssr: false }
-);
-const ClassListings = dynamic(
-  () => import("../_components/class-management/ClassListings"),
-  { ssr: false }
-);
-const CollectionsManagement = dynamic(
-  () => import("../_components/class-management/CollectionsManagement"),
-  { ssr: false }
-);
 const ClassReviews = dynamic(
   () => import("../_components/class-management/ClassReviews"),
   { ssr: false }
 );
 const BlogManagement = dynamic(
   () => import("../_components/content-management/BlogManagement"),
-  { ssr: false }
-);
-const GlobalDiscountsManagement = dynamic(
-  () => import("../_components/global-discounts/GlobalDiscountsManagement"),
   { ssr: false }
 );
 const WidgetSubscriptionsTab = dynamic(
@@ -81,10 +65,6 @@ const PaymentManagement = dynamic(
 );
 const RevenueStats = dynamic(
   () => import("../_components/revenue-management/RevenueStats"),
-  { ssr: false }
-);
-const CorporateInquiriesTab = dynamic(
-  () => import("../_components/corporate/CorporateInquiriesTab"),
   { ssr: false }
 );
 const SystemMonitoring = dynamic(
@@ -197,23 +177,11 @@ export default function AdminPage() {
       case "all-bookings":
         content = <BookingsList />;
         break;
-      case "corporate-inquiries":
-        content = <CorporateInquiriesTab />;
-        break;
       case "business-listings":
         content = <BusinessListings />;
         break;
       case "business-overview":
         content = <BusinessManagement />;
-        break;
-      case "business-verification":
-        content = <UserAccessControl />;
-        break;
-      case "class-listings":
-        content = <ClassListings />;
-        break;
-      case "collections":
-        content = <CollectionsManagement />;
         break;
       case "class-reviews":
         content = <ClassReviews />;
@@ -238,9 +206,6 @@ export default function AdminPage() {
         break;
       case "widget-subscriptions":
         content = <WidgetSubscriptionsTab />;
-        break;
-      case "global-discounts":
-        content = <GlobalDiscountsManagement />;
         break;
       case "monitoring":
         content = <SystemMonitoring />;

@@ -11,7 +11,6 @@ import Overview from "../_components/tabs/overview/Overview";
 import BookingsCombined from "../_components/tabs/bookings/BookingsCombined";
 import ClassManagement from "../_components/tabs/classes/manageclasses/ClassManagement";
 import ScheduleCalendarView from "../_components/tabs/classes/manageclasses/ScheduleCalendarView";
-import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
 import Staff from "../_components/tabs/staff/Staff";
 import Revenue from "../_components/tabs/finances/Revenue";
 import Payouts from "../_components/tabs/payouts/Payouts";
@@ -68,6 +67,18 @@ export default function DashboardPage() {
     }
   }, [activeKey, hasEmailMarketingAccess, subLoading, router]);
 
+  useEffect(() => {
+    if (activeKey === "guests") {
+      router.replace("/business/dashboard/clients");
+    }
+  }, [activeKey, router]);
+
+  useEffect(() => {
+    if (activeKey === "reviews") {
+      router.replace("/business/dashboard/overview");
+    }
+  }, [activeKey, router]);
+
   let componentToRender;
 
   switch (activeKey) {
@@ -117,12 +128,9 @@ export default function DashboardPage() {
       break;
     }
     case "reviews":
-      componentToRender = (
-        <TabGlassWrapper>
-          <BusinessReviews />
-        </TabGlassWrapper>
-      );
+      componentToRender = null;
       break;
+    case "clients":
     case "guests":
       componentToRender = (
         <TabGlassWrapper>

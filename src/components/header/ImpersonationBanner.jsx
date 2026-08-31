@@ -110,17 +110,17 @@ const ImpersonationBanner = () => {
           isLoading: false,
         });
         message.success("Back to your admin account.");
-        router.push("/admin/class-listings");
+        router.push("/admin/overview");
       } else {
         await signOutFull();
         message.info("Session expired. Log back in as admin to continue.");
-        router.push("/admin/class-listings");
+        router.push("/admin/overview");
       }
     } catch (error) {
       console.error("Error returning to admin:", error);
       await signOutFull();
       message.info("Could not restore session. Log back in as admin.");
-      router.push("/admin/class-listings");
+      router.push("/admin/overview");
     }
   };
 

@@ -21,13 +21,13 @@ const CAPTIONS = [
     from: 0.28,
     to: 0.58,
     kicker: "Stripe Connect",
-    text: "Stripe processes the charge, fees, and identity checks. ClassEasily never holds the funds.",
+    text: "Funds go to your connected Stripe balance at checkout.",
   },
   {
     from: 0.58,
     to: 1,
     kicker: "Your bank",
-    text: "The payout lands in 1–2 days. Same money, deposited to the account you connect.",
+    text: "You then get paid on the schedule you choose — daily, weekly, monthly, manual, or instant.",
   },
 ];
 

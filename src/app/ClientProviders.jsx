@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Suspense, useMemo, useEffect, useRef } from "react";
 import { ConfigProvider } from "antd";
 import { ThemeProvider } from "styled-components";
@@ -9,16 +8,8 @@ import { useAuthStore } from "@/lib/auth-client";
 import { theme } from "@/components/theme";
 import StyledComponentsRegistry from "@/lib/registry";
 import AnalyticsProvider from "./providers/AnalyticsProvider";
-import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import SessionMonitor from "@/components/auth/SessionMonitor";
-import { SearchProvider } from "@/context/SearchContext";
-import SearchUrlHandler from "@/components/common/SearchUrlHandler";
-
-const SearchFullScreen = dynamic(
-  () => import("@/components/common/SearchFullScreen"),
-  { ssr: false, loading: () => null },
-);
 import ScrollRestorationHome from "@/components/ScrollRestorationHome";
 import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 import ImpersonationBanner from "@/components/header/ImpersonationBanner";
@@ -91,19 +82,13 @@ export default function ClientProviders({ children }) {
           <ToastProvider>
             <AuthProvider>
               <SessionMonitor />
-              <SearchProvider>
-                <AnalyticsProvider>
-                  <SearchFullScreen />
-                  <Suspense fallback={null}>
-                    <SearchUrlHandler />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <ScrollRestorationHome />
-                    <ScrollToTopOnNavigate />
-                  </Suspense>
-                  {children}
-                </AnalyticsProvider>
-              </SearchProvider>
+              <AnalyticsProvider>
+                <Suspense fallback={null}>
+                  <ScrollRestorationHome />
+                  <ScrollToTopOnNavigate />
+                </Suspense>
+                {children}
+              </AnalyticsProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

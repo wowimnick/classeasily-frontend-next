@@ -577,7 +577,9 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
         masterFormData.append("businessHours", JSON.stringify(formattedHours));
       }
       masterFormData.append("business_timezone", preferencesValues.business_timezone);
-      masterFormData.append("contact_privacy", preferencesValues.contact_privacy);
+      if (preferencesValues.contact_privacy) {
+        masterFormData.append("contact_privacy", preferencesValues.contact_privacy);
+      }
       masterFormData.append("newBookingNotification", String(preferencesValues.newBookingNotification));
       masterFormData.append("cancellationNotification", String(preferencesValues.cancellationNotification));
       masterFormData.append("reminderNotification", String(preferencesValues.reminderNotification));

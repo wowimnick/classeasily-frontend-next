@@ -13,7 +13,6 @@ import {
   Info,
   RefreshCw,
   ExternalLink,
-  Shield,
   Users,
   CheckCircle,
   Moon,
@@ -355,30 +354,6 @@ const HelpNote = styled.p`
   max-width: 320px;
 `;
 
-/* ─── Privacy Radio ──────────────────────────────────────────────── */
-
-const PrivacyRadioGroup = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-const PrivacyOption = styled.button`
-  padding: 7px 14px;
-  border-radius: 7px;
-  border: 1.5px solid ${p => p.$active ? "#111827" : "#e5e7eb"};
-  background: ${p => p.$active ? "#111827" : "#fff"};
-  color: ${p => p.$active ? "#fff" : "#374151"};
-  font-size: 13px;
-  font-weight: ${p => p.$active ? "600" : "500"};
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: #111827;
-  }
-`;
-
 /* ─── TimePairPicker ──────────────────────────────────────────────── */
 
 const TimePairWrapper = styled.div`
@@ -435,7 +410,6 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
   const [isSyncing, setIsSyncing] = useState(false);
   // useWatch for rendering the day rows — we need the array length/day names
   const businessHours = Form.useWatch("businessHours", form);
-  const contactPrivacy = Form.useWatch("contact_privacy", form);
 
   // Stable ref to onFieldChange so the effect below doesn't re-run on every render
   const onFieldChangeRef = React.useRef(onFieldChange);
@@ -623,50 +597,6 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
             ))}
           </DayGrid>
         </Form.Item>
-      </SectionCard>
-
-      {/* ── Contact Privacy ── */}
-      <SectionCard>
-        <SectionHeader>
-          <SectionIconBox><Shield size={17} /></SectionIconBox>
-          <SectionTitleBlock>
-            <SectionTitle>Contact privacy</SectionTitle>
-            <SectionSubtitle>Control who can see your business contact details</SectionSubtitle>
-          </SectionTitleBlock>
-        </SectionHeader>
-
-        <SettingRow>
-          <SettingInfo>
-            <SettingLabel>Contact info visibility</SettingLabel>
-            <SettingDesc>Choose when your phone and email are visible to customers</SettingDesc>
-          </SettingInfo>
-          <SettingControl>
-            <Form.Item name="contact_privacy" noStyle rules={[{ required: true, message: "Select a privacy option" }]}>
-              <PrivacyRadioGroup>
-                <PrivacyOption
-                  type="button"
-                  $active={contactPrivacy === "on_booking"}
-                  onClick={() => {
-                    form.setFieldValue("contact_privacy", "on_booking");
-                    onFieldChange?.("contact_privacy", "on_booking");
-                  }}
-                >
-                  After Booking
-                </PrivacyOption>
-                <PrivacyOption
-                  type="button"
-                  $active={contactPrivacy === "public"}
-                  onClick={() => {
-                    form.setFieldValue("contact_privacy", "public");
-                    onFieldChange?.("contact_privacy", "public");
-                  }}
-                >
-                  Public
-                </PrivacyOption>
-              </PrivacyRadioGroup>
-            </Form.Item>
-          </SettingControl>
-        </SettingRow>
       </SectionCard>
 
       {/* ── Booking checkout ── */}

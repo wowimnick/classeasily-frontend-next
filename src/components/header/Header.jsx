@@ -9,12 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import debounce from "lodash/debounce";
 import { useAuthModal } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useIsDesktopOrWider } from "@/styles/breakpoints-hooks";
-import { BP, down } from "@/styles/breakpoints";
 import dynamic from "next/dynamic";
-import { Menu, Search } from "lucide-react";
-import dayjs from "dayjs";
-import { useSearch, summarizeCollectionsForPill } from "@/context/SearchContext";
+import { Menu } from "lucide-react";
 // --- DYNAMIC IMPORTS ---
 const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
   ssr: false,
@@ -151,75 +147,6 @@ const HeaderWrapper = styled.header`
       border: 1px solid rgba(255, 255, 255, 0.25);
     `}
   }
-`;
-
-/* --- NOTCH SEARCH STYLES --- */
-const NotchContainer = styled(motion.div)`
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 75px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  padding: 8px 8px 8px 20px;
-  border-radius: 100px;
-  cursor: pointer;
-  z-index: 990;
-  width: max-content;
-  max-width: 85vw;
-  padding-right: 8px;
-
-  @media (min-width: 1089px) {
-    display: none;
-  }
-`;
-
-const NotchText = styled.div`
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  line-height: 1.2;
-  flex: 1;
-  min-width: 0;
-`;
-
-const NotchTitle = styled.span`
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-  font-family: "ProximaSoft", sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-`;
-
-const NotchSubtitle = styled.span`
-  font-size: 12px;
-  color: #666;
-  font-weight: 600;
-  font-family: "ProximaSoft", sans-serif;
-`;
-
-const NotchIcon = styled.div`
-  width: 36px;
-  height: 36px;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  color: #222;
-  flex-shrink: 0;
 `;
 
 const LogoLink = styled(Link)`
@@ -470,17 +397,6 @@ const HeaderContent = ({
     false;
 
   const heroLightChrome = pathname === "/" && !isScrolled;
-  const isHomepage = pathname === "/";
-  const isDesktopOrWider = useIsDesktopOrWider();
-  /** Homepage desktop: docked pill; homepage mobile scrolled: glass "Find a class?" notch */
-  const showScrolledNotch = isScrolled && !(isHomepage && isDesktopOrWider);
-
-  const {
-    searchTerm,
-    datePickerValue,
-    selectedCollections,
-    setIsDrawerOpen,
-  } = useSearch();
 
   useEffect(() => {
     const scrollThreshold = topOffset > 0 ? topOffset : 100;
@@ -525,19 +441,6 @@ const HeaderContent = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isMenuOpen, currentUser]);
-
-  const getNotchDateDisplay = () => {
-    if (!datePickerValue) return "Any week";
-    if (datePickerValue.start && datePickerValue.end) {
-      const s = dayjs(datePickerValue.start);
-      const e = dayjs(datePickerValue.end);
-      if (s.month() === e.month()) {
-        return `${s.format("MMM D")} - ${e.format("D")}`;
-      }
-      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
-    }
-    return dayjs(datePickerValue).format("MMM D");
-  };
 
   // --- DYNAMIC COLOR LOGIC ---
   const activeColor =
@@ -668,45 +571,6 @@ const HeaderContent = ({
           </AuthContainer>
         </Selection>
       </HeaderWrapper>
-
-      <AnimatePresence>
-        {showScrolledNotch && (
-          <NotchContainer
-            initial={{ y: -40, scale: 0.85, opacity: 0, x: "-50%" }}
-            animate={{ y: 0, scale: 1, opacity: 1, x: "-50%" }}
-            exit={{ y: -20, scale: 0.9, opacity: 0, x: "-50%" }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 18,
-              mass: 0.8,
-            }}
-            onClick={() => setIsDrawerOpen(true)}
-            whileTap={{ scale: 0.98 }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <NotchText>
-                <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
-                <NotchSubtitle>
-                  {getNotchDateDisplay()} •{" "}
-                  {summarizeCollectionsForPill(selectedCollections)}
-                </NotchSubtitle>
-              </NotchText>
-              <NotchIcon>
-                <Search size={18} strokeWidth={2.5} />
-              </NotchIcon>
-            </div>
-          </NotchContainer>
-        )}
-      </AnimatePresence>
 
       <SettingsModal
         open={isSettingsModalOpen}

@@ -479,19 +479,20 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess 
       },
       {
         key: "payouts",
-        title: "Payout Setup",
+        title: "Payout Setup (required)",
         items: [
           {
             id: "stripe",
-            label: "Connect to Stripe for Payouts",
+            label: "Connect Stripe to accept bookings",
+            description:
+              "Bookings cannot be accepted until payouts are connected.",
             isComplete: !!setupStatus?.is_stripe_connected,
             icon: <CreditCardOutlined />,
             action: () =>
               handleOpenSettings("preferences", "payout-setup-section"),
             actionLabel: "Connect",
-            disabled: !(
-              setupStatus?.is_profile_complete && setupStatus?.has_schedules
-            ),
+            required: true,
+            disabled: false,
           },
         ],
       },
@@ -589,7 +590,21 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess 
                   <StepText>
                     <StepLabel $completed={step.isComplete}>
                       {step.label}
+                      {step.required && !step.isComplete ? " · Required" : ""}
                     </StepLabel>
+                    {step.description && !step.isComplete ? (
+                      <Text
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          color: "#b45309",
+                          lineHeight: 1.4,
+                          marginTop: 2,
+                        }}
+                      >
+                        {step.description}
+                      </Text>
+                    ) : null}
                   </StepText>
                 </StepContent>
                 {!step.isComplete &&
@@ -699,7 +714,9 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess 
             showInfo={false}
           />
           <ProgressSubtext>
-            Complete all steps to fully setup your profile
+            {setupStatus?.is_stripe_connected
+              ? "Complete all steps to finish setup"
+              : "Bookings cannot be accepted until Stripe payouts are connected"}
           </ProgressSubtext>
         </ProgressSection>
 
@@ -717,7 +734,11 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess 
           ) : (
             <StyledCollapse
               items={collapseItems}
-              defaultActiveKey={["account", "class", "payouts"]}
+              defaultActiveKey={
+                setupStatus?.is_stripe_connected
+                  ? ["account", "class", "payouts"]
+                  : ["payouts", "account", "class"]
+              }
               accordion={false}
               ghost
             />

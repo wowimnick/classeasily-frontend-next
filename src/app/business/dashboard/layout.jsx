@@ -72,7 +72,11 @@ function DashboardLayoutInner({ children }) {
   const activeKey = pathname.replace("/business/dashboard/", "") || "overview";
   // When on "bookings" (no sub-path), highlight "Active Bookings" in the sidebar
   const menuActiveKey =
-    activeKey === "bookings" ? "bookings/active" : activeKey;
+    activeKey === "bookings"
+      ? "bookings/active"
+      : activeKey === "guests"
+        ? "clients"
+        : activeKey;
 
   const handleMenuSelect = useCallback(
     (key) => {

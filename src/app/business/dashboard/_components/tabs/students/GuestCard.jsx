@@ -174,9 +174,13 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
     ? guest.email[0].toUpperCase()
     : "?";
 
-  const lastBookingDateFormatted = guest.last_booking_date_this_business
-    ? dayjs(guest.last_booking_date_this_business).format("MMM D, YYYY")
+  const lastSeenDate =
+    guest.last_activity_at || guest.last_booking_date_this_business;
+  const lastSeenFormatted = lastSeenDate
+    ? dayjs(lastSeenDate).format("MMM D, YYYY")
     : "N/A";
+  const ltvValue = guest.lifetime_value ?? guest.total_spent_this_business;
+  const tags = Array.isArray(guest.tags) ? guest.tags : [];
 
   const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(
     guest.phone_number
@@ -249,6 +253,22 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
                 : "Imported Contact"}
             </Tag>
           </Tooltip>
+          {guest.status && (
+            <Tag
+              color={
+                String(guest.status).toLowerCase() === "active"
+                  ? "green"
+                  : String(guest.status).toLowerCase() === "lead"
+                  ? "gold"
+                  : "default"
+              }
+              style={{ marginTop: 4 }}
+            >
+              {String(guest.status)
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase())}
+            </Tag>
+          )}
         </div>
       </CardHeader>
       <InfoGrid>
@@ -266,12 +286,12 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
         </InfoItem>
         <InfoItem>
           <InfoLabel>
-            <DollarSign size={12} /> Total Spent
+            <DollarSign size={12} /> LTV
           </InfoLabel>
           <InfoValue>
             $
             <NumberFlow
-              value={isReady ? guest.total_spent_this_business || 0 : 0}
+              value={isReady ? parseFloat(ltvValue || 0) : 0}
               duration={800}
               numberFormatOptions={{
                 minimumFractionDigits: 2,
@@ -282,11 +302,21 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
         </InfoItem>
         <InfoItem>
           <InfoLabel>
-            <CalendarCheck2 size={12} /> Last Booking
+            <CalendarCheck2 size={12} /> Last Seen
           </InfoLabel>
-          <InfoValue>{lastBookingDateFormatted}</InfoValue>
+          <InfoValue>{lastSeenFormatted}          </InfoValue>
         </InfoItem>
       </InfoGrid>
+      {tags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {tags.slice(0, 4).map((tag) => (
+            <Tag key={tag} style={{ margin: 0 }}>
+              {tag}
+            </Tag>
+          ))}
+          {tags.length > 4 && <Tag style={{ margin: 0 }}>+{tags.length - 4}</Tag>}
+        </div>
+      )}
       <ContactInfo>
         {guest.email && (
           <ContactItem>

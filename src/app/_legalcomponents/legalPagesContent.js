@@ -1,6 +1,6 @@
 export const termsContent = {
   title: "Terms of Service",
-  lastUpdated: "May 25, 2026",
+  lastUpdated: "August 30, 2026",
   sections: [
     // Section 1: Introduction
     {
@@ -28,17 +28,16 @@ export const termsContent = {
           type: "ul",
           items: [
             "<strong>User:</strong> Any individual or entity accessing or using the Platform, including Guests and Hosts.",
-            "<strong>Guest:</strong> A User who searches for, books, or attends Experiences via the Platform.",
-            "<strong>Host:</strong> An individual, business, or organization that offers Experiences via the Platform.",
-            "<strong>Experience / Experiences:</strong> Activities, workshops, tours, instructional sessions, or events, including single sessions and multi-session courses, offered by Hosts on the Platform.",
-            "<strong>Listing:</strong> A Host's description, details, schedule, and pricing for an Experience offered on the Platform.",
-            "<strong>Booking:</strong> An agreement between a Guest and a Host, facilitated by the Platform, for the Guest to attend an Experience.",
+            "<strong>Guest:</strong> A customer who books or attends an Experience through a Host's booking widget or other ClassEasily booking tools.",
+            "<strong>Host:</strong> A business or organization that uses ClassEasily's booking and CRM software to offer Experiences and collect payment.",
+            "<strong>Experience / Experiences:</strong> Activities, workshops, tours, instructional sessions, or events, including single sessions and multi-session courses, offered by Hosts.",
+            "<strong>Booking:</strong> An agreement between a Guest and a Host, formed when the Guest books an Experience through the Host's ClassEasily booking tools.",
             "<strong>User Content:</strong> Any text, images, videos, reviews, messages, or other materials uploaded, posted, or transmitted by Users on the Platform.",
             "<strong>Platform Content:</strong> All content on the Platform excluding User Content, including text, graphics, logos, icons, images, software, and underlying technology.",
-            "<strong>Fees:</strong> Any charges applicable to Users, including Service Fees, Booking Fees, or Payment Processing Fees, as detailed on the Platform.",
+            "<strong>Fees:</strong> Subscription fees, per-booking commissions, and other charges payable to ClassEasily, as detailed on the Fees and Pricing page.",
             "<strong>Gift Card:</strong> A prepaid balance issued by ClassEasily that may be purchased on the Platform and redeemed toward Bookings or eligible purchases, subject to these Terms and any terms displayed at purchase or redemption.",
             "<strong>Widget Subscription:</strong> A recurring subscription plan offered by ClassEasily that enables Hosts to access the booking widget, premium features, and related tools on the Platform.",
-            "<strong>Add-on Subscription:</strong> An optional recurring subscription (e.g. marketplace email branding or email marketing) that supplements a Host's Widget Subscription or marketplace account.",
+            "<strong>Add-on Subscription:</strong> An optional recurring subscription (e.g. email branding or email marketing) that supplements a Host's Widget Subscription.",
             "<strong>Customer Membership:</strong> A recurring subscription or credit plan offered by a Host to Guests through the Platform, billed on a recurring basis and subject to the Host's membership terms.",
             "<strong>Corporate Client:</strong> A business or organization that books group Experiences through ClassEasily's corporate booking program.",
           ],
@@ -81,15 +80,15 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "ClassEasily provides an online marketplace that enables Hosts to publish Listings for Experiences and communicate with Guests seeking such Experiences. Guests can search for, communicate with Hosts about, and book Experiences directly with Hosts through the Platform.",
+          text: "ClassEasily provides booking and CRM software that Hosts use to manage schedules, customers, and payments. Guests book Experiences with a Host through the Host's own website widget or other ClassEasily booking tools. ClassEasily is not an online marketplace and does not list Hosts for public discovery or sale.",
         },
         {
           type: "p",
-          text: "Important Disclaimer: ClassEasily acts solely as a facilitator and is not a party to any agreement entered into between Guests and Hosts. ClassEasily does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Experiences or Listings. Hosts are solely responsible for their Listings and Experiences. When Guests make or accept a Booking, they are entering into a contract directly with the Host.",
+          text: "Important Disclaimer: The Host is the merchant of record for customer charges collected through Stripe Connect destination charges. ClassEasily is not a party to the agreement between Guests and Hosts, and does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Experiences. Hosts are solely responsible for their Experiences, pricing, cancellation policies, and fulfilment. When Guests make a Booking, they enter into a contract directly with the Host.",
         },
         {
           type: "p",
-          text: "While ClassEasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Listings or Experiences, (ii) the truth or accuracy of any Listing descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. ClassEasily does not endorse any User, Listing, or Experience. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
+          text: "While ClassEasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Experiences, (ii) the truth or accuracy of any Experience descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. ClassEasily does not endorse any User or Experience. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
         },
       ],
     },
@@ -97,35 +96,35 @@ export const termsContent = {
     {
       title: "5. Host Terms",
       content: [
-        { type: "h3", text: "5.1. Listing Experiences" },
+        { type: "h3", text: "5.1. Offering Experiences" },
         {
           type: "p",
-          text: "As a Host, you may create Listings for your Experiences or Workshops. Your Listings must include complete and accurate information about your Experience, including description, location (if applicable), schedule, duration, capacity, prerequisites, pricing, cancellation policy, and any rules or requirements.",
+          text: "As a Host, you may create Experiences or Workshops in your ClassEasily dashboard. Your Experience pages must include complete and accurate information, including description, location (if applicable), schedule, duration, capacity, prerequisites, pricing, cancellation policy, and any rules or requirements.",
         },
         {
           type: "p",
-          text: "You are responsible for setting the price for your Experience (including any taxes or fees) and establishing rules and requirements. You may not post any Listing with false or misleading information or list any Experience that violates applicable laws or these Terms.",
+          text: "You are responsible for setting the price for your Experience (including any taxes or fees) and establishing rules and requirements. You may not publish false or misleading information or offer any Experience that violates applicable laws or these Terms.",
         },
         {
           type: "p",
-          text: "You represent and warrant that you have all necessary rights, licenses, permits, qualifications, and insurance to offer the Experiences listed and that your Listings and Experiences will not infringe upon any third-party rights.",
+          text: "You represent and warrant that you have all necessary rights, licenses, permits, qualifications, and insurance to offer the Experiences you publish and that your Experiences will not infringe upon any third-party rights.",
         },
         {
           type: "p",
-          text: "Images and videos used in your Listings must accurately reflect the quality and condition of your Experiences. ClassEasily reserves the right to require Listings to have a minimum number of images of a certain format, size, and resolution.",
+          text: "Images and videos used for your Experiences must accurately reflect their quality and condition. ClassEasily reserves the right to require a minimum number of images of a certain format, size, and resolution.",
         },
         { type: "h3", text: "5.2. Managing Bookings" },
         {
           type: "p",
-          text: "You are responsible for honouring any confirmed Bookings. When you accept a Booking request or receive a confirmation through the Platform, you enter into a legally binding agreement with the Guest.",
+          text: "You are responsible for honouring any confirmed Bookings. When you accept a Booking request or receive a confirmation through the Platform, you enter into a legally binding agreement with the Guest. You are the merchant of record for those customer charges.",
         },
         {
           type: "p",
-          text: "You are responsible for setting your cancellation policy, which must be clearly stated in your Listing. You must adhere to your stated policy. Your chosen cancellation policy is binding; ClassEasily will process refunds to Guests in accordance with that policy.",
+          text: "You are responsible for setting your cancellation policy, which must be clearly stated on the Experience. You must adhere to your stated policy. Your chosen cancellation policy is binding; refunds to Guests are processed in accordance with that policy via Stripe.",
         },
         {
           type: "p",
-          text: "To receive payouts, you must complete Stripe Connect (or equivalent) setup through the Platform. Failure to do so may result in delayed or unavailable payouts until your payout account is linked and valid.",
+          text: "To accept bookings and receive payouts, you must complete Stripe Connect setup through the Platform. Bookings cannot be accepted until payouts are connected. Failure to complete setup may result in delayed or unavailable payouts until your payout account is linked and valid.",
         },
         { type: "h3", text: "5.3. Conduct and Responsibility" },
         {
@@ -139,7 +138,7 @@ export const termsContent = {
         { type: "h3", text: "5.4. Host Subscriptions" },
         {
           type: "p",
-          text: "ClassEasily offers Widget Subscription plans (currently Basic, Growth, and Advanced) that provide access to the booking widget, marketplace listing, and plan-specific features. Current pricing and per-booking commission rates are set out on our <a href='/fees'>Fees and Pricing page</a> and in your Host dashboard. Subscription fees are billed monthly in Canadian Dollars (CAD) on a recurring basis and automatically renew at the end of each billing period unless cancelled.",
+          text: "ClassEasily offers Widget Subscription plans (currently Basic, Growth, and Advanced) that provide access to the booking widget, CRM tools, and plan-specific features. Current pricing and per-booking commission rates are set out on our <a href='/fees'>Fees and Pricing page</a> and in your Host dashboard. Subscription fees are billed monthly in Canadian Dollars (CAD) on a recurring basis and automatically renew at the end of each billing period unless cancelled.",
         },
         {
           type: "p",
@@ -151,11 +150,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "You may cancel a Widget Subscription at any time through your Host dashboard or by contacting support@classeasily.com. Cancellation takes effect at the end of the current billing period; you will retain access until that date. Upon cancellation or suspension for non-payment, your widget may be disabled, premium features may be restricted, and your marketplace listing may be affected, but existing confirmed Guest Bookings remain subject to these Terms and applicable cancellation policies.",
+          text: "You may cancel a Widget Subscription at any time through your Host dashboard or by contacting support@classeasily.com. Cancellation takes effect at the end of the current billing period; you will retain access until that date. Upon cancellation or suspension for non-payment, your widget may be disabled and premium features may be restricted, but existing confirmed Guest Bookings remain subject to these Terms and applicable cancellation policies.",
         },
         {
           type: "p",
-          text: "ClassEasily may also offer Add-on Subscriptions (e.g. marketplace email branding or tiered email marketing plans). Add-on fees are billed monthly on a recurring basis under the same billing, renewal, cancellation, and payment-failure terms as Widget Subscriptions unless otherwise stated at purchase. Add-ons may require an active Widget Subscription or marketplace account.",
+          text: "ClassEasily may also offer Add-on Subscriptions (e.g. email branding or tiered email marketing plans). Add-on fees are billed monthly on a recurring basis under the same billing, renewal, cancellation, and payment-failure terms as Widget Subscriptions unless otherwise stated at purchase. Add-ons may require an active Widget Subscription.",
         },
         {
           type: "p",
@@ -187,7 +186,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Upon receipt of a booking confirmation from ClassEasily, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified in the Listing.",
+          text: "Upon receipt of a booking confirmation, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified for the Experience. The Host is the merchant of record for the charge.",
         },
         {
           type: "p",
@@ -196,7 +195,7 @@ export const termsContent = {
         { type: "h3", text: "6.2. Attending Experiences" },
         {
           type: "p",
-          text: "You agree to comply with any rules or requirements specified by the Host in the Listing or communicated to you. You are responsible for your own conduct during the Experience.",
+          text: "You agree to comply with any rules or requirements specified by the Host for the Experience or communicated to you. You are responsible for your own conduct during the Experience.",
         },
         {
           type: "p",
@@ -228,20 +227,20 @@ export const termsContent = {
         { type: "h3", text: "7.1. Fees" },
         {
           type: "p",
-          text: "More information about when Fees apply and how they are calculated can be found on our <a href='/fees'>Fees and Pricing page</a> or will be disclosed during the booking/listing process.",
+          text: "More information about when Fees apply and how they are calculated can be found on our <a href='/fees'>Fees and Pricing page</a> or will be disclosed during checkout or subscription signup.",
         },
         {
           type: "p",
-          text: "Any applicable Fees (including any applicable Taxes) will be displayed to a User prior to publishing a Listing or confirming a Booking. ClassEasily reserves the right to change the Fees at any time, and will provide Users adequate notice of any fee changes before they become effective.",
+          text: "Any applicable Fees (including any applicable Taxes) will be displayed to a User prior to confirming a Booking or starting a subscription. ClassEasily reserves the right to change the Fees at any time, and will provide Users adequate notice of any fee changes before they become effective.",
         },
         { type: "h3", text: "7.2. Payments" },
         {
           type: "p",
-          text: "Guests agree to pay the Total Fees for any Booking requested in connection with their ClassEasily Account. ClassEasily Payments (via Stripe) will collect the Total Fees at the time of the booking request or upon the Host’s confirmation.",
+          text: "Guests agree to pay the Host the amount shown at checkout for any Booking. Customer charges are collected as Stripe Connect destination charges: funds go to the Host's connected Stripe account, and the Host is the merchant of record. ClassEasily charges Hosts a separate subscription fee and per-booking commission as described on the <a href='/fees'>Fees and Pricing page</a>.",
         },
         {
           type: "p",
-          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation. Hosts must complete Stripe Connect (or equivalent) setup to receive payouts; failure to do so may result in delayed or unavailable payouts until the account is linked and valid. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons; Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. ClassEasily will retry or notify where feasible but is not liable for third-party processing delays or failures.",
+          text: "Hosts receive funds in their connected Stripe balance at checkout, then to their bank on the payout schedule they choose (daily, weekly, monthly, or manual). Instant payouts may be available from Stripe for an additional fee. Hosts must complete Stripe Connect setup to accept bookings and receive payouts; failure to do so may result in delayed or unavailable payouts until the account is linked and valid. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons; Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. ClassEasily will retry or notify where feasible but is not liable for third-party processing delays or failures.",
         },
         {
           type: "p",
@@ -285,7 +284,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. ClassEasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Refunds are processed via the payment processor and may be delayed or require manual handling in exceptional cases. If you do not receive an expected refund within 10 business days, please contact support@classeasily.com. Applicable Booking Fees may be non-refundable.",
+          text: "Guests can cancel a confirmed Booking subject to the Host's cancellation policy. Refunds are processed via Stripe in accordance with that policy and may be delayed or require manual handling in exceptional cases. If you do not receive an expected refund within 10 business days, please contact the Host or support@classeasily.com.",
         },
         {
           type: "p",
@@ -306,7 +305,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "For Hosts, chargebacks and payment disputes related to your Bookings or memberships may result in deductions from your payouts, including the full disputed amount and any processor dispute fees. You authorize ClassEasily to debit or offset such amounts from your Connect account or future payouts. ClassEasily is not responsible for chargebacks arising from your conduct, Listing inaccuracies, or failure to deliver an Experience as described.",
+          text: "For Hosts, chargebacks and payment disputes related to your Bookings or memberships may result in deductions from your payouts, including the full disputed amount and any processor dispute fees. You authorize ClassEasily to debit or offset such amounts from your Connect account or future payouts. ClassEasily is not responsible for chargebacks arising from your conduct, inaccurate Experience details, or failure to deliver an Experience as described.",
         },
         { type: "h3", text: "7.5. No-Show Policy" },
         {
@@ -315,12 +314,12 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "If a Host fails to provide the booked Experience as scheduled without valid notice or extenuating circumstances ('host no-show'), the Guest is entitled to a full refund of the Total Fees for that Booking. ClassEasily may impose penalties on the Host, including listing restrictions or account suspension, for repeated or unjustified host no-shows.",
+          text: "If a Host fails to provide the booked Experience as scheduled without valid notice or extenuating circumstances ('host no-show'), the Guest is entitled to a full refund of amounts paid for that Booking. ClassEasily may impose penalties on the Host, including feature restrictions or account suspension, for repeated or unjustified host no-shows.",
         },
         { type: "h3", text: "7.6. Promotional Codes and Discounts" },
         {
           type: "p",
-          text: "Hosts and ClassEasily may offer promotional codes, discounts, or special offers from time to time. Each offer is subject to the terms displayed at the time of use, including eligibility, expiry, minimum spend, applicable Listings, and whether it can be combined with other offers.",
+          text: "Hosts and ClassEasily may offer promotional codes, discounts, or special offers from time to time. Each offer is subject to the terms displayed at the time of use, including eligibility, expiry, minimum spend, applicable Experiences, and whether it can be combined with other offers.",
         },
         {
           type: "p",
@@ -333,7 +332,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "ClassEasily is not liable for any losses arising from pricing errors beyond refunding amounts paid for a cancelled Booking. Hosts are responsible for ensuring their Listing prices are accurate; ClassEasily may correct obvious Listing errors or remove Listings that contain manifest pricing mistakes.",
+          text: "ClassEasily is not liable for any losses arising from pricing errors beyond refunding amounts paid for a cancelled Booking. Hosts are responsible for ensuring their Experience prices are accurate; ClassEasily may correct obvious pricing errors or remove Experiences that contain manifest pricing mistakes.",
         },
       ],
     },
@@ -948,18 +947,18 @@ export const cookiePolicyContent = {
 
 export const feeContent = {
   title: "Fees and Pricing",
-  lastUpdated: "May 25, 2026",
+  lastUpdated: "August 30, 2026",
   sections: [
     {
       title: "Our Fee Structure Explained",
       content: [
         {
           type: "p",
-          text: "ClassEasily is booking and CRM software. You pay a monthly subscription plus a small per-booking commission on widget bookings. There is no setup fee. Stripe card processing fees are charged by Stripe separately.",
+          text: "ClassEasily is booking and CRM software. Hosts pay a monthly subscription plus a per-booking commission. There is no setup fee. The Host is the merchant of record for customer charges (Stripe Connect destination charges). Stripe card processing fees are billed by Stripe to the Host's connected account.",
         },
         {
           type: "p",
-          text: "All prices on the Platform are in Canadian Dollars (CAD) unless stated otherwise. For <strong>Guests</strong>, the total amount displayed at checkout, including taxes, is the final price you will be charged. For <strong>Hosts</strong>, the price you set for your experience is the starting point from which we automatically deduct our service fee to calculate your final payout.",
+          text: "All prices on the Platform are in Canadian Dollars (CAD) unless stated otherwise. For <strong>Guests</strong>, the total amount displayed at checkout, including taxes, is the final price charged by the Host. For <strong>Hosts</strong>, customer funds go to your connected Stripe balance at checkout; ClassEasily's subscription and commission are billed separately.",
         },
       ],
     },
@@ -983,54 +982,26 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "The current product is a monthly widget subscription plus a small commission on widget bookings. See <a href='/pricing'>Pricing</a> for Basic ($29), Growth ($49), and Advanced ($89). There is no setup fee.",
+          text: "Current plans are Basic ($29/month + 4% commission), Growth ($49/month + 3%), and Advanced ($89/month + 2%). Per-booking commission is waived for the first 3 months. See <a href='/pricing'>Pricing</a> for plan features. There is no setup fee.",
         },
-        { type: "h3", text: "Widget plans (current product)" },
+        { type: "h3", text: "Current product" },
         {
           type: "p",
-          text: "Widget subscribers pay the monthly plan fee plus a per-booking commission of 2–4% depending on plan, as listed on the <a href='/pricing'>Pricing</a> page and in the Host dashboard. Stripe processing fees are separate from ClassEasily's commission.",
-        },
-        { type: "h3", text: "Legacy marketplace bookings" },
-        {
-          type: "p",
-          text: "The consumer marketplace is retired. The 20% marketplace service fee below applies only to leftover marketplace bookings, not to widget bookings.",
-        },
-        {
-          type: "ul",
-          items: [
-            "<strong>Legacy marketplace service fee:</strong> 20% of the pre-tax Experience Price (subject to change with notice). This is not the fee for the current widget product.",
-          ],
+          text: "You pay the monthly plan fee plus the plan's per-booking commission on bookings you collect. Stripe processing fees are billed by Stripe to your connected account and are separate from ClassEasily's commission. Instant payouts, if you enable them, typically cost about 1% extra (charged by Stripe).",
         },
         {
           type: "p",
-          text: "Example (legacy marketplace only): A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The ClassEasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
-        },
-        {
-          type: "ul",
-          items: [
-            "Original Experience Price: $100.00",
-            "Less ClassEasily Service Fee: -$20.00",
-            "Plus HST collected on your portion (13% of $80): +$10.40",
-            "<strong>Total Host Payout: $90.40</strong>",
-          ],
-        },
-        {
-          type: "p",
-          text: "In this scenario, ClassEasily remits the HST on its $20 fee ($2.60), and the Host is responsible for remitting the $10.40 of HST they received in their payout.",
+          text: "A former consumer marketplace charged a 20% service fee; that product is retired and is not part of current pricing.",
         },
         { type: "h3", text: "Payouts" },
         {
           type: "p",
-          text: "Payouts to Hosts are typically processed via Stripe Connect approximately 24–48 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings. A minimum payout amount may apply; smaller balances are carried forward and paid when the total meets the minimum at the next payout run. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons. Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues.",
+          text: "Customer charges go to your connected Stripe balance at checkout. You then receive bank payouts on the schedule you choose in Stripe — daily, weekly, monthly, or manual. Instant payouts may be available from Stripe for an additional fee of about 1%. A minimum payout amount may apply; smaller balances are carried forward until the total meets the minimum. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons. Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. Bookings cannot be accepted until payouts are connected.",
         },
         { type: "h3", text: "Taxes (Host Responsibility)" },
         {
           type: "p",
-          text: "To simplify the process, ClassEasily automatically calculates and collects the applicable HST from the Guest. We remit the portion of HST applicable to our Service Fee. The remaining portion of the HST, collected on the Host's share of the revenue, is included in the Host's payout.",
-        },
-        {
-          type: "p",
-          text: "<strong>Hosts are solely responsible for remitting the HST they receive in their payout to the appropriate government authorities.</strong> ClassEasily acts as a collection agent for the Host's portion of the tax but does not remit it on their behalf. Hosts are also responsible for all other tax obligations, such as income tax on their earnings. We recommend consulting with a tax professional to understand your specific obligations.",
+          text: "Because you are the merchant of record for customer charges, you are responsible for collecting and remitting applicable taxes on those charges, and for all other tax obligations such as income tax on your earnings. ClassEasily charges HST on its subscription and commission invoices to you where applicable. We recommend consulting with a tax professional to understand your specific obligations.",
         },
       ],
     },
@@ -1044,14 +1015,14 @@ export const feeContent = {
         {
           type: "ul",
           items: [
-            "<strong>Basic:</strong> CAD $29/month — includes the booking widget on your website and a 4% per-booking commission on widget bookings.",
-            "<strong>Growth:</strong> CAD $49/month — includes everything in Basic, plus branded booking emails, widget analytics, automated reminders, memberships, promo codes, and a 3% per-booking commission on widget bookings.",
-            "<strong>Advanced:</strong> CAD $89/month — includes everything in Growth and a 2% per-booking commission on widget bookings.",
+            "<strong>Basic:</strong> CAD $29/month — includes the booking widget on your website and a 4% per-booking commission.",
+            "<strong>Growth:</strong> CAD $49/month — includes everything in Basic, plus branded booking emails, widget analytics, automated reminders, memberships, promo codes, and a 3% per-booking commission.",
+            "<strong>Advanced:</strong> CAD $89/month — includes everything in Growth and a 2% per-booking commission.",
           ],
         },
         {
           type: "p",
-          text: "Per-booking commission rates apply to bookings completed through your widget (not marketplace bookings, which are subject to the ClassEasily Service Fee above). Current plan features and pricing are also displayed in your Host dashboard.",
+          text: "Per-booking commission is waived for the first 3 months. Current plan features and pricing are also displayed in your Host dashboard.",
         },
       ],
     },
@@ -1060,12 +1031,12 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "Hosts may purchase optional Add-on Subscriptions in addition to a Widget Subscription or marketplace account. Add-on fees are billed monthly in CAD unless otherwise stated.",
+          text: "Hosts may purchase optional Add-on Subscriptions in addition to a Widget Subscription. Add-on fees are billed monthly in CAD unless otherwise stated.",
         },
         {
           type: "ul",
           items: [
-            "<strong>Marketplace Email Branding:</strong> CAD $7/month — send marketplace booking confirmations and reminders under your brand.",
+            "<strong>Email Branding:</strong> CAD $7/month — send booking confirmations and reminders under your brand.",
             "<strong>Email Marketing:</strong> Tiered plans from CAD $6/month to CAD $59/month, based on monthly send limits and features. Current tiers and limits are displayed in your Host dashboard at purchase.",
           ],
         },
@@ -1085,11 +1056,11 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "We use Stripe, a secure third-party payment processor, to handle all transactions on the Platform. Stripe's standard processing fees are covered by ClassEasily's Service Fee.",
+          text: "We use Stripe, a secure third-party payment processor, to handle transactions on the Platform. Customer charges are Stripe Connect destination charges: the Host is the merchant of record. Stripe bills processing fees to the Host's connected account. ClassEasily's subscription and commission are separate.",
         },
         {
           type: "p",
-          text: "You do not need a separate Stripe account as a Guest. Hosts will set up a Stripe Connect account through ClassEasily during their onboarding process to receive payouts.",
+          text: "Guests pay at checkout and do not need a ClassEasily account. Hosts must complete Stripe Connect onboarding before bookings can be accepted. Instant payouts, if enabled, typically cost about 1% extra (billed by Stripe).",
         },
         {
           type: "p",
@@ -1102,7 +1073,7 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "Fees related to cancellations and refunds are determined by the Host's chosen cancellation policy for the specific Experience, as outlined in the Listing and our Terms of Service. Any taxes collected will be refunded in accordance with the refundable amount of the Experience Price.",
+          text: "Fees related to cancellations and refunds are determined by the Host's chosen cancellation policy for the specific Experience, as outlined at booking and in our Terms of Service. Any taxes collected will be refunded in accordance with the refundable amount of the Experience Price.",
         },
       ],
     },

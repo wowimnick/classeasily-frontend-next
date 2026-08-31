@@ -2953,7 +2953,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             </PlanBillingPanelBody>
           ) : (
             <AddonsStack>
-              {/* ── Marketplace email branding ── */}
+              {/* TODO(saas): fold into Growth plan; cancel leftover $7 addon subs */}
               <AddonCard
                 $pulse={marketplacePulse}
                 initial={{ opacity: 0, x: -8 }}
@@ -2966,7 +2966,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                   </AddonIconBox>
                   <AddonBody>
                     <AddonTitleRow>
-                      <AddonName>Marketplace email branding</AddonName>
+                      <AddonName>Branded Emails</AddonName>
                       <NewBadge>New</NewBadge>
                       {addonActive && (
                         <motion.span layout style={{ display: "inline-flex" }}>
@@ -3508,7 +3508,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 36, height: 36 }} />
             </div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>Marketplace email branding</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>Branded Emails</div>
               <span
                 style={{
                   display: "inline-block",
@@ -3610,7 +3610,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             >
               <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 32, height: 32 }} />
             </div>
-            <ModalSectionTitle>Cancel Marketplace email branding?</ModalSectionTitle>
+            <ModalSectionTitle>Cancel Branded Emails?</ModalSectionTitle>
           </div>
           <div style={{ padding: "12px 28px 0" }}>
             <ModalBodyText>

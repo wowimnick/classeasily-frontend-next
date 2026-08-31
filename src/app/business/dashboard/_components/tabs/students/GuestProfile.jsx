@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Avatar, Table, Typography, Button, Tag, Skeleton } from "antd";
+import { Avatar, Table, Typography, Button, Tag, Skeleton, Select } from "antd";
 import {
   User,
   Mail,
@@ -13,9 +13,12 @@ import {
   Lock,
   Users,
   Calendar,
+  Clock,
+  CreditCard,
+  StickyNote,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { businessStudentService } from "@/services/apiService";
+import { businessStudentService, businessContactService } from "@/services/apiService";
 import styled from "styled-components";
 import NotesSection from "./NotesSection";
 import {
@@ -30,6 +33,7 @@ import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import CompactContactModal from "./CompactContactModal";
 import CopyPageLinkButton from "@/components/common/CopyPageLinkButton";
+import message from "@/lib/message";
 
 const { Text } = Typography;
 
@@ -445,6 +449,114 @@ const TableSkeleton = () => (
   </div>
 );
 
+const TimelineWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+`;
+
+const TimelineRow = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const TimelineIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+function timelineIcon(type) {
+  if (type === "payment") return <CreditCard size={14} />;
+  if (type === "membership") return <Users size={14} />;
+  if (type === "note") return <StickyNote size={14} />;
+  return <Calendar size={14} />;
+}
+
+function ClientTagEditor({ tags, onChange, saving }) {
+  return (
+    <Select
+      mode="tags"
+      size="small"
+      value={Array.isArray(tags) ? tags : []}
+      onChange={onChange}
+      placeholder="Add tags"
+      tokenSeparators={[","]}
+      style={{ width: "100%", maxWidth: 320, marginTop: 8 }}
+      disabled={saving}
+    />
+  );
+}
+
+function ClientActivityTimeline({ events, loading }) {
+  if (loading) {
+    return <Skeleton active paragraph={{ rows: 3 }} />;
+  }
+  if (!events?.length) {
+    return (
+      <Text type="secondary" style={{ fontSize: 13 }}>
+        No activity yet.
+      </Text>
+    );
+  }
+  return (
+    <TimelineWrap>
+      {events.map((event, index) => (
+        <TimelineRow key={`${event.type}-${event.id || index}`}>
+          <TimelineIcon>{timelineIcon(event.type)}</TimelineIcon>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 8,
+                alignItems: "baseline",
+              }}
+            >
+              <Text strong style={{ fontSize: 13 }}>
+                {event.title || event.type}
+              </Text>
+              {event.at && (
+                <Text type="secondary" style={{ fontSize: 11, whiteSpace: "nowrap" }}>
+                  {dayjs(event.at).format("MMM D, YYYY")}
+                </Text>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+              {event.type && (
+                <Tag style={{ margin: 0 }}>{event.type}</Tag>
+              )}
+              {event.status && (
+                <Tag style={{ margin: 0 }}>{event.status}</Tag>
+              )}
+              {event.amount != null && event.amount !== "" && Number(event.amount) > 0 && (
+                <Text style={{ fontSize: 12, color: "#334155" }}>
+                  ${parseFloat(event.amount).toFixed(2)}
+                </Text>
+              )}
+            </div>
+          </div>
+        </TimelineRow>
+      ))}
+    </TimelineWrap>
+  );
+}
+
 const BOOKING_HISTORY_COLUMNS = [
   {
     title: "EXPERIENCE NAME",
@@ -633,6 +745,10 @@ const CompactPlatformUserModal = ({
   onClose,
   isReadyForAnimation,
   isMobile,
+  timelineEvents,
+  timelineLoading,
+  onTagsChange,
+  tagsSaving,
 }) => {
   const [showBookingHistory, setShowBookingHistory] = useState(false);
   const [userTimeZone, setUserTimeZone] = useState("UTC");
@@ -682,6 +798,18 @@ const CompactPlatformUserModal = ({
             <Tag color="blue" style={{ marginBottom: "8px" }}>
               Platform User
             </Tag>
+            {guest.status && (
+              <Tag style={{ marginBottom: "8px", marginLeft: 4 }}>
+                {String(guest.status)
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (char) => char.toUpperCase())}
+              </Tag>
+            )}
+            <ClientTagEditor
+              tags={guest.tags}
+              onChange={onTagsChange}
+              saving={tagsSaving}
+            />
             <ContactInfo compact>
               {guest.email && (
                 <ContactItem compact>
@@ -826,6 +954,16 @@ const CompactPlatformUserModal = ({
       <ContentBody compact>
         <InfoSection compact>
           <SectionTitle compact>
+            <Clock />
+            Timeline
+          </SectionTitle>
+          <ClientActivityTimeline
+            events={timelineEvents}
+            loading={timelineLoading}
+          />
+        </InfoSection>
+        <InfoSection compact>
+          <SectionTitle compact>
             <MessageSquare />
             Notes
           </SectionTitle>
@@ -858,6 +996,9 @@ const GuestProfile = ({
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [timelineEvents, setTimelineEvents] = useState([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [tagsSaving, setTagsSaving] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -875,18 +1016,40 @@ const GuestProfile = ({
       }
 
       setIsLoading(true);
+      setTimelineLoading(true);
       setIsReadyForAnimation(false);
       setError(null);
       try {
-        const response = await businessStudentService.getBusinessStudentProfile(
-          initialGuest.id
-        );
+        const [profileRes, timelineRes] = await Promise.all([
+          businessStudentService.getBusinessStudentProfile(initialGuest.id),
+          businessContactService.getContactTimeline(initialGuest.id),
+        ]);
 
-        if (response.success && response.data) {
-          setGuest(response.data);
+        const timelineData = timelineRes.success ? timelineRes.data : null;
+        let guestData = profileRes.success ? profileRes.data : null;
+
+        if (!guestData && timelineData?.contact) {
+          guestData = { ...timelineData.contact, type: "contact" };
+        } else if (guestData && timelineData?.contact) {
+          guestData = {
+            ...guestData,
+            lifetime_value: timelineData.contact.lifetime_value,
+            booking_count: timelineData.contact.booking_count,
+            last_booking_at: timelineData.contact.last_booking_at,
+            last_activity_at: timelineData.contact.last_activity_at,
+            tags: timelineData.contact.tags ?? guestData.tags,
+            status: timelineData.contact.status || guestData.status,
+          };
+        }
+
+        if (guestData) {
+          setGuest(guestData);
+          setTimelineEvents(timelineData?.events || []);
           setTimeout(() => setIsReadyForAnimation(true), 50);
         } else {
-          throw new Error(response.error || "Failed to fetch guest details");
+          throw new Error(
+            profileRes.error || timelineRes.error || "Failed to fetch guest details"
+          );
         }
       } catch (err) {
         if (err.response && err.response.status === 404) {
@@ -896,6 +1059,7 @@ const GuestProfile = ({
         }
       } finally {
         setIsLoading(false);
+        setTimelineLoading(false);
       }
     };
 
@@ -903,6 +1067,29 @@ const GuestProfile = ({
       fetchGuestDetails();
     }
   }, [initialGuest, visible]);
+
+  const handleTagsChange = async (nextTags) => {
+    if (!guest?.id) return;
+    const previous = guest.tags || [];
+    setGuest((prev) => (prev ? { ...prev, tags: nextTags } : prev));
+    setTagsSaving(true);
+    try {
+      const response = await businessContactService.updateContact(guest.id, {
+        tags: nextTags,
+      });
+      if (!response.success) {
+        throw new Error(response.error || "Failed to update tags");
+      }
+      if (response.data?.tags) {
+        setGuest((prev) => (prev ? { ...prev, tags: response.data.tags } : prev));
+      }
+    } catch (err) {
+      setGuest((prev) => (prev ? { ...prev, tags: previous } : prev));
+      message.error(err.message || "Failed to update tags");
+    } finally {
+      setTagsSaving(false);
+    }
+  };
 
   const renderContent = () => {
     if (error) {
@@ -953,6 +1140,28 @@ const GuestProfile = ({
                 currentUser={currentUser}
                 onClose={onClose}
                 embedded
+                crmSlot={
+                  <>
+                    <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                      Tags
+                    </div>
+                    <ClientTagEditor
+                      tags={guest.tags}
+                      onChange={handleTagsChange}
+                      saving={tagsSaving}
+                    />
+                    <div style={{ marginTop: 20, marginBottom: 20 }}>
+                      <SectionTitle compact>
+                        <Clock />
+                        Timeline
+                      </SectionTitle>
+                      <ClientActivityTimeline
+                        events={timelineEvents}
+                        loading={timelineLoading}
+                      />
+                    </div>
+                  </>
+                }
               />
             ) : (
               <CompactPlatformUserModal
@@ -961,6 +1170,10 @@ const GuestProfile = ({
                 onClose={onClose}
                 isReadyForAnimation={isReadyForAnimation}
                 isMobile={isMobile}
+                timelineEvents={timelineEvents}
+                timelineLoading={timelineLoading}
+                onTagsChange={handleTagsChange}
+                tagsSaving={tagsSaving}
               />
             )}
           </motion.div>

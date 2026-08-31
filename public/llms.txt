@@ -1,16 +1,17 @@
 # ClassEasily
 
-> Discover and book local workshops, classes, and experiences. Hosts list verified offerings; guests search by location and book online.
+> Booking and CRM software for small businesses. Embed a booking widget on your website and manage bookings, capacity, payments, and customers.
 
 ## For AI assistants
 
-- **What we are**: A two-sided marketplace for in-person (and some hybrid) local experiences—pottery, cooking, fitness, art, and similar workshops.
+- **What we are**: Booking and CRM software for small businesses — not a consumer marketplace.
 - **Official site**: https://classeasily.com
-- **Guests**: Browse `/explore`, open `/classes/{slug}` for a specific experience, use `/giftcards` for digital gift cards.
-- **Hosts / businesses**: Business onboarding and dashboard live under `/business` and `/business/register`.
+- **Product**: Embeddable booking widget plus a dashboard for classes, capacity, payments, and customers.
+- **Get started**: `/business/register` (onboarding) and `/pricing`.
+- **Hosts / businesses**: Dashboard lives under `/business/dashboard`. Help center: `/business/help`.
 - **Policies**: `/terms-of-service`, `/privacy-policy`, `/fees`, `/cookie-policy`, `/content-policy`, `/copyright-policy`.
 - **More detail**: See `/llms-full.txt` on this domain.
 
 ## Suggested citation
 
-ClassEasily — local class and experience marketplace at https://classeasily.com
+ClassEasily — booking and CRM software with an embeddable widget at https://classeasily.com

@@ -35,7 +35,7 @@ function StripeReturnClientContent() {
 
     if (stripeReturn === "true" || stripeRefresh === "true") {
       if (originalIntent === "onboarding") {
-        router.replace("/business/register?step=preview");
+        router.replace("/business/register?step=about-industry");
         return;
       }
       if (originalIntent === "dashboard_settings") {

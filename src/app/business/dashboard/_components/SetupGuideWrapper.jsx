@@ -11,8 +11,10 @@ const DEBUG_ALWAYS_SHOW_SETUP_GUIDE = false;
 
 function isCoreSetupComplete(setupProgress) {
   if (!setupProgress) return false;
+  // Stripe Connect is required and blocking: bookings cannot be accepted
+  // until payouts are connected.
+  if (!setupProgress.is_stripe_connected) return false;
   return (
-    setupProgress.is_stripe_connected &&
     setupProgress.is_profile_complete &&
     setupProgress.has_created_class &&
     setupProgress.has_class_options &&

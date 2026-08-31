@@ -236,6 +236,7 @@ const CompactContactModal = ({
   onClose,
   currentUser,
   embedded = false,
+  crmSlot = null,
 }) => {
   const [guest, setGuest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -343,6 +344,13 @@ const CompactContactModal = ({
               <Tag color="default" size="small">
                 Imported Contact
               </Tag>
+              {guest.status && (
+                <Tag size="small" style={{ marginLeft: 4 }}>
+                  {String(guest.status)
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (char) => char.toUpperCase())}
+                </Tag>
+              )}
               <ContactDetails>
                 {guest.email && (
                   <ContactItem>
@@ -373,6 +381,7 @@ const CompactContactModal = ({
         </CompactHeader>
 
         <CompactBody>
+          {crmSlot}
           <NotesSection
             guest={guest}
             currentUser={currentUser}

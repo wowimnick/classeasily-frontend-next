@@ -298,6 +298,12 @@ const DEFAULT_FORM = {
   border: "#e5e7eb",
   fontFamily: "",
   borderRadiusPreset: "medium",
+  floatingPosition: "",
+  floatingSize: "",
+  modalSize: "",
+  layoutStyle: "",
+  densityPreset: "",
+  inlineFullWidth: false,
   allowed_widget_origins: "",
 };
 
@@ -324,6 +330,13 @@ function comparableWidgetSettingsFromForm(form) {
     textOnPrimary: hex(form.textOnPrimary),
     border: hex(form.border),
     borderRadiusPreset: form.borderRadiusPreset,
+    fontFamily: form.fontFamily || "",
+    floatingPosition: form.floatingPosition || "",
+    floatingSize: form.floatingSize || "",
+    modalSize: form.modalSize || "",
+    layoutStyle: form.layoutStyle || "",
+    densityPreset: form.densityPreset || "",
+    inlineFullWidth: Boolean(form.inlineFullWidth),
     allowed_widget_origins: normalizeAllowedOriginsForCompare(form.allowed_widget_origins),
   };
 }
@@ -342,6 +355,13 @@ function comparableWidgetSettingsFromSavedConfig(config) {
     textOnPrimary: norm(c.textOnPrimary, d.textOnPrimary),
     border: norm(c.border, d.border),
     borderRadiusPreset: c.borderRadiusPreset ?? d.borderRadiusPreset,
+    fontFamily: c.fontFamily || "",
+    floatingPosition: c.floatingPosition || "",
+    floatingSize: c.floatingSize || "",
+    modalSize: c.modalSize || "",
+    layoutStyle: c.layoutStyle || "",
+    densityPreset: c.densityPreset || "",
+    inlineFullWidth: Boolean(c.inlineFullWidth),
     allowed_widget_origins: normalizeAllowedOriginsForCompare(
       typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : ""
     ),
@@ -375,6 +395,47 @@ const getCopyBtnStyle = (isCopied) => ({
   background: isCopied ? "#16a34a" : "#374151", color: "#fff", border: "none", fontSize: 12
 });
 
+/** Pin CDN script to v1. TODO: CloudFront must actually publish widget@v1.js and loader@v1.js. */
+function pinWidgetAssetUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  return url
+    .replace(/\/widget\.js$/i, "/widget@v1.js")
+    .replace(/\/loader\.js$/i, "/loader@v1.js");
+}
+
+const FLOATING_POSITION_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "bottom-right", label: "Bottom right" },
+  { value: "bottom-left", label: "Bottom left" },
+  { value: "top-right", label: "Top right" },
+  { value: "top-left", label: "Top left" },
+];
+const FLOATING_SIZE_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
+const MODAL_SIZE_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+  { value: "full", label: "Full" },
+];
+const LAYOUT_STYLE_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "default", label: "Standard" },
+  { value: "stacked", label: "Stacked" },
+  { value: "compact", label: "Compact" },
+];
+const DENSITY_PRESET_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "comfortable", label: "Comfortable" },
+  { value: "compact", label: "Compact" },
+  { value: "spacious", label: "Spacious" },
+];
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function WidgetCustomizer() {
   const[loading, setLoading]   = useState(true);
@@ -403,6 +464,7 @@ export default function WidgetCustomizer() {
   const [diagLoading, setDiagLoading] = useState(false);
   const [diagData, setDiagData] = useState(null);
   const [diagReferrer, setDiagReferrer] = useState("");
+  const [rotatingKey, setRotatingKey] = useState(false);
   const embedSaveTimersRef = useRef({});
   const searchParams = useSearchParams();
 
@@ -489,6 +551,13 @@ export default function WidgetCustomizer() {
             textOnPrimary: norm(c.textOnPrimary, prev.textOnPrimary),
             border: norm(c.border, prev.border),
             borderRadiusPreset: c.borderRadiusPreset ?? prev.borderRadiusPreset,
+            fontFamily: c.fontFamily ?? prev.fontFamily,
+            floatingPosition: c.floatingPosition ?? prev.floatingPosition,
+            floatingSize: c.floatingSize ?? prev.floatingSize,
+            modalSize: c.modalSize ?? prev.modalSize,
+            layoutStyle: c.layoutStyle ?? prev.layoutStyle,
+            densityPreset: c.densityPreset ?? prev.densityPreset,
+            inlineFullWidth: Boolean(c.inlineFullWidth),
             allowed_widget_origins: typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : "",
           }));
           
@@ -516,6 +585,13 @@ export default function WidgetCustomizer() {
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
       border: hex(form.border),
       borderRadiusPreset: form.borderRadiusPreset,
+      fontFamily: form.fontFamily || null,
+      floatingPosition: form.floatingPosition || null,
+      floatingSize: form.floatingSize || null,
+      modalSize: form.modalSize || null,
+      layoutStyle: form.layoutStyle || null,
+      densityPreset: form.densityPreset || null,
+      inlineFullWidth: Boolean(form.inlineFullWidth),
       specificClassId: null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
@@ -536,27 +612,45 @@ export default function WidgetCustomizer() {
   const apiKey        = data?.widget_api_key || "";
   const widgetScriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL || "" : "";
   const loaderUrl = widgetScriptUrl.replace(/\/widget\.js$/i, "/loader.js");
+  const canPinWidgetScript = /\/widget\.js$/i.test(widgetScriptUrl);
+  // EMBED REPO (not in this workspace): publish widget@v1.js / loader@v1.js on CloudFront
+  // and wire magic-link UI to GET/POST widget/v1/bookings/manage/.
+  const pinnedWidgetScriptUrl = canPinWidgetScript ? pinWidgetAssetUrl(widgetScriptUrl) : widgetScriptUrl;
+  const pinnedLoaderUrl = canPinWidgetScript ? pinWidgetAssetUrl(loaderUrl) : loaderUrl;
   const pinClass = String(installSpecificClassId || "").trim();
 
-  const embedSnippet = useMemo(() => {
+  const buildEmbedSnippet = (scriptUrl) => {
     const attr = pinClass ? ` data-specific-class-id="${pinClass}"` : "";
+    const cssUrl = widgetScriptUrl.replace(/\.js$/i, ".css");
     return `<!-- Class Easily Booking Widget -->
-<link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
+<link rel="stylesheet" href="${cssUrl}" />
 <div id="classeasily-booking-widget" data-widget-api-key="${apiKey}"${attr}></div>
-<script src="${widgetScriptUrl}"><\/script>`;
-  }, [widgetScriptUrl, apiKey, pinClass]);
-
-  const popupSnippet = useMemo(() => {
+<script src="${scriptUrl}"><\/script>`;
+  };
+  const buildPopupSnippet = (scriptUrl) => {
     const onclick =
       pinClass !== ""
         ? `onclick="openClasseasilyBooking(undefined,'${pinClass}')"`
         : `onclick="openClasseasilyBooking()"`;
     return `<!-- Add this script once on your page -->
-<script src="${loaderUrl}" data-api-key="${apiKey}"><\/script>
+<script src="${scriptUrl}" data-api-key="${apiKey}"><\/script>
 
 <!-- Add a button anywhere to open the widget -->
 <button ${onclick}>Book Now</button>`;
-  }, [loaderUrl, apiKey, pinClass]);
+  };
+
+  const embedSnippet = useMemo(
+    () => buildEmbedSnippet(canPinWidgetScript ? pinnedWidgetScriptUrl : widgetScriptUrl),
+    [widgetScriptUrl, pinnedWidgetScriptUrl, canPinWidgetScript, apiKey, pinClass]
+  );
+  const popupSnippet = useMemo(
+    () => buildPopupSnippet(canPinWidgetScript ? pinnedLoaderUrl : loaderUrl),
+    [loaderUrl, pinnedLoaderUrl, canPinWidgetScript, apiKey, pinClass]
+  );
+  const unpinnedSnippet = useMemo(
+    () => (form.view === "modal" ? buildPopupSnippet(loaderUrl) : buildEmbedSnippet(widgetScriptUrl)),
+    [form.view, loaderUrl, widgetScriptUrl, apiKey, pinClass]
+  );
 
   const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 
@@ -566,6 +660,31 @@ export default function WidgetCustomizer() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     }
+  };
+
+  const handleRotateApiKey = () => {
+    Modal.confirm({
+      title: "Rotate API key?",
+      content: "Existing embeds on your website will stop working until you paste the updated snippet. Continue?",
+      okText: "Rotate API key",
+      okButtonProps: { danger: true },
+      cancelText: "Cancel",
+      onOk: async () => {
+        setRotatingKey(true);
+        try {
+          const res = await businessService.rotateWidgetApiKey();
+          if (res.success && res.data?.widget_api_key) {
+            setData((d) => (d ? { ...d, widget_api_key: res.data.widget_api_key } : d));
+            message.success("API key rotated. Update your website snippet.");
+          } else {
+            antMessage.error(res.error || "Could not rotate API key");
+            return Promise.reject(new Error(res.error || "rotate failed"));
+          }
+        } finally {
+          setRotatingKey(false);
+        }
+      },
+    });
   };
 
   const handleCopySubscription = (text, id) => {
@@ -800,6 +919,48 @@ export default function WidgetCustomizer() {
           })}
         </div>
       </div>
+
+      <div>
+        <SectionTitle title="4. Display options" subtitle="Optional layout and type settings used by the embed." />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Font</label>
+            <Input
+              size="small"
+              placeholder="e.g. Inter, system-ui, sans-serif"
+              value={form.fontFamily || ""}
+              onChange={(e) => set("fontFamily")(e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Layout style</label>
+            <Select size="small" style={{ width: "100%" }} value={form.layoutStyle || ""} onChange={set("layoutStyle")} options={LAYOUT_STYLE_OPTIONS} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Density</label>
+            <Select size="small" style={{ width: "100%" }} value={form.densityPreset || ""} onChange={set("densityPreset")} options={DENSITY_PRESET_OPTIONS} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Modal size</label>
+            <Select size="small" style={{ width: "100%" }} value={form.modalSize || ""} onChange={set("modalSize")} options={MODAL_SIZE_OPTIONS} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Floating position</label>
+            <Select size="small" style={{ width: "100%" }} value={form.floatingPosition || ""} onChange={set("floatingPosition")} options={FLOATING_POSITION_OPTIONS} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Floating size</label>
+            <Select size="small" style={{ width: "100%" }} value={form.floatingSize || ""} onChange={set("floatingSize")} options={FLOATING_SIZE_OPTIONS} />
+          </div>
+        </div>
+        <Checkbox
+          checked={Boolean(form.inlineFullWidth)}
+          onChange={(e) => set("inlineFullWidth")(e.target.checked)}
+          style={{ marginTop: 12, fontSize: 13, color: "#374151" }}
+        >
+          Inline widget uses full width
+        </Checkbox>
+      </div>
     </div>
   );
 
@@ -828,6 +989,22 @@ export default function WidgetCustomizer() {
         ) : (
           <Alert type="warning" showIcon message={<span style={{ fontSize: 12 }}>No domains added yet. Your widget won't work on your website until you add your domain here.</span>} />
         )}
+      </div>
+
+      <div>
+        <SectionTitle title="Widget API key" subtitle="Used in your embed snippet. Rotate if it may have been leaked." />
+        <Input
+          value={apiKey}
+          readOnly
+          size="small"
+          style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, marginBottom: 10 }}
+        />
+        <Button danger size="small" loading={rotatingKey} onClick={handleRotateApiKey}>
+          Rotate API key
+        </Button>
+        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6b7280", lineHeight: 1.45 }}>
+          Rotating the key breaks existing embeds until you paste the updated snippet on your site.
+        </p>
       </div>
 
     </div>
@@ -934,6 +1111,17 @@ export default function WidgetCustomizer() {
               : "This places your calendar directly inside your page, in the spot where you paste the code. Change the optional class below before each copy if you want different pages to open a different class first."
           }
         />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+          <Input
+            value={apiKey}
+            readOnly
+            size="small"
+            style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, flex: 1, minWidth: 220 }}
+          />
+          <Button danger size="small" loading={rotatingKey} onClick={handleRotateApiKey}>
+            Rotate API key
+          </Button>
+        </div>
         {(data?.classes || []).length > 0 && (
           <div style={{ marginBottom: 14, maxWidth: "100%" }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
@@ -960,6 +1148,37 @@ export default function WidgetCustomizer() {
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
+        {canPinWidgetScript && (
+          <>
+            <p style={{ margin: "10px 0 0", fontSize: 12, color: "#4b5563", lineHeight: 1.5 }}>
+              Pin to v1 so a CDN deploy cannot break your site. Update the URL when you choose to upgrade.
+            </p>
+            <Collapse
+              ghost
+              size="small"
+              style={{ marginTop: 4 }}
+              items={[
+                {
+                  key: "unpinned-snippet",
+                  label: <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 500 }}>Latest unpinned snippet (widget.js)</span>,
+                  children: (
+                    <div style={snippetContainerStyle}>
+                      <pre style={snippetPreStyle}>{unpinnedSnippet}</pre>
+                      <Button
+                        size="small"
+                        icon={copiedSubscriptionId === "unpinned" ? <Check size={12} /> : <Copy size={12} />}
+                        onClick={() => handleCopySubscription(unpinnedSnippet, "unpinned")}
+                        style={getCopyBtnStyle(copiedSubscriptionId === "unpinned")}
+                      >
+                        {copiedSubscriptionId === "unpinned" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </>
+        )}
       </div>
 
       <div style={{ padding: "12px 14px", background: "#f3f6f8", borderRadius: 8 }}>

@@ -11,7 +11,7 @@ import { helpCenterData } from "@/components/common/_pages/docs/helpCenterData";
 import { ChevronRight, Home, Search } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 import FooterClient from "@/components/homepage/FooterClient";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+import MarketingHeader from "@/components/marketing/MarketingHeader";
 
 // ─── Page Shell ──────────────────────────────────────────────────────────────
 
@@ -417,7 +417,7 @@ const BusinessHelpCenterLayout = ({ children, categorySlug, articleSlug }) => {
 
   return (
     <>
-      <ExploreHeader showOptionsWrapper={false} />
+      <MarketingHeader />
       <PageWrapper>
         {/* Top bar — grid-aligned with sidebar */}
         <TopSection>

@@ -42,7 +42,7 @@ test.describe('Business registration', () => {
     test.setTimeout(90000);
     await gotoPath(page, '/business/register');
     await dismissCookieBannerIfVisible(page);
-    await expect(page.getByRole('heading', { name: /Start with your account/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Create your account/i })).toBeVisible({
       timeout: 30000,
     });
     await expect(page.getByRole('button', { name: /Sign up/i })).toBeVisible();
@@ -54,7 +54,7 @@ test.describe('Business registration', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoPath(page, '/business/register');
     await dismissCookieBannerIfVisible(page);
-    const heading = page.getByRole('heading', { name: /Start with your account/i });
+    const heading = page.getByRole('heading', { name: /Create your account/i });
     await expect(heading).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: /Sign up/i })).toBeVisible({
       timeout: 15000,
@@ -100,7 +100,7 @@ test.describe('Business registration', () => {
 
     await gotoPath(page, '/business/register?plan=advanced');
     await dismissCookieBannerIfVisible(page);
-    await expect(page.getByRole('heading', { name: /Pick a plan/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Choose a plan/i })).toBeVisible({
       timeout: 30000,
     });
     await expect(page.getByText('Advanced', { exact: true })).toBeVisible();
@@ -153,7 +153,7 @@ test.describe('Business registration', () => {
 
     await gotoPath(page, '/business/register?plan=growth');
     await dismissCookieBannerIfVisible(page);
-    await expect(page.getByRole('heading', { name: /Start with your account/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Create your account/i })).toBeVisible({
       timeout: 30000,
     });
 
@@ -162,7 +162,7 @@ test.describe('Business registration', () => {
     await page.getByLabel('Password').fill('Password123!');
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
 
-    await expect(page.getByRole('heading', { name: /Tell us about the business/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Tell us about your business/i })).toBeVisible({
       timeout: 30000,
     });
     await page.getByLabel('Business name').fill('Clay Studio');
@@ -172,12 +172,12 @@ test.describe('Business registration', () => {
     await page.getByRole('checkbox').nth(1).check();
     await page.getByRole('button', { name: /^Continue$/i }).click();
 
-    await expect(page.getByRole('heading', { name: /Pick a plan/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Choose a plan/i })).toBeVisible({
       timeout: 20000,
     });
     await page.getByRole('button', { name: /Continue with Growth/i }).click();
 
-    await expect(page.getByRole('heading', { name: /Activate ClassEasily/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Confirm your plan/i })).toBeVisible();
     await page.route('https://checkout.stripe.com/**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -204,15 +204,13 @@ test.describe('Business registration', () => {
     });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('button', { name: /^Skip$/i }).click();
-    await expect(page.getByRole('heading', { name: /Get paid for bookings/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Set up payouts/i })).toBeVisible();
     await page.getByRole('button', { name: /Skip for now/i }).click();
-    await expect(page.getByText(/is ready to embed/i)).toBeVisible();
-    await page.getByRole('button', { name: /Go to dashboard/i }).click();
-    await expect(page.getByRole('heading', { name: /One more thing/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /One last thing/i })).toBeVisible({
       timeout: 20000,
     });
     await page.getByRole('radio', { name: 'Arts & crafts' }).click();
-    await expect(page.getByRole('heading', { name: /How do you take bookings/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /How do you take bookings today/i })).toBeVisible();
     await page.getByRole('radio', { name: 'Calendly' }).click();
     await expect(page.getByRole('heading', { name: /How did you find ClassEasily/i })).toBeVisible();
     await page.getByRole('radio', { name: 'Google' }).click();

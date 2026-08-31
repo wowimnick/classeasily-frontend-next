@@ -238,7 +238,7 @@ const FAQS = [
   },
   {
     q: "When do I get paid?",
-    a: "Payouts run through Stripe Connect roughly 24–48 hours after a session is completed, to the bank account you connect during onboarding.",
+    a: "Funds go to your connected Stripe balance at checkout, then to your bank on the payout schedule you choose — daily, weekly, monthly, or manual. Instant payouts are also available from Stripe for about 1% extra.",
   },
   {
     q: "Can I embed on Wix, Shopify, or Squarespace?",

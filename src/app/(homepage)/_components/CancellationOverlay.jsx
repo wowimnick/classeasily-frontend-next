@@ -11,7 +11,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import message from "@/lib/message";
 
 import { guestBookingService } from "@/services/apiService";
-import { getCancellationPolicyText } from "@/app/classes/_components/steps/utils";
+import { getCancellationPolicyText } from "@/lib/cancellationPolicy";
 import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 import { theme } from "@/components/theme";
 

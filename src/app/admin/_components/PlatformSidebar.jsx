@@ -516,7 +516,6 @@ const menuGroupsConfig = [
         children: [
           { key: "business-overview", label: "Analytics" },
           { key: "business-listings", label: "Listings" },
-          { key: "business-verification", label: "Verification" },
         ],
       },
     ],
@@ -538,8 +537,6 @@ const menuGroupsConfig = [
           />
         ),
         children: [
-          { key: "class-listings", label: "Listing Management" },
-          { key: "collections", label: "Collections" },
           { key: "class-reviews", label: "Reviews" },
         ],
       },
@@ -564,7 +561,6 @@ const menuGroupsConfig = [
         ),
         children: [
           { key: "all-bookings", label: "All Bookings" },
-          { key: "corporate-inquiries", label: "Corporate" },
           { key: "payments", label: "Payments" },
           { key: "revenue", label: "Revenue Stats" },
           { key: "payouts", label: "Payouts" },
@@ -590,7 +586,6 @@ const menuGroupsConfig = [
           />
         ),
         children: [
-          { key: "global-discounts", label: "Global Discounts" },
           { key: "widget-subscriptions", label: "Widget Subscriptions" },
         ],
       },

@@ -12,7 +12,6 @@ import posthog from "posthog-js";
 import { getRoleDisplayName } from "@/services/apiService.js";
 import { LordIcon } from "@/services/ReactUtils.jsx";
 import message from "@/lib/message";
-import FavoritesModal from "@/components/MyFavoritesPage";
 import { ChevronRight, LogOutIcon, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -410,7 +409,6 @@ const MenuContents = React.forwardRef(
       currentUser,
       onNavigate,
       onShowSettings,
-      onShowFavorites,
       hasPermission,
       getUserInitials,
       handleLogin,
@@ -575,31 +573,6 @@ const MenuContents = React.forwardRef(
                 <MenuGroup>
                   <GroupLabel>Personal</GroupLabel>
                   <MenuItem
-                    onClick={() => onNavigate("/my-classes")}
-                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-classes")}
-                    onMouseLeave={handleMenuItemLeave}
-                  >
-                    <LordIcon
-                      src="https://cdn.lordicon.com/wxnxiano.json"
-                      colors="primary:#1a1a1a,secondary:#1a1a1a"
-                    />
-                    <MenuText>My Bookings</MenuText>
-                    <ArrowIcon />
-                  </MenuItem>
-                  <MenuItem
-                    onClick={onShowFavorites}
-                    onMouseEnter={(e) => handleMenuItemEnter(e)}
-                    onMouseLeave={handleMenuItemLeave}
-                  >
-                    <LordIcon
-                      src="https://cdn.lordicon.com/xyboiuok.json"
-                      colors="primary:#1a1a1a,secondary:#1a1a1a"
-                    />
-                    <MenuText>My Favorites</MenuText>
-                    <ArrowIcon />
-                  </MenuItem>
-
-                  <MenuItem
                     onClick={onShowSettings}
                     onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
@@ -624,18 +597,6 @@ const MenuContents = React.forwardRef(
                       colors="primary:#1a1a1a,secondary:#1a1a1a"
                     />
                     <MenuText>Business? List your classes</MenuText>
-                    <ArrowIcon />
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => onNavigate("/my-tickets")}
-                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-tickets")}
-                    onMouseLeave={handleMenuItemLeave}
-                  >
-                    <LordIcon
-                      src="https://cdn.lordicon.com/axteoudt.json"
-                      colors="primary:#1a1a1a,secondary:#1a1a1a"
-                    />
-                    <MenuText>Resolution Center</MenuText>
                     <ArrowIcon />
                   </MenuItem>
                   <MenuItem
@@ -705,8 +666,8 @@ const MenuContents = React.forwardRef(
                 <MenuGroup>
                   <GroupLabel>Information</GroupLabel>
                   <MenuItem
-                    onClick={() => onNavigate("/my-tickets")}
-                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-tickets")}
+                    onClick={() => onNavigate("/business/help")}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/business/help")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -734,13 +695,12 @@ const CustomUserMenu = ({
   onShowSettings,
   triggerRef,
 }) => {
-  const { user: currentUser, isLoading } = useAuthUser();
+  const { user: currentUser } = useAuthUser();
   const { openLoginModal, openRegisterModal } = useAuthModal();
   const menuRef = useRef(null);
   const isMobile = useIsMobile();
   const [menuPosition, setMenuPosition] = useState(null);
   const [transformOrigin, setTransformOrigin] = useState("center");
-  const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -824,11 +784,6 @@ const CustomUserMenu = ({
     onShowSettings();
   };
 
-  const handleShowFavorites = () => {
-    onClose();
-    setIsFavoritesModalOpen(true);
-  };
-
   const handleLogin = () => {
     onClose();
     openLoginModal();
@@ -878,7 +833,6 @@ const CustomUserMenu = ({
             currentUser={currentUser}
             onNavigate={handleActualNavigate}
             onShowSettings={handleActualShowSettings}
-            onShowFavorites={handleShowFavorites}
             hasPermission={hasPermission}
             getUserInitials={getUserInitials}
             handleLogin={handleLogin}
@@ -889,10 +843,6 @@ const CustomUserMenu = ({
           />
         )}
       </AnimatePresence>
-      <FavoritesModal
-        isOpen={isFavoritesModalOpen}
-        onClose={() => setIsFavoritesModalOpen(false)}
-      />
     </>,
     document.body,
   );

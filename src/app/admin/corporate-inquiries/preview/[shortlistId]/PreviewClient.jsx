@@ -1,11 +1,10 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { message } from "antd";
-import ClientHeader from "@/components/layout/ClientHeader";
+import MarketingHeader from "@/components/marketing/MarketingHeader";
 import FooterClient from "@/components/homepage/FooterClient";
-import { ExploreHeaderSkeleton } from "@/app/explore/_components/ExplorePageSkeleton";
 import ShortlistHero from "@/components/corporate/shortlist/ShortlistHero";
 import ShortlistLandingIntro from "@/components/corporate/shortlist/ShortlistLandingIntro";
 import JourneyStepper from "@/components/corporate/shortlist/JourneyStepper";
@@ -76,11 +75,7 @@ export default function PreviewClient({ shortlistId }) {
     message.info("Disabled in preview — no booking is created.");
   };
 
-  const previewHeader = (
-    <Suspense fallback={<ExploreHeaderSkeleton />}>
-      <ClientHeader showOptionsWrapper={false} />
-    </Suspense>
-  );
+  const previewHeader = <MarketingHeader />;
 
   if (loading) {
     return (

@@ -65,11 +65,16 @@ export const API_ENDPOINTS = {
   BUSINESS_CONTACT_INFO: "/business/classes/contact-info/",
   BUSINESS_DISCOUNTS: "/business/discounts/",
   BUSINESS_PAYOUTS: "/business/payouts/",
+  MY_BUSINESS_PAYOUT_SETTINGS: "/my-business/payouts/settings/",
+  MY_BUSINESS_PAYOUT_BALANCE: "/my-business/payouts/balance/",
+  MY_BUSINESS_PAYOUT_CREATE: "/my-business/payouts/create/",
+  MY_BUSINESS_PAYOUT_EXTERNAL_ACCOUNTS: "/my-business/payouts/external-accounts/",
   REVENUE_ANALYTICS: "/revenue/analytics/",
   BUSINESS_STAFF: "/business/staff/",
   BUSINESS_ROLES: "/business/roles/",
   ACCEPT_INVITE: "/business/accept-invitation/",
   MY_BUSINESS_WIDGET_CONFIG: "/my-business/widget-config/",
+  MY_BUSINESS_WIDGET_CONFIG_ROTATE_KEY: "/my-business/widget-config/rotate-key/",
   MY_BUSINESS_WIDGET_DIAGNOSTICS: "/my-business/widget-diagnostics/",
   WIDGET_V1_PLANS: "/widget/v1/plans/",
   MY_BUSINESS_EMAIL_BRANDING_PREVIEW: "/my-business/email-branding/preview/",
@@ -139,6 +144,7 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_MEMBERS: "/my-business/members/",
   MY_BUSINESS_MEMBERS_MANUAL_ADD: "/my-business/members/manual-add/",
   MY_BUSINESS_CONTACTS: "/my-business/contacts/",
+  MY_BUSINESS_CLIENT_SEGMENTS: "/my-business/client-segments/",
 
   // Student Self-Service
   STUDENT_BOOKINGS: "/my-bookings/",
@@ -875,6 +881,25 @@ export const businessService = {
         success: false,
         error: errorMessage || "An unknown error occurred.",
         errors: errorsList,
+        status: error.response?.status,
+      };
+    }
+  },
+
+  rotateWidgetApiKey: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_CONFIG_ROTATE_KEY,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        "Failed to rotate widget API key.";
+      return {
+        success: false,
+        error: errorMessage,
         status: error.response?.status,
       };
     }
@@ -2064,6 +2089,104 @@ export const businessService = {
       };
     }
   },
+  getPayoutSettings: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_PAYOUT_SETTINGS,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching payout settings:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to fetch payout settings",
+      };
+    }
+  },
+
+  updatePayoutSettings: async (payload) => {
+    try {
+      const response = await axiosInstance.patch(
+        API_ENDPOINTS.MY_BUSINESS_PAYOUT_SETTINGS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error updating payout settings:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to update payout settings",
+      };
+    }
+  },
+
+  getPayoutBalance: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_PAYOUT_BALANCE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching payout balance:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to fetch payout balance",
+      };
+    }
+  },
+
+  createConnectPayout: async ({ amount, method = "standard" }) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_PAYOUT_CREATE,
+        { amount, method },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error creating Connect payout:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to create payout",
+      };
+    }
+  },
+
+  getPayoutExternalAccounts: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_PAYOUT_EXTERNAL_ACCOUNTS,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching payout external accounts:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          "Failed to fetch payout destinations",
+      };
+    }
+  },
+
   fetchPayoutSummary: async () => {
     try {
       const response = await axiosInstance.get(
@@ -2806,6 +2929,44 @@ export const businessContactService = {
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || "Failed to delete contact" };
+    }
+  },
+  getContactTimeline: async (id) => {
+    try {
+      const response = await axiosInstance.get(
+        `${API_ENDPOINTS.MY_BUSINESS_CONTACTS}${id}/timeline/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to fetch timeline",
+      };
+    }
+  },
+  getClientSegments: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_CLIENT_SEGMENTS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to fetch segments",
+      };
+    }
+  },
+  createClientSegment: async (data) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_CLIENT_SEGMENTS,
+        data,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to create segment",
+      };
     }
   },
 };

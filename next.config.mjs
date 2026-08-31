@@ -300,6 +300,46 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/corporate/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/classes/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-classes",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-messages",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-messages/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-tickets",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-tickets/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/booking/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
         source: "/booking-widget",
         destination: "/pricing",
         permanent: true,

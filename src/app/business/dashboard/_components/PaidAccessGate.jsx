@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { businessService } from "@/services/apiService";
 
 /**
- * Unpaid SaaS signups (isActive false, no widget plan) go back to register.
- * Existing marketplace businesses stay isActive and are not blocked.
+ * Unpaid SaaS signups (isActive false, no widget plan, not grandfathered)
+ * go back to register. Paid or legacy_grandfathered businesses stay in.
  */
 export default function PaidAccessGate({ children }) {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function PaidAccessGate({ children }) {
       if (cancelled) return;
       if (result.success && result.data?.has_business) {
         const d = result.data;
-        if (!d.is_active && !d.has_paid_subscription) {
+        if (!d.is_active && !d.has_paid_subscription && !d.legacy_grandfathered) {
           router.replace("/business/register?step=pay");
           return;
         }

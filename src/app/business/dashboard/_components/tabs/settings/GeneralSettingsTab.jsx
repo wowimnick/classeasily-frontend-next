@@ -10,7 +10,6 @@ import {
   Phone,
   Globe,
   Type,
-  Tag,
   Users,
   ExternalLink,
   Info,
@@ -174,29 +173,6 @@ const FieldGroup = styled.div`
 const StyledSelect = styled(Select)`
   .ant-select-selector {
     border-radius: 7px !important;
-  }
-`;
-
-const StyledTagsSelect = styled(Select)`
-  .ant-select-selector {
-    border-radius: 7px !important;
-    min-height: 38px !important;
-  }
-
-  .ant-select-selection-item {
-    border-radius: 5px !important;
-    background: #f3f4f6 !important;
-    border: 1px solid #e5e7eb !important;
-    font-size: 12.5px !important;
-  }
-
-  .ant-select-selection-item-content {
-    color: #374151 !important;
-    font-weight: 500;
-  }
-
-  .ant-select-selection-item-remove {
-    color: #9ca3af !important;
   }
 `;
 
@@ -409,12 +385,12 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
           </SectionBody>
         </SectionCard>
 
-        {/* ── Public Details ── */}
+        {/* TODO(saas): listing copy still feeds widget/emails */}
         <SectionCard>
           <SectionHeader>
             <SectionIconBox><User size={16} /></SectionIconBox>
             <SectionTitleBlock>
-              <SectionTitle>Public details</SectionTitle>
+              <SectionTitle>Business Profile</SectionTitle>
               <SectionSubtitle>Information visible to customers on your listing</SectionSubtitle>
             </SectionTitleBlock>
           </SectionHeader>
@@ -480,13 +456,12 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
           </SectionBody>
         </SectionCard>
 
-        {/* ── Social & Keywords ── */}
         <SectionCard>
           <SectionHeader>
             <SectionIconBox><AtSign size={16} /></SectionIconBox>
             <SectionTitleBlock>
-              <SectionTitle>Social & keywords</SectionTitle>
-              <SectionSubtitle>Links and tags to improve discoverability</SectionSubtitle>
+              <SectionTitle>Social links</SectionTitle>
+              <SectionSubtitle>Optional profiles shown on your business communications</SectionSubtitle>
             </SectionTitleBlock>
           </SectionHeader>
 
@@ -553,22 +528,6 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
                 </Form.Item>
               )}
             </FieldGrid>
-
-            {field(
-              "Keywords / tags (optional)",
-              <Tag />,
-              "Add keywords that describe your services. Press Enter to add a tag.",
-              <Form.Item name="tags_keywords">
-                <StyledTagsSelect
-                  mode="tags"
-                  style={{ width: "100%" }}
-                  placeholder="e.g., Yoga, Beginner Friendly, Art"
-                  tokenSeparators={[","]}
-                  onBlur={() => onFieldBlur?.("tags_keywords")}
-                  onChange={(val) => onFieldChange?.("tags_keywords", val)}
-                />
-              </Form.Item>
-            )}
           </SectionBody>
         </SectionCard>
 

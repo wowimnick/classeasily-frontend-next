@@ -7,12 +7,26 @@ import styled from "styled-components";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ticket, ChevronDown, MapPin, Clock, Users, Building2, Tag, ListChecks } from "lucide-react";
-import { getDurationText } from "@/app/classes/_components/steps/utils.jsx";
 import { theme as appTheme } from "@/components/theme";
 import { formatMoney } from "./formatMoney";
 import SupportContactModal from "./SupportContactModal";
 
 /* ─── Page shell (matches ClassCheckoutClient PageWrapper + MainContainer) ─── */
+
+function getDurationText(minutes) {
+  if (typeof minutes !== "number" || isNaN(minutes) || minutes <= 0) {
+    return "-";
+  }
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  return `${minutes} minutes`;
+}
 
 const PageBleed = styled.div`
   width: 100vw;

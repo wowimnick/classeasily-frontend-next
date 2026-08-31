@@ -16,7 +16,6 @@ const ClaimAccountOverlay = dynamic(
 const VerifyEmailOverlay = dynamic(
   () => import("./(homepage)/_components/VerifyEmailOverlay"),
 );
-import HomepageConversationOverlayClient from "./(homepage)/_components/HomepageConversationOverlayClient";
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
@@ -120,7 +119,6 @@ export default function HomePage() {
       <PasswordResetOverlay />
       <ClaimAccountOverlay />
       <VerifyEmailOverlay />
-      <HomepageConversationOverlayClient />
     </>
   );
 }

@@ -21,7 +21,6 @@ import {
   TrendingDown,
   Info,
   Lock,
-  Globe,
   LayoutGrid,
   Receipt,
 } from "lucide-react";
@@ -137,6 +136,8 @@ const Controls = styled.div`
 
 const SourceSegmentedWrapper = styled.div`
   width: fit-content;
+  display: flex;
+  align-items: center;
   .ant-segmented {
     font-size: 12px;
   }
@@ -702,6 +703,12 @@ const Revenue = forwardRef((props, ref) => {
 
   useEffect(() => {
     if (subscriptionLoading) return;
+    if (filterParams.source === "marketplace") {
+      setFilterParams((prev) =>
+        prev.source === "marketplace" ? { ...prev, source: "all" } : prev
+      );
+      return;
+    }
     if (filterParams.source === "widget" && !hasWidgetAnalytics) {
       setFilterParams((prev) =>
         prev.source === "widget" ? { ...prev, source: "all" } : prev
@@ -1016,15 +1023,16 @@ const Revenue = forwardRef((props, ref) => {
             <HeaderSubtitle>
               {filterParams.source === "widget"
                 ? "Widget bookings only — revenue from your embedded booking widget."
-                : filterParams.source === "marketplace"
-                ? "Marketplace bookings only — revenue from ClassEasily discovery."
                 : filterParams.source === "membership"
                 ? "Membership payments only — recurring revenue from member subscriptions."
-                : "Track revenue performance and growth insights across all sources."}
+                : "Track revenue performance and growth insights across all channels."}
             </HeaderSubtitle>
           </div>
           <Controls>
             <SourceSegmentedWrapper>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginRight: 8 }}>
+                Channel
+              </span>
               <Segmented
                 value={filterParams.source}
                 onChange={handleSourceChange}
@@ -1038,15 +1046,6 @@ const Revenue = forwardRef((props, ref) => {
                       </span>
                     ),
                     value: "all",
-                  },
-                  {
-                    label: (
-                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Globe size={13} />
-                        Marketplace
-                      </span>
-                    ),
-                    value: "marketplace",
                   },
                   ...(hasWidgetAnalytics
                     ? [

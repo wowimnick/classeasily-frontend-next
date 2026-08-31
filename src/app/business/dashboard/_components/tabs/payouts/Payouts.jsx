@@ -16,6 +16,10 @@ import {
   List,
   Tag,
   Alert,
+  Modal,
+  InputNumber,
+  Select,
+  Switch,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -28,11 +32,11 @@ import {
   Box,
   RefreshCw,
   DollarSign,
-  TrendingUp,
   Calendar,
   Info,
   Download,
   Settings,
+  Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
@@ -353,6 +357,82 @@ const StatFooter = styled.div`
   }
 `;
 
+const PayoutNowBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid ${colors.border};
+  border-radius: 12px;
+  margin-top: 20px;
+
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+`;
+
+const PayoutNowLabel = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-bottom: 6px;
+`;
+
+const SettingsPanel = styled.div`
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${colors.border};
+  overflow: hidden;
+  margin-top: 20px;
+`;
+
+const SettingsPanelBody = styled.div`
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px 20px;
+  align-items: end;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    grid-template-columns: 1fr;
+  }
+`;
+
+const SettingsField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const SettingsFieldLabel = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+`;
+
+const InstantToggleRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  background: ${colors.lightBg};
+  border-radius: 10px;
+  border: 1px solid ${colors.border};
+`;
+
+const InstantToggleCopy = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
 const TableSection = styled(motion.div)`
   background: white;
   border-radius: 16px;
@@ -406,11 +486,53 @@ const TableDescription = styled(Paragraph)`
 
 const formatPayoutStatusLabel = (status) => {
   if (!status || typeof status !== "string") return "Unknown";
-  const s = status.toLowerCase();
-  if (s === "scheduled") return "ESCROW";
   return status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const WEEKDAY_OPTIONS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+].map((day) => ({
+  value: day,
+  label: day.charAt(0).toUpperCase() + day.slice(1),
+}));
+
+const INTERVAL_OPTIONS = [
+  { value: "manual", label: "Manual" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
+
+const formatScheduleLabel = (settings) => {
+  const interval = settings?.payout_interval || "daily";
+  if (interval === "manual") return "Manual";
+  if (interval === "daily") return "Daily";
+  if (interval === "weekly") {
+    const day = settings?.payout_weekly_anchor || "monday";
+    return `Weekly · ${day.charAt(0).toUpperCase()}${day.slice(1)}`;
+  }
+  if (interval === "monthly") {
+    return `Monthly · day ${settings?.payout_monthly_anchor || 1}`;
+  }
+  return formatPayoutStatusLabel(interval);
+};
+
+const accountsSupportInstant = (externalAccounts) => {
+  const dests = [
+    ...(externalAccounts?.bank_accounts || []),
+    ...(externalAccounts?.cards || []),
+  ];
+  return dests.some((account) =>
+    (account.available_payout_methods || []).includes("instant"),
+  );
 };
 
 const StatusBadge = styled.div`
@@ -1161,6 +1283,19 @@ const Payouts = () => {
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingPayouts, setLoadingPayouts] = useState(true);
   const [exportingId, setExportingId] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [payoutSettings, setPayoutSettings] = useState(null);
+  const [settingsForm, setSettingsForm] = useState({
+    payout_interval: "daily",
+    payout_weekly_anchor: "monday",
+    payout_monthly_anchor: 1,
+    instant_payouts_enabled: false,
+  });
+  const [externalAccounts, setExternalAccounts] = useState(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState(null);
+  const [payoutMethod, setPayoutMethod] = useState("standard");
+  const [creatingPayout, setCreatingPayout] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1173,6 +1308,7 @@ const Payouts = () => {
   const refreshButtonRef = useRef(null);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const instantEligible = accountsSupportInstant(externalAccounts);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1196,15 +1332,45 @@ const Payouts = () => {
     }
   };
 
+  const applySettingsPayload = (data) => {
+    if (!data) return;
+    setPayoutSettings(data);
+    setSettingsForm({
+      payout_interval: data.payout_interval || "daily",
+      payout_weekly_anchor: data.payout_weekly_anchor || "monday",
+      payout_monthly_anchor: data.payout_monthly_anchor || 1,
+      instant_payouts_enabled: Boolean(data.instant_payouts_enabled),
+    });
+  };
+
   const fetchSummary = useCallback(async () => {
     setLoadingSummary(true);
     setIsReadyForAnimation(false);
-    const result = await businessService.fetchPayoutSummary();
-    if (result.success) {
-      setSummary(result.data);
+    const [summaryResult, balanceResult, settingsResult, accountsResult] =
+      await Promise.all([
+        businessService.fetchPayoutSummary(),
+        businessService.getPayoutBalance(),
+        businessService.getPayoutSettings(),
+        businessService.getPayoutExternalAccounts(),
+      ]);
+    if (summaryResult.success) {
+      setSummary(summaryResult.data);
       setTimeout(() => setIsReadyForAnimation(true), 50);
     } else {
-      message.error(result.error || "Failed to load summary.");
+      message.error(summaryResult.error || "Failed to load summary.");
+    }
+    if (balanceResult.success) {
+      setBalance(balanceResult.data);
+    } else {
+      setBalance(null);
+    }
+    if (settingsResult.success) {
+      applySettingsPayload(settingsResult.data);
+    }
+    if (accountsResult.success) {
+      setExternalAccounts(accountsResult.data);
+    } else {
+      setExternalAccounts(null);
     }
     setLoadingSummary(false);
   }, []);
@@ -1236,6 +1402,90 @@ const Payouts = () => {
     refreshData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (settingsForm.payout_interval === "manual") {
+      setPayoutMethod("standard");
+    } else if (settingsForm.instant_payouts_enabled) {
+      setPayoutMethod("instant");
+    }
+  }, [settingsForm.payout_interval, settingsForm.instant_payouts_enabled]);
+
+  const availableNow = Number(balance?.available ?? 0);
+  const pendingNow = Number(balance?.pending ?? 0);
+  const instantAvailable = Number(balance?.instant_available ?? 0);
+  const payoutCap =
+    payoutMethod === "instant" ? instantAvailable : availableNow;
+  const showPayoutNow =
+    settingsForm.payout_interval === "manual" ||
+    Boolean(settingsForm.instant_payouts_enabled);
+  const showMethodSelect =
+    settingsForm.payout_interval === "manual" &&
+    Boolean(settingsForm.instant_payouts_enabled);
+
+  const submitConnectPayout = async (method) => {
+    const amount = Number(payoutAmount);
+    const cap = method === "instant" ? instantAvailable : availableNow;
+    if (!amount || amount <= 0) {
+      message.error("Enter an amount greater than 0.");
+      return;
+    }
+    if (amount > cap) {
+      message.error("Amount cannot exceed the available balance for this method.");
+      return;
+    }
+    setCreatingPayout(true);
+    const result = await businessService.createConnectPayout({
+      amount,
+      method,
+    });
+    setCreatingPayout(false);
+    if (result.success) {
+      message.success(
+        method === "instant"
+          ? "Instant payout requested."
+          : "Payout requested.",
+      );
+      setPayoutAmount(null);
+      refreshData();
+    } else {
+      message.error(result.error || "Failed to create payout.");
+    }
+  };
+
+  const handlePayOutNow = () => {
+    if (payoutMethod === "instant") {
+      Modal.confirm({
+        title: "Send instant payout?",
+        content:
+          "~1% fee, min $0.50, arrives in minutes, requires a debit card",
+        okText: "Pay out now",
+        cancelText: "Cancel",
+        onOk: () => submitConnectPayout("instant"),
+      });
+      return;
+    }
+    submitConnectPayout("standard");
+  };
+
+  const handleSaveSettings = async () => {
+    if (settingsForm.instant_payouts_enabled && !instantEligible) {
+      message.error(
+        "Instant payouts require a debit card that supports instant payouts.",
+      );
+      return;
+    }
+    setSavingSettings(true);
+    const result = await businessService.updatePayoutSettings(settingsForm);
+    setSavingSettings(false);
+    if (result.success) {
+      applySettingsPayload(result.data);
+      message.success("Payout settings saved.");
+      refreshData();
+    } else {
+      message.error(result.error || "Failed to save payout settings.");
+    }
+  };
 
   const handleExportPayout = async (payoutId) => {
     setExportingId(payoutId);
@@ -1446,61 +1696,59 @@ const Payouts = () => {
 
   const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
 
+  const currency = (
+    balance?.currency ||
+    summary?.currency ||
+    "CAD"
+  ).toUpperCase();
+
   const statisticCards = [
     {
-      key: "pending_payout",
-      title: "Pending Balance",
-      value: summary?.pending_payout_amount,
+      key: "available_now",
+      title: "Available now",
+      value: availableNow,
       icon: <Wallet size={20} />,
-      color: colors.info,
-      background: "rgba(59, 130, 246, 0.1)",
-      suffix: summary?.currency,
-      footer:
-        "Amounts are net after commission and card processing (2.9% + 30¢).",
-      periodBadge: "Current",
+      color: colors.success,
+      background: "rgba(16, 185, 129, 0.1)",
+      suffix: currency,
+      footer: "Ready to pay out to your bank.",
+      periodBadge: "Available",
     },
     {
-      key: "next_payout",
-      title: "Payout Schedule",
-      value: "Daily",
+      key: "pending_balance",
+      title: "Pending",
+      value: pendingNow,
       icon: <Clock size={20} />,
       color: colors.warning,
       background: "rgba(245, 158, 11, 0.1)",
+      suffix: currency,
+      footer: "Funds still settling on Stripe.",
+      periodBadge: "Pending",
+    },
+    {
+      key: "instant_available",
+      title: "Instant available",
+      value: instantAvailable,
+      icon: <Zap size={20} />,
+      color: colors.info,
+      background: "rgba(59, 130, 246, 0.1)",
+      suffix: currency,
+      footer: "Eligible for Instant Payouts to a debit card.",
+      periodBadge: "Instant",
+    },
+    {
+      key: "next_schedule",
+      title: "Next schedule",
+      value: formatScheduleLabel(payoutSettings || settingsForm),
+      icon: <Calendar size={20} />,
+      color: colors.warning,
+      background: "rgba(245, 158, 11, 0.1)",
       isText: true,
-      tooltip:
-        "Payouts for completed bookings are processed daily. Funds typically arrive in your bank account in 1-3 business days.",
-      footer: "Payouts are processed daily.",
+      footer:
+        settingsForm.payout_interval === "manual"
+          ? "Payouts run when you request them."
+          : "Automatic payouts follow this Stripe schedule.",
       periodBadge: "Schedule",
-    },
-    {
-      key: "last_payout",
-      title: "Last Payout",
-      value: summary?.last_payout_amount,
-      icon: <TrendingUp size={20} />,
-      color: colors.success,
-      background: "rgba(16, 185, 129, 0.1)",
-      suffix: summary?.currency,
-      footer: "Most recent successful payout.",
-      periodBadge: "Latest",
-    },
-    {
-      key: "payout_status",
-      title: "Payouts Status",
-      value: summary?.stripe_account_status
-        ? formatPayoutStatusLabel(summary.stripe_account_status)
-        : "Not Connected",
-      icon: summary?.payouts_enabled ? (
-        <CheckCircle size={20} />
-      ) : (
-        <AlertCircle size={20} />
-      ),
-      color: summary?.payouts_enabled ? colors.success : colors.error,
-      background: summary?.payouts_enabled
-        ? "rgba(16, 185, 129, 0.1)"
-        : "rgba(239, 68, 68, 0.1)",
-      isText: true,
-      footer: "Your account's payout eligibility.",
-      periodBadge: "Current",
     },
   ];
 
@@ -1585,7 +1833,7 @@ const Payouts = () => {
                       </Tooltip>
                     </StatValue>
                     {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
-                    {stat.key === "payout_status" &&
+                    {stat.key === "available_now" &&
                       !loadingSummary &&
                       !summary?.payouts_enabled && (
                       <div style={{ marginTop: 12 }}>
@@ -1607,6 +1855,164 @@ const Payouts = () => {
             </StatCard>
           ))}
         </StatsGrid>
+
+        {showPayoutNow && (
+          <PayoutNowBar>
+            <div>
+              <PayoutNowLabel>Amount</PayoutNowLabel>
+              <InputNumber
+                min={0.01}
+                max={Math.max(payoutCap, 0.01)}
+                step={0.01}
+                precision={2}
+                prefix="$"
+                value={payoutAmount}
+                onChange={setPayoutAmount}
+                disabled={payoutCap <= 0}
+                placeholder="0.00"
+                style={{ width: isMobile ? "100%" : 160 }}
+              />
+            </div>
+            {showMethodSelect && (
+              <div>
+                <PayoutNowLabel>Method</PayoutNowLabel>
+                <Select
+                  value={payoutMethod}
+                  onChange={setPayoutMethod}
+                  style={{ width: isMobile ? "100%" : 160 }}
+                  options={[
+                    { value: "standard", label: "Standard" },
+                    {
+                      value: "instant",
+                      label: "Instant",
+                      disabled: !instantEligible,
+                    },
+                  ]}
+                />
+              </div>
+            )}
+            <Button
+              type="primary"
+              onClick={handlePayOutNow}
+              loading={creatingPayout}
+              disabled={payoutCap <= 0}
+              icon={<Zap size={14} />}
+              style={{
+                background: colors.primary,
+                borderColor: colors.primary,
+                height: 32,
+              }}
+            >
+              Pay out now
+            </Button>
+            <Text type="secondary" style={{ fontSize: 12, maxWidth: 280 }}>
+              {payoutMethod === "instant"
+                ? `Capped at $${instantAvailable.toFixed(2)} instant available.`
+                : `Capped at $${availableNow.toFixed(2)} available.`}
+            </Text>
+          </PayoutNowBar>
+        )}
+
+        <SettingsPanel>
+          <TableHeader>
+            <TableTitle>
+              <Settings size={15} color="#d1d5db" />
+              Payout settings
+            </TableTitle>
+            <TableDescription>
+              Choose how Stripe pays out available funds to your bank.
+            </TableDescription>
+          </TableHeader>
+          <SettingsPanelBody>
+            <SettingsField>
+              <SettingsFieldLabel>Payout interval</SettingsFieldLabel>
+              <Select
+                value={settingsForm.payout_interval}
+                onChange={(value) =>
+                  setSettingsForm((prev) => ({
+                    ...prev,
+                    payout_interval: value,
+                  }))
+                }
+                options={INTERVAL_OPTIONS}
+              />
+            </SettingsField>
+            {settingsForm.payout_interval === "weekly" && (
+              <SettingsField>
+                <SettingsFieldLabel>Weekly payout day</SettingsFieldLabel>
+                <Select
+                  value={settingsForm.payout_weekly_anchor}
+                  onChange={(value) =>
+                    setSettingsForm((prev) => ({
+                      ...prev,
+                      payout_weekly_anchor: value,
+                    }))
+                  }
+                  options={WEEKDAY_OPTIONS}
+                />
+              </SettingsField>
+            )}
+            {settingsForm.payout_interval === "monthly" && (
+              <SettingsField>
+                <SettingsFieldLabel>Monthly payout day</SettingsFieldLabel>
+                <InputNumber
+                  min={1}
+                  max={31}
+                  value={settingsForm.payout_monthly_anchor}
+                  onChange={(value) =>
+                    setSettingsForm((prev) => ({
+                      ...prev,
+                      payout_monthly_anchor: value || 1,
+                    }))
+                  }
+                  style={{ width: "100%" }}
+                />
+              </SettingsField>
+            )}
+            <SettingsField>
+              <SettingsFieldLabel>&nbsp;</SettingsFieldLabel>
+              <Button
+                type="primary"
+                onClick={handleSaveSettings}
+                loading={savingSettings}
+                style={{
+                  background: colors.primary,
+                  borderColor: colors.primary,
+                }}
+              >
+                Save settings
+              </Button>
+            </SettingsField>
+            <InstantToggleRow>
+              <InstantToggleCopy>
+                <Text strong style={{ fontSize: 13, color: colors.textPrimary }}>
+                  Instant payouts
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.45 }}>
+                  Instant payouts typically cost ~1% (minimum $0.50), arrive in
+                  minutes, and require a debit card. Disabled unless a connected
+                  destination supports instant payouts.
+                </Text>
+                {!instantEligible && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Add a debit card that supports instant payouts to enable this.
+                  </Text>
+                )}
+              </InstantToggleCopy>
+              <Switch
+                checked={settingsForm.instant_payouts_enabled}
+                disabled={!instantEligible && !settingsForm.instant_payouts_enabled}
+                onChange={(checked) => {
+                  if (checked && !instantEligible) return;
+                  setSettingsForm((prev) => ({
+                    ...prev,
+                    instant_payouts_enabled: checked,
+                  }));
+                }}
+              />
+            </InstantToggleRow>
+          </SettingsPanelBody>
+        </SettingsPanel>
 
         <Divider />
 

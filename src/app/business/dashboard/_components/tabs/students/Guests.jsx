@@ -474,9 +474,50 @@ const EmptyStateSubtext = styled.div`
 `;
 
 function parsePositiveIntGuests(raw) {
-  if (raw == null || raw === "") return null;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function mapGuestRow(c) {
+  return {
+    ...c,
+    id: c.id,
+    first_name: c.first_name,
+    last_name: c.last_name,
+    email: c.email,
+    phone_number: c.phone_number,
+    type: c.type || "contact",
+    total_classes_taken:
+      c.total_classes_taken != null ? c.total_classes_taken : c.booking_count ?? 0,
+    total_spent_this_business:
+      c.total_spent_this_business != null
+        ? c.total_spent_this_business
+        : c.lifetime_value ?? 0,
+    last_booking_date_this_business:
+      c.last_booking_at || c.last_booking_date_this_business || null,
+    last_activity_at: c.last_activity_at || null,
+    lifetime_value: c.lifetime_value,
+    booking_count: c.booking_count,
+    tags: Array.isArray(c.tags) ? c.tags : [],
+    status: c.status || null,
+    avatar_thumb_url: c.avatar_thumb_url || null,
+  };
+}
+
+function formatLifecycleStatus(status) {
+  if (!status) return "";
+  return String(status)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function lifecycleTagColor(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "active") return "green";
+  if (s === "lead") return "gold";
+  if (s === "inactive") return "default";
+  if (s === "lapsed") return "orange";
+  return "blue";
 }
 
 const Guests = forwardRef((props, ref) => {
@@ -494,6 +535,10 @@ const Guests = forwardRef((props, ref) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [segmentFilter, setSegmentFilter] = useState("");
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [saveSegmentOpen, setSaveSegmentOpen] = useState(false);
+  const [segmentName, setSegmentName] = useState("");
+  const [savingSegment, setSavingSegment] = useState(false);
+  const [savedSegments, setSavedSegments] = useState([]);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -530,19 +575,7 @@ const Guests = forwardRef((props, ref) => {
           if (response.success && response.data) {
             const results = response.data.results || [];
             const count = response.data.count ?? 0;
-            const mapped = results.map((c) => ({
-              id: c.id,
-              first_name: c.first_name,
-              last_name: c.last_name,
-              email: c.email,
-              phone_number: c.phone_number,
-              type: "contact",
-              total_classes_taken: 0,
-              total_spent_this_business: 0,
-              last_booking_date_this_business: null,
-              avatar_thumb_url: null,
-            }));
-            setGuests(mapped);
+            setGuests(results.map(mapGuestRow));
             setPagination((prev) => ({ ...prev, current: page, total: count }));
             setTimeout(() => setIsReadyForAnimation(true), 50);
           } else {
@@ -557,7 +590,8 @@ const Guests = forwardRef((props, ref) => {
           };
           const response = await businessStudentService.getAllBusinessStudents(params);
           if (response.success && response.data) {
-            setGuests(response.data);
+            const rows = Array.isArray(response.data) ? response.data : [];
+            setGuests(rows.map(mapGuestRow));
             setPagination((prev) => ({
               ...prev,
               current: page,
@@ -591,6 +625,18 @@ const Guests = forwardRef((props, ref) => {
   useEffect(() => {
     fetchGuestsData(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    businessContactService.getClientSegments().then((res) => {
+      if (!cancelled && res.success && Array.isArray(res.data)) {
+        setSavedSegments(res.data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -657,6 +703,15 @@ const Guests = forwardRef((props, ref) => {
   };
 
   const handleSegmentFilterChange = (value) => {
+    const saved = savedSegments.find((s) => s.id === value);
+    if (saved) {
+      const def = saved.definition || {};
+      setSegmentFilter(def.segment && def.segment !== "all" ? def.segment : "");
+      if (def.search) setSearchText(def.search);
+      setStatusFilter(def.status || "all");
+      setPagination((prev) => ({ ...prev, current: 1 }));
+      return;
+    }
     setSegmentFilter(value || "");
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
@@ -709,12 +764,45 @@ const Guests = forwardRef((props, ref) => {
     });
   };
 
+  const handleSaveSegment = async () => {
+    const name = segmentName.trim();
+    if (!name) {
+      message.warning("Enter a name for this segment.");
+      return;
+    }
+    setSavingSegment(true);
+    try {
+      const response = await businessContactService.createClientSegment({
+        name,
+        definition: {
+          segment: segmentFilter || "all",
+          search: searchText.trim() || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        },
+      });
+      if (!response.success) {
+        throw new Error(response.error || "Failed to save segment");
+      }
+      message.success("Segment saved.");
+      setSaveSegmentOpen(false);
+      setSegmentName("");
+      const segs = await businessContactService.getClientSegments();
+      if (segs.success && Array.isArray(segs.data)) {
+        setSavedSegments(segs.data);
+      }
+    } catch (err) {
+      message.error(err.message || "Failed to save segment");
+    } finally {
+      setSavingSegment(false);
+    }
+  };
+
   const isAnyFilterActive = searchText !== "" || statusFilter !== "all" || segmentFilter !== "";
 
   const columns = useMemo(
     () => [
       {
-        title: "GUEST",
+        title: "CLIENT",
         key: "guest",
         sorter: true,
         render: (_, record) => {
@@ -805,25 +893,78 @@ const Guests = forwardRef((props, ref) => {
         render: (value) => value ?? 0,
       },
       {
-        title: "TOTAL SPENT",
-        dataIndex: "total_spent_this_business",
-        key: "total_spent_this_business",
+        title: "LTV",
+        key: "lifetime_value",
         align: "right",
         sorter: true,
-        width: 140,
-        render: (value) => `$${parseFloat(value || 0).toFixed(2)}`,
+        width: 120,
+        render: (_, record) => {
+          const value =
+            record.lifetime_value != null && record.lifetime_value !== ""
+              ? record.lifetime_value
+              : record.total_spent_this_business;
+          if (value == null || value === "") return "—";
+          return `$${parseFloat(value || 0).toFixed(2)}`;
+        },
       },
       {
-        title: "LAST BOOKING",
-        dataIndex: "last_booking_date_this_business",
-        key: "last_booking_date_this_business",
+        title: "LAST SEEN",
+        key: "last_activity_at",
         sorter: true,
-        width: 150,
-        render: (date) => (
-          <Text style={{ fontSize: "13px" }}>
-            {date ? dayjs(date).format("MMM D, YYYY") : "N/A"}
-          </Text>
-        ),
+        width: 140,
+        render: (_, record) => {
+          const date =
+            record.last_activity_at || record.last_booking_date_this_business;
+          return (
+            <Text style={{ fontSize: "13px" }}>
+              {date ? dayjs(date).format("MMM D, YYYY") : "N/A"}
+            </Text>
+          );
+        },
+      },
+      {
+        title: "TAGS",
+        key: "tags",
+        width: 180,
+        render: (_, record) => {
+          const tags = Array.isArray(record.tags) ? record.tags : [];
+          if (!tags.length) {
+            return (
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                —
+              </Text>
+            );
+          }
+          return (
+            <Space size={[4, 4]} wrap>
+              {tags.slice(0, 3).map((tag) => (
+                <Tag key={tag} style={{ margin: 0 }}>
+                  {tag}
+                </Tag>
+              ))}
+              {tags.length > 3 && <Tag style={{ margin: 0 }}>+{tags.length - 3}</Tag>}
+            </Space>
+          );
+        },
+      },
+      {
+        title: "STATUS",
+        key: "status",
+        width: 120,
+        render: (_, record) => {
+          if (!record.status) {
+            return (
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                —
+              </Text>
+            );
+          }
+          return (
+            <Tag color={lifecycleTagColor(record.status)}>
+              {formatLifecycleStatus(record.status)}
+            </Tag>
+          );
+        },
       },
       {
         title: "ACTIONS",
@@ -1006,7 +1147,12 @@ const Guests = forwardRef((props, ref) => {
 
   const skeletonColumns = useMemo(
     () => [
-      { title: "GUEST", key: "guest", dataIndex: "guest", width: 280 },
+      {
+        title: "CLIENT",
+        key: "guest",
+        dataIndex: "guest",
+        width: 280,
+      },
       {
         title: "CONTACT INFO",
         key: "contact",
@@ -1021,17 +1167,29 @@ const Guests = forwardRef((props, ref) => {
         width: 120,
       },
       {
-        title: "TOTAL SPENT",
+        title: "LTV",
         key: "spent",
         dataIndex: "total_spent_this_business",
         align: "right",
+        width: 120,
+      },
+      {
+        title: "LAST SEEN",
+        key: "booking",
+        dataIndex: "last_booking_date_this_business",
         width: 140,
       },
       {
-        title: "LAST BOOKING",
-        key: "booking",
-        dataIndex: "last_booking_date_this_business",
-        width: 150,
+        title: "TAGS",
+        key: "tags",
+        dataIndex: "tags",
+        width: 180,
+      },
+      {
+        title: "STATUS",
+        key: "status",
+        dataIndex: "status",
+        width: 120,
       },
       {
         title: "ACTIONS",
@@ -1077,12 +1235,12 @@ const Guests = forwardRef((props, ref) => {
 
   return (
     <DashboardWrapper>
-        <DashboardBreadcrumb title="Guests" />
+        <DashboardBreadcrumb title="Clients" />
         <DashboardHeader>
           <div>
-            <PageTitle>Guest Management</PageTitle>
+            <PageTitle>Clients</PageTitle>
             <HeaderSubtitle>
-              View and manage all your business contacts and platform guests.
+              View and manage all your business contacts and platform clients.
             </HeaderSubtitle>
           </div>
           <ActionButton
@@ -1096,7 +1254,7 @@ const Guests = forwardRef((props, ref) => {
               borderColor: colors.primary,
             }}
           >
-            Import Guests
+            Import Clients
           </ActionButton>
         </DashboardHeader>
 
@@ -1135,7 +1293,19 @@ const Guests = forwardRef((props, ref) => {
                 <Option value="active_members">Active members</Option>
                 <Option value="lapsed_members">Lapsed members</Option>
                 <Option value="leads">Leads</Option>
+                {savedSegments.map((seg) => (
+                  <Option key={seg.id} value={seg.id}>
+                    {seg.name}
+                  </Option>
+                ))}
               </StyledSelect>
+              <ActionButton
+                style={{ height: "44px" }}
+                onClick={() => setSaveSegmentOpen(true)}
+                disabled={!isAnyFilterActive}
+              >
+                Save segment
+              </ActionButton>
               <ActionButton
                 style={{ height: "44px" }}
                 icon={<RefreshCw size={16} />}
@@ -1230,7 +1400,7 @@ const Guests = forwardRef((props, ref) => {
                       onClick: () => handleGuestClick(record),
                       className: "clickable-row",
                     })}
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 1400 }}
                   />
                 </TableViewWrapper>
               )}
@@ -1258,9 +1428,9 @@ const Guests = forwardRef((props, ref) => {
                   style={{ width: 40, height: 40 }}
                 />
               </EmptyStateIcon>
-              <EmptyStateText>No Guests Found</EmptyStateText>
+              <EmptyStateText>No Clients Found</EmptyStateText>
               <EmptyStateSubtext>
-                You don't currently have any guests. They will appear here when
+                You don't currently have any clients. They will appear here when
                 they book, or when you import from a table.
               </EmptyStateSubtext>
             </EmptyStateContainer>
@@ -1281,6 +1451,26 @@ const Guests = forwardRef((props, ref) => {
           onClose={() => setIsImportModalVisible(false)}
           onImportComplete={handleImportComplete}
         />
+
+        <Modal
+          title="Save segment"
+          open={saveSegmentOpen}
+          onCancel={() => {
+            setSaveSegmentOpen(false);
+            setSegmentName("");
+          }}
+          onOk={handleSaveSegment}
+          confirmLoading={savingSegment}
+          okText="Save"
+        >
+          <Input
+            placeholder="Segment name"
+            value={segmentName}
+            onChange={(e) => setSegmentName(e.target.value)}
+            onPressEnter={handleSaveSegment}
+            autoFocus
+          />
+        </Modal>
       </DashboardWrapper>
   );
 });

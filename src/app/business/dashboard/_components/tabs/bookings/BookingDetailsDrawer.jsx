@@ -325,7 +325,7 @@ const statusConfig = {
   forfeited: { color: C.textSecondary, bg: "#f1f5f9", icon: <XCircle size={11} /> },
 };
 const payoutStatusConfig = {
-  pending: { color: C.warning, bg: "#fffbeb", label: "In escrow" },
+  pending: { color: C.warning, bg: "#fffbeb", label: "Paid" },
   processed: { color: "#059669", bg: "#d1fae5", label: "Paid out" },
   failed: { color: C.error, bg: "#fee2e2", label: "Payout failed" },
   not_applicable: { color: C.textSecondary, bg: "#f1f5f9", label: "N/A" },

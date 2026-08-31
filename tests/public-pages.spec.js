@@ -93,7 +93,9 @@ test.describe('Public pages and navigation', () => {
     await expect(page.getByRole('slider')).toBeVisible();
     await expect(page.locator('[data-mobile-plan-compare]')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Growth' }).first()).toBeVisible();
-    await expect(page.getByText('Taking bookings')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Taking bookings' }),
+    ).toBeVisible();
     const noOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     );

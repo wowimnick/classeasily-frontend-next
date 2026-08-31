@@ -22,7 +22,7 @@ import {
   Skeleton,
   Modal,
 } from "antd";
-import { X, AlertCircle, SidebarOpen, ChevronRight, Lock, ArrowRight, Mail } from "lucide-react";
+import { X, AlertCircle, SidebarOpen, Lock, ArrowRight, Mail } from "lucide-react";
 import { Drawer } from "vaul";
 import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 
@@ -793,7 +793,7 @@ const menuGroupsConfig =[
       },
       {
         key: "listings",
-        label: "My Experiences",
+        label: "Services",
         icon: (
           <LordIcon
             src="https://cdn.lordicon.com/yraqammt.json"
@@ -853,10 +853,9 @@ const menuGroupsConfig =[
           />
         ),
         children:[
-          { key: "guests",   label: "Guests" },
-          { key: "reviews",  label: "Reviews" },
+          { key: "clients",  label: "Clients" },
           { key: "staff",    label: "Staff" },
-          { key: "messages", label: "Messages" },
+          { key: "messages", label: "Inbox" },
         ],
       },
       {
@@ -958,8 +957,7 @@ const menuItemPermissions = {
   listings:    "manage_own_classes",
   schedules:   "manage_own_classes",
   bookings:    "view_own_business_bookings",
-  guests:      "view_business_students",
-  reviews:     "view_own_business_reviews",
+  clients:     "view_business_students",
   revenue:     "view_business_revenue_analytics",
   payouts:     "view_business_revenue_analytics",
   discounts:   "manage_own_business_discounts",
@@ -1001,14 +999,6 @@ const SideMenuComponent = memo(
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
     const { hasWidgetAccess, hasMembershipAccess, hasEmailMarketingAccess } = useSubscription();
-
-    const isBusinessClickable =
-      !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
-
-    const businessClickHandler =
-      isBusinessClickable && businessData.slug
-        ? () => router.push(`/business/${businessData.slug}`)
-        : undefined;
 
     const mobileButtonRef = useRef(null);
 
@@ -1396,7 +1386,6 @@ const SideMenuComponent = memo(
               {getBusinessTypeLabel(businessData?.businessType)}
             </BusinessTypeText>
           </BusinessTextBlock>
-          <ChevronRight size={14} style={{ color: "#d1d5db", flexShrink: 0 }} />
         </>
       );
     };
@@ -1488,11 +1477,7 @@ const SideMenuComponent = memo(
           <DesktopSideMenu className="desktop-sidemenu" initial={false}>
             <ProfileCardArea>
               <ProfileHeaderBundle>
-                <BusinessProfileCard
-                  $clickable={!!businessClickHandler}
-                  onClick={businessClickHandler}
-                  title={isBusinessClickable ? "Preview your public page" : undefined}
-                >
+                <BusinessProfileCard $clickable={false}>
                   {renderProfileCardContent()}
                 </BusinessProfileCard>
                 {canAccessSettings && (

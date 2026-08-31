@@ -61,12 +61,11 @@ export function formatMoneyCompact(amount, currencyCodeOrSymbol) {
 }
 
 /**
- * Build `/explore/...` path from catch-all slug segments (no leading query).
+ * Explore marketplace URLs are retired; keep the export so leftover
+ * callers (including deprecated trees) do not break.
  */
-export function getExplorePathFromSlug(slugArray) {
-  const slug = Array.isArray(slugArray) ? slugArray.filter(Boolean) : [];
-  if (!slug.length) return "/explore";
-  return `/explore/${slug.map(encodeURIComponent).join("/")}`;
+export function getExplorePathFromSlug(_slugArray) {
+  return "/";
 }
 
 /**
@@ -100,12 +99,11 @@ export function exploreSearchParamsToString(params) {
 }
 
 /**
- * Full absolute URL for an explore listing (path + query), matching canonical shape.
+ * Explore marketplace URLs are retired; keep the export so leftover
+ * callers (including deprecated trees) do not break.
  */
-export function getExploreAbsoluteUrl(slugArray, plainSearchParams) {
-  const path = getExplorePathFromSlug(slugArray);
-  const q = exploreSearchParamsToString(plainSearchParams);
-  return `${getSiteUrl()}${path}${q}`;
+export function getExploreAbsoluteUrl(_slugArray, _plainSearchParams) {
+  return `${getSiteUrl()}/`;
 }
 
 /**

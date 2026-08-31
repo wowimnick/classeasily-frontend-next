@@ -62,7 +62,6 @@ const STEPS = [
   { id: "pay", label: "Pay", skippable: IS_DEV },
   { id: "timezone", label: "Timezone", skippable: true },
   { id: "connect", label: "Payouts", skippable: true },
-  { id: "preview", label: "Widget", skippable: true },
 ];
 
 const SURVEY_PENDING_KEY = "ce-onboard-survey";
@@ -127,54 +126,54 @@ function stepCopy(step, name, plan) {
   switch (step) {
     case "account":
       return {
-        eyebrow: "Let’s get you set up",
-        title: "Start with your account",
+        eyebrow: "Welcome to ClassEasily",
+        title: "Create your account",
         paragraphs: [
-          "Create a login for your ClassEasily workspace. You’ll use it to manage bookings, customers, schedules, and payouts from one dashboard.",
-          "If you already have an account, switch to log in and we’ll pick up where you left off.",
+          "You’ll use this login to manage bookings, customers, schedules, and payouts.",
+          "If you already have an account, log in and we’ll continue from where you left off.",
         ],
       };
     case "business":
       return {
         eyebrow: "Your public details",
-        title: "Tell us about the business",
+        title: "Tell us about your business",
         paragraphs: [
-          `This is the name and contact info on your widget, receipts, and confirmation emails. Use the name ${business === "your business" ? "your customers already know" : business} — you can add locations, hours, and photos from the dashboard after this.`,
-          "We also use your website to whitelist the embed, so the booking widget only loads on your domain.",
+          `This is the name ${business === "your business" ? "your customers already know" : `people know as ${business}`}. It appears on your widget, receipts, and confirmation emails.`,
+          "We also use your website so the booking widget only loads on your domain.",
         ],
       };
     case "plan":
       return {
-        eyebrow: "Pricing that scales with bookings",
-        title: "Pick a plan",
+        eyebrow: "Pricing that scales with you",
+        title: "Choose a plan",
         paragraphs: [
-          "Estimate a typical month. We’ll mark the lowest-cost plan — you can still choose any of the three.",
+          "Estimate a typical month and we’ll highlight the lowest-cost option. You can still choose any of the three.",
         ],
       };
     case "pay":
       return {
         eyebrow: "Activate your subscription",
-        title: "Activate ClassEasily",
+        title: "Confirm your plan",
         paragraphs: [
-          `You’re starting the ${plan?.name || "selected"} plan at $${plan?.price || "—"}/mo CAD, plus ${plan?.commission ?? "—"}% per paid booking. This is your ClassEasily subscription — booking payouts are set up separately with Stripe Connect in a later step.`,
-          "You can change or cancel the plan from the dashboard. After this we’ll set timezone, payouts, and a widget preview.",
+          `You’re starting the ${plan?.name || "selected"} plan at $${plan?.price || "—"}/mo CAD, plus ${plan?.commission ?? "—"}% per paid booking. This is your ClassEasily subscription — booking payouts are set up separately.`,
+          "You can change or cancel from the dashboard at any time.",
         ],
       };
     case "timezone":
       return {
-        eyebrow: "One clock for bookings, emails, and the widget",
+        eyebrow: "One clock for bookings and emails",
         title: "Set your timezone",
         paragraphs: [
-          "The calendar, widget times, and reminder emails all use this timezone. A mismatch shows the wrong local time on confirmations.",
-          "We’ve pre-selected it from this browser. If you operate in more than one city, pick your primary location; you can still set exceptions on individual listings. Change this anytime in Settings.",
+          "We’ve selected this from your browser. The calendar, widget, and reminder emails all use it, so times stay consistent.",
+          "If you operate in more than one city, choose your primary location. You can change this later in Settings.",
         ],
       };
     case "about-industry":
       return {
         eyebrow: "Optional — 1 of 3",
-        title: "One more thing",
+        title: "One last thing",
         paragraphs: [
-          "What do you sell? Tap one to continue. We’ll use this to seed your first listing.",
+          "What do you offer? This helps us set up your first listing. You can skip any of these.",
         ],
       };
     case "about-booking":
@@ -190,25 +189,16 @@ function stepCopy(step, name, plan) {
         eyebrow: "Optional — 3 of 3",
         title: "How did you find ClassEasily?",
         paragraphs: [
-          "One tap. Helps us spend marketing in the right places.",
+          "This helps us reach other businesses like yours.",
         ],
       };
     case "connect":
       return {
-        eyebrow: "Booking payouts",
-        title: "Get paid for bookings",
+        eyebrow: "Optional — you can do this later",
+        title: "Set up payouts",
         paragraphs: [
-          "Stripe Connect deposits booking revenue to your bank — typically a day or two after completion. ClassEasily doesn’t hold that money; the subscription you just started is separate.",
-          "You’ll need a legal name, address, and bank details. Stripe may also ask for ID. You can skip this for now and finish it later from Settings — payouts stay paused until Connect is complete.",
-        ],
-      };
-    case "preview":
-      return {
-        eyebrow: "You’re through the boring part",
-        title: `${name || "Your widget"} is ready to embed`,
-        paragraphs: [
-          "This is a preview of the booking widget: your name, a listing, a time, a price, and a reserve button. The live widget uses your real schedule, capacity, and brand once you add something to book.",
-          "In the dashboard, add your first listing, copy the embed snippet, and paste it on your site. That’s account, plan, widget — you’re set.",
+          "Stripe Connect deposits booking revenue to your bank, usually a day or two after a class. ClassEasily doesn’t hold that money.",
+          "You’ll need a legal name, address, and bank details. You can skip this and finish it from Settings — payouts stay paused until then.",
         ],
       };
     default:
@@ -558,6 +548,19 @@ const LeadRest = styled.div`
   }
 `;
 
+const StoryRule = styled.div`
+  width: 100%;
+  max-width: ${(p) => (p.$wide ? "40em" : "460px")};
+  height: 1px;
+  margin-top: 20px;
+  background: #e8e8e8;
+
+  @media (max-width: ${BP.mobile}px) {
+    max-width: none;
+    margin-top: 16px;
+  }
+`;
+
 const Why = styled.details`
   display: none;
 
@@ -823,111 +826,6 @@ const UsesList = styled.ul`
   }
 `;
 
-const WidgetMock = styled.div`
-  border: 1px solid #ebebeb;
-  border-radius: 20px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
-
-  @media (max-width: ${BP.mobile}px) {
-    max-width: 320px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-`;
-
-const WidgetBar = styled.div`
-  padding: 14px 18px;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 800;
-  font-size: 15px;
-`;
-
-const WidgetBody = styled.div`
-  padding: 18px;
-`;
-
-const WidgetClass = styled.div`
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-`;
-
-const WidgetMeta = styled.p`
-  margin: 6px 0 14px;
-  font-size: 14px;
-  color: #111;
-  line-height: 1.5;
-`;
-
-const WidgetRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-`;
-
-const WidgetPrice = styled.div`
-  font-size: 20px;
-  font-weight: 800;
-`;
-
-const Reserve = styled.div`
-  background: ${t.colors.primary};
-  color: #fff;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-weight: 700;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const NextList = styled.ol`
-  margin: 0 0 8px;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 12px;
-  counter-reset: next;
-`;
-
-const NextItem = styled.li`
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 12px;
-  align-items: start;
-  counter-increment: next;
-
-  &::before {
-    content: counter(next);
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    background: #f7f7f7;
-    color: #222;
-    font-size: 13px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  strong {
-    display: block;
-    font-size: 14px;
-    margin-bottom: 2px;
-  }
-
-  span {
-    font-size: 13px;
-    line-height: 1.5;
-    color: #111;
-  }
-`;
-
 const Footer = styled.footer`
   flex-shrink: 0;
   z-index: 20;
@@ -1016,6 +914,7 @@ function StepIntro({
   stepKey,
   onSettled,
   showRest,
+  skipAnimation,
 }) {
   return (
     <>
@@ -1026,6 +925,7 @@ function StepIntro({
         reduceMotion={reduceMotion}
         onSettled={onSettled}
         align="left"
+        skipAnimation={skipAnimation}
       />
       <Lead
         $wide={wide}
@@ -1056,6 +956,7 @@ function StepIntro({
           </>
         ) : null}
       </Lead>
+      <StoryRule $wide={wide} aria-hidden />
     </>
   );
 }
@@ -1064,7 +965,7 @@ export default function RegisterFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useAuthUser();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() === true;
   const mainRef = useRef(null);
   const [step, setStep] = useState("account");
   const [minStep, setMinStep] = useState("account");
@@ -1081,7 +982,8 @@ export default function RegisterFlow() {
   const [survey, setSurvey] = useState({});
   const [monthlyVolume, setMonthlyVolume] = useState(2500);
   const [phase, setPhase] = useState("flow");
-  const [contentVisible, setContentVisible] = useState(false);
+  const [contentVisible, setContentVisible] = useState(true);
+  const seenIntros = useRef(new Set());
 
   const isSurvey = phase === "survey";
   const isLoadingPhase = phase === "loading";
@@ -1095,6 +997,7 @@ export default function RegisterFlow() {
     : !isLoadingPhase && stepIndex > Math.max(0, minIndex);
   const current = STEPS[stepIndex];
   const introKey = isLoadingPhase ? "loading" : step;
+  const skipIntro = seenIntros.current.has(introKey);
   const wide = step === "plan" || isSurvey;
 
   const detectedZone = useMemo(
@@ -1139,8 +1042,9 @@ export default function RegisterFlow() {
       /* ignore */
     }
     setError("");
-    setContentVisible(false);
-    setPhase("loading");
+    setContentVisible(true);
+    setStep("about-industry");
+    setPhase("survey");
   }, []);
 
   const skip = useCallback(async () => {
@@ -1195,17 +1099,13 @@ export default function RegisterFlow() {
   }, [aboutIndex, canBack, isSurvey, stepIndex]);
 
   useEffect(() => {
-    setContentVisible(Boolean(reduceMotion) && !isLoadingPhase);
-  }, [introKey, isLoadingPhase, reduceMotion]);
+    setContentVisible(true);
+  }, [introKey]);
 
   const onTitleSettled = useCallback(() => {
-    if (phase === "loading") {
-      setStep("about-industry");
-      setPhase("survey");
-      return;
-    }
+    seenIntros.current.add(introKey);
     setContentVisible(true);
-  }, [phase]);
+  }, [introKey]);
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
@@ -1230,9 +1130,9 @@ export default function RegisterFlow() {
 
   useEffect(() => {
     const qStep = searchParams.get("step");
-    if (qStep === "about" || qStep?.startsWith("about-")) {
+    if (qStep === "about" || qStep === "preview" || qStep?.startsWith("about-")) {
       setPhase("survey");
-      setStep(qStep === "about" ? "about-industry" : qStep);
+      setStep(qStep?.startsWith("about-") ? qStep : "about-industry");
     } else if (qStep && STEPS.some((s) => s.id === qStep)) {
       setPhase("flow");
       setStep(qStep);
@@ -1274,9 +1174,9 @@ export default function RegisterFlow() {
         } catch {
           pending = false;
         }
-        if (qStep === "about" || qStep?.startsWith("about-")) {
+        if (qStep === "about" || qStep === "preview" || qStep?.startsWith("about-")) {
           setPhase("survey");
-          setStep(qStep === "about" ? "about-industry" : qStep);
+          setStep(qStep?.startsWith("about-") ? qStep : "about-industry");
           return;
         }
         if (pending && !qStep) {
@@ -1477,8 +1377,6 @@ export default function RegisterFlow() {
         return { label: "Skip", onClick: skip };
       case "connect":
         return { label: "Connect Stripe", onClick: startConnect };
-      case "preview":
-        return { label: "Go to dashboard", onClick: beginPostOnboarding };
       default:
         return { label: "Continue" };
     }
@@ -1498,14 +1396,11 @@ export default function RegisterFlow() {
             <BrandName>ClassEasily</BrandName>
           </Brand>
           <StepMeta>
-            {isLoadingPhase
-              ? ""
-              : isSurvey
-                ? `Optional · ${aboutIndex + 1} of ${SURVEY_STEPS.length}`
-                : `Step ${stepIndex + 1} of ${STEPS.length} · ${current?.label}`}
+            {isSurvey
+              ? `Optional · ${aboutIndex + 1} of ${SURVEY_STEPS.length}`
+              : `Step ${stepIndex + 1} of ${STEPS.length} · ${current?.label}`}
           </StepMeta>
           <StepDots
-            $hide={isLoadingPhase}
             aria-label={
               isSurvey
                 ? `Question ${aboutIndex + 1} of ${SURVEY_STEPS.length}`
@@ -1523,11 +1418,11 @@ export default function RegisterFlow() {
             ))}
           </StepDots>
           <TopActions>
-            {!isLoadingPhase && (isSurvey || current?.skippable) ? (
+            {isSurvey || current?.skippable ? (
               <TextLinkBtn type="button" onClick={skip}>
                 {IS_DEV &&
                 !isSurvey &&
-                !["timezone", "connect", "preview"].includes(step)
+                !["timezone", "connect"].includes(step)
                   ? "Skip (dev)"
                   : "Skip"}
               </TextLinkBtn>
@@ -1540,7 +1435,7 @@ export default function RegisterFlow() {
             </Questions>
           </TopActions>
         </Top>
-        <ProgressTrack $hide={isLoadingPhase || isSurvey}>
+        <ProgressTrack $hide={isSurvey}>
           <ProgressFill
             $pct={
               isSurvey
@@ -1550,19 +1445,7 @@ export default function RegisterFlow() {
           />
         </ProgressTrack>
         <Main ref={mainRef}>
-          <OnboardAmbient
-            step={isLoadingPhase ? "loading" : step}
-            reduceMotion={reduceMotion}
-          />
-          {isLoadingPhase ? (
-            <StepTitleReveal
-              title="Loading"
-              stepKey="loading"
-              reduceMotion={reduceMotion}
-              stayCenter
-              onSettled={onTitleSettled}
-            />
-          ) : (
+          <OnboardAmbient step={step} reduceMotion={reduceMotion} />
           <Shell $wide={wide}>
             <Story $plain={wide}>
               <StepSlot>
@@ -1575,6 +1458,7 @@ export default function RegisterFlow() {
                   reduceMotion={reduceMotion}
                   wide={wide}
                   showRest={contentVisible}
+                  skipAnimation={skipIntro}
                   onSettled={onTitleSettled}
                 />
               </StepSlot>
@@ -2021,59 +1905,6 @@ export default function RegisterFlow() {
                   </>
                 )}
 
-                {step === "preview" && (
-                  <>
-                    <WidgetMock>
-                      <WidgetBar>{businessName || "Your business"}</WidgetBar>
-                      <WidgetBody>
-                        <WidgetClass>Intro booking</WidgetClass>
-                        <WidgetMeta>
-                          Saturday · 10:00–11:30 AM
-                          <br />
-                          4 spots left · Your business
-                        </WidgetMeta>
-                        <WidgetRow>
-                          <WidgetPrice>$45</WidgetPrice>
-                          <Reserve>
-                            <Check size={14} /> Reserve
-                          </Reserve>
-                        </WidgetRow>
-                      </WidgetBody>
-                    </WidgetMock>
-                    <Note>
-                      <strong>Three things left in the dashboard</strong>
-                      <NextList style={{ marginTop: 12 }}>
-                        <NextItem>
-                          <div>
-                            <strong>Add your first listing</strong>
-                            <span>
-                              Title, duration, capacity, and price. That’s what
-                              turns this preview into a real booking.
-                            </span>
-                          </div>
-                        </NextItem>
-                        <NextItem>
-                          <div>
-                            <strong>Copy the embed snippet</strong>
-                            <span>
-                              A short script from Settings. Paste it on your
-                              site as a button, a page, or both.
-                            </span>
-                          </div>
-                        </NextItem>
-                        <NextItem>
-                          <div>
-                            <strong>Finish payouts if you skipped</strong>
-                            <span>
-                              Stripe Connect lives in Settings. Until it’s done,
-                              booking revenue waits safely to be deposited.
-                            </span>
-                          </div>
-                        </NextItem>
-                      </NextList>
-                    </Note>
-                  </>
-                )}
                 </motion.div>
               </AnimatePresence>
               </StepSlot>
@@ -2083,11 +1914,10 @@ export default function RegisterFlow() {
               </>
             )}
           </Shell>
-          )}
         </Main>
         <Footer
-          $hidden={isLoadingPhase || !contentVisible}
-          aria-hidden={isLoadingPhase || !contentVisible}
+          $hidden={!contentVisible}
+          aria-hidden={!contentVisible}
         >
           <BackBtn
             type="button"
@@ -2101,7 +1931,7 @@ export default function RegisterFlow() {
           </BackBtn>
           <FooterRight $stack={step === "connect"}>
             {step === "connect" && (
-              <TextLinkBtn type="button" onClick={() => setStep("preview")}>
+              <TextLinkBtn type="button" onClick={beginPostOnboarding}>
                 Skip for now
               </TextLinkBtn>
             )}
