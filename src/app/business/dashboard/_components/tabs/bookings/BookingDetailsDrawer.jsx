@@ -561,7 +561,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
         ) : booking ? (
           <BookerCard>
             <div>
-              <BookerName>{bd.full_name || "Unknown Guest"}</BookerName>
+              <BookerName>{bd.full_name || "Unknown client"}</BookerName>
               <BookerEmail>{bd.email || "—"}</BookerEmail>
             </div>
             <div>
@@ -711,10 +711,10 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
 
         {/* Experience & Schedule */}
         <Section>
-          <SectionTitle><Calendar size={13} /> Experience &amp; Schedule</SectionTitle>
+          <SectionTitle><Calendar size={13} /> Service &amp; Schedule</SectionTitle>
           <Grid>
             <div>
-              <FieldLabel>Experience</FieldLabel>
+              <FieldLabel>Service</FieldLabel>
               <FieldValue>{booking.class_name || <NoData>N/A</NoData>}</FieldValue>
             </div>
             {booking.has_multiple_options && (
@@ -744,7 +744,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
 
         {/* Guests */}
         <Section>
-          <SectionTitle><UsersIcon size={13} /> Guests</SectionTitle>
+          <SectionTitle><UsersIcon size={13} /> Clients</SectionTitle>
           <Grid>
             <div>
               <FieldLabel>Email</FieldLabel>
@@ -810,12 +810,40 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
                 <FieldValue>${parseFloat(booking.amount_paid).toFixed(2)}</FieldValue>
               </div>
             )}
+            <div>
+              <FieldLabel>Attendance</FieldLabel>
+              <FieldValue>
+                <Tag color={booking.attendance === "attended" ? "green" : booking.attendance === "no_show" ? "red" : "default"}>
+                  {(booking.attendance || "pending").replace("_", " ")}
+                </Tag>
+              </FieldValue>
+              {booking.status === "confirmed" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <Button size="small" onClick={async () => {
+                    const res = await bookingService.markAttendance(booking.id, "attended");
+                    if (res.success) {
+                      message.success("Marked attended");
+                      const r = await bookingService.getBookingDetails(booking.id);
+                      if (r.success) setBooking(r.data);
+                    }
+                  }}>Attended</Button>
+                  <Button size="small" danger onClick={async () => {
+                    const res = await bookingService.markAttendance(booking.id, "no_show");
+                    if (res.success) {
+                      message.success("Marked no-show");
+                      const r = await bookingService.getBookingDetails(booking.id);
+                      if (r.success) setBooking(r.data);
+                    }
+                  }}>No-show</Button>
+                </div>
+              )}
+            </div>
             {feeBreakdown && feeBreakdown.guestPaid > 0 && (
               <div style={{ gridColumn: "1 / -1" }}>
                 <FieldLabel>Your earnings breakdown</FieldLabel>
                 <FeeBreakdownPanel>
                   <FeeRowMuted>
-                    <span>Guest paid (this booking)</span>
+                    <span>Client paid (this booking)</span>
                     <span>${feeBreakdown.guestPaid.toFixed(2)}</span>
                   </FeeRowMuted>
                   <FeeRowMuted>
@@ -851,7 +879,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
               <div>
                 <FieldLabel>Source</FieldLabel>
                 <FieldValue style={{ textTransform: "capitalize" }}>
-                  {(pay.metadata?.booking_source || pay.metadata?.original_stripe_metadata?.booking_source) === "widget" ? "Widget" : "Marketplace"}
+                  {(pay.metadata?.booking_source || pay.metadata?.original_stripe_metadata?.booking_source) === "widget" ? "Widget" : "Direct"}
                 </FieldValue>
               </div>
             )}
@@ -974,7 +1002,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
         ) : booking ? (
           <>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <BookerName style={{ fontSize: 14 }}>{booking.booker_details?.full_name || "Guest"}</BookerName>
+              <BookerName style={{ fontSize: 14 }}>{booking.booker_details?.full_name || "Client"}</BookerName>
               <StatusBadge status={booking.status} paymentStatus={booking.payment_status} />
             </div>
             {mobileDetailsExpanded ? <ChevronUp size={20} style={{ color: C.textSecondary, flexShrink: 0 }} /> : <ChevronDown size={20} style={{ color: C.textSecondary, flexShrink: 0 }} />}

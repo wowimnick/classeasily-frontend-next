@@ -1232,7 +1232,7 @@ function ClassManagementContent(props) {
   // If listings URL has ?classId=xyz, redirect to Schedules tab with that class pre-selected
   useEffect(() => {
     if (openClassId && classes.length > 0) {
-      router.replace(`/business/dashboard/schedules?classId=${openClassId}`, { scroll: false });
+      router.replace(`/business/dashboard/calendar?classId=${openClassId}`, { scroll: false });
     }
   }, [openClassId, classes, router]);
 
@@ -1284,13 +1284,16 @@ function ClassManagementContent(props) {
   const handleClassEditSuccess = () => {
     setEditClassId(null);
     loadClasses();
-    message.success("Experience updated successfully");
+    message.success("Service updated successfully");
   };
 
-  const handleCreateClassSuccess = () => {
+  const handleCreateClassSuccess = (created) => {
     setCreateDrawerVisible(false);
     loadClasses();
-    message.success("Experience created successfully");
+    message.success("Service created successfully");
+    if (created?.service_type !== "appointment" && created?.classId) {
+      router.push(`/business/dashboard/calendar?classId=${created.classId}`);
+    }
   };
 
   const openDeleteModal = (classItem) => {
@@ -1303,7 +1306,7 @@ function ClassManagementContent(props) {
     setIsDeleting(true);
     try {
       await businessClassService.deleteClass(selectedClassForAction.classId);
-      message.success("Experience deleted successfully");
+      message.success("Service deleted successfully");
       setDeleteModalVisible(false);
       loadClasses();
     } catch (error) {
@@ -1319,7 +1322,7 @@ function ClassManagementContent(props) {
     try {
       await businessClassService.toggleClassActive(classId);
       message.success(
-        `Experience ${isActive ? "deactivated" : "activated"} successfully`,
+        `Service ${isActive ? "deactivated" : "activated"} successfully`,
       );
       setClasses((prevClasses) =>
         prevClasses.map((c) =>
@@ -1409,7 +1412,7 @@ function ClassManagementContent(props) {
             </RowCellExperienceImage>
             <RowCellExperienceBody>
               <RowCellExperienceTitle>
-                {text || "Untitled Experience"}
+                {text || "Untitled service"}
                 {hasScheduleWarning && (
                   <Tooltip title="This experience is running out of available schedules and may not be visible to new guests.">
                     <span style={{ display: "inline-flex", lineHeight: 1 }}>
@@ -1524,7 +1527,7 @@ function ClassManagementContent(props) {
               icon={<Edit3 size={16} />}
               onClick={() => handleEditClass(record)}
             >
-              Edit Experience Details
+              Edit service
             </Menu.Item>
             <Menu.Item
               key="delete"
@@ -1532,7 +1535,7 @@ function ClassManagementContent(props) {
               onClick={() => openDeleteModal(record)}
               danger
             >
-              Delete Experience
+              Delete service
             </Menu.Item>
           </StyledMenu>
         );
@@ -1589,10 +1592,9 @@ function ClassManagementContent(props) {
           style={{ width: 40, height: 40 }}
         />
       </EmptyStateIcon>
-      <EmptyStateText>No Experiences Found</EmptyStateText>
+      <EmptyStateText>No services yet</EmptyStateText>
       <EmptyStateSubtext>
-        You haven't created any experiences yet. Click 'Create New Experience'
-        to get started!
+        You haven't created any services yet. Click Create service to get started.
       </EmptyStateSubtext>
     </EmptyStateContainer>
   );
@@ -1621,7 +1623,7 @@ function ClassManagementContent(props) {
           icon={<Edit3 size={16} />}
           onClick={() => handleEditClass(classItem)}
         >
-          Edit Experience Details
+          Edit service
         </Menu.Item>
         <Menu.Item
           key="delete"
@@ -1629,7 +1631,7 @@ function ClassManagementContent(props) {
           danger
           onClick={() => openDeleteModal(classItem)}
         >
-          Delete Experience
+          Delete service
         </Menu.Item>
       </StyledMenu>
     );
@@ -1647,10 +1649,10 @@ function ClassManagementContent(props) {
           <CardContent>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <CardTitle style={{ marginBottom: 0 }}>
-                {title || "Untitled Experience"}
+                {title || "Untitled service"}
               </CardTitle>
               {needsSchedulesWarning(last_schedule_date) && (
-                <Tooltip title="This experience has no future schedules and may not be visible to guests.">
+                <Tooltip title="This service has no future sessions and may not be bookable.">
                   <AlertTriangle size={16} color={colors.warning} />
                 </Tooltip>
               )}
@@ -1729,12 +1731,12 @@ function ClassManagementContent(props) {
 
   return (
     <PageContainer>
-      <DashboardBreadcrumb title="Experience Management" />
+      <DashboardBreadcrumb title="Services" />
       <PageHeader>
         <HeaderTextWrap>
-          <HeaderTitle>Experience Management</HeaderTitle>
+          <HeaderTitle>Services</HeaderTitle>
           <HeaderSubtitle>
-            Oversee and manage all your experiences. Use Schedules to set when each experience runs.
+            Create group sessions and appointment services. Use Calendar to add sessions and time off.
           </HeaderSubtitle>
         </HeaderTextWrap>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1743,7 +1745,7 @@ function ClassManagementContent(props) {
             icon={<Plus size={18} />}
             onClick={() => setCreateDrawerVisible(true)}
           >
-            Create New Experience
+            Create service
           </ActionButton>
         </div>
       </PageHeader>
@@ -1806,7 +1808,7 @@ function ClassManagementContent(props) {
 
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Experience
+                    Create service
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}
@@ -1837,7 +1839,7 @@ function ClassManagementContent(props) {
               <DesktopDrawerContent>
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Experience
+                    Create service
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}

@@ -1085,7 +1085,7 @@ const BookingTrends = () => {
   // Funnel is returned only for Growth/Advanced on the API — trust the response,
   // not a duplicate subscription check (avoids missing chart when planId shape differs).
   const showWidgetFunnelPanel =
-    filterParams.source !== "marketplace" &&
+    filterParams.source !== "direct" &&
     analytics.widget_funnel != null &&
     Array.isArray(analytics.widget_funnel.steps) &&
     analytics.widget_funnel.steps.length > 0;
@@ -1105,7 +1105,7 @@ const BookingTrends = () => {
   const statisticCards = [
     {
       key: "total_participant_spots",
-      title: "Total Guest Spots",
+      title: "Total Client Spots",
       value: analytics.summary.total_participant_spots,
       icon: <Calendar size={20} />,
       color: colors.chart.blue,
@@ -1114,7 +1114,7 @@ const BookingTrends = () => {
     },
     {
       key: "booker_retention_rate",
-      title: "Guest Retention",
+      title: "Client Retention",
       value: analytics.summary.booker_retention_rate,
       suffix: "%",
       icon: <Users size={20} />,
@@ -1125,12 +1125,22 @@ const BookingTrends = () => {
     {
       key: "cancellation_rate_by_transaction",
       title: "Cancellation Rate",
-      value: analytics.summary.cancellation_rate_by_transaction,
+      value: analytics.summary.cancellation_rate_by_spots ?? analytics.summary.cancellation_rate_by_transaction,
       suffix: "%",
       icon: <AlertCircle size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
       footer: "% of spots cancelled",
+    },
+    {
+      key: "no_show_rate",
+      title: "No-show Rate",
+      value: analytics.summary.no_show_rate,
+      suffix: "%",
+      icon: <Users size={20} />,
+      color: colors.chart.orange,
+      background: `rgba(249, 115, 22, 0.1)`,
+      footer: "Of marked attendance",
     },
     {
       key: "average_lead_time_days",
@@ -1157,7 +1167,7 @@ const BookingTrends = () => {
   const guestTypeData = useMemo(
     () => [
       {
-        type: "New Guests",
+        type: "New Clients",
         segment: "new",
         value: analytics.summary.new_student_bookings || 0,
         color: colors.chart.teal,
@@ -1200,7 +1210,7 @@ const BookingTrends = () => {
       if (!data || !(data.value > 0)) return;
       let seg = data.segment;
       if (seg !== "new" && seg !== "returning") {
-        if (data.type === "New Guests") seg = "new";
+        if (data.type === "New Clients" || data.type === "New Guests") seg = "new";
         else if (data.type === "Returning") seg = "returning";
       }
       if (seg === "new" || seg === "returning") openGuestTypeDrawer(seg);
@@ -1217,7 +1227,7 @@ const BookingTrends = () => {
     <>
       <GuestDrawerHeader style={isMobile ? undefined : { paddingTop: 20 }}>
         <GuestDrawerTitleBlock>
-          <GuestDrawerTitle>Guest details</GuestDrawerTitle>
+          <GuestDrawerTitle>Client details</GuestDrawerTitle>
           <GuestDrawerSubtitle>
             Bookings in this period (cancelled excluded). Use for follow-ups and
             campaigns.
@@ -1332,9 +1342,7 @@ const BookingTrends = () => {
             <HeaderSubtitle>
               {filterParams.source === "widget"
                 ? "Widget bookings only — from your embedded booking widget."
-                : filterParams.source === "marketplace"
-                ? "Marketplace bookings only — from ClassEasily discovery."
-                : "Analyze booking patterns and guest engagement across all sources."}
+                : "Analyze booking patterns and client engagement across all sources."}
             </HeaderSubtitle>
           </div>
           <Controls>
@@ -1351,15 +1359,6 @@ const BookingTrends = () => {
                       </span>
                     ),
                     value: "all",
-                  },
-                  {
-                    label: (
-                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Globe size={13} />
-                        Marketplace
-                      </span>
-                    ),
-                    value: "marketplace",
                   },
                   {
                     label: (

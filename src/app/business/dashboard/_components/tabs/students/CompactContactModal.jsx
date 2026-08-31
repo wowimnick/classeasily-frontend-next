@@ -376,6 +376,12 @@ const CompactContactModal = ({
                   </ContactItem>
                 )}
               </ContactDetails>
+              {(guest.no_show_count != null || guest.attendance_rate != null) && (
+                <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
+                  No-shows: {guest.no_show_count ?? 0}
+                  {guest.attendance_rate != null ? ` · Attendance ${guest.attendance_rate}%` : ""}
+                </div>
+              )}
             </ContactInfo>
           </HeaderLayout>
         </CompactHeader>

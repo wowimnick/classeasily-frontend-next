@@ -391,7 +391,7 @@ const DesktopBookingHistory = ({
       width: 160,
     },
     {
-      title: "GUEST",
+      title: "CLIENT",
       dataIndex: "user_name",
       key: "guest",
       sorter: true,
@@ -411,7 +411,7 @@ const DesktopBookingHistory = ({
       width: 220,
     },
     {
-      title: "EXPERIENCE DETAILS",
+      title: "SERVICE",
       dataIndex: "class_name",
       key: "class_name",
       sorter: true,
@@ -447,7 +447,19 @@ const DesktopBookingHistory = ({
       width: 180,
     },
     {
-      title: "EXPERIENCE DATE",
+      title: "ATTENDANCE",
+      dataIndex: "attendance",
+      key: "attendance",
+      width: 120,
+      render: (value) => {
+        if (React.isValidElement(value)) return value;
+        const v = (value || "pending").replace("_", " ");
+        const color = value === "attended" ? "green" : value === "no_show" ? "red" : "default";
+        return <Tag color={color}>{v}</Tag>;
+      },
+    },
+    {
+      title: "SERVICE DATE",
       dataIndex: "date",
       key: "date",
       sorter: true,

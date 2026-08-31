@@ -1313,7 +1313,7 @@ export default function EmailBrandingSettingsTab() {
           <PanelTitle>Email branding</PanelTitle>
           <PanelSub>
             {emailMode === EMAIL_MODE_MARKETPLACE
-              ? "Customize emails sent through the ClassEasily marketplace — confirmations, reminders, and updates."
+              ? "Customize emails sent for direct (non-widget) bookings — confirmations, reminders, and updates."
               : "Customize emails sent for widget bookings — confirmations, reminders, and updates."}
           </PanelSub>
         </PanelHeader>
@@ -1322,7 +1322,7 @@ export default function EmailBrandingSettingsTab() {
           <ModeToggleLabel>Email type</ModeToggleLabel>
           <ModeToggleGroup>
             <ModeToggleBtn type="button" $active={emailMode === EMAIL_MODE_MARKETPLACE} onClick={() => handleModeChange(EMAIL_MODE_MARKETPLACE)}>
-              Marketplace bookings
+              Direct bookings
             </ModeToggleBtn>
             <ModeToggleBtn type="button" $active={emailMode === EMAIL_MODE_WIDGET} onClick={() => handleModeChange(EMAIL_MODE_WIDGET)} disabled={!canUseWidgetBranding}>
               Widget booking

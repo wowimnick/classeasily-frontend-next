@@ -779,8 +779,21 @@ const menuGroupsConfig =[
     label: "Main Menu",
     items:[
       {
+        key: "calendar",
+        label: "Calendar",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/uoljexdg.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-calendar"
+          />
+        ),
+      },
+      {
         key: "overview",
-        label: "Dashboard",
+        label: "Reports",
         icon: (
           <LordIcon
             src="https://cdn.lordicon.com/upjgggre.json"
@@ -792,7 +805,7 @@ const menuGroupsConfig =[
         ),
       },
       {
-        key: "listings",
+        key: "services",
         label: "Services",
         icon: (
           <LordIcon
@@ -801,19 +814,6 @@ const menuGroupsConfig =[
             size="20px"
             playOnLoad={true}
             inState="in-newspaper"
-          />
-        ),
-      },
-      {
-        key: "schedules",
-        label: "Schedules",
-        icon: (
-          <LordIcon
-            src="https://cdn.lordicon.com/uoljexdg.json"
-            colors="primary:#666,secondary:#666"
-            size="20px"
-            playOnLoad={true}
-            inState="in-calendar"
           />
         ),
       },
@@ -953,7 +953,9 @@ const menuGroupsConfig =[
 const allMenuItems = menuGroupsConfig.flatMap((g) => g.items);
 
 const menuItemPermissions = {
+  calendar:    "manage_own_classes",
   overview:    "access_business_dashboard",
+  services:    "manage_own_classes",
   listings:    "manage_own_classes",
   schedules:   "manage_own_classes",
   bookings:    "view_own_business_bookings",
@@ -1229,7 +1231,9 @@ const SideMenuComponent = memo(
     const getMenuItemsForAntd = useMemo(() => {
       const attachRefToLabel = (label, key) => {
         const refMap = {
+          calendar:    homeMenuRef,
           overview:    homeMenuRef,
+          services:    listingsMenuRef,
           listings:    listingsMenuRef,
           bookings:    activeBookingsMenuRef,
           people:      managementMenuRef,

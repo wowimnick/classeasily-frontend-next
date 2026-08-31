@@ -60,6 +60,9 @@ export const API_ENDPOINTS = {
   BUSINESS_CLASSES: "/business/classes/",
   BUSINESS_SCHEDULES: "/business/schedules/",
   BUSINESS_SCHEDULE_INSTANCES: "/business/schedule-instances/",
+  BUSINESS_RECURRENCE_RULES: "/business/recurrence-rules/",
+  MY_BUSINESS_TIME_OFF: "/my-business/time-off/",
+  MY_BUSINESS_CALENDAR_CONNECTIONS: "/my-business/calendar/connections/",
   BUSINESS_BOOKINGS: "/business/bookings/",
   BUSINESS_STUDENTS: "/business/students/",
   BUSINESS_CONTACT_INFO: "/business/classes/contact-info/",
@@ -2726,6 +2729,41 @@ export const businessClassService = {
     }
   },
 
+  getAvailabilityWindows: async (classId) => {
+    try {
+      const response = await axiosInstance.get(
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/availability-windows/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to load availability" };
+    }
+  },
+
+  putAvailabilityWindows: async (classId, windows) => {
+    try {
+      const response = await axiosInstance.put(
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/availability-windows/`,
+        windows,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to save availability" };
+    }
+  },
+
+  getAppointmentSlots: async (classId, params = {}) => {
+    try {
+      const response = await axiosInstance.get(
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/appointment-slots/`,
+        { params },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to load slots" };
+    }
+  },
+
   getCategories: async () => {
     try {
       const response = await axiosInstance.get(
@@ -3839,8 +3877,8 @@ export const bookingService = {
   markAttendance: async (bookingId, attended) => {
     try {
       const response = await axiosInstance.post(
-        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/mark_attendance/`,
-        { attended },
+        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/mark-attendance/`,
+        { attendance: typeof attended === "string" ? attended : attended ? "attended" : "no_show" },
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -4263,28 +4301,137 @@ export const scheduleService = {
       throw error;
     }
   },
-  getScheduleInstances: async (scheduleId, startDate, endDate) => {
+  getScheduleInstances: async (scheduleIdOrParams, startDate, endDate) => {
     try {
+      const params =
+        scheduleIdOrParams && typeof scheduleIdOrParams === "object"
+          ? {
+              schedule_id: scheduleIdOrParams.scheduleId || scheduleIdOrParams.schedule_id,
+              start_date: scheduleIdOrParams.startDate || scheduleIdOrParams.start_date,
+              end_date: scheduleIdOrParams.endDate || scheduleIdOrParams.end_date,
+              class_id: scheduleIdOrParams.classId || scheduleIdOrParams.class_id,
+              assigned_staff_id: scheduleIdOrParams.assigned_staff_id,
+            }
+          : {
+              schedule_id: scheduleIdOrParams,
+              start_date: startDate,
+              end_date: endDate,
+            };
       const response = await axiosInstance.get(
         API_ENDPOINTS.BUSINESS_SCHEDULE_INSTANCES,
-        {
-          params: {
-            schedule_id: scheduleId,
-            start_date: startDate,
-            end_date: endDate,
-          },
-        },
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
-        `Error fetching instances for schedule ${scheduleId}:`,
+        "Error fetching schedule instances:",
         error.response?.data || error,
       );
       return {
         success: false,
         error: error.response?.data?.detail || "Failed to fetch instances",
       };
+    }
+  },
+  editSessionScope: async (instanceId, payload) => {
+    try {
+      const response = await axiosInstance.post(
+        `${API_ENDPOINTS.BUSINESS_SCHEDULE_INSTANCES}${instanceId}/edit-scope/`,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update session",
+      };
+    }
+  },
+  assignStaff: async (instanceId, assigned_staff_id) => {
+    try {
+      const response = await axiosInstance.post(
+        `${API_ENDPOINTS.BUSINESS_SCHEDULE_INSTANCES}${instanceId}/assign-staff/`,
+        { assigned_staff_id },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || "Failed to assign staff",
+      };
+    }
+  },
+  createRecurrenceRule: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.BUSINESS_RECURRENCE_RULES,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create recurring series",
+      };
+    }
+  },
+  getTimeOff: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_TIME_OFF, {
+        params,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to load time off" };
+    }
+  },
+  createTimeOff: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_TIME_OFF,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to create time off" };
+    }
+  },
+  deleteTimeOff: async (id) => {
+    try {
+      await axiosInstance.delete(`${API_ENDPOINTS.MY_BUSINESS_TIME_OFF}${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to delete time off" };
+    }
+  },
+  getCalendarConnections: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_CALENDAR_CONNECTIONS,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to load calendar connections" };
+    }
+  },
+  startCalendarOAuth: async (provider) => {
+    try {
+      const response = await axiosInstance.get(
+        `/my-business/calendar/oauth/${provider}/start/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Calendar connect is not available" };
+    }
+  },
+  disconnectCalendar: async (id) => {
+    try {
+      const response = await axiosInstance.post(
+        `${API_ENDPOINTS.MY_BUSINESS_CALENDAR_CONNECTIONS}${id}/disconnect/`,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || "Failed to disconnect" };
     }
   },
   getAvailabilityForOption: async (

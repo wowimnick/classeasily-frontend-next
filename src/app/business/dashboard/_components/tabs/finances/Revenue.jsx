@@ -822,7 +822,7 @@ const Revenue = forwardRef((props, ref) => {
     },
     {
       key: "platform_commission",
-      title: "Platform Commission",
+      title: "ClassEasily plan fee",
       value:
         analytics.metrics.platform_commission ??
         analytics.metrics.estimated_platform_fees,
@@ -1447,7 +1447,7 @@ const Revenue = forwardRef((props, ref) => {
                       />
                       <Bar
                         dataKey="platform_revenue"
-                        name="Platform Revenue"
+                        name="Direct (non-widget)"
                         stackId="a"
                         fill={colors.chart.purple}
                         radius={[0, 4, 4, 0]}
@@ -1481,7 +1481,7 @@ const Revenue = forwardRef((props, ref) => {
                     </InsightBadge>
                   )}
                 </ChartTitleRow>
-                <ChartDescription>Widget vs. Platform.</ChartDescription>
+                <ChartDescription>Widget vs. direct bookings.</ChartDescription>
               </ChartHeader>
               <ChartContainer>
                 {loading ? (

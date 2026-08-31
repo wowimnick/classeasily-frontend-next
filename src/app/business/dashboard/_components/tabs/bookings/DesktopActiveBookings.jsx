@@ -342,6 +342,7 @@ const DesktopActiveBookings = ({
   showViewDrawer,
   handleCancel,
   handleReschedule, // Added prop
+  handleMarkAttendance,
   pagination,
   onChange,
   sortField,
@@ -398,7 +399,7 @@ const DesktopActiveBookings = ({
       width: 160,
     },
     {
-      title: "GUEST",
+      title: "CLIENT",
       dataIndex: "user_name",
       key: "guest",
       sorter: true,
@@ -418,7 +419,7 @@ const DesktopActiveBookings = ({
       width: 220,
     },
     {
-      title: "EXPERIENCE DETAILS",
+      title: "SERVICE",
       dataIndex: "class_name",
       key: "class_name",
       sorter: true,
@@ -489,6 +490,18 @@ const DesktopActiveBookings = ({
       sortOrder: sortField === "participants" ? sortOrder : null,
       width: 100,
       align: "center",
+    },
+    {
+      title: "ATTENDANCE",
+      dataIndex: "attendance",
+      key: "attendance",
+      width: 120,
+      render: (value, record) => {
+        if (React.isValidElement(value)) return value;
+        const v = (value || "pending").replace("_", " ");
+        const color = value === "attended" ? "green" : value === "no_show" ? "red" : "default";
+        return <Tag color={color}>{v}</Tag>;
+      },
     },
     {
       title: "STATUS",
@@ -563,6 +576,16 @@ const DesktopActiveBookings = ({
       >
         Reschedule
       </Menu.Item>
+      {handleMarkAttendance && (
+        <>
+          <Menu.Item key="attended" onClick={() => handleMarkAttendance(record, "attended")}>
+            Mark attended
+          </Menu.Item>
+          <Menu.Item key="noshow" onClick={() => handleMarkAttendance(record, "no_show")}>
+            Mark no-show
+          </Menu.Item>
+        </>
+      )}
       <Menu.Divider />
       <Menu.Item
         key="4"

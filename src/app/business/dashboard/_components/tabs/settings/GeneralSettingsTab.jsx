@@ -391,7 +391,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
             <SectionIconBox><User size={16} /></SectionIconBox>
             <SectionTitleBlock>
               <SectionTitle>Business Profile</SectionTitle>
-              <SectionSubtitle>Information visible to customers on your listing</SectionSubtitle>
+              <SectionSubtitle>Client-facing contact details</SectionSubtitle>
             </SectionTitleBlock>
           </SectionHeader>
 

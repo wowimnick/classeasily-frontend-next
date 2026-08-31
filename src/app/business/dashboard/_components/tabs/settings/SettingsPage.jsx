@@ -376,9 +376,9 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
       const val = directValue !== undefined ? directValue : v("business_timezone");
       return val != null ? { business_timezone: val } : null;
     }
-    if (fieldName === "contact_privacy") {
-      const val = directValue !== undefined ? directValue : v("contact_privacy");
-      return val != null ? { contact_privacy: val } : null;
+    if (fieldName === "reminder_hours_before") {
+      const val = directValue !== undefined ? directValue : v("reminder_hours_before");
+      return val != null ? { reminder_hours_before: val } : null;
     }
     if (fieldName === "businessHours") {
       const hours = directValue !== undefined ? directValue : v("businessHours");
@@ -433,10 +433,10 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
           business_timezone:
             data.business_timezone ||
             Intl.DateTimeFormat().resolvedOptions().timeZone,
-          contact_privacy: data.contact_privacy || "on_booking",
           newBookingNotification: data.newBookingNotification !== false,
           cancellationNotification: data.cancellationNotification !== false,
           reminderNotification: data.reminderNotification !== false,
+          reminder_hours_before: data.reminder_hours_before || 24,
           scheduleExpiryNotification: data.scheduleExpiryNotification !== false,
           smsNotifications: data.smsNotifications === true,
           require_participant_names: data.require_participant_names === true,
@@ -577,8 +577,8 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
         masterFormData.append("businessHours", JSON.stringify(formattedHours));
       }
       masterFormData.append("business_timezone", preferencesValues.business_timezone);
-      if (preferencesValues.contact_privacy) {
-        masterFormData.append("contact_privacy", preferencesValues.contact_privacy);
+      if (preferencesValues.reminder_hours_before != null) {
+        masterFormData.append("reminder_hours_before", String(preferencesValues.reminder_hours_before));
       }
       masterFormData.append("newBookingNotification", String(preferencesValues.newBookingNotification));
       masterFormData.append("cancellationNotification", String(preferencesValues.cancellationNotification));

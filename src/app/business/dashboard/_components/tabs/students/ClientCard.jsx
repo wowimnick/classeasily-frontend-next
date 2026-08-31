@@ -274,7 +274,7 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
       <InfoGrid>
         <InfoItem>
           <InfoLabel>
-            <BookOpen size={12} /> Experiences Taken
+            <BookOpen size={12} /> Services booked
           </InfoLabel>
           <InfoValue>
             <NumberFlow
@@ -305,6 +305,10 @@ const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
             <CalendarCheck2 size={12} /> Last Seen
           </InfoLabel>
           <InfoValue>{lastSeenFormatted}          </InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>No-shows</InfoLabel>
+          <InfoValue>{guest.no_show_count ?? 0}</InfoValue>
         </InfoItem>
       </InfoGrid>
       {tags.length > 0 && (

@@ -1,112 +1,162 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import ClassSteps from "./ClassSteps";
-import BasicInfoStep from "./steps/BasicInfoStep";
-import ClassOptionsStep from "./steps/ClassOptionsStep";
-import LocationContactStep from "./steps/LocationContactStep";
-import { useClass } from "./ClassContext";
+import { Button, Form, Input, InputNumber, Radio, Select, message } from "antd";
+import { businessService } from "@/services/apiService";
 
-const FullScreenContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background: #fff;
+const Wrap = styled.div`
+  padding: 24px 28px 40px;
+  max-width: 560px;
+  margin: 0 auto;
 `;
 
-const StepsNav = styled.div`
-  background: white;
-  padding: 12px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-  }
+const Title = styled.h2`
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 650;
+  color: #111;
 `;
 
-const ProgressBar = styled.div`
-  display: flex;
-  height: 4px;
-  background: #e5e7eb;
-  border-radius: 2px;
-  overflow: hidden;
+const Sub = styled.p`
+  margin: 0 0 24px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
 `;
-
-const ProgressSegment = styled.div`
-  flex: 1;
-  background: ${(props) => (props.$filled ? "#222222" : "transparent")};
-  transition: background 0.2s ease;
-`;
-
-const StepsContainer = styled.div`
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-`;
-
-export const steps = [
-  {
-    title: "The Experience",
-    description: "Basics & Photos",
-    component: BasicInfoStep,
-  },
-  {
-    title: "Meeting Point",
-    description: "Location & Contact",
-    component: LocationContactStep,
-  },
-  {
-    title: "Details",
-    description: "Structure & Policies",
-    component: ClassOptionsStep,
-  },
-];
 
 const CreateClassPage = ({ onSuccess }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [direction, setDirection] = useState(1);
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [locations, setLocations] = useState([]);
+  const serviceType = Form.useWatch("service_type", form);
 
-  const { state } = useClass();
-  const isStructureSelected = !!state.options?.[0]?.booking_type;
+  useEffect(() => {
+    businessService.getBusinessLocations().then((res) => {
+      const rows = res?.data?.results || res?.data || [];
+      setLocations(Array.isArray(rows) ? rows : []);
+    }).catch(() => {});
+  }, []);
 
-  const handleCreationSuccess = (newClass) => {
-    if (onSuccess) {
-      onSuccess(newClass);
+  const handleFinish = async (values) => {
+    setLoading(true);
+    try {
+      const payload = {
+        title: values.title,
+        description: values.description || "",
+        service_type: values.service_type || "group",
+        duration_minutes: values.duration_minutes,
+        price: values.price,
+        capacity: values.service_type === "appointment" ? 1 : values.capacity,
+        max_concurrent:
+          values.service_type === "appointment"
+            ? values.max_concurrent || 1
+            : 1,
+        location_ref: values.location_ref || null,
+        cancellationPolicy: "flexible",
+        cancellationRefundPercentage: 100,
+      };
+      const response = await businessService.createClass(payload);
+      if (!response.success) {
+        message.error(
+          typeof response.error === "string"
+            ? response.error
+            : "Could not create service"
+        );
+        return;
+      }
+      message.success("Service created");
+      onSuccess?.(response.data);
+    } catch (err) {
+      message.error("Could not create service");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <FullScreenContainer>
-        <StepsNav>
-          <ProgressBar>
-            <ProgressSegment $filled={currentStep >= 0} />
-            <ProgressSegment $filled={currentStep >= 1} />
-            <ProgressSegment $filled={currentStep >= 2} />
-          </ProgressBar>
-        </StepsNav>
-
-        <StepsContainer>
-          <ClassSteps
-            currentStep={currentStep}
-            setCurrentStep={setCurrentStep}
-            direction={direction}
-            setDirection={setDirection}
-            loading={loading}
-            setLoading={setLoading}
-            steps={steps}
-            isStructureSelected={isStructureSelected}
-            onCreationSuccess={handleCreationSuccess}
+    <Wrap>
+      <Title>New service</Title>
+      <Sub>
+        Name, duration, price, and capacity are enough to start taking bookings.
+        Photos and a longer description can be added later.
+      </Sub>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          service_type: "group",
+          duration_minutes: 60,
+          capacity: 10,
+          max_concurrent: 1,
+        }}
+        onFinish={handleFinish}
+      >
+        <Form.Item
+          name="title"
+          label="Name"
+          rules={[{ required: true, message: "Give the service a name" }]}
+        >
+          <Input placeholder="e.g. 60-minute yoga class" maxLength={100} />
+        </Form.Item>
+        <Form.Item name="service_type" label="Type">
+          <Radio.Group>
+            <Radio.Button value="group">Group session</Radio.Button>
+            <Radio.Button value="appointment">Appointment</Radio.Button>
+          </Radio.Group>
+        </Form.Item>
+        <Form.Item
+          name="duration_minutes"
+          label="Duration (minutes)"
+          rules={[{ required: true }]}
+        >
+          <Select
+            options={[30, 45, 60, 90, 120, 180].map((m) => ({
+              value: m,
+              label: `${m} min`,
+            }))}
           />
-        </StepsContainer>
-    </FullScreenContainer>
+        </Form.Item>
+        <Form.Item
+          name="price"
+          label="Price"
+          rules={[{ required: true, message: "Set a price" }]}
+        >
+          <InputNumber min={0.01} step={1} precision={2} prefix="$" style={{ width: "100%" }} />
+        </Form.Item>
+        {serviceType === "appointment" ? (
+          <Form.Item
+            name="max_concurrent"
+            label="How many can be booked at the same time"
+            extra="e.g. number of chairs or rooms. Appointment slots are generated from your business hours."
+          >
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+        ) : (
+          <Form.Item name="capacity" label="Capacity per session" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+        )}
+        <Form.Item name="location_ref" label="Location">
+          <Select
+            allowClear
+            placeholder="Use business default"
+            options={locations.map((loc) => ({
+              value: loc.id,
+              label: loc.name || loc.address,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item name="description" label="Short description (optional)">
+          <Input.TextArea rows={3} maxLength={4000} />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={loading} block size="large">
+          {serviceType === "appointment" ? "Create and go live" : "Create service"}
+        </Button>
+      </Form>
+    </Wrap>
   );
 };
 
 export default CreateClassPage;
+export const steps = [];

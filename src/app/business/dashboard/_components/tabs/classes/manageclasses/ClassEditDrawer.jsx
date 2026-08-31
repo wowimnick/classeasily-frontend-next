@@ -72,6 +72,7 @@ import {
   businessService,
   uploadService,
 } from "@/services/apiService";
+import ServiceAvailabilityPanel from "./ServiceAvailabilityPanel";
 import { classManagementService } from "@/services/adminDash";
 import debounce from "lodash/debounce";
 import {
@@ -2179,6 +2180,10 @@ const ClassEditDrawer = ({
     form.setFieldsValue({
       title: classData.title || "",
       description: classData.description || "",
+      service_type: classData.service_type || "group",
+      duration_minutes: classData.duration_minutes,
+      price: classData.price,
+      capacity: classData.capacity,
       features: featuresData,
       location: classData.location || "",
       unit_number: classData.unit_number || "",
@@ -2748,7 +2753,7 @@ const ClassEditDrawer = ({
     </div>
   );
 
-  const STEP_TITLES = ["The Experience", "Meeting Point", "Details"];
+  const STEP_TITLES = ["The Service", "Meeting Point", "Details"];
   const STEP_DESCRIPTIONS = [
     "Basics & Photos",
     "Location & Contact",
@@ -2758,10 +2763,10 @@ const ClassEditDrawer = ({
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
-        <DrawerTitle level={4}>Edit Experience</DrawerTitle>
+        <DrawerTitle level={4}>Edit Service</DrawerTitle>
         <DrawerHeaderActions>
           {!useAdminApi && (
-            <CopyPageLinkButton icon={Link2} label="Copy link to this experience" size={20} />
+            <CopyPageLinkButton icon={Link2} label="Copy link to this service" size={20} />
           )}
           <CloseButton
             icon={<X size={20} />}
@@ -2795,7 +2800,7 @@ const ClassEditDrawer = ({
                         <FormGroup>
                           <FormLabelWithIcon htmlFor="edit_class_title">
                             <Sparkles size={16} />
-                            Experience Title
+                            Service name
                           </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
@@ -2826,6 +2831,35 @@ const ClassEditDrawer = ({
                           </FormItemAntd>
                         </FormGroup>
                         <FormGroup>
+                          <FormLabelWithIcon>Type</FormLabelWithIcon>
+                          <FormItemAntd name="service_type">
+                            <Select
+                              options={[
+                                { value: "group", label: "Group session" },
+                                { value: "appointment", label: "Appointment" },
+                              ]}
+                            />
+                          </FormItemAntd>
+                        </FormGroup>
+                        <FormGroup>
+                          <FormLabelWithIcon>Duration (minutes)</FormLabelWithIcon>
+                          <FormItemAntd name="duration_minutes">
+                            <InputNumber min={15} style={{ width: "100%" }} />
+                          </FormItemAntd>
+                        </FormGroup>
+                        <FormGroup>
+                          <FormLabelWithIcon>Price</FormLabelWithIcon>
+                          <FormItemAntd name="price">
+                            <InputNumber min={0} step={1} precision={2} prefix="$" style={{ width: "100%" }} />
+                          </FormItemAntd>
+                        </FormGroup>
+                        <FormGroup>
+                          <FormLabelWithIcon>Capacity</FormLabelWithIcon>
+                          <FormItemAntd name="capacity">
+                            <InputNumber min={1} style={{ width: "100%" }} />
+                          </FormItemAntd>
+                        </FormGroup>
+                        <FormGroup>
                           <FormLabelWithIcon htmlFor="edit_class_description">
                             <Tent size={16} />
                             What you'll do (Description)
@@ -2853,15 +2887,6 @@ const ClassEditDrawer = ({
                             name="description"
                             rules={[
                               {
-                                required: true,
-                                message: "Please enter a description",
-                              },
-                              {
-                                min: 100,
-                                message:
-                                  "Description must be at least 100 characters",
-                              },
-                              {
                                 max: 4000,
                                 message:
                                   "Description cannot exceed 4000 characters",
@@ -2888,7 +2913,7 @@ const ClassEditDrawer = ({
                         <FormGroup>
                           <FormLabelWithIcon>
                             <ImagePlus size={16} />
-                            Photos (4-10 required)
+                            Photos (optional)
                           </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
@@ -2900,12 +2925,6 @@ const ClassEditDrawer = ({
                             rules={[
                               {
                                 validator: async () => {
-                                  if (!mainImages || mainImages.length < 4)
-                                    return Promise.reject(
-                                      new Error(
-                                        "Please upload at least 4 images.",
-                                      ),
-                                    );
                                   if (mainImages.length > 10)
                                     return Promise.reject(
                                       new Error("Maximum 10 images allowed."),
@@ -2915,7 +2934,7 @@ const ClassEditDrawer = ({
                                     !mainImages.some((img) => img.isCover)
                                   )
                                     return Promise.reject(
-                                      new Error("Please select a cover image."),
+                                      new Error("Please set a cover image."),
                                     );
                                   return Promise.resolve();
                                 },
@@ -3041,6 +3060,33 @@ const ClassEditDrawer = ({
                         </FormGroup>
                       </FormSection>
                     </StepContentWrapper>
+                    </FormContainer>
+                  </ScrollContainer>
+                ),
+              },
+              {
+                label: "Availability",
+                key: "availability",
+                children: (
+                  <ScrollContainer>
+                    <FormContainer>
+                      <StepHeader>
+                        <PageTitle>Appointment availability</PageTitle>
+                        <StepDescription>
+                          Slot interval, buffers, and hours. Group sessions use the calendar instead.
+                        </StepDescription>
+                      </StepHeader>
+                      {(initialClassDataProp?.service_type || form.getFieldValue("service_type")) === "appointment" ? (
+                        <ServiceAvailabilityPanel
+                          classId={initialClassDataProp?.classId}
+                          classData={initialClassDataProp}
+                        />
+                      ) : (
+                        <p style={{ color: "#64748b", fontSize: 13, lineHeight: 1.5 }}>
+                          This is a group service. Add sessions on the calendar. Switch the type to Appointment
+                          on this page if you want bookable slots from your hours.
+                        </p>
+                      )}
                     </FormContainer>
                   </ScrollContainer>
                 ),

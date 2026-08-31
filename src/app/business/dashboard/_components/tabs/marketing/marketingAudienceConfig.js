@@ -23,8 +23,8 @@ const BASE_OPTIONS = [
   },
   {
     value: AUDIENCE_TYPES.BOOKING_CHANNEL,
-    label: "Widget vs marketplace bookers",
-    help: "Target contacts who booked through your embedded widget or from the marketplace.",
+    label: "Widget bookers",
+    help: "Target contacts who booked through your embedded widget.",
   },
 ];
 

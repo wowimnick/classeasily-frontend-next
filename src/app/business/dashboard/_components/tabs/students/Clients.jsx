@@ -21,6 +21,7 @@ import {
   Phone,
   User,
   Eye,
+  Plus,
 } from "lucide-react";
 import {
   Button,
@@ -39,12 +40,13 @@ import {
   Tooltip,
   Space,
   Popconfirm,
+  Form,
 } from "antd";
 import message from "@/lib/message";
 import { businessStudentService, businessContactService } from "@/services/apiService";
-import GuestCard from "./GuestCard";
-import GuestProfile from "./GuestProfile";
-import ImportGuestsModal from "./ImportGuestsModal";
+import ClientCard from "./ClientCard";
+import ClientProfile from "./ClientProfile";
+import ImportClientsModal from "./ImportClientsModal";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import dayjs from "dayjs";
@@ -500,6 +502,8 @@ function mapGuestRow(c) {
     booking_count: c.booking_count,
     tags: Array.isArray(c.tags) ? c.tags : [],
     status: c.status || null,
+    no_show_count: c.no_show_count ?? 0,
+    attendance_rate: c.attendance_rate ?? null,
     avatar_thumb_url: c.avatar_thumb_url || null,
   };
 }
@@ -535,6 +539,9 @@ const Guests = forwardRef((props, ref) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [segmentFilter, setSegmentFilter] = useState("");
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [addClientOpen, setAddClientOpen] = useState(false);
+  const [addClientSaving, setAddClientSaving] = useState(false);
+  const [addClientForm] = Form.useForm();
   const [saveSegmentOpen, setSaveSegmentOpen] = useState(false);
   const [segmentName, setSegmentName] = useState("");
   const [savingSegment, setSavingSegment] = useState(false);
@@ -564,47 +571,26 @@ const Guests = forwardRef((props, ref) => {
       setIsReadyForAnimation(false);
       setError(null);
       try {
-        if (segment) {
-          const params = {
-            page,
-            page_size: pagination.pageSize,
-            search: search || undefined,
-            segment,
-          };
-          const response = await businessContactService.getContacts(params);
-          if (response.success && response.data) {
-            const results = response.data.results || [];
-            const count = response.data.count ?? 0;
-            setGuests(results.map(mapGuestRow));
-            setPagination((prev) => ({ ...prev, current: page, total: count }));
-            setTimeout(() => setIsReadyForAnimation(true), 50);
-          } else {
-            throw new Error(response.error || "Failed to fetch contacts");
-          }
+        const params = {
+          page,
+          page_size: pagination.pageSize,
+          search: search || undefined,
+          status: status && status !== "all" ? status : undefined,
+          segment: segment || undefined,
+        };
+        const response = await businessContactService.getContacts(params);
+        if (response.success && response.data) {
+          const results = response.data.results || [];
+          const count = response.data.count ?? 0;
+          setGuests(results.map(mapGuestRow));
+          setPagination((prev) => ({ ...prev, current: page, total: count }));
+          setTimeout(() => setIsReadyForAnimation(true), 50);
         } else {
-          const params = {
-            page,
-            page_size: pagination.pageSize,
-            search: search || undefined,
-            status_filter: status,
-          };
-          const response = await businessStudentService.getAllBusinessStudents(params);
-          if (response.success && response.data) {
-            const rows = Array.isArray(response.data) ? response.data : [];
-            setGuests(rows.map(mapGuestRow));
-            setPagination((prev) => ({
-              ...prev,
-              current: page,
-              total: response.count || 0,
-            }));
-            setTimeout(() => setIsReadyForAnimation(true), 50);
-          } else {
-            throw new Error(response.error || "Failed to fetch guests");
-          }
+          throw new Error(response.error || "Failed to fetch contacts");
         }
       } catch (err) {
-        setError(err.message || "Failed to fetch guests");
-        message.error(err.message || "Failed to fetch guests");
+        setError(err.message || "Failed to fetch clients");
+        message.error(err.message || "Failed to fetch clients");
         setGuests([]);
         setPagination((prev) => ({ ...prev, total: 0, current: 1 }));
       } finally {
@@ -648,7 +634,7 @@ const Guests = forwardRef((props, ref) => {
     const seg = searchParams.get("segment") || "";
     if (s) setSearchText(s);
     if (p) setPagination((prev) => ({ ...prev, current: p }));
-    if (st === "all" || st === "active" || st === "inactive") setStatusFilter(st);
+    if (["all", "active", "lead", "inactive", "lapsed"].includes(st)) setStatusFilter(st);
     if (seg !== undefined && seg !== null) setSegmentFilter(seg);
   }, [listFiltersHydrated, searchParams]);
 
@@ -884,7 +870,7 @@ const Guests = forwardRef((props, ref) => {
         width: 250,
       },
       {
-        title: "EXPERIENCES",
+        title: "SERVICES",
         dataIndex: "total_classes_taken",
         key: "total_classes_taken",
         align: "center",
@@ -906,6 +892,19 @@ const Guests = forwardRef((props, ref) => {
           if (value == null || value === "") return "—";
           return `$${parseFloat(value || 0).toFixed(2)}`;
         },
+      },
+      {
+        title: "NO-SHOWS",
+        key: "no_show_count",
+        width: 110,
+        render: (_, record) => record.no_show_count ?? 0,
+      },
+      {
+        title: "ATTEND %",
+        key: "attendance_rate",
+        width: 110,
+        render: (_, record) =>
+          record.attendance_rate != null ? `${record.attendance_rate}%` : "—",
       },
       {
         title: "LAST SEEN",
@@ -1160,7 +1159,7 @@ const Guests = forwardRef((props, ref) => {
         width: 250,
       },
       {
-        title: "EXPERIENCES",
+        title: "SERVICES",
         key: "classes",
         dataIndex: "total_classes_taken",
         align: "center",
@@ -1243,10 +1242,11 @@ const Guests = forwardRef((props, ref) => {
               View and manage all your business contacts and platform clients.
             </HeaderSubtitle>
           </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <ActionButton
             type="primary"
-            icon={<Upload size={16} />}
-            onClick={() => setIsImportModalVisible(true)}
+            icon={<Plus size={16} />}
+            onClick={() => setAddClientOpen(true)}
             style={{
               height: "44px",
               background: colors.primary,
@@ -1254,8 +1254,18 @@ const Guests = forwardRef((props, ref) => {
               borderColor: colors.primary,
             }}
           >
+            Add client
+          </ActionButton>
+          <ActionButton
+            icon={<Upload size={16} />}
+            onClick={() => setIsImportModalVisible(true)}
+            style={{
+              height: "44px",
+            }}
+          >
             Import Clients
           </ActionButton>
+          </div>
         </DashboardHeader>
 
         <Divider />
@@ -1274,9 +1284,11 @@ const Guests = forwardRef((props, ref) => {
                 value={statusFilter}
                 onChange={handleStatusFilterChange}
               >
-                <Option value="all">All Contacts</Option>
-                <Option value="active">Platform Guests</Option>
-                <Option value="inactive">Imported Only</Option>
+                <Option value="all">All clients</Option>
+                <Option value="active">Active</Option>
+                <Option value="lead">Lead</Option>
+                <Option value="inactive">Inactive</Option>
+                <Option value="lapsed">Lapsed</Option>
               </StyledSelect>
               <StyledSelect
                 placeholder="Segment"
@@ -1372,7 +1384,7 @@ const Guests = forwardRef((props, ref) => {
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <GuestCard
+                      <ClientCard
                         guest={guest}
                         onClick={() => handleGuestClick(guest)}
                         onDelete={() => handleDeleteContact(guest)}
@@ -1438,7 +1450,7 @@ const Guests = forwardRef((props, ref) => {
         </AnimatePresence>
 
         {selectedGuest && (
-          <GuestProfile
+          <ClientProfile
             guest={selectedGuest}
             currentUser={currentUser}
             onClose={handleCloseProfile}
@@ -1446,11 +1458,58 @@ const Guests = forwardRef((props, ref) => {
           />
         )}
 
-        <ImportGuestsModal
+        <ImportClientsModal
           visible={isImportModalVisible}
           onClose={() => setIsImportModalVisible(false)}
           onImportComplete={handleImportComplete}
         />
+
+        <Modal
+          title="Add client"
+          open={addClientOpen}
+          onCancel={() => { setAddClientOpen(false); addClientForm.resetFields(); }}
+          onOk={() => addClientForm.submit()}
+          confirmLoading={addClientSaving}
+          okText="Add"
+        >
+          <Form
+            form={addClientForm}
+            layout="vertical"
+            onFinish={async (values) => {
+              setAddClientSaving(true);
+              const res = await businessContactService.createContact({
+                first_name: values.first_name,
+                last_name: values.last_name,
+                email: values.email,
+                phone_number: values.phone_number,
+                source: "manual_entry",
+                status: "lead",
+              });
+              setAddClientSaving(false);
+              if (res.success) {
+                message.success("Client added");
+                setAddClientOpen(false);
+                addClientForm.resetFields();
+                fetchGuestsData(1, searchText, statusFilter, segmentFilter);
+              } else {
+                message.error(res.error || "Could not add client");
+              }
+            }}
+          >
+            <Form.Item name="first_name" label="First name" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="last_name" label="Last name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="email" label="Email">
+              <Input type="email" />
+            </Form.Item>
+            <Form.Item name="phone_number" label="Phone">
+              <Input />
+            </Form.Item>
+          </Form>
+        </Modal>
 
         <Modal
           title="Save segment"

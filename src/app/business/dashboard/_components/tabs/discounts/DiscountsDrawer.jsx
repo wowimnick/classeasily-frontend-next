@@ -1043,7 +1043,7 @@ const ApplyToWidgetCheckbox = () => {
   const checkbox = (
     <Form.Item name="apply_to_widget" valuePropName="checked">
       <Checkbox disabled={!canApplyToWidget}>
-        Apply to both widget & marketplace
+        Apply to widget bookings
       </Checkbox>
     </Form.Item>
   );

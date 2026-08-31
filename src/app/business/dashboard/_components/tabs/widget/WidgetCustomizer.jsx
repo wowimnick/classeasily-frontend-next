@@ -1107,8 +1107,8 @@ export default function WidgetCustomizer() {
           title="2. Put the booking calendar on your website"
           subtitle={
             form.view === "modal"
-              ? "This installs a small script and gives you a “Book now” style button that opens your calendar in a popup. You can use different optional class settings for each button or embed by changing the option below before you copy."
-              : "This places your calendar directly inside your page, in the spot where you paste the code. Change the optional class below before each copy if you want different pages to open a different class first."
+              ? "This installs a small script and gives you a “Book now” style button that opens your calendar in a popup. You can pin a service below so the widget opens that service first."
+              : "This places your calendar directly inside your page. Appointment services show a slot picker generated from your hours; group services show upcoming sessions."
           }
         />
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
@@ -1125,7 +1125,7 @@ export default function WidgetCustomizer() {
         {(data?.classes || []).length > 0 && (
           <div style={{ marginBottom: 14, maxWidth: "100%" }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-              Optional: skip the class list and open this class first
+              Optional: skip the service list and open this service first
             </label>
             <Select
               size="small"
@@ -1133,7 +1133,7 @@ export default function WidgetCustomizer() {
               value={installSpecificClassId || ""}
               onChange={(v) => setInstallSpecificClassId(v || "")}
               options={[
-                { value: "", label: "Show all classes (default)" },
+                { value: "", label: "Show all services (default)" },
                 ...(data?.classes || []).map((c) => ({ value: String(c.classId), label: c.title })),
               ]}
             />
@@ -1184,7 +1184,7 @@ export default function WidgetCustomizer() {
       <div style={{ padding: "12px 14px", background: "#f3f6f8", borderRadius: 8 }}>
         <h4 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600 }}>Need help installing?</h4>
         <p style={{ margin: 0, fontSize: 12, color: "#4b5563", lineHeight: 1.45 }}>
-          Not sure where to paste this? Our{" "}
+          Appointment services open a slot picker generated from your business hours. Group services show upcoming sessions. Not sure where to paste this? Our{" "}
           <a href="/business/help?category=widget-installation" target="_blank" rel="noreferrer" style={{ color: SEL_COLOR, fontWeight: 600, textDecoration: "underline" }}>
             setup guides
           </a>{" "}

@@ -19,7 +19,7 @@ import Discounts from "../_components/tabs/discounts/Discounts";
 import EmailMarketingDashboard from "../_components/tabs/marketing/EmailMarketingDashboard";
 import MembershipsDashboard from "../_components/tabs/memberships/MembershipsDashboard";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
-import Guests from "../_components/tabs/students/Guests";
+import Clients from "../_components/tabs/students/Clients";
 import BusinessMessages from "../_components/tabs/messages/BusinessMessages";
 import SettingsPage from "../_components/tabs/settings/SettingsPage";
 import TabGlassWrapper from "../_components/TabGlassWrapper";
@@ -74,37 +74,22 @@ export default function DashboardPage() {
   }, [activeKey, router]);
 
   useEffect(() => {
-    if (activeKey === "reviews") {
-      router.replace("/business/dashboard/overview");
+    if (activeKey === "listings") {
+      router.replace("/business/dashboard/services");
     }
   }, [activeKey, router]);
+
+  useEffect(() => {
+    if (activeKey === "schedules") {
+      const q = searchParams.toString();
+      router.replace(`/business/dashboard/calendar${q ? `?${q}` : ""}`);
+    }
+  }, [activeKey, searchParams, router]);
 
   let componentToRender;
 
   switch (activeKey) {
-    case "overview":
-      componentToRender = <Overview />;
-      break;
-    case "bookings":
-    case "bookings/active":
-    case "bookings/history":
-      componentToRender = (
-        <TabGlassWrapper>
-          <BookingsCombined
-            defaultActiveKey={
-              activeKey === "bookings/history" ? "history" : "active"
-            }
-          />
-        </TabGlassWrapper>
-      );
-      break;
-    case "listings":
-      componentToRender = (
-        <TabGlassWrapper>
-          <ClassManagement />
-        </TabGlassWrapper>
-      );
-      break;
+    case "calendar":
     case "schedules": {
       const classIdParam = searchParams.get("classId");
       const instanceIdParam = searchParams.get("instanceId");
@@ -122,11 +107,36 @@ export default function DashboardPage() {
           <ScheduleCalendarView
             initialClassId={initialClassId}
             initialInstanceId={initialInstanceId}
+            defaultView="agenda"
           />
         </div>
       );
       break;
     }
+    case "overview":
+      componentToRender = <Overview />;
+      break;
+    case "bookings":
+    case "bookings/active":
+    case "bookings/history":
+      componentToRender = (
+        <TabGlassWrapper>
+          <BookingsCombined
+            defaultActiveKey={
+              activeKey === "bookings/history" ? "history" : "active"
+            }
+          />
+        </TabGlassWrapper>
+      );
+      break;
+    case "services":
+    case "listings":
+      componentToRender = (
+        <TabGlassWrapper>
+          <ClassManagement />
+        </TabGlassWrapper>
+      );
+      break;
     case "reviews":
       componentToRender = null;
       break;
@@ -134,7 +144,7 @@ export default function DashboardPage() {
     case "guests":
       componentToRender = (
         <TabGlassWrapper>
-          <Guests />
+          <Clients />
         </TabGlassWrapper>
       );
       break;

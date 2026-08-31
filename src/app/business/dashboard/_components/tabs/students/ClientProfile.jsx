@@ -1039,6 +1039,8 @@ const GuestProfile = ({
             last_activity_at: timelineData.contact.last_activity_at,
             tags: timelineData.contact.tags ?? guestData.tags,
             status: timelineData.contact.status || guestData.status,
+            no_show_count: timelineData.contact.no_show_count,
+            attendance_rate: timelineData.contact.attendance_rate,
           };
         }
 

@@ -1381,7 +1381,7 @@ const Payouts = () => {
     const result = await businessService.fetchBusinessPayouts(params);
     if (result.success) {
       setPayouts(result.data.results || []);
-      setScheduledPayouts(result.data.scheduled_payouts || []);
+      setScheduledPayouts([]);
       setPagination((prev) => ({
         ...prev,
         total: result.data.count,
@@ -1535,10 +1535,7 @@ const Payouts = () => {
     record?.status === "scheduled" ||
     (record?.id && String(record.id).startsWith("scheduled-"));
 
-  const displayPayouts =
-    pagination.current === 1
-      ? [...scheduledPayouts, ...payouts]
-      : payouts;
+  const displayPayouts = payouts;
 
   const getStripeUrl = (record, isDevEnv) => {
     const id = record.stripe_transfer_id;
@@ -2057,8 +2054,7 @@ const Payouts = () => {
                   </EmptyStateIcon>
                   <EmptyStateText>No Payouts Found</EmptyStateText>
                   <EmptyStateSubtext>
-                    No payouts have been made yet. Payouts are made 24h after an
-                    experience ends.
+                    Payouts follow the schedule you set (or Pay out now). Instant payouts are available when Stripe supports them.
                   </EmptyStateSubtext>
                 </EmptyStateContainer>
               )}
@@ -2097,8 +2093,7 @@ const Payouts = () => {
                     </EmptyStateIcon>
                     <EmptyStateText>No Payouts Found</EmptyStateText>
                     <EmptyStateSubtext>
-                      No payouts have been made yet. Payouts are made 24h after
-                      an experience ends.
+                      Payouts follow the schedule you set (or Pay out now). Instant payouts are available when Stripe supports them.
                     </EmptyStateSubtext>
                   </EmptyStateContainer>
                 ),

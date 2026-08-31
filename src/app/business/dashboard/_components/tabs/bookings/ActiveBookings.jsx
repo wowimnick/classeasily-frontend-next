@@ -609,6 +609,17 @@ const ActiveBookings = ({
     });
   };
 
+  const handleMarkAttendance = async (booking, attendance) => {
+    if (!booking?.id) return;
+    const result = await bookingService.markAttendance(booking.id, attendance);
+    if (result.success) {
+      message.success(attendance === "attended" ? "Marked attended" : "Marked no-show");
+      debouncedFetch();
+    } else {
+      message.error("Could not update attendance");
+    }
+  };
+
   const handleCancelBooking = async (booking) => {
     if (!booking?.id) return;
     const bookingId = booking.id;
@@ -818,6 +829,7 @@ const ActiveBookings = ({
                 showViewDrawer={showViewDrawer}
                 handleCancel={handleCancelBooking}
                 handleReschedule={handleReschedule}
+                handleMarkAttendance={handleMarkAttendance}
                 loading={loadingTable}
               />
             ) : (
@@ -826,6 +838,7 @@ const ActiveBookings = ({
                 showViewDrawer={showViewDrawer}
                 handleCancel={handleCancelBooking}
                 handleReschedule={handleReschedule}
+                handleMarkAttendance={handleMarkAttendance}
                 pagination={{
                   ...tableParams.pagination,
                   total: totalResults,

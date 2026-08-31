@@ -914,17 +914,17 @@ export default function ProductDrawer({ open, onClose, product, onSaved }) {
           <FormGroup>
             <FormLabelWithIcon htmlFor="mp_applicable_classes">
               <CheckSquare size={15} />
-              Applicable classes
+              Applicable services
             </FormLabelWithIcon>
             <HelpText>
               <Info size={13} />
-              Restrict this plan to specific classes. When set, members can only use this membership (or apply credits) when booking one of these classes. Leave empty to allow access to all classes.
+              Restrict this plan to specific services. When set, members can only use this membership when booking one of these services. Leave empty to allow all services.
             </HelpText>
             <FormItemAntd name="applicable_class_ids">
               <Select
                 id="mp_applicable_classes"
                 mode="multiple"
-                placeholder="All classes"
+                placeholder="All services"
                 options={classOptions}
                 allowClear
                 showSearch

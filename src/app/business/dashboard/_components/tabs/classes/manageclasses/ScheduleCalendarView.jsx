@@ -55,7 +55,8 @@ import {
   Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { businessClassService, businessService, scheduleService } from "@/services/apiService";
+import { businessClassService, businessService, businessStaffService, scheduleService } from "@/services/apiService";
+import SessionRosterDrawer from "./SessionRosterDrawer";
 import message from "@/lib/message";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -1589,7 +1590,7 @@ function SidebarContent({
 
       <SidebarSection>
         <SidebarSectionTitle onClick={() => setMyScheduleOpen(o => !o)}>
-          My Experiences
+          My Services
           {myScheduleOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </SidebarSectionTitle>
         <AnimatePresence initial={false}>
@@ -1845,8 +1846,12 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
     if (!schedule?.id) return;
     setDeleting(true);
     try {
-      const res = await scheduleService.deleteSchedule(schedule.id);
-      if (res.success) { message.success("Schedule deleted."); onSuccess(); }
+      const res = await scheduleService.editSessionScope(schedule.id, {
+        action: "delete",
+        scope: "this",
+        reason: "Cancelled by business",
+      });
+      if (res.success) { message.success("Session cancelled."); onSuccess(); }
       else message.error(getErrorMessage(res.error));
     } finally {
       setDeleting(false);
@@ -1867,9 +1872,9 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
       {/* Class selector */}
       {classes.length > 1 && (
         <FieldGroup>
-          <FieldLabel><Calendar size={13} />Experience</FieldLabel>
-          <Form.Item name="classId" noStyle rules={[{ required: true, message: "Select an experience" }]}>
-            <Select style={{ width: "100%" }} placeholder="Select experience" size="middle">
+          <FieldLabel><Calendar size={13} />Service</FieldLabel>
+          <Form.Item name="classId" noStyle rules={[{ required: true, message: "Select a service" }]}>
+            <Select style={{ width: "100%" }} placeholder="Select service" size="middle">
               {classes.map(cls => (
                 <Select.Option key={cls.classId} value={cls.classId}>{cls.title || "Untitled"}</Select.Option>
               ))}
@@ -2155,7 +2160,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
         const values = await form.validateFields(["classId", "date", "time", "maxParticipants", "price"]);
         setSubmitting(true);
         const optionId = getOptionId(values.classId || defaultClassId);
-        if (!optionId) { message.error("This experience needs to be configured first."); return; }
+        if (!optionId) { message.error("This service needs to be configured first."); return; }
         const timeStr = values.time.format("HH:mm");
         const dateStr = values.date.format("YYYY-MM-DD");
         const priceStr = parseFloat(values.price).toFixed(2);
@@ -2180,9 +2185,35 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
           if (payload.minParticipants !== (schedule.minParticipants || 1)) changed.minParticipants = payload.minParticipants;
           if (payload.name !== (schedule.name || "")) changed.name = payload.name;
           if (Object.keys(changed).length === 0) { message.info("No changes to save."); return; }
-          const res = await scheduleService.updateSchedule(schedule.id, changed);
-          if (res.success) { message.success("Schedule updated."); onSuccess(); }
-          else message.error(getErrorMessage(res.error));
+          if (schedule.recurrence_rule_id) {
+            const apply = async (scope) => {
+              const res = await scheduleService.editSessionScope(schedule.id, {
+                action: "edit",
+                scope,
+                ...changed,
+              });
+              if (res.success) { message.success(scope === "following" ? "This and following sessions updated." : "Session updated."); onSuccess(); }
+              else message.error(getErrorMessage(res.error));
+            };
+            Modal.confirm({
+              title: "This session is part of a series",
+              content: "Update only this session, or this session and all following?",
+              okText: "This session only",
+              cancelText: "This and following",
+              onOk: () => apply("this"),
+              onCancel: (close) => {
+                if (close?.triggerCancel) apply("following");
+              },
+            });
+          } else {
+            const res = await scheduleService.editSessionScope(schedule.id, {
+              action: "edit",
+              scope: "this",
+              ...changed,
+            });
+            if (res.success) { message.success("Session updated."); onSuccess(); }
+            else message.error(getErrorMessage(res.error));
+          }
         } else {
           const res = await scheduleService.createSchedule(payload);
           if (res.success) { message.success("Schedule created."); onSuccess(); }
@@ -2195,25 +2226,29 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
         if (times.length === 0) { message.error("Add at least one time."); return; }
         setSubmitting(true);
         const optionId = getOptionId(values.classId || defaultClassId);
-        if (!optionId) { message.error("This experience needs to be configured first."); return; }
-        const payload = {
-          option: optionId,
-          name: values.name,
-          start_date: values.date_range[0].format("YYYY-MM-DD"),
-          end_date: values.date_range[1].format("YYYY-MM-DD"),
-          days_of_week: selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean),
-          times: times.map(t => t.format("HH:mm")),
-          duration,
-          price: parseFloat(values.price).toFixed(2),
-          maxParticipants: values.maxParticipants,
-          minParticipants: form.getFieldValue("minParticipants") || 1,
-        };
-        const result = await scheduleService.bulkCreateSchedules(payload);
-        if (result?.created_count > 0) {
-          message.success(result.message || `Created ${result.created_count} schedules.`);
+        if (!optionId) { message.error("This service needs to be configured first."); return; }
+        const weekdays = selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean);
+        let created = 0;
+        for (const t of times) {
+          const res = await scheduleService.createRecurrenceRule({
+            service: values.classId || defaultClassId,
+            variant: optionId,
+            weekdays,
+            time: t.format("HH:mm:ss"),
+            duration_minutes: duration,
+            price: parseFloat(values.price).toFixed(2),
+            capacity: values.maxParticipants,
+            start_date: values.date_range[0].format("YYYY-MM-DD"),
+            until_date: values.date_range[1].format("YYYY-MM-DD"),
+          });
+          if (res.success) created += 1;
+          else message.error(getErrorMessage(res.error));
+        }
+        if (created > 0) {
+          message.success(`Created ${created} recurring series.`);
           onSuccess();
         } else {
-          message.warning(result?.message || "No schedules created.");
+          message.warning("No series created.");
         }
       }
     } catch (err) {
@@ -2228,8 +2263,12 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
     if (!schedule?.id) return;
     setDeleting(true);
     try {
-      const res = await scheduleService.deleteSchedule(schedule.id);
-      if (res.success) { message.success("Schedule deleted."); onSuccess(); }
+      const res = await scheduleService.editSessionScope(schedule.id, {
+        action: "delete",
+        scope: "this",
+        reason: "Cancelled by business",
+      });
+      if (res.success) { message.success("Session cancelled."); onSuccess(); }
       else message.error(getErrorMessage(res.error));
     } catch (e) {
       message.error(getErrorMessage(e));
@@ -2250,9 +2289,9 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose,
     <Form form={form} layout="vertical">
       {classes.length > 1 && !moveOnly && (
         <FieldGroup>
-          <FieldLabel><Calendar size={13} />Experience</FieldLabel>
-          <Form.Item name="classId" noStyle rules={[{ required: true, message: "Select an experience" }]}>
-            <Select style={{ width: "100%" }} placeholder="Select experience">
+          <FieldLabel><Calendar size={13} />Service</FieldLabel>
+          <Form.Item name="classId" noStyle rules={[{ required: true, message: "Select a service" }]}>
+            <Select style={{ width: "100%" }} placeholder="Select service">
               {classes.map(cls => (
                 <Select.Option key={cls.classId} value={cls.classId}>{cls.title || "Untitled"}</Select.Option>
               ))}
@@ -2884,6 +2923,57 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
 }
 
 // ─── MONTH VIEW ───────────────────────────────────────────────────────────────
+function AgendaView({ day, schedules, getClassColor, onEventClick, loading }) {
+  const rows = [...(schedules || [])].sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+  return (
+    <div style={{ padding: "16px 20px 40px", overflow: "auto", flex: 1 }}>
+      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>
+        {day.format("dddd, MMMM D")} · {rows.length} session{rows.length === 1 ? "" : "s"}
+      </div>
+      {loading && <div style={{ color: "#94a3b8", fontSize: 13 }}>Loading…</div>}
+      {!loading && rows.length === 0 && (
+        <div style={{ color: "#94a3b8", fontSize: 14, padding: "32px 0" }}>No sessions today.</div>
+      )}
+      {rows.map((s) => {
+        const color = getClassColor(s.optionId);
+        const booked = s.current_bookings_count ?? 0;
+        const cap = s.maxParticipants ?? s.max_participants ?? 0;
+        return (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => onEventClick(s)}
+            style={{
+              display: "flex",
+              width: "100%",
+              textAlign: "left",
+              gap: 14,
+              padding: "14px 16px",
+              marginBottom: 8,
+              border: "1px solid #e2e8f0",
+              borderLeft: `4px solid ${color.accent}`,
+              borderRadius: 10,
+              background: color.bg,
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ minWidth: 72, fontWeight: 650, color: color.text }}>
+              {dayjs(`${s.date}T${String(s.time || "00:00").slice(0, 5)}`).format("h:mm A")}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 650, color: "#0f172a" }}>{s.className}</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                {s.duration} min · {booked}/{cap || "—"} booked
+                {s.name ? ` · ${s.name}` : ""}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds, isMobile, getContextMenuItems }) {
   const startOfMonth = currentMonth.startOf("month");
   const firstWeekday = startOfMonth.day();
@@ -3088,10 +3178,11 @@ export default function ScheduleCalendarView({
   initialClassId,
   initialInstanceId,
   prefetchedClasses = null,
-  urlSyncBasePath = "/business/dashboard/schedules",
+  urlSyncBasePath = "/business/dashboard/calendar",
+  defaultView = "agenda",
 }) {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState("month");
+  const [viewMode, setViewMode] = useState(defaultView || "agenda");
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [classes, setClasses] = useState([]);
   const [allSchedules, setAllSchedules] = useState([]);
@@ -3110,6 +3201,11 @@ export default function ScheduleCalendarView({
 
   // Form panel state
   const [formState, setFormState] = useState({ open: false, schedule: null, prefill: null, isBulk: false, moveOnly: false });
+  const [rosterSession, setRosterSession] = useState(null);
+  const [staffList, setStaffList] = useState([]);
+  const [staffFilter, setStaffFilter] = useState("all");
+  const [timeOffOpen, setTimeOffOpen] = useState(false);
+  const [timeOffForm] = Form.useForm();
 
   // Group bulk-edit (dropdown + modal)
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -3212,22 +3308,43 @@ export default function ScheduleCalendarView({
     }
   }, [initialClassId, prefetchedClasses]);
 
-  // ── Load schedules ────────────────────────────────────────────────────────
+  // ── Load sessions (materialized ScheduleInstance rows) ─────────────────────
   const loadSchedules = useCallback(async (classList) => {
     if (!classList.length) { setAllSchedules([]); setLoading(false); return; }
     setLoading(true);
     try {
+      const start = currentDate.subtract(45, "day").format("YYYY-MM-DD");
+      const end = currentDate.add(45, "day").format("YYYY-MM-DD");
       const promises = classList.map(async (cls) => {
         const optionId = cls.option?.optionId || cls.options?.[0]?.optionId;
-        if (!optionId) return [];
-        const result = await scheduleService.fetchSchedules({ option_id: optionId });
-        if (!result.success) return [];
-        return (result.data || []).map(s => ({
-          ...s,
-          optionId,
+        const result = await scheduleService.getScheduleInstances({
           classId: cls.classId,
-          className: cls.title,
-        }));
+          start_date: start,
+          end_date: end,
+          assigned_staff_id: staffFilter !== "all" ? staffFilter : undefined,
+        });
+        if (!result.success) return [];
+        const rows = Array.isArray(result.data) ? result.data : result.data?.results || [];
+        return rows
+          .filter((s) => s.status !== "cancelled")
+          .map((s) => ({
+            ...s,
+            id: s.id,
+            scheduleId: s.schedule,
+            date: normalizeScheduleInstanceDate(s.date),
+            time: typeof s.time === "string" ? s.time.slice(0, 8) : s.time,
+            duration: s.duration,
+            price: s.price,
+            maxParticipants: s.max_participants,
+            minParticipants: s.min_participants,
+            name: s.schedule_name || s.name || "",
+            optionId,
+            classId: s.class_id || cls.classId,
+            className: s.class_name || cls.title,
+            assigned_staff_id: s.assigned_staff_id,
+            recurrence_rule_id: s.recurrence_rule_id,
+            current_bookings_count: s.current_bookings_count || 0,
+          }));
       });
       const results = await Promise.all(promises);
       setAllSchedules(results.flat());
@@ -3236,9 +3353,16 @@ export default function ScheduleCalendarView({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentDate, staffFilter]);
 
   useEffect(() => { loadClasses(); }, [loadClasses]);
+
+  useEffect(() => {
+    businessStaffService.getStaff().then((res) => {
+      const rows = res.data || [];
+      setStaffList(Array.isArray(rows) ? rows : []);
+    });
+  }, []);
 
   useEffect(() => {
     if (classes.length > 0) {
@@ -3316,8 +3440,9 @@ export default function ScheduleCalendarView({
       const targetDate = normalizeScheduleInstanceDate(meta.date);
       const found = allSchedules.find(
         (s) =>
-          Number(s.id) === Number(meta.scheduleId) &&
-          normalizeScheduleInstanceDate(s.date) === targetDate,
+          Number(s.id) === Number(initialInstanceId) ||
+          (Number(s.scheduleId) === Number(meta.scheduleId) &&
+            normalizeScheduleInstanceDate(s.date) === targetDate),
       );
 
       if (!found) {
@@ -3329,14 +3454,8 @@ export default function ScheduleCalendarView({
 
       deepLinkDrawerOpenedForRef.current = initialInstanceId;
       setCurrentDate(dayjs(targetDate));
-      setViewMode("week");
-      setFormState({
-        open: true,
-        schedule: found,
-        prefill: null,
-        isBulk: false,
-        moveOnly: false,
-      });
+      setViewMode("agenda");
+      setRosterSession(found);
     };
 
     run();
@@ -3389,14 +3508,14 @@ export default function ScheduleCalendarView({
         return !d.isBefore(weekStart, "day") && !d.isAfter(end, "day");
       }).length;
     }
-    if (viewMode === "day") return filteredSchedules.filter(s => s.date === currentDate.format("YYYY-MM-DD")).length;
+    if (viewMode === "day" || viewMode === "agenda") return filteredSchedules.filter(s => s.date === currentDate.format("YYYY-MM-DD")).length;
     return filteredSchedules.filter(s => dayjs(s.date).isSame(currentDate, "month")).length;
   }, [filteredSchedules, viewMode, weekStart, currentDate]);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigate = (dir) => {
     if (viewMode === "week") setCurrentDate(d => d.add(dir, "week"));
-    else if (viewMode === "day") setCurrentDate(d => d.add(dir, "day"));
+    else if (viewMode === "day" || viewMode === "agenda") setCurrentDate(d => d.add(dir, "day"));
     else setCurrentDate(d => d.add(dir, "month"));
   };
 
@@ -3407,7 +3526,7 @@ export default function ScheduleCalendarView({
         ? `${weekStart.format("MMM D")} – ${end.format("D, YYYY")}`
         : `${weekStart.format("MMM D")} – ${end.format("MMM D, YYYY")}`;
     }
-    if (viewMode === "day") return currentDate.format("MMMM D, YYYY");
+    if (viewMode === "day" || viewMode === "agenda") return currentDate.format("MMMM D, YYYY");
     return currentDate.format("MMMM YYYY");
   }, [viewMode, weekStart, currentDate]);
 
@@ -3441,7 +3560,7 @@ export default function ScheduleCalendarView({
   // ── Event & slot clicks ────────────────────────────────────────────────────
   const handleEventClick = useCallback((schedule) => {
     if (selectMode) { handleToggleSelect(schedule.id); return; }
-    setFormState({ open: true, schedule, prefill: null, isBulk: false, moveOnly: false });
+    setRosterSession(schedule);
   }, [selectMode, handleToggleSelect]);
 
   const handleSlotClick = useCallback((day, timeStr) => {
@@ -3512,17 +3631,41 @@ export default function ScheduleCalendarView({
           domEvent?.preventDefault?.();
           domEvent?.stopPropagation?.();
           Modal.confirm({
-            title: "Delete this schedule?",
-            content: "This cannot be undone.",
-            okText: "Delete",
+            title: schedule.recurrence_rule_id ? "This session is part of a series" : "Cancel this session?",
+            content: schedule.recurrence_rule_id
+              ? "Cancel only this session, or this session and all following ones in the series."
+              : "Confirmed bookings will be cancelled.",
+            okText: schedule.recurrence_rule_id ? "This session only" : "Cancel session",
             okButtonProps: { danger: true },
+            cancelText: schedule.recurrence_rule_id ? "This and following" : "Keep",
             onOk: async () => {
-              const res = await scheduleService.deleteSchedule(schedule.id);
+              const res = await scheduleService.editSessionScope(schedule.id, {
+                action: "delete",
+                scope: "this",
+                reason: "Cancelled by business",
+              });
               if (res.success) {
-                message.success("Schedule deleted.");
+                message.success("Session cancelled.");
                 handleSuccess();
               }
             },
+            ...(schedule.recurrence_rule_id
+              ? {
+                  onCancel: async (close) => {
+                    const clickedCancelBtn = close?.triggerCancel;
+                    if (!clickedCancelBtn) return;
+                    const res = await scheduleService.editSessionScope(schedule.id, {
+                      action: "delete",
+                      scope: "following",
+                      reason: "Cancelled by business",
+                    });
+                    if (res.success) {
+                      message.success("This and following sessions cancelled.");
+                      handleSuccess();
+                    }
+                  },
+                }
+              : {}),
           });
         },
       },
@@ -3574,7 +3717,7 @@ export default function ScheduleCalendarView({
                 <CalendarBadgeMonth>{currentDate.format("MMM")}</CalendarBadgeMonth>
                 <CalendarBadgeDay>{currentDate.date()}</CalendarBadgeDay>
               </CalendarBadge>
-              <PageTitle>Schedules</PageTitle>
+              <PageTitle>Calendar</PageTitle>
 
               {visibleEventCount > 0 && (
                 <span style={{ fontSize: 12, color: "#3b82f6", fontWeight: 500, display: "flex", alignItems: "center", gap: 3 }}>
@@ -3607,15 +3750,32 @@ export default function ScheduleCalendarView({
                   value={viewMode}
                   onChange={setViewMode}
                   options={[
+                    { value: "agenda", label: "Agenda" },
                     { value: "day", label: "Day" },
                     { value: "week", label: "Week" },
                     { value: "month", label: "Month" },
                   ]}
-                  style={{ width: 90 }}
+                  style={{ width: 110 }}
                   size="small"
                   suffixIcon={<ChevronDown size={12} />}
                 />
               </ViewDropdownWrap>
+
+              {staffList.length > 0 && (
+                <Select
+                  value={staffFilter}
+                  onChange={setStaffFilter}
+                  options={[
+                    { label: "All staff", value: "all" },
+                    ...staffList.map((s) => ({
+                      label: s.user_name || s.name || s.user_email || "Staff",
+                      value: s.id,
+                    })),
+                  ]}
+                  style={{ width: 150 }}
+                  size="small"
+                />
+              )}
 
               {allGroups.length > 0 && (
                 <>
@@ -3664,15 +3824,29 @@ export default function ScheduleCalendarView({
                 </IconBtn>
               </Tooltip>
 
-              <AddBtn
-                onClick={() => {
-                  const prefill = { classId: classes.length === 1 ? classes[0].classId : null };
-                  setFormState({ open: true, schedule: null, prefill, isBulk: false, moveOnly: false });
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: "session",
+                      label: "Add session",
+                      onClick: () => {
+                        const prefill = { classId: classes.length === 1 ? classes[0].classId : null };
+                        setFormState({ open: true, schedule: null, prefill, isBulk: false, moveOnly: false });
+                      },
+                    },
+                    {
+                      key: "timeoff",
+                      label: "Add time off / blackout",
+                      onClick: () => setTimeOffOpen(true),
+                    },
+                  ],
                 }}
-                disabled={classes.length === 0}
               >
-                <Plus size={14} /> Add
-              </AddBtn>
+                <AddBtn disabled={classes.length === 0}>
+                  <Plus size={14} /> Add
+                </AddBtn>
+              </Dropdown>
             </TopBarRight>
           </TopBarRow>
         </TopBar>
@@ -3720,6 +3894,15 @@ export default function ScheduleCalendarView({
         </BulkBarGridWrap>
 
         {/* Calendar views */}
+        {viewMode === "agenda" && (
+          <AgendaView
+            day={currentDate}
+            schedules={daySchedules}
+            getClassColor={getClassColor}
+            onEventClick={handleEventClick}
+            loading={loading}
+          />
+        )}
         {viewMode === "week" && (
           <WeekView
             weekDays={weekDays}
@@ -3884,6 +4067,54 @@ export default function ScheduleCalendarView({
           </Form.Item>
           <Form.Item label="Min participants" name="minParticipants" rules={[{ required: true }]}>
             <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <SessionRosterDrawer
+        open={!!rosterSession}
+        session={rosterSession}
+        onClose={() => setRosterSession(null)}
+        onEdit={(s) => {
+          setRosterSession(null);
+          setFormState({ open: true, schedule: s, prefill: null, isBulk: false, moveOnly: false });
+        }}
+        onChanged={handleSuccess}
+      />
+
+      <Modal
+        title="Time off / blackout"
+        open={timeOffOpen}
+        onCancel={() => { setTimeOffOpen(false); timeOffForm.resetFields(); }}
+        onOk={() => timeOffForm.submit()}
+        okText="Add"
+        destroyOnClose
+      >
+        <Form
+          form={timeOffForm}
+          layout="vertical"
+          onFinish={async (values) => {
+            const res = await scheduleService.createTimeOff({
+              title: values.title || "Time off",
+              start_date: values.range[0].format("YYYY-MM-DD"),
+              end_date: values.range[1].format("YYYY-MM-DD"),
+              all_day: true,
+            });
+            if (res.success) {
+              message.success("Time off added. Appointment slots will skip this window.");
+              setTimeOffOpen(false);
+              timeOffForm.resetFields();
+              handleSuccess();
+            } else {
+              message.error("Could not add time off");
+            }
+          }}
+        >
+          <Form.Item name="title" label="Title">
+            <Input placeholder="Holiday, studio closed…" />
+          </Form.Item>
+          <Form.Item name="range" label="Dates" rules={[{ required: true }]}>
+            <DatePicker.RangePicker style={{ width: "100%" }} />
           </Form.Item>
         </Form>
       </Modal>

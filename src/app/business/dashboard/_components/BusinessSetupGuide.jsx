@@ -456,24 +456,15 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false, hasWidgetAccess 
       },
       {
         key: "class",
-        title: "Experience & Scheduling Setup",
+        title: "Service & Scheduling Setup",
         items: [
           {
             id: "createClass",
-            label: "Create Your First Experience",
+            label: "Create your first service",
             isComplete: !!setupStatus?.has_created_class,
             icon: <AppstoreAddOutlined />,
-            action: () => handleNavigate("/business/dashboard/listings"),
+            action: () => handleNavigate("/business/dashboard/services"),
             actionLabel: "Create",
-          },
-          {
-            id: "schedules",
-            label: "Set Up Schedules & Pricing",
-            isComplete: !!setupStatus?.has_schedules,
-            icon: <CalendarOutlined />,
-            action: () => handleNavigate("/business/dashboard/listings"),
-            actionLabel: "Set Pricing",
-            disabled: !setupStatus?.has_class_options,
           },
         ],
       },

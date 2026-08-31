@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Form, Select, Switch, Button, TimePicker, Spin } from "antd";
+import { Form, Select, Switch, Button, TimePicker, Spin, InputNumber } from "antd";
 import message from "@/lib/message";
 import {
   Clock,
@@ -18,7 +18,7 @@ import {
   Moon,
   ChevronUp,
 } from "lucide-react";
-import { businessService } from "@/services/apiService";
+import { businessService, scheduleService } from "@/services/apiService";
 
 const { Option } = Select;
 
@@ -408,6 +408,8 @@ function TimePairCell({ value = [null, null], onChange, disabled }) {
 function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBusinessData, onFieldBlur, onFieldChange }) {
   const [connectLoading, setConnectLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [calendarConnections, setCalendarConnections] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   // useWatch for rendering the day rows — we need the array length/day names
   const businessHours = Form.useWatch("businessHours", form);
 
@@ -504,6 +506,29 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
     }
   })();
 
+  useEffect(() => {
+    setCalendarLoading(true);
+    scheduleService.getCalendarConnections().then((res) => {
+      setCalendarConnections(Array.isArray(res.data) ? res.data : []);
+      setCalendarLoading(false);
+    });
+  }, []);
+
+  const handleCalendarConnect = async (provider) => {
+    const res = await scheduleService.startCalendarOAuth(provider);
+    const url = res.data?.authorize_url;
+    if (url) window.location.href = url;
+    else message.error(res.data?.error || "Calendar connect is not configured on this server.");
+  };
+
+  const handleCalendarDisconnect = async (id) => {
+    const res = await scheduleService.disconnectCalendar(id);
+    if (res.success) {
+      setCalendarConnections((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: false } : c)));
+      message.success("Calendar disconnected");
+    }
+  };
+
   const stripeStatusInfo = statusMap[stripeStatus] || statusMap.unlinked;
 
   return (
@@ -515,7 +540,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
           <SectionIconBox><Clock size={17} /></SectionIconBox>
           <SectionTitleBlock>
             <SectionTitle>Business hours</SectionTitle>
-            <SectionSubtitle>Set your weekly schedule and operating timezone</SectionSubtitle>
+            <SectionSubtitle>Set the weekly hours used to generate appointment slots, and your operating timezone</SectionSubtitle>
           </SectionTitleBlock>
         </SectionHeader>
 
@@ -523,7 +548,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
         <SettingRow>
           <SettingInfo>
             <SettingLabel>Timezone</SettingLabel>
-            <SettingDesc>Set your business timezone for accurate scheduling</SettingDesc>
+            <SettingDesc>Appointment availability and session times use this timezone</SettingDesc>
           </SettingInfo>
           <SettingControl style={{ minWidth: 220 }}>
             <Form.Item name="business_timezone" noStyle rules={[{ required: true, message: "Timezone is required" }]}>
@@ -639,7 +664,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
         {[
           { name: "newBookingNotification",      label: "New booking",          desc: "Get notified when a new booking is made" },
           { name: "cancellationNotification",    label: "Cancellations",        desc: "Get notified when a booking is cancelled" },
-          { name: "reminderNotification",        label: "Student reminders",    desc: "Automatically remind students 24 hours before class" },
+          { name: "reminderNotification",        label: "Client reminders",    desc: "Email clients before their session. Timing is set below." },
           { name: "scheduleExpiryNotification",  label: "Schedule expiry",      desc: "Alert when classes are running low on sessions" },
           { name: "smsNotifications",            label: "SMS notifications",    desc: "Receive critical alerts via text message" },
         ].map(({ name, label, desc }) => (
@@ -655,6 +680,69 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
             </SettingControl>
           </SettingRow>
         ))}
+        <SettingRow>
+          <SettingInfo>
+            <SettingLabel>Remind clients this many hours before</SettingLabel>
+            <SettingDesc>Used for reminder emails when client reminders are on</SettingDesc>
+          </SettingInfo>
+          <SettingControl style={{ minWidth: 120 }}>
+            <Form.Item name="reminder_hours_before" noStyle>
+              <InputNumber
+                min={1}
+                max={168}
+                addonAfter="hrs"
+                onChange={(val) => onFieldChange?.("reminder_hours_before", val)}
+              />
+            </Form.Item>
+          </SettingControl>
+        </SettingRow>
+      </SectionCard>
+
+      <SectionCard>
+        <SectionHeader>
+          <SectionIconBox><Globe size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Calendar sync</SectionTitle>
+            <SectionSubtitle>One-way push of bookings to Google or Outlook. Failures show a reconnect prompt here.</SectionSubtitle>
+          </SectionTitleBlock>
+        </SectionHeader>
+        {calendarLoading ? (
+          <Spin />
+        ) : (
+          <>
+            {(calendarConnections || []).map((c) => (
+              <SettingRow key={c.id}>
+                <SettingInfo>
+                  <SettingLabel>{c.provider === "google" ? "Google" : "Outlook"}{c.email ? ` · ${c.email}` : ""}</SettingLabel>
+                  <SettingDesc>
+                    {c.needs_reconnect || c.last_error
+                      ? `Reconnect needed${c.last_error ? `: ${c.last_error}` : ""}`
+                      : c.is_active
+                        ? "Connected"
+                        : "Disconnected"}
+                  </SettingDesc>
+                </SettingInfo>
+                <SettingControl>
+                  {c.is_active ? (
+                    <Button size="small" onClick={() => handleCalendarDisconnect(c.id)}>Disconnect</Button>
+                  ) : (
+                    <Button size="small" type="primary" onClick={() => handleCalendarConnect(c.provider)}>Reconnect</Button>
+                  )}
+                </SettingControl>
+              </SettingRow>
+            ))}
+            <SettingRow>
+              <SettingInfo>
+                <SettingLabel>Connect a calendar</SettingLabel>
+                <SettingDesc>New bookings, reschedules, and cancels are pushed as events</SettingDesc>
+              </SettingInfo>
+              <SettingControl style={{ display: "flex", gap: 8 }}>
+                <Button size="small" onClick={() => handleCalendarConnect("google")}>Google</Button>
+                <Button size="small" onClick={() => handleCalendarConnect("outlook")}>Outlook</Button>
+              </SettingControl>
+            </SettingRow>
+          </>
+        )}
       </SectionCard>
 
       {/* ── Payout Setup ── */}
