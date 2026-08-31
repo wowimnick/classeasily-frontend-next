@@ -43,9 +43,6 @@ import { bookingService } from "@/services/apiService";
 import DesktopBookingHistory from "./DesktopBookingHistory";
 import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
-import BookingDemoToggle from "./BookingDemoToggle";
-import { isBookingDemoEnabled, fallbackToDemo } from "@/lib/devEnv";
-import { fetchFixtureBookings } from "./__fixtures__/bookingFixtures";
 import { LordIcon } from "@/services/ReactUtils";
 import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
@@ -440,7 +437,6 @@ const BookingHistory = forwardRef((props, ref) => {
     sortOrder: "descend",
   });
   const [totalResults, setTotalResults] = useState(0);
-  const [demoEpoch, setDemoEpoch] = useState(0);
 
   const screens = useBreakpoint();
   const mainContentRef = useRef(null);
@@ -549,12 +545,7 @@ const BookingHistory = forwardRef((props, ref) => {
         const cleanParams = Object.fromEntries(
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
-        const result = fallbackToDemo(
-          isBookingDemoEnabled()
-            ? fetchFixtureBookings(cleanParams)
-            : await bookingService.fetchBusinessBookings(cleanParams),
-          () => fetchFixtureBookings(cleanParams),
-        );
+        const result = await bookingService.fetchBusinessBookings(cleanParams);
 
         if (result.success && result.data) {
           setBookings(result.data.results || []);
@@ -593,7 +584,6 @@ const BookingHistory = forwardRef((props, ref) => {
       tableParams.sortOrder,
       searchText,
       dateRange,
-      demoEpoch,
     ]
   );
 
@@ -698,7 +688,6 @@ const BookingHistory = forwardRef((props, ref) => {
               View past completed and cancelled bookings
             </HeaderSubtitle>
           </div>
-          <BookingDemoToggle onChange={() => setDemoEpoch((n) => n + 1)} />
         </DashboardHeader>
 
         <Divider />

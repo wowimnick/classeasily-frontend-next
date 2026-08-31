@@ -779,19 +779,6 @@ const menuGroupsConfig =[
     label: "Main Menu",
     items:[
       {
-        key: "overview",
-        label: "Reports",
-        icon: (
-          <LordIcon
-            src="https://cdn.lordicon.com/upjgggre.json"
-            colors="primary:#666,secondary:#666"
-            size="20px"
-            playOnLoad={true}
-            inState="in-home"
-          />
-        ),
-      },
-      {
         key: "calendar",
         label: "Calendar",
         icon: (
@@ -801,6 +788,19 @@ const menuGroupsConfig =[
             size="20px"
             playOnLoad={true}
             inState="in-calendar"
+          />
+        ),
+      },
+      {
+        key: "overview",
+        label: "Reports",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/upjgggre.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-home"
           />
         ),
       },

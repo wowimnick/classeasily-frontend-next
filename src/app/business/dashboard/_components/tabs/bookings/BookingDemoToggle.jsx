@@ -6,7 +6,6 @@ import {
   isNonProductionHost,
   isBookingDemoEnabled,
   setBookingDemoEnabled,
-  DEMO_CHANGE_EVENT,
 } from "@/lib/devEnv";
 
 export default function BookingDemoToggle({ onChange }) {
@@ -14,13 +13,8 @@ export default function BookingDemoToggle({ onChange }) {
   const [on, setOn] = useState(false);
 
   useEffect(() => {
-    const sync = () => {
-      setVisible(isNonProductionHost());
-      setOn(isBookingDemoEnabled());
-    };
-    sync();
-    window.addEventListener(DEMO_CHANGE_EVENT, sync);
-    return () => window.removeEventListener(DEMO_CHANGE_EVENT, sync);
+    setVisible(isNonProductionHost());
+    setOn(isBookingDemoEnabled());
   }, []);
 
   if (!visible) return null;
