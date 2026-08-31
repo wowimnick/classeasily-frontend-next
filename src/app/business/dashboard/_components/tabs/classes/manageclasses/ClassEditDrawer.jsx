@@ -57,14 +57,9 @@ import {
   Plus,
   Trash2,
   CalendarRange,
-  Layers,
   Tag as TagIcon,
-  Users,
   CalendarDays,
-  ListChecks,
-  ToggleLeft,
   Check,
-  Type,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -938,54 +933,6 @@ const QuickPill = styled(Tag)`
   }
 `;
 
-const ScheduleCardGroup = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 8px;
-`;
-
-const ScheduleCard = styled.div`
-  border: 1px solid
-    ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorBorder};
-  background: ${(props) =>
-    props.$selected ? props.theme.token.colorPrimaryBg : "#fff"};
-  padding: 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &:hover {
-    border-color: ${(props) => props.theme.token.colorPrimary};
-  }
-
-  h5 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorText};
-  }
-
-  p {
-    margin: 0;
-    font-size: 12px;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    line-height: 1.4;
-  }
-`;
-
 const FooterActions = styled.div`
   display: flex;
   justify-content: center;
@@ -1012,273 +959,6 @@ const AddOptionLink = styled.button`
   }
 `;
 
-const FeatureBuilder = ({ form, tierIndex, addButtonLabel }) => {
-  // We watch the entire options array to derive the global list of Feature Keys (Rows)
-  // This ensures that if Tier 1 adds "Duration", Tier 2 sees a "Duration" row immediately.
-  const options = Form.useWatch("options", form) || [];
-
-  // Parse all descriptions to get a unique set of keys (Row Headers)
-  const allFeatureKeys = React.useMemo(() => {
-    const keys = new Set();
-    options.forEach((opt) => {
-      try {
-        const parsed = JSON.parse(opt.description || "{}");
-        if (typeof parsed === "object" && parsed !== null) {
-          Object.keys(parsed).forEach((k) => keys.add(k));
-        }
-      } catch (e) {
-        // Ignore parsing errors or plain strings
-      }
-    });
-    return Array.from(keys);
-  }, [options]);
-
-  // Helper to safely update the form options array
-  const updateOptions = (newOptions) => {
-    form.setFieldsValue({ options: newOptions });
-  };
-
-  const getCurrentTierFeatures = () => {
-    try {
-      const currentDesc = options[tierIndex]?.description;
-      return currentDesc ? JSON.parse(currentDesc) : {};
-    } catch (e) {
-      return {};
-    }
-  };
-
-  // 1. Change Cell Value (Specific to this Tier)
-  const handleValueChange = (key, newValue) => {
-    const newOptions = [...options];
-    // Ensure we are working with a cloned object for the specific tier
-    const currentFeatures = getCurrentTierFeatures();
-
-    currentFeatures[key] = newValue;
-
-    newOptions[tierIndex] = {
-      ...newOptions[tierIndex],
-      description: JSON.stringify(currentFeatures),
-    };
-
-    updateOptions(newOptions);
-  };
-
-  // 2. Rename Row (Applies to ALL Tiers to keep table synced)
-  const handleKeyRename = (oldKey, newKey) => {
-    if (!newKey.trim() || oldKey === newKey) return;
-
-    const newOptions = options.map((opt) => {
-      try {
-        const features = JSON.parse(opt.description || "{}");
-        // If this tier has data for the old key, move it to the new key
-        if (Object.prototype.hasOwnProperty.call(features, oldKey)) {
-          const value = features[oldKey];
-          delete features[oldKey];
-          features[newKey] = value;
-          return { ...opt, description: JSON.stringify(features) };
-        }
-        return opt;
-      } catch (e) {
-        return opt;
-      }
-    });
-
-    updateOptions(newOptions);
-  };
-
-  // 3. Delete Row (Applies to ALL Tiers)
-  const handleDeleteRow = (key) => {
-    const newOptions = options.map((opt) => {
-      try {
-        const features = JSON.parse(opt.description || "{}");
-        if (Object.prototype.hasOwnProperty.call(features, key)) {
-          delete features[key];
-          return { ...opt, description: JSON.stringify(features) };
-        }
-        return opt;
-      } catch (e) {
-        return opt;
-      }
-    });
-
-    updateOptions(newOptions);
-  };
-
-  // 4. Add New Row (Initialize in Current Tier, implies row existence for others)
-  const handleAddFeature = () => {
-    const newKey = "New Feature";
-    let finalKey = newKey;
-    let counter = 1;
-
-    // Avoid duplicate keys
-    while (allFeatureKeys.includes(finalKey)) {
-      finalKey = `${newKey} ${counter}`;
-      counter++;
-    }
-
-    handleValueChange(finalKey, true); // Default to "Included" (true)
-  };
-
-  const currentFeatures = getCurrentTierFeatures();
-
-  return (
-    <div style={{ padding: 0 }}>
-      {allFeatureKeys.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 24px",
-            gap: "8px",
-            marginBottom: "6px",
-            padding: "0 4px",
-          }}
-        >
-          <Text
-            type="secondary"
-            style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              letterSpacing: "0.5px",
-            }}
-          >
-            FEATURE
-          </Text>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              letterSpacing: "0.5px",
-            }}
-          >
-            VALUE
-          </Text>
-        </div>
-      )}
-
-      {allFeatureKeys.map((key) => {
-        const value = currentFeatures[key];
-        const effectiveValue = value === undefined ? "" : value;
-        const isBool = typeof effectiveValue === "boolean";
-
-        return (
-          <div
-            key={key}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 24px",
-              gap: "8px",
-              marginBottom: "6px",
-              alignItems: "center",
-            }}
-          >
-            {/* Row Name Input */}
-            <Input
-              size="middle"
-              variant="filled" // Slightly distinct background for the label
-              placeholder="e.g. Duration"
-              defaultValue={key}
-              onBlur={(e) => handleKeyRename(key, e.target.value)}
-              onPressEnter={(e) => e.target.blur()}
-              style={{ fontSize: "13px" }}
-            />
-
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              {/* Value Selector */}
-              <div style={{ flex: 1 }}>
-                {isBool ? (
-                  <div
-                    style={{
-                      height: "32px",
-                      display: "flex",
-                      alignItems: "center",
-                      paddingLeft: "4px",
-                    }}
-                  >
-                    <Switch
-                      size="small"
-                      checked={effectiveValue}
-                      onChange={(checked) => handleValueChange(key, checked)}
-                    />
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        marginLeft: "8px",
-                        color: effectiveValue ? "#10b981" : "#94a3b8",
-                      }}
-                    >
-                      {effectiveValue ? "Included" : "Excluded"}
-                    </span>
-                  </div>
-                ) : (
-                  <Input
-                    size="middle"
-                    placeholder="e.g. 2 Hours"
-                    value={effectiveValue}
-                    onChange={(e) => handleValueChange(key, e.target.value)}
-                    style={{ fontSize: "13px" }}
-                  />
-                )}
-              </div>
-
-              {/* Type Toggle */}
-              <Tooltip
-                title={isBool ? "Switch to Text Input" : "Switch to Yes/No"}
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  style={{ color: "#94a3b8" }}
-                  icon={isBool ? <Type size={14} /> : <ToggleLeft size={14} />}
-                  onClick={() => handleValueChange(key, isBool ? "" : true)}
-                />
-              </Tooltip>
-            </div>
-
-            {/* Delete */}
-            <Popconfirm
-              title="Delete row?"
-              okText="Yes"
-              cancelText="No"
-              onConfirm={() => handleDeleteRow(key)}
-            >
-              <Button
-                type="text"
-                size="small"
-                danger
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  opacity: 0.6,
-                }}
-                icon={<Trash2 size={14} />}
-              />
-            </Popconfirm>
-          </div>
-        );
-      })}
-
-      <Button
-        type="dashed"
-        size="small"
-        block
-        icon={<Plus size={12} />}
-        onClick={handleAddFeature}
-        style={{
-          marginTop: "4px",
-          fontSize: "12px",
-          color: "#64748b",
-          borderColor: "#e2e8f0",
-        }}
-      >
-        {addButtonLabel || "Add comparison row"}
-      </Button>
-    </div>
-  );
-};
-
 const CardSection = styled.div`
   padding: 20px;
   border-bottom: 1px solid ${bookingTheme.borderLight};
@@ -1303,7 +983,7 @@ const SingleOptionLayout = ({ field, form, bookingType }) => (
     </FormItemAntd>
     <InfoCard>
       <CardSection>
-        <CardSectionTitle>For guests</CardSectionTitle>
+        <CardSectionTitle>For clients</CardSectionTitle>
         <FormLabelWithIcon><Activity size={16} /> Activity level</FormLabelWithIcon>
         <FormHelpText>Difficulty or experience required.</FormHelpText>
         <FormGrid>
@@ -1326,7 +1006,7 @@ const SingleOptionLayout = ({ field, form, bookingType }) => (
         <FieldDivider />
         <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
         <FormHelpText>
-          Optional message to show guests before their booking (e.g. note from host, where to meet).
+          Optional message to show clients before their booking (e.g. note from host, where to meet).
         </FormHelpText>
         <FormItemAntd {...field} name={[field.name, "equipment"]}>
           <Input.TextArea
@@ -1585,37 +1265,6 @@ const StandardLabel = ({ icon: Icon, label, help }) => (
   </div>
 );
 
-const ScheduleModeSelector = ({ value, onChange }) => {
-  return (
-    <ScheduleCardGroup>
-      <ScheduleCard
-        $selected={value === "synced"}
-        onClick={() => onChange("synced")}
-      >
-        <h5>
-          <Users size={16} /> Same Spot / Time
-        </h5>
-        <p>
-          Happens alongside the Primary tier. Great for VIP upgrades or
-          variations for the same event.
-        </p>
-      </ScheduleCard>
-      <ScheduleCard
-        $selected={value === "independent"}
-        onClick={() => onChange("independent")}
-      >
-        <h5>
-          <CalendarDays size={16} /> Separate Time
-        </h5>
-        <p>
-          Has its own unique schedule. Great for different rooms or dedicated
-          setups.
-        </p>
-      </ScheduleCard>
-    </ScheduleCardGroup>
-  );
-};
-
 // --- SUB-COMPONENTS FOR TABS ---
 
 const TierBasicsTab = ({ field, isPrimary, form }) => {
@@ -1636,39 +1285,6 @@ const TierBasicsTab = ({ field, isPrimary, form }) => {
           size="middle"
         />
       </FormItemAntd>
-
-      <div style={{ marginTop: "16px" }}>
-        <StandardLabel
-          icon={ListChecks}
-          label="Features"
-          help="Shown in a comparison table when customers choose between options."
-        />
-        {/* We do NOT bind this Form.Item to 'description' directly via 'name' property.
-            Instead, FeatureBuilder manages the form state for 'options' globally.
-            However, we keep the Form.Item for layout consistency, but remove 'name'.
-         */}
-        <Form.Item style={{ marginBottom: "16px" }}>
-          <FeatureBuilder form={form} tierIndex={field.name} />
-        </Form.Item>
-      </div>
-
-      {!isPrimary && (
-        <div style={{ marginTop: "24px" }}>
-          <StandardLabel
-            icon={CalendarRange}
-            label="Schedule"
-            help="Same time as your primary option, or a different time?"
-          />
-          <FormItemAntd
-            {...field}
-            name={[field.name, "schedule_mode"]}
-            initialValue="synced"
-            style={{ marginBottom: 0 }}
-          >
-            <ScheduleModeSelector />
-          </FormItemAntd>
-        </div>
-      )}
     </div>
   );
 };
@@ -1702,7 +1318,7 @@ const TierDetailsTab = ({ field, form }) => {
       <FieldDivider />
       <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
       <FormHelpText>
-        Optional message to show guests before their booking (e.g. note from host, where to meet).
+        Optional message to show clients before their booking (e.g. note from host, where to meet).
       </FormHelpText>
       <FormItemAntd {...field} name={[field.name, "equipment"]}>
         <Input.TextArea
@@ -1995,24 +1611,6 @@ const MapCenterHandler = ({ center }) => {
   }, [center, map]);
   return null;
 };
-
-// Preset features matching creation flow
-const presetFeaturesOptions = [
-  { value: "All Supplies Included", label: "All Supplies Included" },
-  { value: "Beginner Friendly", label: "Beginner Friendly" },
-  { value: "Drinks Included", label: "Drinks Included" },
-  { value: "Food Included", label: "Food Included" },
-  { value: "Take-Home Creation", label: "Take-Home Creation" },
-  { value: "Small Group", label: "Small Group" },
-  { value: "Private Group Available", label: "Private Group Available" },
-  { value: "Date Night", label: "Date Night" },
-  { value: "Family Friendly", label: "Family Friendly" },
-  { value: "Great for Teams", label: "Great for Teams" },
-  { value: "Free Parking", label: "Free Parking" },
-  { value: "Indoor", label: "Indoor" },
-  { value: "Outdoor", label: "Outdoor" },
-  { value: "Wheelchair Accessible", label: "Wheelchair Accessible" },
-];
 
 const ClassEditDrawer = ({
   visible,
@@ -2693,7 +2291,7 @@ const ClassEditDrawer = ({
           result.error ||
           result.errors ||
           result.message ||
-          "Failed to update experience.";
+                          "Failed to update service.";
         if (typeof errorDetail === "object") {
           Object.entries(errorDetail).forEach(([field, errors]) => {
             message.error(
@@ -2745,20 +2343,13 @@ const ClassEditDrawer = ({
       <ul
         style={{ paddingLeft: "20px", margin: "5px 0 0 0", fontSize: "12px" }}
       >
-        <li>What will guests do?</li>
+        <li>What will clients do?</li>
         <li>Is there a specific vibe or atmosphere?</li>
-        <li>What makes this experience unique?</li>
+        <li>What makes this service unique?</li>
         <li>Who is your host (you)?</li>
       </ul>
     </div>
   );
-
-  const STEP_TITLES = ["The Service", "Meeting Point", "Details"];
-  const STEP_DESCRIPTIONS = [
-    "Basics & Photos",
-    "Location & Contact",
-    "Structure & Policies",
-  ];
 
   const renderDrawerContent = () => (
     <>
@@ -2792,8 +2383,8 @@ const ClassEditDrawer = ({
                   <ScrollContainer>
                     <FormContainer>
                       <StepHeader>
-                        <PageTitle>{STEP_TITLES[0]}</PageTitle>
-                        <StepDescription>{STEP_DESCRIPTIONS[0]}</StepDescription>
+                        <PageTitle>The Service</PageTitle>
+                        <StepDescription>Name, photos, and basics</StepDescription>
                       </StepHeader>
                       <StepContentWrapper>
                       <FormSection>
@@ -2958,7 +2549,7 @@ const ClassEditDrawer = ({
                                   >
                                     <ImagePreview
                                       src={image.url}
-                                      alt={image.name || "Experience image"}
+                                      alt={image.name || "Service image"}
                                     />
                                     <ImageActions>
                                       {!image.isCover &&
@@ -3028,37 +2619,6 @@ const ClassEditDrawer = ({
                           </FormItemAntd>
                         </FormGroup>
                       </FormSection>
-                      <FormSection>
-                        <FormGroup>
-                          <FormLabelWithIcon htmlFor="edit_class_features">
-                            <Hash size={16} />
-                            Features & Highlights
-                          </FormLabelWithIcon>
-                          <HelpText>
-                            <Info size={14} />
-                            What's included? What's the vibe?
-                          </HelpText>
-                          <FormItemAntd
-                            name="features"
-                            rules={[
-                              {
-                                required: true,
-                                message: "Please select at least one feature",
-                              },
-                            ]}
-                          >
-                            <StyledTagsSelect
-                              id="edit_class_features"
-                              mode="tags"
-                              style={{ width: "100%" }}
-                              placeholder="Select tags..."
-                              tokenSeparators={[","]}
-                              options={presetFeaturesOptions}
-                              maxTagCount="responsive"
-                            />
-                          </FormItemAntd>
-                        </FormGroup>
-                      </FormSection>
                     </StepContentWrapper>
                     </FormContainer>
                   </ScrollContainer>
@@ -3098,8 +2658,8 @@ const ClassEditDrawer = ({
                   <ScrollContainer>
                     <FormContainer>
                       <StepHeader>
-                        <PageTitle>{STEP_TITLES[1]}</PageTitle>
-                        <StepDescription>{STEP_DESCRIPTIONS[1]}</StepDescription>
+                        <PageTitle>Meeting Point</PageTitle>
+                        <StepDescription>Location & contact</StepDescription>
                       </StepHeader>
                       <StepContentWrapper>
                       <FormSection>
@@ -3371,7 +2931,7 @@ const ClassEditDrawer = ({
                       <SectionDivider>
                         <span>
                           <Phone size={16} />
-                          Guest Support Contact
+                          Client support contact
                         </span>
                       </SectionDivider>
                       <FormSection>
@@ -3383,7 +2943,7 @@ const ClassEditDrawer = ({
                             </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
-                              Where can guests email you with questions?
+                              Where can clients email you with questions?
                             </HelpText>
                             <FormItemAntd
                               name="studentContactEmail"
@@ -3417,7 +2977,7 @@ const ClassEditDrawer = ({
                               Support Phone
                             </FormLabelWithIcon>
                             <HelpText>
-                              <Info size={14} />A number for guests to call or
+                              <Info size={14} />A number for clients to call or
                               text.
                             </HelpText>
                             <FormItemAntd
@@ -3461,8 +3021,8 @@ const ClassEditDrawer = ({
                   <ScrollContainer>
                     <FormContainer>
                       <StepHeader>
-                        <PageTitle>{STEP_TITLES[2]}</PageTitle>
-                        <StepDescription>{STEP_DESCRIPTIONS[2]}</StepDescription>
+                        <PageTitle>Details</PageTitle>
+                        <StepDescription>Pricing, capacity, and policies</StepDescription>
                       </StepHeader>
                       <StepContentWrapper>
                       {/* Hidden Booking Type Field for Logic */}

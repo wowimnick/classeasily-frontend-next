@@ -27,6 +27,11 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { bookingService } from "@/services/apiService";
+import { isBookingDemoEnabled } from "@/lib/devEnv";
+import {
+  loadFixtureBookingDetails,
+  patchFixtureBooking,
+} from "./__fixtures__/bookingFixtures";
 import {
   formatUTCToUserDisplay,
   formatBusinessLocalToUserDisplay,
@@ -447,7 +452,9 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
     (async () => {
       setLoading(true); setError(null);
       try {
-        const r = await bookingService.getBookingDetails(bookingId);
+        const r = isBookingDemoEnabled()
+          ? loadFixtureBookingDetails(bookingId)
+          : await bookingService.getBookingDetails(bookingId);
         if (r.success) setBooking(r.data);
         else { setError(r.error || "Failed to load booking details."); message.error(r.error || "Failed to load booking details."); }
       } catch { setError("An unexpected error occurred."); message.error("An unexpected error occurred."); }
@@ -459,7 +466,15 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
     if (!booking?.id) return;
     setIsCancelling(true);
     try {
-      const r = await bookingService.businessCancelBooking(booking.id, "Cancelled by business user");
+      const r = isBookingDemoEnabled()
+        ? (() => {
+            patchFixtureBooking(booking.id, {
+              status: "cancelled",
+              cancellation_reason: "Cancelled by business user",
+            });
+            return { success: true, data: loadFixtureBookingDetails(booking.id).data };
+          })()
+        : await bookingService.businessCancelBooking(booking.id, "Cancelled by business user");
       if (r.success) { message.success("Booking successfully cancelled"); onBookingCancel?.(r.data); onClose(); }
       else message.error(r.error || "Cancellation failed.");
     } catch { message.error("An error occurred during cancellation."); }
@@ -820,18 +835,26 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
               {booking.status === "confirmed" && (
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <Button size="small" onClick={async () => {
-                    const res = await bookingService.markAttendance(booking.id, "attended");
+                    const res = isBookingDemoEnabled()
+                      ? (patchFixtureBooking(booking.id, { attendance: "attended" }), { success: true })
+                      : await bookingService.markAttendance(booking.id, "attended");
                     if (res.success) {
                       message.success("Marked attended");
-                      const r = await bookingService.getBookingDetails(booking.id);
+                      const r = isBookingDemoEnabled()
+                        ? loadFixtureBookingDetails(booking.id)
+                        : await bookingService.getBookingDetails(booking.id);
                       if (r.success) setBooking(r.data);
                     }
                   }}>Attended</Button>
                   <Button size="small" danger onClick={async () => {
-                    const res = await bookingService.markAttendance(booking.id, "no_show");
+                    const res = isBookingDemoEnabled()
+                      ? (patchFixtureBooking(booking.id, { attendance: "no_show" }), { success: true })
+                      : await bookingService.markAttendance(booking.id, "no_show");
                     if (res.success) {
                       message.success("Marked no-show");
-                      const r = await bookingService.getBookingDetails(booking.id);
+                      const r = isBookingDemoEnabled()
+                        ? loadFixtureBookingDetails(booking.id)
+                        : await bookingService.getBookingDetails(booking.id);
                       if (r.success) setBooking(r.data);
                     }
                   }}>No-show</Button>

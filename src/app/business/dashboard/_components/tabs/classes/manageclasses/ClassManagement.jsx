@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { Drawer as VaulDrawer } from "vaul";
-import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
+import DashboardDrawer from "../../../shared/DashboardDrawer";
+import { confirmDestructive } from "../../../shared/confirmDestructive";
 import {
   Form,
   Tabs,
@@ -13,13 +13,11 @@ import {
   Space,
   Avatar,
   Tag,
-  Popconfirm,
   Spin,
   Divider,
   Input,
   Checkbox,
   Select,
-  Modal,
   Table,
   Switch,
   Dropdown,
@@ -78,10 +76,7 @@ import {
   scheduleService,
   courseService,
 } from "@/services/apiService";
-import ScheduleEditDrawer from "./ScheduleEditDrawer";
 import ClassEditDrawer from "./ClassEditDrawer";
-import DeleteClassModal from "./DeleteClassModal";
-import CourseScheduleDrawer from "./CourseScheduleDrawer";
 import { ClassProvider } from "../newclasses/ClassContext";
 import CreateClassPage from "../newclasses/CreateClassPage";
 import DashboardBreadcrumb from "../../../DashboardBreadcrumb";
@@ -94,7 +89,6 @@ const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
-import { LordIcon } from "@/services/ReactUtils";
 
 // --- ADDED: Skeleton component for mobile card view ---
 const CardSkeleton = () => (
@@ -128,7 +122,7 @@ const CardSkeleton = () => (
 const TableSkeleton = () => {
   const skeletonColumns = [
     {
-      title: "EXPERIENCE",
+      title: "SERVICE",
       key: "class",
       width: 400,
       render: () => (
@@ -573,47 +567,6 @@ const CustomSwitch = styled.div`
         }
       }
     `}
-`;
-
-const StyledScheduleDrawerOverlay = styled(VaulDrawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  ${VAUL_OVERLAY_BACKDROP_BLUR}
-`;
-
-const StyledScheduleDrawerContent = styled(VaulDrawer.Content)`
-  position: fixed;
-  top: 5vh;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: white;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -25px 50px -12px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  z-index: 1001;
-  outline: none;
-
-  @media (max-width: 1024px) {
-    top: 5vh;
-  }
-`;
-
-const ScheduleDrawerHandle = styled(VaulDrawer.Handle)`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 0;
-  cursor: grab;
-  flex-shrink: 0;
-
-  &:active {
-    cursor: grabbing;
-  }
 `;
 
 const TableViewWrapper = styled(motion.div)`
@@ -1141,49 +1094,6 @@ const LoaderContainer = styled.div`
   flex: 1;
 `;
 
-const DrawerHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
-  flex-shrink: 0;
-`;
-
-const DesktopDrawerContent = styled(VaulDrawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 800px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`;
-
-const CloseButton = styled(Button)`
-  padding: 8px;
-  height: auto;
-  border: none;
-  background: none;
-  &:hover {
-    background: #f1f5f9;
-  }
-`;
-
 function parsePositiveIntParam(raw) {
   if (raw == null || raw === "") return null;
   const n = Number(raw);
@@ -1200,7 +1110,6 @@ function ClassManagementContent(props) {
   const [searchText, setSearchText] = useState("");
   // State for view type filter (all, single, course)
   const [viewType, setViewType] = useState("all");
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedClassForAction, setSelectedClassForAction] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
@@ -1262,7 +1171,7 @@ function ClassManagementContent(props) {
         setClasses(processedClasses);
       } else {
         message.error(
-          getErrorMessage(result.error || "Failed to load experiences."),
+          getErrorMessage(result.error || "Failed to load services."),
         );
       }
     } catch (error) {
@@ -1274,7 +1183,7 @@ function ClassManagementContent(props) {
 
   // Navigate to Schedules tab, optionally filtered to this class
   const goToSchedules = (classItem) => {
-    router.push(`/business/dashboard/schedules?classId=${classItem.classId}`);
+    router.push(`/business/dashboard/calendar?classId=${classItem.classId}`);
   };
 
   const handleEditClass = (classItem) => {
@@ -1297,23 +1206,25 @@ function ClassManagementContent(props) {
   };
 
   const openDeleteModal = (classItem) => {
-    setSelectedClassForAction(classItem);
-    setDeleteModalVisible(true);
-  };
-
-  const handleDeleteClassConfirm = async () => {
-    if (!selectedClassForAction) return;
-    setIsDeleting(true);
-    try {
-      await businessClassService.deleteClass(selectedClassForAction.classId);
-      message.success("Service deleted successfully");
-      setDeleteModalVisible(false);
-      loadClasses();
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    } finally {
-      setIsDeleting(false);
-    }
+    confirmDestructive({
+      title: "Delete this service?",
+      content: `"${classItem.title || "Untitled service"}" will be removed. Existing bookings stay in history.`,
+      okText: "Delete service",
+      onOk: async () => {
+        setSelectedClassForAction(classItem);
+        setIsDeleting(true);
+        try {
+          await businessClassService.deleteClass(classItem.classId);
+          message.success("Service deleted successfully");
+          loadClasses();
+        } catch (error) {
+          message.error(getErrorMessage(error));
+        } finally {
+          setIsDeleting(false);
+          setSelectedClassForAction(null);
+        }
+      },
+    });
   };
 
   const toggleClassVisibility = async (classId, currentStatus) => {
@@ -1378,7 +1289,7 @@ function ClassManagementContent(props) {
 
   const columns = [
     {
-      title: "EXPERIENCE",
+      title: "SERVICE",
       dataIndex: "title",
       key: "class",
       width: columnWidths.class,
@@ -1414,7 +1325,7 @@ function ClassManagementContent(props) {
               <RowCellExperienceTitle>
                 {text || "Untitled service"}
                 {hasScheduleWarning && (
-                  <Tooltip title="This experience is running out of available schedules and may not be visible to new guests.">
+                  <Tooltip title="This service is running out of upcoming sessions.">
                     <span style={{ display: "inline-flex", lineHeight: 1 }}>
                       <AlertTriangle size={18} color={colors.warning} />
                     </span>
@@ -1486,7 +1397,7 @@ function ClassManagementContent(props) {
             title={
               isLoading
                 ? "Updating..."
-                : `Set experience to ${isActive ? "Inactive" : "Active"}`
+                : `Set service to ${isActive ? "Inactive" : "Active"}`
             }
           >
             <RowCellStatus
@@ -1604,8 +1515,6 @@ function ClassManagementContent(props) {
       classId,
       coverImageUrl,
       title,
-      average_rating,
-      review_count,
       status,
       option,
       last_schedule_date,
@@ -1678,21 +1587,6 @@ function ClassManagementContent(props) {
           </CardContent>
         </CardHeader>
         <CardBody>
-          {/* MODIFIED: Removed schedule info text for mobile view */}
-          <CardStats>
-            {review_count > 0 ? (
-              <StatItem>
-                <Star size={14} className="lucide-star" fill={colors.warning} />
-                <Text strong>{average_rating.toFixed(1)}</Text>
-                <Text type="secondary">({review_count} reviews)</Text>
-              </StatItem>
-            ) : (
-              <StatItem>
-                <MessageSquare size={14} />
-                <Text type="secondary">No reviews</Text>
-              </StatItem>
-            )}
-          </CardStats>
           {option ? (
             <StatusTag $active={isActive}>
               {isActive ? <EyeIcon size={12} /> : <EyeOffIcon size={12} />}
@@ -1717,7 +1611,7 @@ function ClassManagementContent(props) {
             }}
             style={{ flex: 1 }}
           >
-            {option ? "Manage Schedules" : "Configure"}
+            {option ? "Manage sessions" : "Configure"}
           </Button>
           <Dropdown overlay={menu} trigger={["click"]}>
             <Tooltip title="More options">
@@ -1751,6 +1645,25 @@ function ClassManagementContent(props) {
       </PageHeader>
       <Divider />
 
+      <Controls>
+        <StyledSearchInput
+          placeholder="Search services"
+          prefix={<Search size={16} />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+        <StyledSegmented
+          value={viewType}
+          onChange={setViewType}
+          options={[
+            { label: "All", value: "all" },
+            { label: "Sessions", value: "single" },
+            { label: "Courses", value: "course" },
+          ]}
+        />
+      </Controls>
+
       {loading ? (
         <ClassManagementSkeleton />
       ) : filteredClasses.length === 0 ? (
@@ -1777,14 +1690,6 @@ function ClassManagementContent(props) {
         </TableViewWrapper>
       )}
 
-      <DeleteClassModal
-          visible={deleteModalVisible}
-          onCancel={() => setDeleteModalVisible(false)}
-          onConfirm={handleDeleteClassConfirm}
-          classData={selectedClassForAction}
-          isDeleting={isDeleting}
-        />
-
         <ClassEditDrawer
           visible={editDrawerVisible}
           onClose={() => setEditClassId(null)}
@@ -1792,69 +1697,16 @@ function ClassManagementContent(props) {
           onSuccess={handleClassEditSuccess}
         />
 
-        {isMobileView ? (
-          <VaulDrawer.Root
-            open={createDrawerVisible}
-            onOpenChange={(open) => {
-              if (!open) setCreateDrawerVisible(false);
-            }}
-            dismissible
-            handleOnly={!isMobileView}
-          >
-            <VaulDrawer.Portal>
-              <StyledScheduleDrawerOverlay />
-              <StyledScheduleDrawerContent>
-                <ScheduleDrawerHandle />
-
-                <DrawerHeader>
-                  <Title level={4} style={{ margin: 0 }}>
-                    Create service
-                  </Title>
-                  <CloseButton
-                    icon={<X size={20} />}
-                    onClick={() => setCreateDrawerVisible(false)}
-                  />
-                </DrawerHeader>
-
-                <DrawerBody>
-                  <ClassProvider>
-                    <CreateClassPage onSuccess={handleCreateClassSuccess} />
-                  </ClassProvider>
-                </DrawerBody>
-              </StyledScheduleDrawerContent>
-            </VaulDrawer.Portal>
-          </VaulDrawer.Root>
-        ) : (
-          <VaulDrawer.Root
-            open={createDrawerVisible}
-            onOpenChange={(open) => {
-              if (!open) setCreateDrawerVisible(false);
-            }}
-            direction="right"
-            dismissible
-            handleOnly={!isMobileView}
-          >
-            <VaulDrawer.Portal>
-              <StyledScheduleDrawerOverlay />
-              <DesktopDrawerContent>
-                <DrawerHeader>
-                  <Title level={4} style={{ margin: 0 }}>
-                    Create service
-                  </Title>
-                  <CloseButton
-                    icon={<X size={20} />}
-                    onClick={() => setCreateDrawerVisible(false)}
-                  />
-                </DrawerHeader>
-                <DrawerBody>
-                  <ClassProvider>
-                    <CreateClassPage onSuccess={handleCreateClassSuccess} />
-                  </ClassProvider>
-                </DrawerBody>
-              </DesktopDrawerContent>
-            </VaulDrawer.Portal>
-          </VaulDrawer.Root>
-        )}
+        <DashboardDrawer
+          open={createDrawerVisible}
+          onClose={() => setCreateDrawerVisible(false)}
+          title="Create service"
+          width={560}
+        >
+          <ClassProvider>
+            <CreateClassPage onSuccess={handleCreateClassSuccess} />
+          </ClassProvider>
+        </DashboardDrawer>
       </PageContainer>
   );
 }

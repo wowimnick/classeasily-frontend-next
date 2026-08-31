@@ -37,6 +37,12 @@ import DesktopActiveBookings from "./DesktopActiveBookings";
 import MobileActiveBookings from "./MobileActiveBookings";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
+import BookingDemoToggle from "./BookingDemoToggle";
+import { isBookingDemoEnabled } from "@/lib/devEnv";
+import {
+  fetchFixtureBookings,
+  patchFixtureBooking,
+} from "./__fixtures__/bookingFixtures";
 import { LordIcon } from "@/services/ReactUtils";
 import { ResponsiveDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import {
@@ -410,6 +416,7 @@ const ActiveBookings = ({
     sortOrder: "ascend",
   });
   const [totalResults, setTotalResults] = useState(0);
+  const [demoEpoch, setDemoEpoch] = useState(0);
 
   const screens = useBreakpoint();
   const refreshButtonRef = useRef(null);
@@ -516,7 +523,9 @@ const ActiveBookings = ({
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
 
-        const result = await bookingService.fetchBusinessBookings(cleanParams);
+        const result = isBookingDemoEnabled()
+          ? fetchFixtureBookings(cleanParams)
+          : await bookingService.fetchBusinessBookings(cleanParams);
 
         if (result.success && result.data) {
           setBookings(result.data.results || []);
@@ -551,6 +560,7 @@ const ActiveBookings = ({
       tableParams.sortOrder,
       searchText,
       dateRange,
+      demoEpoch,
     ]
   );
 
@@ -611,6 +621,12 @@ const ActiveBookings = ({
 
   const handleMarkAttendance = async (booking, attendance) => {
     if (!booking?.id) return;
+    if (isBookingDemoEnabled()) {
+      patchFixtureBooking(booking.id, { attendance });
+      message.success(attendance === "attended" ? "Marked attended" : "Marked no-show");
+      debouncedFetch();
+      return;
+    }
     const result = await bookingService.markAttendance(booking.id, attendance);
     if (result.success) {
       message.success(attendance === "attended" ? "Marked attended" : "Marked no-show");
@@ -630,6 +646,18 @@ const ActiveBookings = ({
     });
     try {
       const reason = "Cancelled by business user";
+      if (isBookingDemoEnabled()) {
+        patchFixtureBooking(bookingId, {
+          status: "cancelled",
+          cancellation_reason: reason,
+        });
+        message.success({
+          content: "Booking cancelled successfully",
+          key: `cancel-${bookingId}`,
+        });
+        debouncedFetch();
+        return;
+      }
       const result = await bookingService.businessCancelBooking(
         bookingId,
         reason
@@ -716,6 +744,7 @@ const ActiveBookings = ({
           <div>
             <PageTitle>Active Bookings</PageTitle>
           </div>
+          <BookingDemoToggle onChange={() => setDemoEpoch((n) => n + 1)} />
         </DashboardHeader>
 
         <Divider />
