@@ -20,6 +20,10 @@ const nextConfig = {
   },
 
   images: {
+    // Hobby Image Optimization is over quota (live /_next/image returns 402
+    // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED). Serve CloudFront/S3 URLs
+    // directly; media is already resized WebP on d1uuoquc68y10e.cloudfront.net.
+    unoptimized: true,
     qualities: [75, 85],
     remotePatterns: [
       {

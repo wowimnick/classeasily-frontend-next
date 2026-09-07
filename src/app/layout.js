@@ -133,7 +133,7 @@ export default function RootLayout({ children }) {
         {/* Preconnect for critical origins (max 4) */}
         <link rel="preconnect" href="https://cdn.lordicon.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://geocoding.classeasily.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://d2mzhwd15ea85i.cloudfront.net" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://d1uuoquc68y10e.cloudfront.net" crossOrigin="anonymous" />
 
         {/* Structured Data */}
         <OrganizationSchema />
